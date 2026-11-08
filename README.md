@@ -1,6 +1,9 @@
 # phwstyle
 
 <!-- badges: start -->
+[![CRAN status](https://www.r-pkg.org/badges/version/phwstyle)](https://CRAN.R-project.org/package=phwstyle)
+[![R-CMD-check](https://github.com/Ch3w3y/phwstyle-r/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/Ch3w3y/phwstyle-r/actions/workflows/R-CMD-check.yaml)
+[![Docs](https://img.shields.io/badge/docs-pkgdown-285087)](https://ch3w3y.github.io/phwstyle-r/)
 <!-- badges: end -->
 
 phwstyle is a theming toolkit for R. It gives the outputs you already make
@@ -19,6 +22,33 @@ in a Word report, an HTML page, a slide deck and a dashboard.
 </p>
 
 ## Installation
+
+phwstyle has been submitted to CRAN. Until the CRAN badge above shows a
+version number, install it from GitHub.
+
+**From CRAN** (once it is accepted):
+
+```r
+install.packages("phwstyle", dependencies = TRUE)
+```
+
+**Faster binaries from Posit Package Manager (P3M).** Pre-built packages
+for Windows and macOS, so nothing compiles. On Linux use the URL for your
+distribution from the [P3M setup page](https://packagemanager.posit.co/client/#/repos/cran/setup).
+
+```r
+install.packages("phwstyle", dependencies = TRUE,
+                 repos = "https://packagemanager.posit.co/cran/latest")
+```
+
+**With [uvr](https://nbafrank.github.io/uvr/)**, in a uvr project:
+
+```sh
+uvr add phwstyle                 # from CRAN, once accepted
+uvr add Ch3w3y/phwstyle-r@main   # development version from GitHub
+```
+
+**Development version from GitHub:**
 
 ```r
 # install.packages("remotes")
