@@ -1,0 +1,165 @@
+url: https://ch3w3y.github.io/phwstyle-r/
+
+template:
+  bootstrap: 5
+  bslib:
+    primary: "#285087"
+    secondary: "#24A2B5"
+    link-color: "#285087"
+    base_font: {google: "Ubuntu"}
+    heading_font: {google: "Ubuntu"}
+    code_font: {google: "Ubuntu Mono"}
+    navbar-bg: "#285087"
+
+navbar:
+  bg: primary
+  structure:
+    left: [intro, reference, articles, gallery, news]
+    right: [search, github]
+  components:
+    gallery:
+      text: Gallery
+      href: articles/gallery.html
+
+home:
+  title: phwstyle - Public Health Wales styling for R outputs
+
+reference:
+- title: Setup
+  desc: Check what each output needs, and install fonts and logos.
+  contents:
+  - phw_setup_check
+  - phw_install_fonts
+  - phw_register_fonts
+  - phw_font
+  - phw_font_dependency
+  - phw_download_logos
+  - phw_has_logo
+  - phw_logo
+  - phw_graphic
+
+- title: Colours and palettes
+  desc: Brand colours, palettes, and colour keys that keep each group the same colour across reports.
+  contents:
+  - phw_colours
+  - phw_col
+  - phw_pal
+  - phw_pal_fun
+  - phw_palettes
+  - phw_default_palette
+  - show_phw_palettes
+  - phw_colour_key
+  - phw_key
+
+- title: Accessibility
+  desc: Contrast, colour blindness, and second cues besides colour.
+  contents:
+  - phw_check_colours
+  - phw_contrast
+  - phw_text_on
+  - phw_cvd
+  - scale_shape_phw
+
+- title: ggplot2 charts
+  contents:
+  - use_phw_ggplot
+  - theme_phw
+  - theme_phw_map
+  - phw_scales
+  - phw_finalise
+  - phw_save
+  - phw_style_extensions
+
+- title: Multi-plot figures
+  contents:
+  - phw_arrange
+  - phw_title_grob
+
+- title: Public health charts
+  desc: Ready-made ggplots for surveillance and quality improvement.
+  contents:
+  - phw_epicurve
+  - phw_pyramid
+  - phw_funnel
+  - phw_spc
+
+- title: Maps
+  desc: Boundaries for every level of Welsh geography, and interactive maps.
+  contents:
+  - phw_boundaries
+  - phw_boundary_levels
+  - phw_boundaries_cache
+  - phw_leaflet
+
+- title: Building tables
+  desc: Build a table once from a data frame, then render it with any table package.
+  contents:
+  - phw_summary_table
+  - phw_crosstab
+  - phw_rate_table
+  - phw_poisson_ci
+  - phw_risk_table
+  - phw_group_table
+
+- title: flextable (Word, PDF, PowerPoint)
+  contents:
+  - phw_flextable
+  - phw_flextable_theme
+  - use_phw_flextable
+  - phw_flextable_heat
+  - phw_flextable_bars
+  - phw_flextable_groups
+
+- title: gt and gtsummary
+  contents:
+  - phw_gt_theme
+  - use_phw_gtsummary
+
+- title: Interactive HTML
+  contents:
+  - phw_reactable
+  - phw_reactable_theme
+  - phw_reactable_columns
+  - phw_datatable
+  - phw_plotly
+  - phw_plotly_colorscale
+
+- title: Excel and PowerPoint
+  contents:
+  - phw_write_xlsx
+  - phw_pptx
+
+- title: Captions, dates and numbers
+  contents:
+  - phw_caption
+  - phw_date
+  - phw_number
+
+- title: Documents
+  desc: R Markdown formats, the Quarto extension and the files behind them.
+  contents:
+  - phw_formats
+  - use_phw_quarto
+  - phw_reference_docx
+  - phw_latex_header
+
+- title: Shiny and bslib
+  contents:
+  - phw_bs_theme
+  - phw_page_navbar
+  - phw_header
+
+- title: Package
+  contents:
+  - phwstyle-package
+
+articles:
+- title: Guides
+  navbar: Guides
+  contents:
+  - phwstyle
+  - articles/tables
+  - articles/charts
+  - articles/maps
+  - articles/exporting
+  - articles/gallery

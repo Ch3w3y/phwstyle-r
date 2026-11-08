@@ -1,0 +1,35 @@
+/* PHW styles for phw_html_document() and the Quarto phw-html format */
+body { color: #212B32; }
+.phw-band {
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 0 0 1.5rem 0; padding: 14px 24px;
+  background: linear-gradient(90deg, #325082 0%, #326791 25%, #2A8DAC 50%, #2BADC5 75%, #27B8CD 100%);
+  color: #fff;
+}
+.phw-band-logo img { height: 58px; width: auto; display: block; }
+.phw-band-logo, .phw-band-logo:hover { color: #fff; text-decoration: none; }
+.phw-band-name { font-weight: 700; font-size: 1.2rem; }
+.phw-band-org { font-weight: 500; font-size: 0.95rem; text-align: right; }
+@media (max-width: 576px) { .phw-band-org { display: none; } .phw-band-logo img { height: 46px; } }
+
+#header, .quarto-title-block { margin-bottom: 1.5rem; border-bottom: 3px solid #285087; padding-bottom: 0.75rem; }
+h1.title, .quarto-title h1.title { color: #285087; font-weight: 700; font-size: 2.1rem; }
+.subtitle, .quarto-title .subtitle { color: #4C6272; font-weight: 400; }
+.author, .date, .quarto-title-meta { color: #4C6272; }
+h4.author, h4.date { font-size: 1.05rem; font-weight: 500; margin: 0.15rem 0; }
+h1, h2, h3, h4 { color: #285087; font-weight: 700; }
+h4, h5, h6 { color: #4C6272; }
+caption, .table-caption, .caption, figcaption, .figure-caption {
+  color: #285087 !important; font-weight: 700; caption-side: top; text-align: left;
+}
+.figure .caption, figcaption { caption-side: bottom; }
+table { font-variant-numeric: tabular-nums; }
+table thead th { color: #285087; border-top: 2px solid #285087 !important; border-bottom: 2px solid #285087 !important; }
+table tbody tr:last-child td { border-bottom: 2px solid #285087; }
+blockquote { border-left: 4px solid #285087; background: #F0F4F5; padding: 0.75rem 1rem; color: #212B32; }
+.phw-source { font-weight: 700; text-align: right; font-size: 0.85em; }
+#TOC .tocify-item.active, #TOC .list-group-item.active { background: #285087; border-color: #285087; }
+.callout-note { border-left-color: #285087 !important; }
+.callout-tip { border-left-color: #338276 !important; }
+.callout-warning { border-left-color: #D97F00 !important; }
+.callout-important, .callout-caution { border-left-color: #D50B5C !important; }

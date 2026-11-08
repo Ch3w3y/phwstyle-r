@@ -1,0 +1,21 @@
+token,hex,role
+phw_navy,#285087,Primary brand colour; first categorical series; headings on light backgrounds
+nhsw_blue_534,#325A8A,Official NHS Wales / PHW logo blue (Pantone 534 RGB 50 90 138)
+nhsw_gold_465,#CFAB7A,Official NHS Wales logo gold (Pantone 465 RGB 207 171 122)
+nhsw_black,#231F20,Official NHS Wales logo black (RGB 35 31 32)
+phw_teal,#24A2B5,Second categorical series; accent
+phw_orange,#FF5D0C,Third categorical series; highlight
+phw_pink,#F43882,Fourth categorical series
+phw_blue,#2D78A0,Web primary (navigation bar; links; inset borders)
+phw_green,#338276,Web action/button colour; hero panels
+phw_green_dark,#173934,Button hover / dark accent
+phw_magenta,#D50B5C,Link hover colour on web
+phw_cyan,#27B8CD,End of header gradient band
+phw_light_teal,#7CC7D3,Table header shading
+phw_purple,#846AA4,Extra categorical series
+text,#212B32,Body text
+text_secondary,#4C6272,Secondary text / captions
+grey_mid,#768692,Rules / dividers / axis lines
+grey_border,#D8DDE0,Borders / gridlines
+grey_bg,#F0F4F5,Panel / alternating row background
+focus,#FFEB3B,Keyboard focus highlight (Shiny / HTML only)

@@ -1,0 +1,75 @@
+---
+title: "Report title"
+subtitle: "Subtitle or reporting period"
+author: "Team name"
+date: today
+date-format: "D MMMM YYYY"
+phw-team: "Team name"
+format:
+  phw-html: default
+  phw-docx: default
+  phw-typst: default
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: setup
+library(ggplot2)
+library(phwstyle)
+use_phw_ggplot()
+use_phw_flextable()
+# Optional: keep group colours the same in every report.
+# phw_key_file("phw-colours.csv")
+set.seed(44)
+d <- expand.grid(period = 1:13, group = paste("Group", 1:4))
+d$value <- round(runif(nrow(d), 20, 120) + d$period * 4, 1)
+```
+
+## Summary
+
+> A key message goes here, in a highlighted box.
+
+- First point.
+- Second point.
+
+## Section heading
+
+```{r}
+#| label: fig-line
+#| fig-cap: "Figure caption describing the chart"
+ggplot(d, aes(period, value, colour = group, shape = group)) +
+  geom_line(linewidth = 0.9) +
+  geom_point(size = 1.8) +
+  scale_colour_phw_d(key = "group") +
+  scale_shape_phw() +
+  labs(x = "Period", y = "Value", caption = phw_caption("Example data", date = Sys.Date()))
+```
+
+```{r}
+#| label: fig-facet
+#| fig-cap: "Small multiples, one panel per group"
+#| fig-height: 5
+ggplot(d, aes(period, value)) +
+  geom_area(fill = phw_col("light_teal"), alpha = 0.6) +
+  geom_line(colour = phw_col("navy"), linewidth = 0.8) +
+  facet_wrap(~group) +
+  labs(x = "Period", y = "Value", caption = phw_caption("Example data"))
+```
+
+## Table
+
+```{r}
+#| label: tbl-example
+#| tbl-cap: "Table caption"
+tbl <- data.frame(Category = paste("Category", LETTERS[1:5]),
+                  Count = c(114L, 84L, 64L, 19L, 23L),
+                  `Share (%)` = c(11.7, 8.6, 6.6, 1.9, 2.4), check.names = FALSE)
+if (knitr::is_html_output() || knitr::pandoc_to("docx")) {
+  phw_flextable(tbl, source = "Example data")
+} else {
+  knitr::kable(tbl)
+}
+```

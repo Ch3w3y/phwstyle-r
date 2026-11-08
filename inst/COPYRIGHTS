@@ -1,0 +1,30 @@
+phwstyle bundles the following third-party material.
+
+1. Ubuntu font family (inst/fonts/*.ttf)
+   Copyright 2010-2011 Canonical Ltd.
+   Licensed under the Ubuntu Font Licence, Version 1.0 (inst/fonts/UFL.txt).
+   The files in inst/fonts are unmodified.
+
+   inst/css/phw-fonts-embedded.css contains a Modified Version (subset to
+   Latin and Welsh characters and converted to WOFF2). As section 2(c) of the
+   licence requires, it is renamed "Ubuntu derivative phwstyle" and remains
+   under the Ubuntu Font Licence 1.0.
+
+2. Public Health Wales logo (not bundled)
+   phwstyle does not include the Public Health Wales logo. The bilingual
+   "Iechyd Cyhoeddus Cymru / Public Health Wales" logo and the NHS Wales
+   roundel are trade marks of Public Health Wales and NHS Wales.
+   phw_download_logos() downloads the logo from phw.nhs.wales to the user's
+   cache folder only when the user asks, and options(phwstyle.logo_dir)
+   points phwstyle to a copy from an approved logo pack. The logo is not
+   covered by the package's MIT licence; use it only in line with NHS Wales
+   and Public Health Wales brand guidance.
+
+3. Colour values
+   The Pantone 534 and 465 RGB values come from the NHS Wales Logo
+   Guidelines (Welsh Government, July 2022). Other colours were measured
+   from public Public Health Wales materials. Colour values are facts and
+   are not subject to copyright.
+
+All other graphics in inst/graphics are drawn by phwstyle
+(data-raw/build-graphics.R) and are covered by the MIT licence.

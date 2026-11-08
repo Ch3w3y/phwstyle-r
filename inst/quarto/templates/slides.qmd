@@ -1,0 +1,45 @@
+---
+title: "Presentation title"
+subtitle: "Subtitle"
+author: "Team name"
+date: today
+date-format: "D MMMM YYYY"
+format: phw-revealjs
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: setup
+library(ggplot2)
+library(phwstyle)
+use_phw_ggplot(base_size = 16)
+```
+
+## Key messages
+
+- First message.
+- Second message.
+- Third message.
+
+## A chart
+
+```{r}
+#| fig-width: 11
+#| fig-height: 5.2
+set.seed(1)
+d <- expand.grid(period = 1:13, group = paste("Group", 1:4))
+d$value <- runif(nrow(d), 20, 120) + d$period * 4
+ggplot(d, aes(period, value, colour = group)) + geom_line(linewidth = 1.2) +
+  scale_colour_phw_d(key = "group") +
+  labs(x = "Period", y = "Value", caption = phw_caption("Example data"))
+```
+
+## A table {.smaller}
+
+| Action | Owner | Due |
+|:--|:--|:--|
+| First action | Team A | Month |
+| Second action | Team B | Month |

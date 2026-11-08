@@ -1,0 +1,61 @@
+# Release checks. Run by hand before a CRAN submission, or automatically
+# when a version tag (v0.1.0) is pushed. It runs the full CRAN check with
+# the manual, checks URLs and spelling, builds the source tarball and, for
+# a tag, attaches the tarball to a GitHub release.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+name: release
+
+permissions:
+  contents: write
+
+jobs:
+  cran-check:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      _R_CHECK_CRAN_INCOMING_: true
+      _R_CHECK_CRAN_INCOMING_REMOTE_: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-pandoc@v2
+      - uses: r-lib/actions/setup-tinytex@v2
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck, any::urlchecker, any::spelling, any::devtools
+          needs: check
+      - name: Check URLs
+        run: |
+          res <- urlchecker::url_check()
+          print(res)
+          if (NROW(res)) stop("Some URLs are broken or redirect; fix them before submitting.")
+        shell: Rscript {0}
+      - name: Check spelling
+        run: |
+          res <- spelling::spell_check_package()
+          print(res)
+        shell: Rscript {0}
+      - name: Full CRAN check
+        uses: r-lib/actions/check-r-package@v2
+        with:
+          args: 'c("--as-cran")'
+          build_args: 'c("--compact-vignettes=both")'
+          error-on: '"warning"'
+      - name: Build source package
+        run: R CMD build --compact-vignettes=both .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source-package
+          path: '*.tar.gz'
+      - name: Attach to GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: '*.tar.gz'
+          generate_release_notes: true

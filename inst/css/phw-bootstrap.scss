@@ -1,0 +1,31 @@
+/* PHW additions on top of Bootstrap (used by phw_bs_theme()) */
+.phw-header {
+  display: flex; align-items: center; gap: 1.5rem;
+  padding: 0.9rem 1.5rem; color: #fff;
+  background: linear-gradient(90deg, #325082 0%, #326791 25%, #2A8DAC 50%, #2BADC5 75%, #27B8CD 100%);
+}
+.phw-header-logo img { height: 56px; width: auto; display: block; }
+.phw-header-logo, .phw-header-logo:hover { color: #fff; text-decoration: none; }
+.phw-header-name { font-weight: 700; font-size: 1.25rem; }
+.phw-header-text { margin-left: auto; text-align: right; }
+.phw-header-title { font-weight: 700; font-size: 1.35rem; line-height: 1.2; }
+.phw-header-subtitle { font-size: 0.95rem; opacity: 0.95; }
+@media (max-width: 576px) {
+  .phw-header { flex-wrap: wrap; }
+  .phw-header-text { margin-left: 0; text-align: left; }
+  .phw-header-logo img { height: 44px; }
+}
+.phw-footer {
+  border-top: 3px solid $primary; padding: 0.75rem 1.5rem;
+  color: #4C6272; font-size: 0.875rem; background: #F0F4F5;
+}
+a:focus-visible, .btn:focus-visible, .nav-link:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 3px solid #FFEB3B !important; box-shadow: 0 4px 0 #212B32 !important;
+}
+.card { border-top: 3px solid $primary; }
+.card-header { background: #F0F4F5; color: $primary; font-weight: 700; }
+.bslib-value-box .value-box-title { font-weight: 500; }
+.navbar { box-shadow: none; }
+.navbar .nav-link.active { border-bottom: 3px solid #fff; }
+.figure-caption, figcaption, .caption { color: #4C6272; }
+.table thead th { color: $primary; border-bottom: 2px solid $primary; }

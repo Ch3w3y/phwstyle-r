@@ -1,0 +1,164 @@
+---
+title: "Tables from raw data"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", message = FALSE, warning = FALSE)
+```
+
+Most report tables start as a raw data frame: one row per case, test or
+event. phwstyle's table builders do the grouping, totals and
+percentages for you, and return a data frame that remembers its layout. You
+then render that one object with whichever table package suits the output:
+
+| Output | Function |
+|---|---|
+| Word, PDF, PowerPoint | `phw_flextable()` |
+| HTML, Quarto | `phw_gt()` |
+| Interactive HTML, Shiny | `phw_reactable()` |
+| Excel | `phw_write_xlsx()` |
+
+```{r}
+library(phwstyle)
+set.seed(1)
+dat <- data.frame(
+  group = sample(c("Group A", "Group B", "Group C"), 400, TRUE, prob = c(0.45, 0.4, 0.15)),
+  type = factor(sample(c("Type 1", "Type 2", "Type 3"), 400, TRUE, prob = c(0.45, 0.45, 0.1)),
+                c("Type 1", "Type 2", "Type 3")),
+  year = sample(2024:2025, 400, TRUE),
+  quarter = sample(paste0("Q", 1:4), 400, TRUE),
+  days = rpois(400, 3)
+)
+labs <- list(group = "Group", type = "Type", year = "Year", quarter = "Quarter")
+```
+
+## Nested groups: `phw_group_table()`
+
+Give the row groups outermost first. Each group row (Group A, B, C)
+shows the total for its group, the groups inside are indented, and the main
+groups are shaded and separated with space.
+
+```{r}
+tab <- phw_group_table(dat, rows = c("group", "type"), cols = "year", labels = labs)
+phw_flextable(tab, caption = "Counts by group and type", source = "Example data")
+```
+
+### Totals
+
+`totals` takes any of `"group"` (totals on each group row), `"subgroup"` (a
+block with each type summed across all groups) and `"table"` (a grand
+total). `total_position` puts the table total at the top or bottom, and
+`subtotal_position = "below"` moves group totals to their own row.
+
+```{r}
+phw_group_table(dat, c("group", "type"), labels = labs,
+                totals = c("group", "subgroup", "table"),
+                subtotal_position = "below", total_position = "top") |>
+  phw_flextable()
+```
+
+### Layout and percentages
+
+`layout = "columns"` gives each level its own column, so the inner groups
+shift to the right. `percent = "parent"` shows each row as a share of the
+group above it; `"column"` and `"row"` are also available.
+
+```{r}
+phw_group_table(dat, c("group", "type"), labels = labs, layout = "columns",
+                percent = "parent", separate = "both") |>
+  phw_flextable()
+```
+
+### Nested columns
+
+Columns can nest too, here quarters within years, with a total for each
+year and overall.
+
+```{r}
+nested <- phw_group_table(dat, c("group", "type"), c("year", "quarter"), labels = labs,
+                          col_totals = c("group", "table"))
+phw_gt(nested, caption = "Counts by quarter")
+```
+
+### Other statistics
+
+By default rows are counted. Give `value` and `fun` for anything else; group
+and total rows are calculated from their records, not by adding up rows.
+
+```{r}
+phw_group_table(dat, c("group", "type"), "year", value = "days",
+                fun = function(x) round(mean(x), 1), labels = labs) |>
+  phw_flextable(caption = "Mean days")
+```
+
+### Interactive
+
+```{r}
+phw_reactable(nested, caption = "Counts by quarter")
+```
+
+## Summary and epidemiology tables
+
+```{r}
+cases <- data.frame(
+  age_group = sample(c("0-14", "15-44", "45-64", "65+"), 300, TRUE),
+  sex = sample(c("Female", "Male"), 300, TRUE),
+  setting = sample(c("Setting 1", "Setting 2", "Setting 3"), 300, TRUE),
+  days = rpois(300, 4),
+  outcome = sample(c("Outcome X", "Outcome Y"), 300, TRUE, prob = c(0.8, 0.2))
+)
+```
+
+`phw_summary_table()` gives the "Table 1" of a report: n (%) for
+categories and median (IQR) for numbers, split by a group.
+
+```{r}
+phw_summary_table(cases, by = "outcome",
+                  labels = list(age_group = "Age group", sex = "Sex", setting = "Setting",
+                                days = "Days to recovery")) |>
+  phw_flextable(caption = "Characteristics by outcome")
+```
+
+`phw_crosstab()` cross-tabulates two variables with totals and optional
+percentages, and `phw_flextable_heat()` colours the counts.
+
+```{r}
+phw_crosstab(cases, "setting", "age_group") |>
+  phw_flextable() |>
+  phw_flextable_heat(j = 2:5)
+```
+
+`phw_rate_table()` gives rates with exact Poisson confidence intervals for
+several breakdowns at once, from aggregated counts and populations.
+
+```{r}
+agg <- expand.grid(age_group = c("0-14", "15-44", "45-64", "65+"), sex = c("Female", "Male"))
+agg$cases <- rpois(8, c(10, 25, 35, 50))
+agg$population <- round(runif(8, 60, 140)) * 1000
+phw_rate_table(agg, c("age_group", "sex"), "cases", "population",
+               labels = list(age_group = "Age group", sex = "Sex")) |>
+  phw_flextable()
+```
+
+`phw_risk_table()` gives attack rates and relative risks by exposure.
+
+```{r}
+ob <- data.frame(exposure_a = sample(c("Yes", "No"), 120, TRUE), exposure_b = sample(c("Yes", "No"), 120, TRUE))
+ob$ill <- rbinom(120, 1, ifelse(ob$exposure_a == "Yes", 0.6, 0.15))
+phw_risk_table(ob, c("exposure_a", "exposure_b"), "ill", labels = list(exposure_a = "Exposure A", exposure_b = "Exposure B")) |>
+  phw_flextable()
+```
+
+## gtsummary
+
+`use_phw_gtsummary()` sets a theme, so every gtsummary table is styled when
+printed with gt or converted with `as_flex_table()`.
+
+```{r, eval = requireNamespace("gtsummary", quietly = TRUE)}
+use_phw_gtsummary()
+gtsummary::tbl_summary(cases[, c("age_group", "sex", "days", "outcome")], by = outcome)
+```
+
+```{r, include = FALSE, eval = requireNamespace("gtsummary", quietly = TRUE)}
+gtsummary::reset_gtsummary_theme()
+```

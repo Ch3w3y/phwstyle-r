@@ -1,0 +1,32 @@
+/*-- scss:defaults --*/
+$font-family-sans-serif: "Ubuntu", "Ubuntu derivative phwstyle", Arial, sans-serif;
+$presentation-heading-font: "Ubuntu", "Ubuntu derivative phwstyle", Arial, sans-serif;
+$presentation-heading-color: #285087;
+$presentation-heading-font-weight: 700;
+$presentation-heading-text-transform: none;
+$body-color: #212B32;
+$link-color: #2D78A0;
+$presentation-font-size-root: 34px;
+$presentation-h1-font-size: 2.1em;
+$presentation-h2-font-size: 1.45em;
+$presentation-h3-font-size: 1.15em;
+$code-block-font-size: 0.6em;
+
+/*-- scss:rules --*/
+.reveal .slides section:not(#title-slide)::before {
+  content: ""; position: absolute; left: -50vw; right: -50vw; top: -40px; height: 14px;
+  background: linear-gradient(90deg, #325082 0%, #2A8DAC 50%, #27B8CD 100%);
+}
+#title-slide { text-align: left; }
+#title-slide .title { color: #ffffff; font-size: 2.3em; margin-top: 2.2em; }
+#title-slide .subtitle { color: #ffffff; opacity: 0.95; }
+#title-slide .quarto-title-authors, #title-slide .date, #title-slide .quarto-title-author-name { color: #ffffff; text-align: left; justify-content: flex-start; }
+.reveal .slide-logo { max-height: 60px !important; bottom: 6px !important; right: 14px !important; }
+.reveal .footer { color: #285087; font-size: 0.45em; }
+.reveal .slide-number { color: #285087; background: transparent; }
+.reveal .slides section.phw-section { color: #fff; }
+.reveal .slides section.phw-section h1, .reveal .slides section.phw-section h2 { color: #fff; }
+.reveal blockquote { border-left: 6px solid #285087; background: #F0F4F5; box-shadow: none; width: 92%; }
+.reveal table th { color: #285087; border-bottom: 2px solid #285087; }
+.reveal figcaption, .reveal .quarto-float-caption { color: #285087; font-weight: 700; }
+.reveal:has(#title-slide.present) .slide-logo, .reveal:has(#title-slide.present) .footer { display: none !important; }

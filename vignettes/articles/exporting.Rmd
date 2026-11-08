@@ -1,0 +1,66 @@
+---
+title: "Excel, PowerPoint, Word and interactive tables"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", message = FALSE, warning = FALSE)
+```
+
+```{r}
+library(phwstyle)
+set.seed(1)
+dat <- data.frame(group = sample(c("Group A", "Group B", "Group C"), 300, TRUE),
+                  type = sample(c("Type 1", "Type 2", "Type 3"), 300, TRUE),
+                  year = sample(2024:2025, 300, TRUE))
+tab <- phw_group_table(dat, c("group", "type"), "year")
+```
+
+## Excel
+
+`phw_write_xlsx()` writes one sheet per table, with a title, a navy
+header, number formats, frozen headers and the source underneath. Summary
+tables keep their bold group rows and indents.
+
+```{r, eval = FALSE}
+phw_write_xlsx(list(Grouped = tab, Raw = dat), "tables.xlsx",
+               title = c("Counts by group and type", "Raw data"), source = "Example data")
+```
+
+![An Excel sheet with a grouped table](../reference/figures/excel.webp)
+
+## PowerPoint
+
+`phw_pptx()` starts a deck (pass your corporate template to use its
+masters), and `phw_add_slide()` adds a slide with a styled title and a
+chart, table or bullet points. Charts are editable in PowerPoint when the
+rvg package is installed.
+
+```{r, eval = FALSE}
+library(ggplot2)
+deck <- phw_pptx() |>
+  phw_add_slide("Key messages", text = c("First message", "Second message")) |>
+  phw_add_slide("Grouped table", table = tab, source = "Example data") |>
+  phw_add_slide("A chart", plot = ggplot(dat, aes(group)) + geom_bar(), source = "Example data")
+print(deck, target = "slides.pptx")
+```
+
+![Three PowerPoint slides](../reference/figures/powerpoint.webp)
+
+## Word
+
+Any `phw_flextable()` can be saved to Word, several to one file:
+
+```{r, eval = FALSE}
+flextable::save_as_docx(`Table 1` = phw_flextable(tab), path = "tables.docx")
+```
+
+For whole reports, use `output: phwstyle::phw_word_document` in R Markdown
+or `format: phw-docx` in Quarto.
+
+## Interactive tables
+
+`phw_datatable()` gives a searchable, sortable, paged table for long lists.
+
+```{r, eval = requireNamespace("DT", quietly = TRUE)}
+phw_datatable(dat, caption = "Grouped table", source = "Example data", filter = "top")
+```

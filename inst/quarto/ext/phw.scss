@@ -1,0 +1,76 @@
+/*-- scss:defaults --*/
+$phw-navy: #285087;
+$phw-teal: #24A2B5;
+$phw-orange: #FF5D0C;
+$phw-pink: #F43882;
+$phw-text: #212B32;
+$phw-grey: #4C6272;
+$phw-border: #D8DDE0;
+$phw-bg: #F0F4F5;
+
+$blue: #285087;
+$indigo: #1B3660;
+$purple: #846AA4;
+$pink: #F43882;
+$red: #D50B5C;
+$orange: #FF5D0C;
+$yellow: #D97F00;
+$green: #338276;
+$teal: #24A2B5;
+$cyan: #27B8CD;
+$gray-100: #F0F4F5;
+$gray-300: #D8DDE0;
+$gray-600: #768692;
+$gray-700: #4C6272;
+$gray-900: #212B32;
+
+$font-family-sans-serif: "Ubuntu", "Ubuntu derivative phwstyle", Arial, sans-serif;
+$headings-font-weight: 700;
+$headings-color: $phw-navy;
+$body-color: $phw-text;
+$primary: $phw-navy;
+$secondary: $phw-grey;
+$success: #338276;
+$info: $phw-teal;
+$warning: #D97F00;
+$danger: #D50B5C;
+$light: $phw-bg;
+$dark: #1B3660;
+$link-color: #2D78A0;
+$link-hover-color: #D50B5C;
+$border-color: $phw-border;
+$navbar-bg: $phw-navy;
+$navbar-fg: #ffffff;
+$toc-active-border: $phw-navy;
+$code-color: #8a3a00;
+
+/*-- scss:rules --*/
+.phw-band {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 24px; color: #fff; margin-bottom: 1.5rem;
+  background: linear-gradient(90deg, #325082 0%, #326791 25%, #2A8DAC 50%, #2BADC5 75%, #27B8CD 100%);
+}
+.phw-band-logo img { height: 58px; width: auto; display: block; }
+.phw-band-logo, .phw-band-logo:hover { color: #fff; text-decoration: none; }
+.phw-band-name { font-weight: 700; font-size: 1.2rem; }
+.phw-band-org { font-weight: 500; font-size: 0.95rem; text-align: right; }
+@media (max-width: 576px) { .phw-band-org { display: none; } .phw-band-logo img { height: 46px; } }
+.quarto-title-block .quarto-title-banner { background: none; }
+#title-block-header { border-bottom: 3px solid $phw-navy; padding-bottom: 0.75rem; margin-bottom: 1.5rem; }
+h1.title { color: $phw-navy; font-weight: 700; }
+.subtitle { color: $phw-grey; }
+.quarto-title-meta-heading { color: $phw-navy; }
+figcaption, .figure-caption, caption, .table-caption, .quarto-float-caption {
+  color: $phw-navy !important; font-weight: 700; text-align: left;
+}
+table { font-variant-numeric: tabular-nums; }
+table thead th { color: $phw-navy; border-bottom: 2px solid $phw-navy !important; }
+table > :not(caption) > * > * { border-bottom-color: $phw-border; }
+blockquote { border-left: 4px solid $phw-navy; background: $phw-bg; padding: 0.75rem 1rem; color: $phw-text; }
+.phw-source { font-weight: 700; text-align: right; font-size: 0.85em; }
+#TOC .nav-link.active, #TOC a.active { color: $phw-navy; font-weight: 700; }
+.callout.callout-style-default.callout-note { border-left-color: $phw-navy; }
+.callout.callout-style-default.callout-tip { border-left-color: #338276; }
+.callout.callout-style-default.callout-warning { border-left-color: #D97F00; }
+.callout.callout-style-default.callout-important, .callout.callout-style-default.callout-caution { border-left-color: #D50B5C; }
+a:focus-visible, button:focus-visible { outline: 3px solid #FFEB3B; box-shadow: 0 4px 0 #212B32; }

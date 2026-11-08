@@ -1,0 +1,96 @@
+---
+title: "Charts"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", message = FALSE, warning = FALSE,
+                      fig.width = 8, fig.height = 5, dev = "ragg_png", dpi = 110)
+```
+
+```{r}
+library(phwstyle)
+library(ggplot2)
+use_phw_ggplot()
+set.seed(1)
+cases <- data.frame(
+  onset = as.Date("2025-01-06") + round(rgamma(400, 5, 0.12)),
+  age_group = sample(c("0-14", "15-44", "45-64", "65+"), 400, TRUE),
+  sex = sample(c("Female", "Male"), 400, TRUE),
+  setting = sample(c("Setting 1", "Setting 2", "Setting 3"), 400, TRUE, prob = c(0.6, 0.15, 0.25)),
+  organism = sample(c("Type 1", "Type 2", "Type 3"), 400, TRUE)
+)
+```
+
+`use_phw_ggplot()` sets `theme_phw()` and the PHW colour scales for every
+plot in the session, and styles extension geoms. Everything below is plain
+ggplot2.
+
+## Colours that stay with their groups
+
+A colour key fixes each level's colour. Use the same `key` in every chart
+(and in `phw_reactable()`, `phw_leaflet_polygons()` or
+`phw_flextable_groups()`) and "Setting 2" is always the same colour.
+
+```{r}
+ggplot(cases, aes(age_group, fill = setting)) +
+  geom_bar() +
+  scale_fill_phw_d(key = "setting") +
+  labs(title = "Cases by age group and setting", x = NULL, y = "Cases",
+       caption = phw_caption("Example data"))
+```
+
+## Shapes and line types as a second cue
+
+```{r}
+weekly <- as.data.frame(table(week = cut(cases$onset, "week"), organism = cases$organism))
+weekly$week <- as.Date(weekly$week)
+ggplot(weekly, aes(week, Freq, colour = organism, shape = organism)) +
+  geom_line() + geom_point(size = 2) +
+  scale_colour_phw_d(palette = "accessible") + scale_shape_phw() +
+  labs(title = "Weekly cases by type", x = NULL, y = "Cases")
+```
+
+## Public health charts
+
+```{r}
+phw_epicurve(cases, "onset", group = "organism") +
+  labs(title = "Cases by week of onset", x = "Week beginning", y = "Cases")
+```
+
+```{r}
+phw_pyramid(cases, "age_group", "sex", percent = TRUE) +
+  labs(title = "Cases by age and sex")
+```
+
+```{r}
+units <- data.frame(area = paste("Area", 1:30), eligible = round(runif(30, 300, 6000)))
+units$events <- rbinom(30, units$eligible, c(rep(0.72, 28), 0.6, 0.82))
+phw_funnel(units, "events", "eligible", label = "area") +
+  labs(title = "Proportion by area", x = "Population", y = "Proportion (%)")
+```
+
+```{r}
+monthly <- data.frame(month = seq(as.Date("2023-01-01"), by = "month", length.out = 30),
+                      value = c(rnorm(20, 50, 4), rnorm(10, 57, 4)))
+phw_spc(monthly, "month", "value", improvement = "increase", baseline = 20) +
+  labs(title = "Monthly measure")
+```
+
+## Finishing and saving
+
+`phw_finalise()` adds the logo, source and date under a chart (or a
+patchwork, or any grob), and `phw_save()` saves it with the bundled font.
+
+```{r, eval = FALSE}
+p <- phw_epicurve(cases, "onset") + labs(title = "Cases by week")
+phw_save(phw_finalise(p, source = "Example data", date = Sys.Date()), "epicurve.png")
+```
+
+## Several charts in one figure
+
+```{r, fig.width = 10, eval = requireNamespace("patchwork", quietly = TRUE)}
+a <- ggplot(cases, aes(y = setting)) + geom_bar() + labs(x = "Cases", y = NULL)
+b <- phw_epicurve(cases, "onset", interval = "month") + labs(y = "Cases")
+phw_arrange(a, b, widths = c(1, 2), title = "Two charts, one title", source = "Example data",
+            tag_levels = "A")
+```

@@ -1,0 +1,20 @@
+/*-- scss:defaults --*/
+$valuebox-bg-primary: #285087;
+$valuebox-bg-secondary: #4C6272;
+$valuebox-bg-success: #338276;
+$valuebox-bg-info: #24A2B5;
+$valuebox-bg-warning: #D97F00;
+$valuebox-bg-danger: #D50B5C;
+$valuebox-bg-light: #ffffff;
+$valuebox-bg-dark: #1B3660;
+
+/*-- scss:rules --*/
+.navbar {
+  background: linear-gradient(90deg, #325082 0%, #326791 25%, #2A8DAC 50%, #2BADC5 75%, #27B8CD 100%) !important;
+}
+.navbar .navbar-brand-container img, .navbar-logo { max-height: 44px; }
+.navbar-title { font-weight: 700; }
+.bslib-value-box .value-box-title { font-weight: 500; }
+.card { border-top: 3px solid #285087; }
+.card-header { background: #F0F4F5; color: #285087; font-weight: 700; }
+.quarto-dashboard .bslib-page-fill { background: #F0F4F5; }

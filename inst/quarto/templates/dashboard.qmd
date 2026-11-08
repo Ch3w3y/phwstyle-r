@@ -1,0 +1,52 @@
+---
+title: "Dashboard title"
+format: phw-dashboard
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(ggplot2)
+library(phwstyle)
+use_phw_ggplot()
+set.seed(2)
+d <- expand.grid(period = 1:13, group = paste("Group", 1:4))
+d$value <- round(runif(nrow(d), 10, 60) + d$period * 3)
+```
+
+## Row {height=20%}
+
+```{r}
+#| content: valuebox
+#| title: "First measure"
+list(value = 84, color = "primary")
+```
+
+```{r}
+#| content: valuebox
+#| title: "Second measure"
+list(value = 19, color = "info")
+```
+
+```{r}
+#| content: valuebox
+#| title: "Third measure"
+list(value = "12.4", color = "light")
+```
+
+## Row {height=80%}
+
+```{r}
+#| title: Value by group
+plotly_ok <- requireNamespace("plotly", quietly = TRUE)
+p <- ggplot(d, aes(period, value, colour = group)) + geom_line(linewidth = 1) +
+  scale_colour_phw_d(key = "group") + labs(x = "Period", y = "Value")
+if (plotly_ok) phw_plotly(p, source = "Example data") else p
+```
+
+```{r}
+#| title: Latest period
+latest <- d[d$period == 13, c("group", "value")]
+names(latest) <- c("Group", "Value")
+phw_reactable(latest, group_col = "Group", key = "group")
+```
