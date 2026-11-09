@@ -1,7 +1,6 @@
 # phwstyle
 
 <!-- badges: start -->
-[![CRAN status](https://www.r-pkg.org/badges/version/phwstyle)](https://CRAN.R-project.org/package=phwstyle)
 [![R-CMD-check](https://github.com/Ch3w3y/phwstyle-r/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/Ch3w3y/phwstyle-r/actions/workflows/R-CMD-check.yaml)
 [![Docs](https://img.shields.io/badge/docs-pkgdown-285087)](https://ch3w3y.github.io/phwstyle-r/)
 <!-- badges: end -->
@@ -23,8 +22,8 @@ in a Word report, an HTML page, a slide deck and a dashboard.
 
 ## Installation
 
-phwstyle has been submitted to CRAN. Until the CRAN badge above shows a
-version number, install it from GitHub.
+phwstyle has been submitted to CRAN but is not on CRAN yet. Until it is,
+install it from GitHub.
 
 **From CRAN** (once it is accepted):
 

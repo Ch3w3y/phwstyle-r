@@ -1,16 +1,17 @@
 ## Resubmission
 
-This is a resubmission. Version 0.1.0 failed the automated pre-tests with
-NOTEs, which are addressed in 0.1.1:
+This is a resubmission. The pre-tests of 0.1.0 and 0.1.1 gave NOTEs, which
+are addressed in 0.1.2:
 
-* Possibly misspelled words in DESCRIPTION: the acronyms "PHW" and "CDSC"
-  are now written out in full, and the software names 'Typst' and
-  'revealjs' are in single quotes.
-* Possibly invalid file URIs in README.md: the links to two scripts that are
-  not part of the package now point to the GitHub repository.
-* The Debian detritus NOTE ('calibre-*' in the temp directory): phwstyle
-  never calls calibre or any document converter, so this appears to come
-  from another process on the check machine.
+* Debian, detritus in the temp directory ('calibre-*'): the phw_datatable()
+  example printed an HTML table, which opened it with xdg-open; on the check
+  machine that starts calibre. The example now only prints in interactive
+  sessions. Tracing every program run by R CMD check now shows no xdg-open
+  or browser calls.
+* Possibly misspelled words in DESCRIPTION (fixed in 0.1.1): acronyms are
+  written out and software names are in single quotes.
+* Possibly invalid file URIs in README.md (fixed in 0.1.1): links to files
+  outside the package now point to the GitHub repository.
 
 ## Submission
 

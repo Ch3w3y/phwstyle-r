@@ -16,7 +16,9 @@
 #' @return A DT htmlwidget (wrapped with the title and source when given).
 #' @examples
 #' if (requireNamespace("DT", quietly = TRUE)) {
-#'   phw_datatable(mtcars, caption = "Example table", source = "mtcars")
+#'   tbl <- phw_datatable(mtcars, caption = "Example table", source = "mtcars")
+#'   # Printing shows the table in the Viewer or a browser.
+#'   if (interactive()) print(tbl)
 #' }
 #' @export
 phw_datatable <- function(data, caption = NULL, source = NULL, date = NULL, digits = 1,

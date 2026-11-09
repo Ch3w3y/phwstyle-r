@@ -1,3 +1,8 @@
+# phwstyle 0.1.2
+
+* Resubmission to CRAN. The `phw_datatable()` example no longer opens a
+  browser when examples are run non-interactively.
+
 # phwstyle 0.1.1
 
 * First CRAN submission. Fixes the notes from the automated CRAN checks on

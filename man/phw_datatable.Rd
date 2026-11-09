@@ -44,6 +44,8 @@ through a long table. For styled summary tables use \code{\link[=phw_reactable]{
 }
 \examples{
 if (requireNamespace("DT", quietly = TRUE)) {
-  phw_datatable(mtcars, caption = "Example table", source = "mtcars")
+  tbl <- phw_datatable(mtcars, caption = "Example table", source = "mtcars")
+  # Printing shows the table in the Viewer or a browser.
+  if (interactive()) print(tbl)
 }
 }
