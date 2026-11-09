@@ -1,3 +1,8 @@
+# phwstyle 0.1.1
+
+* First CRAN submission. Fixes the notes from the automated CRAN checks on
+  0.1.0 (wording in DESCRIPTION and links in the README).
+
 # phwstyle 0.1.0
 
 * First release.

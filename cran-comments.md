@@ -1,10 +1,16 @@
 ## Resubmission
 
-This replaces my upload of phwstyle 0.1.0 from earlier today, before review.
-Changes since that upload: the example data is now fully generic,
-phw_flextable_bars() no longer wraps long numbers, phw_install_fonts() only
-writes to the user's font folder in an interactive session, and the boundary
-cache deletes outdated releases.
+This is a resubmission. Version 0.1.0 failed the automated pre-tests with
+NOTEs, which are addressed in 0.1.1:
+
+* Possibly misspelled words in DESCRIPTION: the acronyms "PHW" and "CDSC"
+  are now written out in full, and the software names 'Typst' and
+  'revealjs' are in single quotes.
+* Possibly invalid file URIs in README.md: the links to two scripts that are
+  not part of the package now point to the GitHub repository.
+* The Debian detritus NOTE ('calibre-*' in the temp directory): phwstyle
+  never calls calibre or any document converter, so this appears to come
+  from another process on the check machine.
 
 ## Submission
 
@@ -24,10 +30,6 @@ This is the first submission of phwstyle.
   (_R_CHECK_FORCE_SUGGESTS_=false)
 
 ## Notes for CRAN
-
-* The Debian pre-test reported a 'calibre-*' folder as detritus in the temp
-  directory. phwstyle never calls calibre or any document converter, so this
-  appears to come from another process on the check machine.
 
 * The package bundles the Ubuntu font family (Ubuntu Font Licence 1.0) so
   that outputs render the same way offline. The licence and copyright holder

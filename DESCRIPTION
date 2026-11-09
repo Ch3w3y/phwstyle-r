@@ -1,6 +1,6 @@
 Package: phwstyle
 Title: Public Health Wales Corporate Styling for R Outputs
-Version: 0.1.0
+Version: 0.1.1
 Authors@R: c(
     person("Daryn", "Sutton", role = c("aut", "cre"), email = "cheweych3w3y@gmail.com"),
     person("Canonical Ltd", role = "cph", comment = "Ubuntu font family, Ubuntu Font Licence 1.0")
