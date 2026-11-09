@@ -1,12 +1,12 @@
 Package: phwstyle
-Title: Public Health Wales and CDSC Corporate Styling for R Outputs
+Title: Public Health Wales Corporate Styling for R Outputs
 Version: 0.1.0
 Authors@R: c(
     person("Daryn", "Sutton", role = c("aut", "cre"), email = "cheweych3w3y@gmail.com"),
     person("Canonical Ltd", role = "cph", comment = "Ubuntu font family, Ubuntu Font Licence 1.0")
   )
-Description: Applies the Public Health Wales (PHW) and Communicable Disease
-    Surveillance Centre (CDSC) visual identity to R outputs. This is not an
+Description: Applies the visual identity of Public Health Wales, as used by
+    its Communicable Disease Surveillance Centre, to R outputs. This is not an
     official Public Health Wales product. Provides brand colours, accessible
     and colour-blind safe palettes, colour keys that keep groups the same
     colour across reports, the Ubuntu typeface and an optional logo
@@ -16,7 +16,8 @@ Description: Applies the Public Health Wales (PHW) and Communicable Disease
     with 'flextable', 'gt', 'reactable' or Excel; themes for 'gtsummary',
     'plotly', 'DT', 'leaflet' and 'shiny'; boundaries for Welsh geographies;
     'PowerPoint' slides; R Markdown output formats (HTML, Word, PDF) and a
-    Quarto extension (HTML, Word, Typst PDF, revealjs and dashboards).
+    Quarto extension (HTML, Word, 'Typst' PDF, 'revealjs' slides and
+    dashboards).
 URL: https://github.com/Ch3w3y/phwstyle-r
 BugReports: https://github.com/Ch3w3y/phwstyle-r/issues
 License: MIT + file LICENSE

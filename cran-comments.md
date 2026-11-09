@@ -25,6 +25,10 @@ This is the first submission of phwstyle.
 
 ## Notes for CRAN
 
+* The Debian pre-test reported a 'calibre-*' folder as detritus in the temp
+  directory. phwstyle never calls calibre or any document converter, so this
+  appears to come from another process on the check machine.
+
 * The package bundles the Ubuntu font family (Ubuntu Font Licence 1.0) so
   that outputs render the same way offline. The licence and copyright holder
   are listed in inst/COPYRIGHTS and inst/fonts/UFL.txt.

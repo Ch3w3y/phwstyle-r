@@ -123,8 +123,8 @@ own colours.
 ## Gallery
 
 All examples use made-up data. The images are produced by
-[`gallery/build-gallery.R`](gallery/build-gallery.R), and
-[`examples/phwstyle-demo.R`](examples/phwstyle-demo.R) is a commented
+[`gallery/build-gallery.R`](https://github.com/Ch3w3y/phwstyle-r/blob/main/gallery/build-gallery.R), and
+[`examples/phwstyle-demo.R`](https://github.com/Ch3w3y/phwstyle-r/blob/main/examples/phwstyle-demo.R) is a commented
 script that builds every output type from one raw data frame, ready to
 copy into your own reports. Full documentation for every function is in the
 package help (`?phwstyle`) and the vignettes.
