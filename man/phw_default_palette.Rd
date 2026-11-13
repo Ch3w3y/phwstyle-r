@@ -10,8 +10,39 @@ phw_default_palette()
 A palette name or vector.
 }
 \description{
-phwstyle uses \code{"main"} (navy, teal, orange, pink) for up to four groups
-and \code{"accessible"} above that. Set \code{options(phwstyle.palette = "accessible")} to use the colour-blind safe palette everywhere: ggplot2
-defaults, plotly, colour keys and tables. You can also set it to your own
-vector of colours.
+The palette that charts, tables and widgets use for groups when you
+don't name one. Out of the box it is \code{"main"} (navy, teal, orange, pink),
+carrying on into \code{"extended"} past four groups, so every chart in a
+report draws from one set of colours however many groups it has.
+}
+\details{
+The colour-blind safe \code{"accessible"} palette is a switch you turn on
+once, and it then applies to every chart, table and widget, for any
+number of groups. The first of these that is set wins:
+\enumerate{
+\item \code{options(phwstyle.palette = "accessible")}, which is also what
+\code{use_phw_ggplot(palette = "accessible")} and the \code{palette} argument of
+\code{\link[=phw_html_document]{phw_html_document()}}, \code{\link[=phw_word_document]{phw_word_document()}} and \code{\link[=phw_pdf_document]{phw_pdf_document()}}
+set.
+\item The environment variable \code{PHWSTYLE_PALETTE}, for switching one render
+from the command line without editing the document, e.g.
+\verb{PHWSTYLE_PALETTE=accessible quarto render report.qmd}.
+\item \code{phw-palette: accessible} in the YAML header of a Quarto or R Markdown
+document.
+}
+
+The option can also be any other palette name from \link{phw_palettes}, or
+your own vector of colours.
+
+This switch changes colours only. Larger text and thicker lines are a
+separate setting, \code{accessible = TRUE} in \code{\link[=theme_phw]{theme_phw()}} or
+\code{\link[=use_phw_ggplot]{use_phw_ggplot()}}; neither turns the other on.
+}
+\examples{
+phw_default_palette()
+phw_pal(6)
+
+old <- options(phwstyle.palette = "accessible")
+phw_pal(6)
+options(old)
 }

@@ -19,7 +19,8 @@ phw_crosstab(
 \arguments{
 \item{data}{A data frame with one row per case, or with a count column.}
 
-\item{rows, cols}{Column names for the rows and columns of the table.}
+\item{rows, cols}{The columns that make the rows and the columns of the
+table, unquoted as in dplyr. Strings work too.}
 
 \item{count}{Optional column of counts (for aggregated data).}
 
@@ -46,6 +47,6 @@ Render it with \code{\link[=phw_flextable]{phw_flextable()}} or \code{\link[=phw
 \examples{
 df <- data.frame(period = sample(1:6, 300, TRUE),
                  group = sample(c("Group A", "Group B", "Group C"), 300, TRUE))
-phw_crosstab(df, "period", "group")
-phw_crosstab(df, "group", "period", percent = "row")
+phw_crosstab(df, period, group)
+phw_crosstab(df, group, period, percent = "row")
 }

@@ -7,13 +7,18 @@ output:
   phwstyle::phw_html_document: default
   phwstyle::phw_word_document: default
   phwstyle::phw_pdf_document: default
+# Colour-blind safe colours in every chart and table: uncomment the next line.
+# phw-palette: accessible
 ---
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+library(dplyr)
 library(ggplot2)
 library(phwstyle)
-# The phw_* formats already call use_phw_ggplot() and use_phw_flextable().
+# The phw_* formats already call use_phw_ggplot() and use_phw_flextable(),
+# so every chart and flextable below is styled. Add theme_phw() or a
+# scale_*_phw_*() to a plot only to change something for that plot.
 # Optional: keep group colours the same in every report.
 # phw_key_file("phw-colours.csv")
 ```
@@ -28,7 +33,7 @@ type, navy headings, PHW chart colours and booktabs tables.
 # Section heading
 
 ```{r chart, fig.cap = "Figure caption describing the chart"}
-d <- data.frame(year = 2016:2025, value = c(118, 104, 104, 98, 96, 78, 82, 75, 89, 73))
+d <- tibble(year = 2016:2025, value = c(118, 104, 104, 98, 96, 78, 82, 75, 89, 73))
 ggplot(d, aes(year, value)) +
   geom_col(fill = phw_col("navy")) +
   geom_text(aes(label = value), vjust = -0.4, size = 3.2) +
@@ -37,8 +42,8 @@ ggplot(d, aes(year, value)) +
 ```
 
 ```{r table}
-tbl <- data.frame(Area = paste("Area", LETTERS[1:7]),
-                  `Year 1` = c(4.4, 0.7, 4.2, 0.2, 1.6, 3.0, 3.7),
-                  `Year 2` = c(2.0, 2.0, 5.5, 2.3, 2.6, 0.7, 3.9), check.names = FALSE)
+tbl <- tibble(Area = paste("Area", LETTERS[1:7]),
+              `Year 1` = c(4.4, 0.7, 4.2, 0.2, 1.6, 3.0, 3.7),
+              `Year 2` = c(2.0, 2.0, 5.5, 2.3, 2.6, 0.7, 3.9))
 phw_flextable(tbl, caption = "Table caption", source = "Example data", bold_first_col = TRUE)
 ```

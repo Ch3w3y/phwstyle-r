@@ -1,6 +1,6 @@
 Package: phwstyle
 Title: Public Health Wales Corporate Styling for R Outputs
-Version: 0.1.2
+Version: 0.2.0
 Authors@R: c(
     person("Daryn", "Sutton", role = c("aut", "cre"), email = "cheweych3w3y@gmail.com"),
     person("Canonical Ltd", role = "cph", comment = "Ubuntu font family, Ubuntu Font Licence 1.0")
@@ -25,7 +25,7 @@ Copyright: See inst/COPYRIGHTS for the bundled Ubuntu fonts.
 Encoding: UTF-8
 Language: en-GB
 Roxygen: list(markdown = TRUE)
-Depends: R (>= 4.1)
+Depends: R (>= 4.3)
 Imports:
     cli,
     ggplot2 (>= 3.5.0),
@@ -37,40 +37,44 @@ Imports:
     scales,
     stats,
     systemfonts,
+    tidyselect (>= 1.2.0),
     tools,
     utils,
     zip
 Suggests:
     base64enc,
-    bslib,
+    bslib (>= 0.7.0),
     cowplot,
-    DT,
-    flextable,
+    dplyr,
+    DT (>= 0.33),
+    flextable (>= 0.9.6),
     ggalluvial,
     ggrepel,
     ggridges,
     gridExtra,
-    gt,
-    gtsummary,
+    gt (>= 0.10.1),
+    gtsummary (>= 1.7.2),
     htmlwidgets,
     jpeg,
     jsonlite,
-    knitr,
-    leaflet,
-    officer,
-    openxlsx2,
-    patchwork,
-    plotly,
+    knitr (>= 1.47),
+    leaflet (>= 2.2.2),
+    lubridate,
+    officer (>= 0.6.6),
+    openxlsx2 (>= 1.7),
+    patchwork (>= 1.2.0),
+    plotly (>= 4.10.4),
     png,
     ragg,
-    reactable,
-    rmarkdown,
+    reactable (>= 0.4.4),
+    rmarkdown (>= 2.27),
     rsvg,
-    rvg,
+    rvg (>= 0.3.3),
     sass,
     sf,
     shiny,
-    testthat (>= 3.0.0),
+    testthat (>= 3.2.0),
+    tidyr,
     treemapify,
     withr
 Config/testthat/edition: 3

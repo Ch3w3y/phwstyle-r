@@ -1,17 +1,19 @@
 ---
 title: "Dashboard title"
+# phw-palette: accessible   # colour-blind safe colours in every chart and table
 format: phw-dashboard
 ---
 
 ```{r}
 #| label: setup
 #| include: false
+library(dplyr)
 library(ggplot2)
 library(phwstyle)
 use_phw_ggplot()
 set.seed(2)
-d <- expand.grid(period = 1:13, group = paste("Group", 1:4))
-d$value <- round(runif(nrow(d), 10, 60) + d$period * 3)
+d <- tidyr::expand_grid(group = paste("Group", 1:4), period = 1:13) |>
+  mutate(value = round(runif(n(), 10, 60) + period * 3))
 ```
 
 ## Row {height=20%}
@@ -46,7 +48,8 @@ if (plotly_ok) phw_plotly(p, source = "Example data") else p
 
 ```{r}
 #| title: Latest period
-latest <- d[d$period == 13, c("group", "value")]
-names(latest) <- c("Group", "Value")
-phw_reactable(latest, group_col = "Group", key = "group")
+d |>
+  filter(period == max(period)) |>
+  select(Group = group, Value = value) |>
+  phw_reactable(group_col = Group, key = "group")
 ```

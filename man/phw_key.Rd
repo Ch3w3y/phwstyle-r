@@ -36,13 +36,15 @@ phw_key_file(path)
 }
 \description{
 \itemize{
-\item \code{phw_key()} returns a stored key.
+\item \code{phw_key()} returns a stored key. The accessible copy of a key is
+called \code{name@accessible} (see \code{\link[=phw_colour_key]{phw_colour_key()}}).
 \item \code{phw_keys()} lists every key as a data frame.
 \item \code{phw_key_set()} adds or changes colours by hand.
 \item \code{phw_key_recolour()} reassigns a whole key from a new palette, keeping
 the group order. Use it on purpose, e.g. to move to the
 \code{"accessible"} palette, because every report after that changes.
-\item \code{phw_key_reset()} forgets a key, or all of them.
+\item \code{phw_key_reset()} forgets a key (and its accessible copy), or all of
+them.
 \item \code{phw_key_file()} sets a CSV file that keys are read from and saved to,
 so colours stay the same across sessions and reports. Call it at the
 top of your script or in a setup chunk, or set

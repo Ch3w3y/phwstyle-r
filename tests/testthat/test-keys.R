@@ -22,7 +22,7 @@ test_that("keys switch palette only for new groups, and recolour on request", {
 test_that("keys overflow into other palettes with a warning", {
   phw_key_reset("t_many")
   withr::defer(phw_key_reset("t_many"))
-  expect_warning(k <- phw_colour_key(paste0("g", 1:10), "t_many", palette = "main"), "run out")
+  expect_warning(k <- phw_colour_key(paste0("g", 1:14), "t_many", palette = "main"), "run out")
   expect_equal(anyDuplicated(k), 0)
   expect_warning(k2 <- phw_colour_key(paste0("h", 1:25)), "tints|run out")
   expect_equal(anyDuplicated(k2), 0)

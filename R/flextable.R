@@ -226,7 +226,8 @@ use_phw_flextable <- function(style = "booktabs", font_size = 10, ...) {
 #' adds a shape before each value as well.
 #'
 #' @param x A flextable.
-#' @param j Columns to colour (names or positions).
+#' @param j Columns to colour, chosen as in [dplyr::select()]: unquoted
+#'   names such as `c(rate, cases)`, positions such as `2:5`, or strings.
 #' @param palette A sequential or diverging palette name, a vector of
 #'   colours, `"rag"` or `"rag_accessible"` (navy instead of green).
 #' @param domain Range of values the palette spans. Defaults to the range of
@@ -242,7 +243,7 @@ phw_flextable_heat <- function(x, j, palette = "teals", domain = NULL, breaks = 
                                higher_is_better = TRUE, symbols = TRUE) {
   rlang::check_installed("flextable")
   data <- x$body$dataset
-  if (is.numeric(j)) j <- names(data)[j]
+  j <- pick_cols(rlang::enquo(j), data, "j")
   vals <- unlist(data[j])
   rag <- identical(palette, "rag") || identical(palette, "rag_accessible")
   if (rag) {
@@ -285,7 +286,8 @@ phw_flextable_heat <- function(x, j, palette = "teals", domain = NULL, breaks = 
 #' and reports (see [phw_colour_key()]).
 #'
 #' @param x A flextable.
-#' @param j Column that holds the groups.
+#' @param j Column that holds the groups, unquoted as in dplyr. A string or
+#'   a position works too.
 #' @param key,palette,values Passed to [phw_colour_key()] as `name`,
 #'   `palette` and `fixed`.
 #' @param what Colour the cell `"background"` or the `"text"`?
@@ -297,7 +299,7 @@ phw_flextable_groups <- function(x, j, key = NULL, palette = phw_default_palette
   rlang::check_installed("flextable")
   what <- rlang::arg_match(what)
   data <- x$body$dataset
-  if (is.numeric(j)) j <- names(data)[j]
+  j <- pick_col(rlang::enquo(j), data, "j")
   groups <- data[[j]]
   cols <- phw_colour_key(groups, name = key, palette = palette, fixed = values)
   fill <- unname(cols[as.character(groups)])
@@ -404,7 +406,8 @@ style_summary_ft <- function(ft, x) {
 #' many PHW summary tables).
 #'
 #' @param x A flextable.
-#' @param j Columns (names or positions).
+#' @param j Columns, chosen as in [dplyr::select()]: unquoted names,
+#'   positions or strings.
 #' @param colour Bar colour.
 #' @param width,height Bar size in inches.
 #' @param digits Decimal places for the value.
@@ -412,14 +415,14 @@ style_summary_ft <- function(ft, x) {
 #' @examples
 #' if (requireNamespace("flextable", quietly = TRUE)) {
 #'   df <- data.frame(Area = paste("Area", LETTERS[1:4]), Cases = c(120, 85, 64, 19))
-#'   phw_flextable_bars(phw_flextable(df), "Cases")
+#'   phw_flextable_bars(phw_flextable(df), Cases)
 #' }
 #' @export
 phw_flextable_bars <- function(x, j, colour = phw_colours[["light_teal"]], width = 0.9,
                                height = 0.1, digits = 0) {
   rlang::check_installed("flextable")
   data <- x$body$dataset
-  if (is.numeric(j)) j <- names(data)[j]
+  j <- pick_cols(rlang::enquo(j), data, "j")
   for (col in j) {
     v <- data[[col]]
     mx <- max(v, na.rm = TRUE)

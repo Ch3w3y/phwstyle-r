@@ -20,16 +20,17 @@ then render that one object with whichever table package suits the output:
 
 ```{r}
 library(phwstyle)
+library(dplyr)
 set.seed(1)
-dat <- data.frame(
-  group = sample(c("Group A", "Group B", "Group C"), 400, TRUE, prob = c(0.45, 0.4, 0.15)),
-  type = factor(sample(c("Type 1", "Type 2", "Type 3"), 400, TRUE, prob = c(0.45, 0.45, 0.1)),
-                c("Type 1", "Type 2", "Type 3")),
-  year = sample(2024:2025, 400, TRUE),
-  quarter = sample(paste0("Q", 1:4), 400, TRUE),
+dat <- tibble(
+  group = sample(c("Group A", "Group B", "Group C"), 400, replace = TRUE, prob = c(0.45, 0.4, 0.15)),
+  type = factor(sample(c("Type 1", "Type 2", "Type 3"), 400, replace = TRUE, prob = c(0.45, 0.45, 0.1)),
+                levels = c("Type 1", "Type 2", "Type 3")),
+  year = sample(2024:2025, 400, replace = TRUE),
+  quarter = sample(paste0("Q", 1:4), 400, replace = TRUE),
   days = rpois(400, 3)
 )
-labs <- list(group = "Group", type = "Type", year = "Year", quarter = "Quarter")
+col_labels <- list(group = "Group", type = "Type", year = "Year", quarter = "Quarter")
 ```
 
 ## Nested groups: `phw_group_table()`
@@ -39,7 +40,7 @@ shows the total for its group, the groups inside are indented, and the main
 groups are shaded and separated with space.
 
 ```{r}
-tab <- phw_group_table(dat, rows = c("group", "type"), cols = "year", labels = labs)
+tab <- phw_group_table(dat, rows = c(group, type), cols = year, labels = col_labels)
 phw_flextable(tab, caption = "Counts by group and type", source = "Example data")
 ```
 
@@ -51,7 +52,7 @@ total). `total_position` puts the table total at the top or bottom, and
 `subtotal_position = "below"` moves group totals to their own row.
 
 ```{r}
-phw_group_table(dat, c("group", "type"), labels = labs,
+phw_group_table(dat, c(group, type), labels = col_labels,
                 totals = c("group", "subgroup", "table"),
                 subtotal_position = "below", total_position = "top") |>
   phw_flextable()
@@ -64,7 +65,7 @@ shift to the right. `percent = "parent"` shows each row as a share of the
 group above it; `"column"` and `"row"` are also available.
 
 ```{r}
-phw_group_table(dat, c("group", "type"), labels = labs, layout = "columns",
+phw_group_table(dat, c(group, type), labels = col_labels, layout = "columns",
                 percent = "parent", separate = "both") |>
   phw_flextable()
 ```
@@ -75,7 +76,7 @@ Columns can nest too, here quarters within years, with a total for each
 year and overall.
 
 ```{r}
-nested <- phw_group_table(dat, c("group", "type"), c("year", "quarter"), labels = labs,
+nested <- phw_group_table(dat, c(group, type), c(year, quarter), labels = col_labels,
                           col_totals = c("group", "table"))
 phw_gt(nested, caption = "Counts by quarter")
 ```
@@ -86,8 +87,8 @@ By default rows are counted. Give `value` and `fun` for anything else; group
 and total rows are calculated from their records, not by adding up rows.
 
 ```{r}
-phw_group_table(dat, c("group", "type"), "year", value = "days",
-                fun = function(x) round(mean(x), 1), labels = labs) |>
+phw_group_table(dat, c(group, type), year, value = days,
+                fun = function(x) round(mean(x), 1), labels = col_labels) |>
   phw_flextable(caption = "Mean days")
 ```
 
@@ -100,12 +101,12 @@ phw_reactable(nested, caption = "Counts by quarter")
 ## Summary and epidemiology tables
 
 ```{r}
-cases <- data.frame(
-  age_group = sample(c("0-14", "15-44", "45-64", "65+"), 300, TRUE),
-  sex = sample(c("Female", "Male"), 300, TRUE),
-  setting = sample(c("Setting 1", "Setting 2", "Setting 3"), 300, TRUE),
+cases <- tibble(
+  age_group = sample(c("0-14", "15-44", "45-64", "65+"), 300, replace = TRUE),
+  sex = sample(c("Female", "Male"), 300, replace = TRUE),
+  setting = sample(c("Setting 1", "Setting 2", "Setting 3"), 300, replace = TRUE),
   days = rpois(300, 4),
-  outcome = sample(c("Outcome X", "Outcome Y"), 300, TRUE, prob = c(0.8, 0.2))
+  outcome = sample(c("Outcome X", "Outcome Y"), 300, replace = TRUE, prob = c(0.8, 0.2))
 )
 ```
 
@@ -113,7 +114,7 @@ cases <- data.frame(
 categories and median (IQR) for numbers, split by a group.
 
 ```{r}
-phw_summary_table(cases, by = "outcome",
+phw_summary_table(cases, by = outcome,
                   labels = list(age_group = "Age group", sex = "Sex", setting = "Setting",
                                 days = "Days to recovery")) |>
   phw_flextable(caption = "Characteristics by outcome")
@@ -123,7 +124,7 @@ phw_summary_table(cases, by = "outcome",
 percentages, and `phw_flextable_heat()` colours the counts.
 
 ```{r}
-phw_crosstab(cases, "setting", "age_group") |>
+phw_crosstab(cases, setting, age_group) |>
   phw_flextable() |>
   phw_flextable_heat(j = 2:5)
 ```
@@ -132,10 +133,10 @@ phw_crosstab(cases, "setting", "age_group") |>
 several breakdowns at once, from aggregated counts and populations.
 
 ```{r}
-agg <- expand.grid(age_group = c("0-14", "15-44", "45-64", "65+"), sex = c("Female", "Male"))
-agg$cases <- rpois(8, c(10, 25, 35, 50))
-agg$population <- round(runif(8, 60, 140)) * 1000
-phw_rate_table(agg, c("age_group", "sex"), "cases", "population",
+agg <- tidyr::expand_grid(sex = c("Female", "Male"), age_group = c("0-14", "15-44", "45-64", "65+")) |>
+  mutate(cases = rpois(n(), c(10, 25, 35, 50)),
+         population = round(runif(n(), 60, 140)) * 1000)
+phw_rate_table(agg, c(age_group, sex), cases, population,
                labels = list(age_group = "Age group", sex = "Sex")) |>
   phw_flextable()
 ```
@@ -143,9 +144,10 @@ phw_rate_table(agg, c("age_group", "sex"), "cases", "population",
 `phw_risk_table()` gives attack rates and relative risks by exposure.
 
 ```{r}
-ob <- data.frame(exposure_a = sample(c("Yes", "No"), 120, TRUE), exposure_b = sample(c("Yes", "No"), 120, TRUE))
-ob$ill <- rbinom(120, 1, ifelse(ob$exposure_a == "Yes", 0.6, 0.15))
-phw_risk_table(ob, c("exposure_a", "exposure_b"), "ill", labels = list(exposure_a = "Exposure A", exposure_b = "Exposure B")) |>
+ob <- tibble(exposure_a = sample(c("Yes", "No"), 120, replace = TRUE),
+             exposure_b = sample(c("Yes", "No"), 120, replace = TRUE)) |>
+  mutate(ill = rbinom(n(), 1, if_else(exposure_a == "Yes", 0.6, 0.15)))
+phw_risk_table(ob, c(exposure_a, exposure_b), ill, labels = list(exposure_a = "Exposure A", exposure_b = "Exposure B")) |>
   phw_flextable()
 ```
 
@@ -156,7 +158,9 @@ printed with gt or converted with `as_flex_table()`.
 
 ```{r, eval = requireNamespace("gtsummary", quietly = TRUE)}
 use_phw_gtsummary()
-gtsummary::tbl_summary(cases[, c("age_group", "sex", "days", "outcome")], by = outcome)
+cases |>
+  select(age_group, sex, days, outcome) |>
+  gtsummary::tbl_summary(by = outcome)
 ```
 
 ```{r, include = FALSE, eval = requireNamespace("gtsummary", quietly = TRUE)}

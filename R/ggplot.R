@@ -9,9 +9,16 @@
 #' * a bold, right-aligned source line in the caption
 #' * facet strips with bold navy left-aligned labels on a light grey band
 #'
-#' With ggplot2 4.0 or later, the theme also sets the default colour and fill
-#' palettes and the default geom colours. A plain `ggplot()` call then comes
-#' out in PHW colours with no `scale_*()` needed.
+#' Adding `theme_phw()` to a plot styles that one plot. To style every plot,
+#' and to get PHW colours without adding a `scale_*()` to each one, call
+#' [use_phw_ggplot()] once instead (the `phw_*_document()` formats do this
+#' for you). `vignette("phwstyle")` shows how the pieces fit together.
+#'
+#' A theme can only carry colours from ggplot2 4.0 on. There, `theme_phw()`
+#' on its own also gives groups the PHW palette. With ggplot2 3.5 it styles
+#' the text, gridlines and legend only, and groups keep the ggplot2 colours
+#' unless you add a PHW scale or call [use_phw_ggplot()], which works the
+#' same on both.
 #'
 #' @param base_size Base font size in points. Reports use 11 for body text.
 #' @param base_family Font family. Defaults to [phw_font()] (Ubuntu).
@@ -33,7 +40,10 @@
 #'   [ggplot2::theme_grey()].
 #' @param accessible Larger text and thicker lines for public-facing or
 #'   low-vision outputs. Raises `base_size` to at least 13 and makes lines
-#'   and points bigger.
+#'   and points bigger. (On ggplot2 before 4.0 the lines and points only
+#'   grow when this is set through [use_phw_ggplot()].) It doesn't change
+#'   any colours: for the colour-blind safe palette see
+#'   [phw_default_palette()].
 #' @param ... Any other theme settings, passed to [ggplot2::theme()]. They
 #'   override the PHW defaults, so you don't need a separate `+ theme()`.
 #' @return A ggplot2 theme.
@@ -99,6 +109,9 @@ theme_phw <- function(base_size = 11,
       axis.title = ggplot2::element_text(colour = col[["text_secondary"]], size = ggplot2::rel(0.9)),
       axis.title.x = ggplot2::element_text(margin = ggplot2::margin(t = half * 0.8)),
       axis.title.y = ggplot2::element_text(margin = ggplot2::margin(r = half * 0.8)),
+      # Secondary axes (top and right) get the same gap as the main ones.
+      axis.title.x.top = ggplot2::element_text(margin = ggplot2::margin(b = half * 0.8)),
+      axis.title.y.right = ggplot2::element_text(margin = ggplot2::margin(l = half * 0.8)),
       axis.text = ggplot2::element_text(colour = col[["text_secondary"]], size = ggplot2::rel(0.85)),
       axis.ticks = if (axis_ticks) ggplot2::element_line(colour = col[["grey_mid"]]) else blank,
       axis.line = blank,
@@ -143,30 +156,44 @@ theme_phw <- function(base_size = 11,
 
 ggplot2_v4 <- function() utils::packageVersion("ggplot2") >= "4.0.0"
 
+# Line, point and text sizes for geoms, shared by the theme (ggplot2 4.0 and
+# later) and the geom defaults that use_phw_ggplot() sets on older versions.
+phw_geom_sizes <- function(base_size, accessible = FALSE) {
+  list(fontsize = base_size * 0.8,
+       linewidth = if (accessible) 1.1 else 0.7,
+       pointsize = if (accessible) 2.6 else 1.8)
+}
+
 phw_theme_v4_defaults <- function(base_family, base_size, accessible = FALSE) {
   col <- phw_colours
+  size <- phw_geom_sizes(base_size, accessible)
+  # Looked up by name because ggplot2 before 4.0 has no element_geom(), and
+  # R CMD check there would report `ggplot2::element_geom` as missing.
+  element_geom <- getExportedValue("ggplot2", "element_geom")
   args <- list(
-    geom = ggplot2::element_geom(
+    geom = element_geom(
       ink = col[["text"]], paper = "#FFFFFF", accent = col[["navy"]],
-      family = base_family, fontsize = base_size * 0.8,
-      linewidth = if (accessible) 1.1 else 0.7, pointsize = if (accessible) 2.6 else 1.8),
+      family = base_family, fontsize = size$fontsize,
+      linewidth = size$linewidth, pointsize = size$pointsize),
     palette.colour.discrete = phw_discrete_auto,
     palette.fill.discrete = phw_discrete_auto,
-    palette.colour.continuous = phw_palettes$blues[2:6],
-    palette.fill.continuous = phw_palettes$blues[2:6]
+    palette.colour.continuous = phw_continuous_auto,
+    palette.fill.continuous = phw_continuous_auto
   )
   do.call(ggplot2::theme, args)
 }
 
+# Default colours for a chart with `n` groups and no scale of its own: the
+# same colours scale_*_phw_d() gives `n` ordinary groups.
 phw_discrete_auto <- function(n) {
   pal <- phw_default_palette()
-  if (identical(pal, "main") && n > 4) pal <- "accessible"
-  cols <- if (is.function(pal)) pal(n) else palette_colours(pal)
-  if (n <= length(cols)) return(cols[seq_len(n)])
-  cli::cli_warn(c("{n} groups is too many to tell apart by colour.",
-                  i = "Consider facets, direct labels, or highlighting one group with {.code palette = \"highlight\"}."))
-  grDevices::colorRampPalette(cols, space = "Lab")(n)
+  if (is.function(pal)) return(pal(n))
+  unname(phw_colour_key(as.character(seq_len(n)), palette = pal, neutral = character()))
 }
+
+# Default colours for a continuous variable. The palest blue is left out
+# because points and lines in it disappear on a white background.
+phw_continuous_auto <- phw_palettes$blues[2:6]
 
 #' PHW map theme
 #'
@@ -189,9 +216,10 @@ theme_phw_map <- function(base_size = 11, base_family = phw_font(), legend = "ri
 #' PHW colour and fill scales
 #'
 #' * `_d` scales are discrete and use the qualitative palettes (`main`,
-#'   `extended`, `accessible`, `highlight`, `rag`).
+#'   `extended`, `accessible`, `highlight`, `rag`, `strategy`).
 #' * `_c` scales are continuous, `_b` scales are binned. Both use sequential
-#'   or diverging palettes (`blues`, `teals`, `gradient`, `orange_navy`).
+#'   or diverging palettes (`blues`, `teals`, `greens`, `gradient`,
+#'   `orange_navy`).
 #' * `scale_*_phw_div()` centres the diverging palette on `midpoint`.
 #'
 #' Every scale takes a palette name, your own vector of colours, or (for
@@ -199,18 +227,33 @@ theme_phw_map <- function(base_size = 11, base_family = phw_font(), legend = "ri
 #' so `name`, `labels`, `breaks`, `limits`, `guide`, `na.value` and so on work
 #' as usual.
 #'
+#' **Do you need one?** After [use_phw_ggplot()], or inside a
+#' `phw_*_document()`, plots already use these palettes, so a scale adds
+#' nothing unless you give it something to change: another `palette`, a
+#' colour `key`, pinned `values`, or a legend `name`. In a plain script with
+#' no setup, add one to each plot. A scale added to a plot always replaces
+#' the default for that aesthetic, whether it is one of these or a ggplot2
+#' scale such as [ggplot2::scale_fill_manual()].
+#'
+#' **More than four groups.** `"main"` has four colours and carries on into
+#' `"extended"` (twelve), so a chart with six groups starts with the same
+#' four colours as a chart with four. The first seven have a published
+#' source; see [phw_palettes] for where the rest come from. Past the end of a palette you get
+#' colours from the other PHW palettes and a warning.
+#'
 #' **Colours that stick to groups.** By default a `_d` scale colours groups
 #' in the order they appear. To keep the same colour for a group in every
 #' chart and every report, give a `key`, e.g. `key = "age_group"`. New groups
 #' get the next free colour and old ones never move (see
 #' [phw_colour_key()]). You can also pin colours with `values`, a named
 #' vector such as `c(Wales = "#285087")`. Groups named "Other" or "Unknown"
-#' are drawn in grey.
+#' are drawn in grey. (Only these scales know the group names, so a plot
+#' left on the default colours gives "Other" an ordinary colour.)
 #'
-#' **Colour-blind readers.** Use `palette = "accessible"`, or set
-#' `options(phwstyle.palette = "accessible")` for every chart. Add
-#' [scale_shape_phw()] or [scale_linetype_phw()] so groups differ by more
-#' than colour.
+#' **Colour-blind readers.** Use `palette = "accessible"` for one chart, or
+#' switch every chart, table and widget at once: see
+#' [phw_default_palette()]. Add [scale_shape_phw()] or
+#' [scale_linetype_phw()] so groups differ by more than colour.
 #'
 #' @param palette Palette name (see [phw_palettes]), a vector of colours, or
 #'   a function of `n`.
@@ -356,47 +399,140 @@ scale_color_phw_div <- scale_colour_phw_div
 
 #' Use PHW styling for every ggplot in the session
 #'
-#' Sets [theme_phw()] as the default theme and makes PHW palettes the default
-#' discrete and continuous scales. Text geoms use Ubuntu too. Put it at the
-#' top of a script or in an R Markdown/Quarto setup chunk.
+#' Call it once at the top of a script, or in the setup chunk of a Quarto
+#' document, and every plot after it is in the PHW style with no further
+#' code. The R Markdown formats ([phw_html_document()] and friends) call it
+#' for you. It sets:
 #'
-#' This is like calling `theme_set()` in base ggplot2. The difference is
-#' that it also sets colours, which `theme_set()` can't do before ggplot2 4.0.
-#' It also restyles geoms from extension packages that are already loaded
-#' (see [phw_style_extensions()]), so load ggrepel, ggridges and the like
-#' first.
+#' * [theme_phw()] as the default theme
+#' * the PHW palette for groups (colour and fill), and PHW blues for
+#'   continuous and binned colours
+#' * default colours for layers that don't map a colour: navy bars, areas,
+#'   lines and points, with text and reference lines in the PHW text colour
+#' * the PHW font for text and labels
+#' * the same for geoms from extension packages that are already loaded
+#'   (see [phw_style_extensions()]), so load ggrepel, ggridges and the like
+#'   first
+#'
+#' The result is the same on ggplot2 3.5 and 4.0.
+#'
+#' After this, add [theme_phw()] or a `scale_*_phw_*()` to a plot only to
+#' change something for that plot, such as `theme_phw(grid = "x")` or
+#' `scale_fill_phw_d(key = "age_group")`. Anything you add to a plot wins
+#' over these defaults.
 #'
 #' @param ... Passed to [theme_phw()], e.g. `base_size = 14` or
-#'   `accessible = TRUE`.
+#'   `accessible = TRUE` (larger text and thicker lines).
 #' @param palette Default qualitative palette for every chart, table and
-#'   widget, e.g. `"accessible"`. Sets `options(phwstyle.palette)`.
+#'   widget, e.g. `"accessible"` for the colour-blind safe palette. Sets
+#'   `options(phwstyle.palette)`; see [phw_default_palette()]. `NULL` leaves
+#'   the palette as it is.
 #' @return The previous theme, invisibly.
+#' @examples
+#' library(ggplot2)
+#' old <- use_phw_ggplot()
+#' ggplot(mpg, aes(class)) + geom_bar()
+#' ggplot(mpg, aes(displ, hwy, colour = drv)) + geom_point()
+#' theme_set(old)
 #' @export
 use_phw_ggplot <- function(..., palette = NULL) {
-  if (!is.null(palette)) options(phwstyle.palette = palette)
-  old <- ggplot2::theme_set(theme_phw(...))
+  if (!is.null(palette)) {
+    if (!is.function(palette)) palette_colours(palette)
+    options(phwstyle.palette = palette)
+  }
+  theme <- theme_phw(...)
+  old <- ggplot2::theme_set(theme)
+  # Remembered for the ready-made charts, see chart_theme().
+  phw_session$theme <- theme
+  phw_session$args <- list(...)
   phw_style_extensions()
+  set_phw_geom_defaults(theme, accessible = isTRUE(list(...)[["accessible"]]))
   if (!ggplot2_v4()) {
-    # Before ggplot2 4.0 themes can't carry palettes, so use global options.
+    # Before ggplot2 4.0 themes can't carry palettes, so use the global
+    # options instead. Each one has to return a scale. They are built to
+    # match what the theme does from 4.0 on.
     options(
-      ggplot2.discrete.colour = phw_discrete_auto,
-      ggplot2.discrete.fill = phw_discrete_auto,
-      ggplot2.continuous.colour = function(...) scale_colour_phw_c(...),
-      ggplot2.continuous.fill = function(...) scale_fill_phw_c(...)
+      ggplot2.discrete.colour = function(...) phw_default_scale("colour", "discrete", ...),
+      ggplot2.discrete.fill = function(...) phw_default_scale("fill", "discrete", ...),
+      ggplot2.continuous.colour = function(...) phw_default_scale("colour", "continuous", ...),
+      ggplot2.continuous.fill = function(...) phw_default_scale("fill", "continuous", ...),
+      ggplot2.binned.colour = function(...) phw_default_scale("colour", "binned", ...),
+      ggplot2.binned.fill = function(...) phw_default_scale("fill", "binned", ...)
     )
-    fam <- phw_font()
-    ggplot2::update_geom_defaults("text", list(family = fam, colour = phw_colours[["text"]]))
-    ggplot2::update_geom_defaults("label", list(family = fam, colour = phw_colours[["text"]]))
-    for (g in c("point", "line", "path", "step", "smooth", "segment", "errorbar",
-                "pointrange", "linerange", "crossbar", "hline", "vline", "abline")) {
-      ggplot2::update_geom_defaults(g, list(colour = phw_colours[["navy"]]))
-    }
-    for (g in c("bar", "col", "area", "histogram", "boxplot", "violin", "density",
-                "ribbon", "tile", "rect", "polygon", "dotplot")) {
-      ggplot2::update_geom_defaults(g, list(fill = phw_colours[["navy"]]))
-    }
   }
   invisible(old)
+}
+
+phw_session <- new.env(parent = emptyenv())
+
+# The default scales for ggplot2 before 4.0, where they come from options
+# rather than the theme. Arguments that belong to ggplot2's own default
+# scales, as in scale_fill_continuous(low = "white", high = "red"), still
+# get that scale, as they do from 4.0 on.
+phw_default_scale <- function(aesthetic, type, ...) {
+  args <- list(aesthetics = aesthetic, ...)
+  own <- if (type == "discrete") c("h", "c", "l", "h.start", "direction") else c("low", "high")
+  if (any(names(args) %in% own)) {
+    scale <- switch(type, discrete = ggplot2::scale_colour_hue,
+                    continuous = ggplot2::scale_colour_gradient,
+                    binned = ggplot2::scale_colour_steps)
+    return(rlang::exec(scale, !!!args))
+  }
+  # rlang::exec() rather than do.call(), which would run the `call` that
+  # ggplot2 passes along for its error messages.
+  switch(type,
+    discrete = {
+      args$na.value <- args$na.value %||% "grey50"
+      rlang::exec(ggplot2::discrete_scale, !!!args, palette = phw_discrete_auto)
+    },
+    continuous = rlang::exec(ggplot2::scale_colour_gradientn, !!!args, colours = phw_continuous_auto),
+    binned = rlang::exec(ggplot2::scale_colour_stepsn, !!!args, colours = phw_continuous_auto))
+}
+
+# Default colours for layers that don't map one. These are set the same way
+# on every ggplot2 version, so a plain geom_col() or geom_line() is navy
+# whichever is installed.
+set_phw_geom_defaults <- function(theme, accessible = FALSE) {
+  col <- phw_colours
+  navy <- col[["navy"]]
+  text <- col[["text"]]
+  family <- theme$text$family
+  lines <- c("line", "path", "step", "segment", "curve", "spoke", "function",
+             "errorbar", "errorbarh", "linerange", "pointrange", "density",
+             "contour", "density2d", "quantile", "rug")
+  set_geom_defaults(c("point", "crossbar", lines), list(colour = navy))
+  set_geom_defaults("smooth", list(colour = navy, fill = col[["grey_light"]]))
+  set_geom_defaults(c("bar", "col", "area", "ribbon", "tile", "rect", "raster",
+                      "polygon", "bin2d", "hex"), list(fill = navy))
+  set_geom_defaults("dotplot", list(colour = navy, fill = navy))
+  # Reference lines and box outlines stay dark so they show against navy.
+  refs <- c("hline", "vline", "abline", "logticks")
+  set_geom_defaults(refs, list(colour = text))
+  set_geom_defaults(c("boxplot", "violin"), list(colour = text, fill = "#FFFFFF"))
+  set_geom_defaults(c("text", "label"), list(family = family, colour = text))
+  if (!ggplot2_v4()) {
+    # From 4.0 the theme sets these sizes. Before that they are geom defaults.
+    size <- phw_geom_sizes(theme$text$size, accessible)
+    set_geom_defaults(c(lines, refs), list(linewidth = size$linewidth))
+    set_geom_defaults("smooth", list(linewidth = size$linewidth * 2))
+    set_geom_defaults("point", list(size = size$pointsize))
+    set_geom_defaults("pointrange", list(size = size$pointsize / 3))
+    set_geom_defaults(c("text", "label"), list(size = size$fontsize / ggplot2::.pt))
+  }
+  invisible()
+}
+
+# Set default aesthetics for geoms by name. The set of geom classes differs
+# between ggplot2 versions (there is no "histogram" geom, "bin2d" arrived in
+# 4.0, "errorbarh" is on its way out), so a name this version doesn't have
+# is skipped. Any other problem is a real error and is passed on.
+set_geom_defaults <- function(geoms, new) {
+  ns <- asNamespace("ggplot2")
+  for (g in geoms) {
+    geom <- get0(paste0("Geom", toupper(substr(g, 1, 1)), substring(g, 2)), envir = ns)
+    if (inherits(geom, "Geom")) ggplot2::update_geom_defaults(geom, new)
+  }
+  invisible()
 }
 
 #' Add the PHW footer (logo and source) to a ggplot

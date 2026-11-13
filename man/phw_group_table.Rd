@@ -31,12 +31,13 @@ phw_group_table(
 \arguments{
 \item{data}{A data frame.}
 
-\item{rows}{Row grouping columns, outermost first, e.g.
-\code{c("group", "type")}. Any number of levels.}
+\item{rows}{Row grouping columns, outermost first, chosen as in
+\code{\link[dplyr:select]{dplyr::select()}}, e.g. \code{c(group, type)}. Any number of levels. Strings
+work too.}
 
 \item{cols}{Optional column grouping columns, outermost first, e.g.
-\code{"year"} or \code{c("year", "quarter")}. Outer levels become headers
-spanning their columns.}
+\code{year} or \code{c(year, quarter)}. Outer levels become headers spanning
+their columns.}
 
 \item{value}{Optional numeric column to summarise. Without it, rows are
 counted.}
@@ -125,14 +126,14 @@ dat <- data.frame(
   type = sample(c("Type 1", "Type 2", "Type 3"), 300, TRUE, prob = c(.45, .45, .1)),
   year = sample(2023:2024, 300, TRUE)
 )
-phw_group_table(dat, rows = c("group", "type"), cols = "year",
+phw_group_table(dat, rows = c(group, type), cols = year,
                 labels = list(group = "Group", type = "Type", year = "Year"))
 
 # Group totals in their own row, and totals by type across all groups
-phw_group_table(dat, c("group", "type"), totals = c("group", "subgroup", "table"),
+phw_group_table(dat, c(group, type), totals = c("group", "subgroup", "table"),
                 subtotal_position = "below", layout = "columns")
 
 if (requireNamespace("flextable", quietly = TRUE)) {
-  phw_flextable(phw_group_table(dat, c("group", "type"), "year", percent = "parent"))
+  phw_flextable(phw_group_table(dat, c(group, type), year, percent = "parent"))
 }
 }

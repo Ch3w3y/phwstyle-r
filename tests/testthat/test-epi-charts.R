@@ -41,3 +41,23 @@ test_that("phw_spc finds limits, shifts and trends", {
   expect_true(all(phw_spc(tr, "t", "v", type = "run")$data$signal[3:8] == "Special cause"))
   expect_silent(ggplot2::ggplot_build(p))
 })
+
+test_that("ready-made charts follow the settings given to use_phw_ggplot()", {
+  library(ggplot2)
+  local_ggplot_state()
+  d <- data.frame(onset = as.Date("2025-01-06") + 0:20, g = rep(c("A", "B", "C"), 7))
+  # With no setup they use the theme_phw() defaults.
+  expect_equal(phw_epicurve(d, "onset")$theme$text$size, 11)
+  use_phw_ggplot(base_size = 15, strip = "navy")
+  p <- phw_epicurve(d, "onset", group = "g")
+  expect_equal(p$theme$text$size, 15)
+  expect_equal(p$theme$strip.background$fill, phw_colours[["navy"]])
+  # Each chart still chooses its own gridlines.
+  expect_s3_class(p$theme$panel.grid.major.y, "element_line")
+  expect_s3_class(p$theme$panel.grid.major.x, "element_blank")
+  pop <- data.frame(age = c("0-39", "40+", "0-39", "40+"), sex = c("F", "F", "M", "M"), n = 1:4)
+  expect_s3_class(phw_pyramid(pop, "age", "sex", value = "n")$theme$panel.grid.major.x, "element_line")
+  # Once the session theme is something else, they go back to the defaults.
+  theme_set(theme_grey())
+  expect_equal(phw_epicurve(d, "onset")$theme$text$size, 11)
+})

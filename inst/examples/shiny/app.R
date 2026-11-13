@@ -54,7 +54,7 @@ server <- function(input, output, session) {
   output$table <- reactable::renderReactable({
     l <- latest()[, c("board", "rate")]
     names(l) <- c("Area", "Value")
-    phw_reactable(l, compact = TRUE, group_col = "Area", key = "area")
+    phw_reactable(l, compact = TRUE, group_col = Area, key = "area")
   })
   output$facets <- renderPlot({
     ggplot(weekly, aes(week, rate)) +

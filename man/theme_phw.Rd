@@ -59,7 +59,10 @@ pages with their own background.}
 
 \item{accessible}{Larger text and thicker lines for public-facing or
 low-vision outputs. Raises \code{base_size} to at least 13 and makes lines
-and points bigger.}
+and points bigger. (On ggplot2 before 4.0 the lines and points only
+grow when this is set through \code{\link[=use_phw_ggplot]{use_phw_ggplot()}}.) It doesn't change
+any colours: for the colour-blind safe palette see
+\code{\link[=phw_default_palette]{phw_default_palette()}}.}
 }
 \value{
 A ggplot2 theme.
@@ -77,9 +80,16 @@ charts:
 \item facet strips with bold navy left-aligned labels on a light grey band
 }
 
-With ggplot2 4.0 or later, the theme also sets the default colour and fill
-palettes and the default geom colours. A plain \code{ggplot()} call then comes
-out in PHW colours with no \verb{scale_*()} needed.
+Adding \code{theme_phw()} to a plot styles that one plot. To style every plot,
+and to get PHW colours without adding a \verb{scale_*()} to each one, call
+\code{\link[=use_phw_ggplot]{use_phw_ggplot()}} once instead (the \verb{phw_*_document()} formats do this
+for you). \code{vignette("phwstyle")} shows how the pieces fit together.
+
+A theme can only carry colours from ggplot2 4.0 on. There, \code{theme_phw()}
+on its own also gives groups the PHW palette. With ggplot2 3.5 it styles
+the text, gridlines and legend only, and groups keep the ggplot2 colours
+unless you add a PHW scale or call \code{\link[=use_phw_ggplot]{use_phw_ggplot()}}, which works the
+same on both.
 }
 \examples{
 library(ggplot2)

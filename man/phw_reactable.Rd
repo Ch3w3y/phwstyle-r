@@ -35,7 +35,8 @@ bold headings, indented levels and no sorting or paging).}
 \item{caption_args}{List of other \code{\link[=phw_caption]{phw_caption()}} arguments.}
 
 \item{group_col, key, palette}{Colour the cells of the column \code{group_col}
-by group, with the same colours as your charts. \code{key} and \code{palette} are
+(unquoted as in dplyr, or a string) by group, with the same colours as
+your charts. \code{key} and \code{palette} are
 passed to \code{\link[=phw_colour_key]{phw_colour_key()}}.}
 }
 \value{

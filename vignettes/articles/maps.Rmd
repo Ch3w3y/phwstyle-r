@@ -12,6 +12,7 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", message = FALSE, warning 
 ```{r, eval = TRUE}
 library(phwstyle)
 library(ggplot2)
+library(dplyr)
 ```
 
 ## Boundaries for every level
@@ -28,8 +29,8 @@ Each result is an `sf` data frame with `code`, `name`, `name_cy` (where the
 source has Welsh names) and the geometry. Join your own data on `code`.
 
 ```{r}
-hb <- phw_boundaries("health_board")
-hb$rate <- round(runif(nrow(hb), 20, 80), 1)
+hb <- phw_boundaries("health_board") |>
+  mutate(rate = round(runif(n(), 20, 80), 1))
 
 ggplot(hb) +
   geom_sf(aes(fill = rate), colour = "white", linewidth = 0.3) +
@@ -54,8 +55,8 @@ ggplot(gp) +
 
 ```{r, eval = online && requireNamespace("leaflet", quietly = TRUE)}
 phw_leaflet() |>
-  phw_leaflet_polygons(phw_boundaries("health_board", crs = 4326) |> transform(rate = hb$rate),
-                       fill = "rate", bins = 4, label = "name", legend_title = "Rate")
+  phw_leaflet_polygons(phw_boundaries("health_board", crs = 4326) |> mutate(rate = hb$rate),
+                       fill = rate, bins = 4, label = name, legend_title = "Rate")
 ```
 
 ## Keeping boundaries up to date

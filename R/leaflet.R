@@ -23,7 +23,7 @@
 #'   hb <- phw_boundaries("health_board", crs = 4326)
 #'   hb$rate <- runif(nrow(hb), 10, 50)
 #'   phw_leaflet() |>
-#'     phw_leaflet_polygons(hb, fill = "rate", label = "name", legend_title = "Rate")
+#'     phw_leaflet_polygons(hb, fill = rate, label = name, legend_title = "Rate")
 #' }
 #' }
 #' @export
@@ -48,15 +48,19 @@ phw_leaflet_css <- function() {
 
 #' @rdname phw_leaflet
 #' @param map A leaflet map.
-#' @param fill Column of `data` to colour by. Numbers get a continuous or
-#'   binned scale; text and factors get distinct colours.
+#' @param fill Column of `data` to colour by, unquoted as in dplyr (a string
+#'   works too). Numbers get a continuous or binned scale; text and factors
+#'   get distinct colours.
 #' @param palette Palette name or colours, as in [phw_pal()]. Defaults to
 #'   `"blues"` for numbers and the default palette for groups.
 #' @param bins Number of bins, or a vector of breaks, for numeric `fill`.
 #'   `NULL` gives a continuous scale.
-#' @param label Column used for the hover label.
-#' @param popup Column, or vector, used for the click popup.
-#' @param legend_title Legend title, or `NULL` for no legend.
+#' @param label,popup What to show on hover and on click: a column of
+#'   `data`, unquoted, or an expression built from its columns such as
+#'   `paste(name, rate)`. A string naming a column, or a vector with one
+#'   value per row, works too.
+#' @param legend_title Legend title, or `NULL` for no legend. Defaults to
+#'   the name of the `fill` column.
 #' @param opacity Fill opacity.
 #' @param weight,colour Outline width and colour.
 #' @param key Name of a colour key, so groups keep their colours (see
@@ -68,6 +72,9 @@ phw_leaflet_polygons <- function(map, data, fill = NULL, palette = NULL, bins = 
                                  opacity = 0.8, weight = 1, colour = "#FFFFFF", key = NULL,
                                  polygon_args = list()) {
   rlang::check_installed(c("leaflet", "sf"))
+  fill <- pick_col(rlang::enquo(fill), data, "fill", null_ok = TRUE)
+  label <- pick_text(rlang::enquo(label), data)
+  popup <- pick_text(rlang::enquo(popup), data)
   if (!is.na(sf::st_crs(data)) && !isTRUE(sf::st_is_longlat(data))) data <- sf::st_transform(data, 4326)
   pal_fun <- NULL
   fill_col <- phw_colours[["navy"]]
@@ -84,15 +91,9 @@ phw_leaflet_polygons <- function(map, data, fill = NULL, palette = NULL, bins = 
     }
     fill_col <- pal_fun(v)
   }
-  lab <- if (!is.null(label)) {
-    if (length(label) == 1 && label %in% names(data)) as.character(data[[label]]) else label
-  }
-  pop <- if (!is.null(popup)) {
-    if (length(popup) == 1 && popup %in% names(data)) as.character(data[[popup]]) else popup
-  }
   args <- utils::modifyList(list(
     map = map, data = data, fillColor = fill_col, fillOpacity = opacity, color = colour, weight = weight,
-    label = lab, popup = pop,
+    label = label, popup = popup,
     highlightOptions = leaflet::highlightOptions(weight = 3, color = phw_colours[["navy_dark"]],
                                                  bringToFront = TRUE)
   ), polygon_args)

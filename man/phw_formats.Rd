@@ -13,7 +13,8 @@ phw_html_document(
   number_sections = FALSE,
   fig_width = 7.5,
   fig_height = 4.5,
-  style_plots = TRUE
+  style_plots = TRUE,
+  palette = NULL
 )
 
 phw_word_document(
@@ -22,7 +23,8 @@ phw_word_document(
   number_sections = FALSE,
   fig_width = 6.3,
   fig_height = 3.9,
-  style_plots = TRUE
+  style_plots = TRUE,
+  palette = NULL
 )
 
 phw_pdf_document(
@@ -33,7 +35,8 @@ phw_pdf_document(
   fig_height = 3.9,
   cover = TRUE,
   team = NULL,
-  style_plots = TRUE
+  style_plots = TRUE,
+  palette = NULL
 )
 }
 \arguments{
@@ -47,6 +50,10 @@ phw_pdf_document(
 
 \item{style_plots}{Apply \code{\link[=use_phw_ggplot]{use_phw_ggplot()}} and \code{\link[=use_phw_flextable]{use_phw_flextable()}}
 while knitting?}
+
+\item{palette}{Qualitative palette for the whole document, e.g.
+\code{"accessible"}. \code{NULL} uses \code{\link[=phw_default_palette]{phw_default_palette()}}. The palette is put
+back as it was when the render finishes.}
 
 \item{cover}{Draw the full-page gradient cover when the document has a
 title?}
@@ -77,5 +84,30 @@ a running header band and a branded footer.
 
 All three call \code{\link[=use_phw_ggplot]{use_phw_ggplot()}} (and \code{\link[=use_phw_flextable]{use_phw_flextable()}} when
 flextable is installed) before knitting, so charts and tables match
-without extra code.
+without extra code: don't repeat those calls in the document, and add
+\code{theme_phw()} or a PHW scale to a plot only to change something for that
+plot. If one of these steps fails, the document still renders and a
+warning says what was left unstyled.
+
+\strong{Accessible colours.} \code{palette = "accessible"} switches every chart,
+table and widget in the document to the colour-blind safe palette. To
+make both versions of a report, leave the document alone and set it when
+you render:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{word <- "phwstyle::phw_word_document"
+rmarkdown::render("report.Rmd", word, output_file = "report.docx")
+rmarkdown::render("report.Rmd", word, output_file = "report-accessible.docx",
+                  output_options = list(palette = "accessible"))
+}\if{html}{\out{</div>}}
+
+Or set it for good in the YAML header:
+
+\if{html}{\out{<div class="sourceCode yaml">}}\preformatted{output:
+  phwstyle::phw_word_document:
+    palette: accessible
+}\if{html}{\out{</div>}}
+
+See \code{\link[=phw_default_palette]{phw_default_palette()}} for the other ways to switch. For larger
+text and thicker lines as well, call \code{use_phw_ggplot(accessible = TRUE)}
+in the setup chunk.
 }

@@ -17,7 +17,8 @@ phw_risk_table(
 \arguments{
 \item{data}{A data frame with one row per person.}
 
-\item{exposures}{Exposure columns. Logical or yes/no columns work best;
+\item{exposures}{Exposure columns, chosen as in \code{\link[dplyr:select]{dplyr::select()}}, e.g.
+\code{c(item_a, item_b)}. Logical or yes/no columns work best;
 the first level (or \code{FALSE}/"No") is the reference.}
 
 \item{outcome}{Outcome column: logical, 0/1 or yes/no (case = \code{TRUE}, 1
@@ -46,6 +47,6 @@ set.seed(1)
 d <- data.frame(item_a = sample(c("Yes", "No"), 120, TRUE),
                 item_b = sample(c("Yes", "No"), 120, TRUE))
 d$ill <- rbinom(120, 1, ifelse(d$item_a == "Yes", 0.5, 0.15))
-phw_risk_table(d, c("item_a", "item_b"), "ill",
+phw_risk_table(d, c(item_a, item_b), ill,
                labels = list(item_a = "Item A", item_b = "Item B"))
 }

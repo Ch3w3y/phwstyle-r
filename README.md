@@ -22,6 +22,9 @@ in a Word report, an HTML page, a slide deck and a dashboard.
 
 ## Installation
 
+phwstyle needs R 4.3 or later and ggplot2 3.5 or later. The Quarto formats
+need Quarto 1.5 or later.
+
 phwstyle has been submitted to CRAN but is not on CRAN yet. Until it is,
 install it from GitHub.
 
@@ -53,6 +56,54 @@ uvr add Ch3w3y/phwstyle-r@main   # development version from GitHub
 # install.packages("remotes")
 remotes::install_github("Ch3w3y/phwstyle-r", dependencies = TRUE)
 ```
+
+**If the install fails on a managed computer.** The last line of the error
+names a file in your Temp folder (`installation of package
+'C:/Users/.../Temp/.../phwstyle_0.2.0.tar.gz' had non-zero exit status`).
+That is only where R unpacked the download. The cause is a few lines
+further up:
+
+* **`LoadLibrary failure: This program is blocked by group policy`**
+  (Windows). Your organisation only lets code run from approved folders,
+  and the folder R installs packages into is not one of them. Nothing is
+  wrong with phwstyle: any package with compiled code fails the same way
+  (try `library(rlang)`). Moving the temporary folder or installing from the
+  release file does not help. Ask IT which folder is approved for R
+  packages, or to approve your R library (shown by `.libPaths()[1]`). If
+  they give you a folder, add it to your `.Renviron` file
+  (`usethis::edit_r_environ()` opens it) and restart R:
+
+  ```
+  R_LIBS_USER=C:/the/approved/folder
+  ```
+
+* **"Do you want to install from sources the package which needs
+  compilation?"** Answer no. R then uses the ready-built version, which is
+  what you want unless Rtools is installed.
+
+* **`'configure' exists but is not executable`** (Linux servers). The
+  packages phwstyle depends on compile from source by default, and the
+  temporary folder does not allow programs to run. Install the dependencies
+  from the P3M repository above, which avoids compiling, or give R a
+  temporary folder you control by adding `TMPDIR=/home/your.name/tmp` to
+  `.Renviron` (create the folder first).
+
+* **GitHub cannot be reached.** Install the built package from the
+  [releases page](https://github.com/Ch3w3y/phwstyle-r/releases) instead
+  (change the version to the latest release):
+
+  ```r
+  install.packages(c("cli", "ggplot2", "gtable", "htmltools", "rlang",
+                     "scales", "systemfonts", "tidyselect", "zip"))
+  install.packages(
+    "https://github.com/Ch3w3y/phwstyle-r/releases/download/v0.2.0/phwstyle_0.2.0.tar.gz",
+    repos = NULL, type = "source")
+  ```
+
+A program-blocking policy on its own is not a problem: phwstyle installs
+from GitHub when programs and scripts in the Temp folder are blocked, on
+R 4.3 and on the current R, and from an account whose name has an accented
+letter.
 
 `dependencies = TRUE` also installs the optional packages for every output
 type (flextable, reactable, plotly, bslib, ragg...). Then run the setup
@@ -93,6 +144,27 @@ output: phwstyle::phw_word_document
 format: phw-typst
 ```
 
+The R Markdown formats style charts and flextables for you. In Quarto, call
+`use_phw_ggplot()` (and `use_phw_flextable()`) in the setup chunk.
+
+### Which function do I need?
+
+Set the style once, then write plain ggplot2:
+
+* **Once per document or script:** a `phw_*_document` format or
+  `use_phw_ggplot()`. This sets the theme, the PHW colours for groups and
+  numbers, navy for bars, lines and points with no colour of their own, and
+  the font. It works the same on ggplot2 3.5 and 4.0.
+* **On one plot, only to change something:** `theme_phw(grid = "x")`,
+  `scale_fill_phw_d(key = "age_group")`, `scale_shape_phw()` and so on.
+* **Anything you add to a plot wins** over the defaults: a `scale_*()`, a
+  `+ theme()`, or `fill =` in a geom. The house style is a starting point
+  you can adjust.
+
+The [getting started guide](https://ch3w3y.github.io/phwstyle-r/articles/phwstyle.html#how-the-pieces-fit-together)
+has a table of what each function switches on, and what you still need to
+add after setup.
+
 ## What it covers
 
 | Output | Functions |
@@ -115,8 +187,10 @@ format: phw-typst
 | R Markdown | `phw_html_document`, `phw_word_document`, `phw_pdf_document` |
 | Quarto | `use_phw_quarto()`, then `phw-html`, `phw-docx`, `phw-typst`, `phw-pdf`, `phw-revealjs`, `phw-dashboard` |
 
-Every function passes extra arguments through to the function it wraps, so
-any default can be overridden, and every `palette` argument also accepts your
+Functions that take columns take them as dplyr does: unquoted, as in
+`phw_epicurve(cases, onset, group = organism)`, and they work in a pipe.
+Strings work too. Most functions pass extra arguments through to the function they wrap (the
+`...` on each help page), so defaults can be overridden, and every `palette` argument also accepts your
 own colours.
 
 ## Gallery
@@ -166,10 +240,12 @@ package help (`?phwstyle`) and the vignettes.
 
 ### Colour keys and colour-blind readers
 
-A colour key keeps each group's colour fixed across charts and reports, so
-adding a group never reshuffles the others. The `accessible` palette stays
-distinct for all common types of colour blindness, and `phw_cvd()` shows how
-any palette looks to colour-blind readers.
+Every chart, table and widget draws its groups from one palette: navy,
+teal, orange and pink, carrying on into black, green, gold and five more
+when there are more than four groups. So a chart with six groups starts with the same
+colours as a chart with four. A colour key keeps each group's colour fixed
+across charts and reports, so adding a group never reshuffles the others.
+`phw_cvd()` shows how any palette looks to colour-blind readers.
 
 <p align="center">
   <img src="man/figures/12-colour-key.webp" width="49%" alt="The same groups keep their colours when a group is added">
@@ -182,9 +258,38 @@ any palette looks to colour-blind readers.
 ```r
 scale_colour_phw_d(key = "age_group")      # fixed colours per group
 phw_key_file("phw-colours.csv")            # keep them across reports
-use_phw_ggplot(palette = "accessible")     # colour-blind safe everywhere
 phw_check_colours(c("#D50B5C", "#338276")) # test any colours
 ```
+
+### Accessible colours, when you want them
+
+The `accessible` palette stays distinct for all common types of colour
+blindness. It is a switch, not the default: turn it on once and every
+chart, table and widget uses it, whatever the number of groups. The same
+document can then be rendered both ways.
+
+```r
+# A script or a setup chunk
+use_phw_ggplot(palette = "accessible")     # or options(phwstyle.palette = "accessible")
+
+# R Markdown: the same document, twice
+word <- "phwstyle::phw_word_document"
+rmarkdown::render("report.Rmd", word, output_file = "report.docx")
+rmarkdown::render("report.Rmd", word, output_file = "report-accessible.docx",
+                  output_options = list(palette = "accessible"))
+```
+
+```r
+# Quarto: the same document, twice (this works on Windows too)
+system2("quarto", c("render", "report.qmd", "--to", "phw-docx"))
+Sys.setenv(PHWSTYLE_PALETTE = "accessible")
+system2("quarto", c("render", "report.qmd", "--to", "phw-docx", "-o", "report-accessible.docx"))
+Sys.unsetenv("PHWSTYLE_PALETTE")
+```
+
+To switch a document for good, put `palette: accessible` under an R Markdown
+format, or `phw-palette: accessible` in the YAML header of a Quarto
+document. See `?phw_default_palette`.
 
 ### Tables
 
@@ -253,12 +358,17 @@ flextable (Word, PDF, HTML) or reactable (interactive HTML).
 
 Outputs are designed to be read by the public:
 
-* Text colours meet WCAG AA contrast on white, and chart colours meet the
-  3:1 contrast rule for graphics.
+* Text colours meet the WCAG AA contrast standard on white. The four `main`
+  chart colours and every `accessible` colour meet the 3:1 contrast rule
+  for graphics. Three of the later `extended` colours (gold, mint and
+  bright green) do not, so they suit filled bars better than thin lines.
 * The `accessible` and `rag_accessible` palettes stay distinct for colour-blind
   readers, and shape, line type and symbol scales give a second cue besides
-  colour.
-* `theme_phw(accessible = TRUE)` uses larger text and thicker lines.
+  colour. The accessible palette is switched on with `palette = "accessible"`
+  (see above); it is not used by default.
+* `use_phw_ggplot(accessible = TRUE)` or `theme_phw(accessible = TRUE)` uses
+  larger text and thicker lines. This is separate from the palette: use
+  either or both.
 * HTML outputs keep a visible keyboard focus outline.
 
 ## Fonts

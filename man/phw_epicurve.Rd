@@ -24,7 +24,8 @@ phw_epicurve(
 \arguments{
 \item{data}{A data frame with one row per case, or with a count column.}
 
-\item{date}{Name of the date column.}
+\item{date}{The date column, unquoted as in dplyr (\code{onset}). A string
+(\code{"onset"}) works too.}
 
 \item{group}{Optional column to colour and stack by (e.g. age group or
 organism).}
@@ -64,6 +65,6 @@ set.seed(1)
 cases <- data.frame(
   onset = as.Date("2025-01-01") + round(rgamma(300, 6, 0.15)),
   group = sample(c("Group A", "Group B"), 300, TRUE))
-phw_epicurve(cases, "onset", group = "group") +
+phw_epicurve(cases, onset, group = group) +
   ggplot2::labs(title = "Cases by week of onset", x = "Week beginning", y = "Cases")
 }

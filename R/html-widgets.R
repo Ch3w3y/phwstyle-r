@@ -67,7 +67,8 @@ phw_reactable_theme <- function(font_size = 14, header = c("booktabs", "navy", "
 #' @param header,accent Passed to [phw_reactable_theme()].
 #' @param caption_args List of other [phw_caption()] arguments.
 #' @param group_col,key,palette Colour the cells of the column `group_col`
-#'   by group, with the same colours as your charts. `key` and `palette` are
+#'   (unquoted as in dplyr, or a string) by group, with the same colours as
+#'   your charts. `key` and `palette` are
 #'   passed to [phw_colour_key()].
 #' @return An htmlwidget (or a tag list when a caption or source is given).
 #' @export
@@ -76,6 +77,7 @@ phw_reactable <- function(data, ..., caption = NULL, source = NULL, date = NULL,
                           caption_args = list(), group_col = NULL, key = NULL,
                           palette = phw_default_palette()) {
   rlang::check_installed("reactable")
+  group_col <- pick_col(rlang::enquo(group_col), data, "group_col", null_ok = TRUE)
   args <- list(...)
   defaults <- list(striped = TRUE, highlight = TRUE, compact = TRUE,
                    theme = phw_reactable_theme(header = header, accent = accent),
@@ -163,8 +165,9 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
   legend <- rlang::arg_match(legend)
   if (inherits(p, "ggplot")) p <- ggplotly_phw(p)
   col <- phw_colours
-  colorway <- if (identical(palette, "main")) phw_palettes$accessible else palette_colours(palette)
-  if (identical(palette, "main")) colorway[seq_along(phw_palettes$main)] <- phw_palettes$main
+  # plotly works through the colours in order, so "main" needs the rest of
+  # "extended" behind it for charts with more than four traces.
+  colorway <- palette_colours(palette_for(palette, Inf))
   font <- list(family = paste0(phw_font(), ", Arial, sans-serif"), size = font_size, color = col[["text"]])
   axis <- list(gridcolor = col[["grey_border"]], zerolinecolor = col[["grey_mid"]],
                linecolor = col[["grey_mid"]], tickfont = list(color = col[["text_secondary"]]),
@@ -222,19 +225,13 @@ ggplotly_phw <- function(p) {
     if (has[[a]] && !user[[a]]) {
       sc <- b$plot$scales$get_scales(a)
       p <- p + if (sc$is_discrete()) {
-        if (a == "colour") scale_colour_phw_d(palette = auto_palette(sc)) else scale_fill_phw_d(palette = auto_palette(sc))
+        if (a == "colour") scale_colour_phw_d() else scale_fill_phw_d()
       } else {
         if (a == "colour") scale_colour_phw_c() else scale_fill_phw_c()
       }
     }
   }
   plotly::ggplotly(p)
-}
-
-auto_palette <- function(scale) {
-  n <- length(scale$get_limits())
-  pal <- phw_default_palette()
-  if (identical(pal, "main") && n > 4) "accessible" else pal
 }
 
 summary_reactable_args <- function(x) {
@@ -315,7 +312,7 @@ summary_reactable_args <- function(x) {
 #'
 #' @param data The data frame (bar and heat columns need it to find the
 #'   range).
-#' @param column Column name.
+#' @param column The column, unquoted as in dplyr. A string works too.
 #' @param colour Bar colour.
 #' @param palette Palette name or vector of colours.
 #' @param domain Range for the heat colours. Defaults to the column range.
@@ -329,8 +326,8 @@ summary_reactable_args <- function(x) {
 #'   df <- data.frame(area = paste("Area", LETTERS[1:5]), cases = c(120, 85, 64, 19, 23),
 #'                    rate = c(4.1, 2.2, 6.3, 1.0, 2.5), share = c(.38, .27, .2, .06, .07))
 #'   phw_reactable(df, columns = list(
-#'     cases = phw_col_bar(df, "cases", name = "Cases"),
-#'     rate = phw_col_heat(df, "rate", name = "Rate"),
+#'     cases = phw_col_bar(df, cases, name = "Cases"),
+#'     rate = phw_col_heat(df, rate, name = "Rate"),
 #'     share = phw_col_percent(name = "Share")
 #'   ))
 #' }
@@ -341,6 +338,7 @@ NULL
 #' @export
 phw_col_bar <- function(data, column, colour = phw_colours[["light_teal"]], digits = 0, ...) {
   rlang::check_installed("reactable")
+  column <- pick_col(rlang::enquo(column), data, "column")
   mx <- max(data[[column]], na.rm = TRUE)
   reactable::colDef(
     align = "left",
@@ -360,6 +358,7 @@ phw_col_bar <- function(data, column, colour = phw_colours[["light_teal"]], digi
 #' @export
 phw_col_heat <- function(data, column, palette = "teals", domain = NULL, digits = 1, ...) {
   rlang::check_installed("reactable")
+  column <- pick_col(rlang::enquo(column), data, "column")
   domain <- domain %||% range(data[[column]], na.rm = TRUE)
   fill <- scales::col_numeric(seq_cols(palette, FALSE), domain = domain, na.color = "transparent")
   reactable::colDef(

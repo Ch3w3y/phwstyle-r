@@ -12,7 +12,8 @@ test_that("phw_flextable styles a table in every style", {
   expect_s3_class(phw_flextable_heat(ft, j = "Rate"), "flextable")
   expect_s3_class(phw_flextable_heat(ft, j = "Rate", palette = c("#FFFFFF", "#285087")), "flextable")
   rag <- phw_flextable_heat(ft, j = "Rate", palette = "rag", breaks = c(2, 3))
-  expect_true(any(grepl("\u25BC", flextable::information_data_chunk(rag)$txt)))
+  # Checked in the rendered table, which every flextable version can make.
+  expect_match(as.character(flextable::htmltools_value(rag)), "\u25BC")
   grp <- phw_flextable_groups(ft, j = "Area", values = c(A = "#000000"))
   expect_s3_class(grp, "flextable")
 })
@@ -41,4 +42,16 @@ test_that("Shiny theme and header build", {
   expect_s3_class(phw_bs_theme(), "bs_theme")
   expect_s3_class(phw_bs_theme(primary = "#24A2B5"), "bs_theme")
   expect_s3_class(phw_header("App"), "shiny.tag.list")
+})
+
+test_that("phw_page_navbar builds a navy navbar on every bslib", {
+  skip_if_not_installed("bslib")
+  # bslib 0.9.0 moved the navbar colours into navbar_options(); older
+  # versions take them as arguments of page_navbar().
+  page <- phw_page_navbar(bslib::nav_panel("One", "Content"), title = "App", subtitle = "Team")
+  html <- htmltools::renderTags(page)$html
+  expect_match(html, "phw-header")
+  expect_match(html, "navbar")
+  expect_match(html, phw_colours[["navy"]], ignore.case = TRUE)
+  expect_match(html, phw_org, fixed = TRUE)
 })

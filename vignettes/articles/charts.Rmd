@@ -10,20 +10,24 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", message = FALSE, warning 
 ```{r}
 library(phwstyle)
 library(ggplot2)
+library(dplyr)
 use_phw_ggplot()
 set.seed(1)
-cases <- data.frame(
+cases <- tibble(
   onset = as.Date("2025-01-06") + round(rgamma(400, 5, 0.12)),
-  age_group = sample(c("0-14", "15-44", "45-64", "65+"), 400, TRUE),
-  sex = sample(c("Female", "Male"), 400, TRUE),
-  setting = sample(c("Setting 1", "Setting 2", "Setting 3"), 400, TRUE, prob = c(0.6, 0.15, 0.25)),
-  organism = sample(c("Type 1", "Type 2", "Type 3"), 400, TRUE)
+  age_group = sample(c("0-14", "15-44", "45-64", "65+"), 400, replace = TRUE),
+  sex = sample(c("Female", "Male"), 400, replace = TRUE),
+  setting = sample(c("Setting 1", "Setting 2", "Setting 3"), 400, replace = TRUE, prob = c(0.6, 0.15, 0.25)),
+  organism = sample(c("Type 1", "Type 2", "Type 3"), 400, replace = TRUE)
 )
 ```
 
-`use_phw_ggplot()` sets `theme_phw()` and the PHW colour scales for every
-plot in the session, and styles extension geoms. Everything below is plain
-ggplot2.
+`use_phw_ggplot()` sets `theme_phw()`, the PHW colours for groups and
+numbers, and navy for layers with no colour of their own, for every plot in
+the session. It styles extension geoms too. Everything below is plain
+ggplot2: a theme or scale is added to a plot only to change something. The
+[getting started guide](phwstyle.html#how-the-pieces-fit-together) lists
+what is covered and what you still need to add.
 
 ## Colours that stay with their groups
 
@@ -42,37 +46,74 @@ ggplot(cases, aes(age_group, fill = setting)) +
 ## Shapes and line types as a second cue
 
 ```{r}
-weekly <- as.data.frame(table(week = cut(cases$onset, "week"), organism = cases$organism))
-weekly$week <- as.Date(weekly$week)
-ggplot(weekly, aes(week, Freq, colour = organism, shape = organism)) +
+weekly <- cases |>
+  count(week = lubridate::floor_date(onset, "week", week_start = 1), organism) |>
+  tidyr::complete(week, organism, fill = list(n = 0))
+ggplot(weekly, aes(week, n, colour = organism, shape = organism)) +
   geom_line() + geom_point(size = 2) +
   scale_colour_phw_d(palette = "accessible") + scale_shape_phw() +
   labs(title = "Weekly cases by type", x = NULL, y = "Cases")
 ```
 
+## A second measure on its own axis
+
+`phw_sec_axis()` works out how to draw a second measure against a secondary
+axis. Wrap the second measure in `$rescale()` and give the same object to
+`sec.axis`. Colouring the secondary axis to match its series helps readers
+see which axis belongs to which.
+
+```{r}
+wk <- tibble(week = 1:20) |>
+  mutate(cases = round(180 * exp(-((week - 9) / 4)^2) + 4),
+         positivity = 2 + 28 * exp(-((week - 10) / 5)^2))
+orange <- phw_col("orange")
+
+sec <- phw_sec_axis(wk$cases, wk$positivity, name = "Positivity (%)")
+ggplot(wk, aes(week)) +
+  geom_col(aes(y = cases), fill = phw_col("navy")) +
+  geom_line(aes(y = sec$rescale(positivity)), colour = orange, linewidth = 1) +
+  scale_y_continuous("Cases", sec.axis = sec) +
+  labs(title = "Cases and positivity by week", x = "Week") +
+  theme_phw(axis.title.y.right = element_text(colour = orange),
+            axis.text.y.right = element_text(colour = orange))
+```
+
+On a log axis, say so with `scale = "log"` and use `scale_y_log10()`:
+
+```{r}
+sec <- phw_sec_axis(wk$cases, wk$positivity, name = "Positivity (%)", scale = "log")
+ggplot(wk, aes(week)) +
+  geom_line(aes(y = cases), colour = phw_col("navy")) +
+  geom_line(aes(y = sec$rescale(positivity)), colour = orange) +
+  scale_y_log10("Cases", sec.axis = sec) +
+  labs(title = "The same measures on log axes", x = "Week") +
+  theme_phw(axis.title.y.right = element_text(colour = orange),
+            axis.text.y.right = element_text(colour = orange))
+```
+
 ## Public health charts
 
 ```{r}
-phw_epicurve(cases, "onset", group = "organism") +
+phw_epicurve(cases, onset, group = organism) +
   labs(title = "Cases by week of onset", x = "Week beginning", y = "Cases")
 ```
 
 ```{r}
-phw_pyramid(cases, "age_group", "sex", percent = TRUE) +
+phw_pyramid(cases, age_group, sex, percent = TRUE) +
   labs(title = "Cases by age and sex")
 ```
 
 ```{r}
-units <- data.frame(area = paste("Area", 1:30), eligible = round(runif(30, 300, 6000)))
-units$events <- rbinom(30, units$eligible, c(rep(0.72, 28), 0.6, 0.82))
-phw_funnel(units, "events", "eligible", label = "area") +
+units <- tibble(area = paste("Area", 1:30), eligible = round(runif(30, 300, 6000))) |>
+  mutate(events = rbinom(n(), eligible, c(rep(0.72, 28), 0.6, 0.82)))
+phw_funnel(units, events, eligible, label = area) +
   labs(title = "Proportion by area", x = "Population", y = "Proportion (%)")
 ```
 
 ```{r}
-monthly <- data.frame(month = seq(as.Date("2023-01-01"), by = "month", length.out = 30),
-                      value = c(rnorm(20, 50, 4), rnorm(10, 57, 4)))
-phw_spc(monthly, "month", "value", improvement = "increase", baseline = 20) +
+monthly <- tibble(month = seq(as.Date("2023-01-01"), by = "month", length.out = 30),
+                  value = c(rnorm(20, 50, 4), rnorm(10, 57, 4)))
+phw_spc(monthly, month, value, improvement = "increase", baseline = 20) +
   labs(title = "Monthly measure")
 ```
 
@@ -82,7 +123,7 @@ phw_spc(monthly, "month", "value", improvement = "increase", baseline = 20) +
 patchwork, or any grob), and `phw_save()` saves it with the bundled font.
 
 ```{r, eval = FALSE}
-p <- phw_epicurve(cases, "onset") + labs(title = "Cases by week")
+p <- phw_epicurve(cases, onset) + labs(title = "Cases by week")
 phw_save(phw_finalise(p, source = "Example data", date = Sys.Date()), "epicurve.png")
 ```
 
@@ -90,7 +131,7 @@ phw_save(phw_finalise(p, source = "Example data", date = Sys.Date()), "epicurve.
 
 ```{r, fig.width = 10, eval = requireNamespace("patchwork", quietly = TRUE)}
 a <- ggplot(cases, aes(y = setting)) + geom_bar() + labs(x = "Cases", y = NULL)
-b <- phw_epicurve(cases, "onset", interval = "month") + labs(y = "Cases")
+b <- phw_epicurve(cases, onset, interval = "month") + labs(y = "Cases")
 phw_arrange(a, b, widths = c(1, 2), title = "Two charts, one title", source = "Example data",
             tag_levels = "A")
 ```

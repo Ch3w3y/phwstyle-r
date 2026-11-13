@@ -178,6 +178,14 @@ phw_write_xlsx <- function(x, file, title = NULL, source = NULL, date = NULL, ca
     wb <- openxlsx2::wb_set_col_widths(wb, sheet, cols = seq_len(nc), widths = "auto")
     wb <- openxlsx2::wb_freeze_pane(wb, sheet, first_active_row = head_row + 1)
   }
+  # openxlsx2 1.22 and later zips the workbook with the system tool that R
+  # was built to use, even on a computer that doesn't have it. Point it at
+  # its other methods in that case.
+  zip_tool <- Sys.getenv("R_ZIPCMD")
+  if (nzchar(zip_tool) && !nzchar(Sys.which(zip_tool))) {
+    old <- options(openxlsx2.no_utils_zip = TRUE)
+    on.exit(options(old), add = TRUE)
+  }
   openxlsx2::wb_save(wb, file, overwrite = overwrite)
   invisible(file)
 }

@@ -21,9 +21,12 @@ phw_summary_table(
 \arguments{
 \item{data}{A data frame with one row per person (or case, episode...).}
 
-\item{vars}{Columns to summarise. Defaults to every column except \code{by}.}
+\item{vars}{Columns to summarise, chosen as in \code{\link[dplyr:select]{dplyr::select()}}, e.g.
+\code{c(age_group, sex)} or \code{starts_with("sym")}. Defaults to every column
+except \code{by}.}
 
-\item{by}{Optional column to split by (e.g. outcome or year).}
+\item{by}{Optional column to split by (e.g. outcome or year), unquoted as
+in dplyr. A string works too.}
 
 \item{labels}{Named list of display names, e.g.
 \code{list(age_group = "Age group")}. Variable \code{label} attributes are used
@@ -63,7 +66,7 @@ df <- data.frame(
   days = rpois(200, 6),
   group = sample(c("Group A", "Group B"), 200, TRUE)
 )
-tab <- phw_summary_table(df, by = "group",
+tab <- phw_summary_table(df, by = group,
                          labels = list(age_group = "Age group", sex = "Sex",
                                        days = "Days"))
 tab

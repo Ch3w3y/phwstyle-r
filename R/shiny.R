@@ -125,8 +125,16 @@ phw_page_navbar <- function(..., title = NULL, subtitle = NULL, footer = NULL,
   footer <- if (isFALSE(footer)) NULL else htmltools::tags$footer(class = "phw-footer", footer %||% phw_org)
   args <- list(...)
   defaults <- list(title = NULL, window_title = title %||% phw_org, theme = theme,
-                   navbar_options = bslib::navbar_options(bg = navbar_bg, theme = "dark"),
                    footer = footer, fillable = TRUE, lang = "en")
+  # bslib 0.9.0 moved the navbar colours into navbar_options(). It is looked
+  # up by name so that older versions, which don't have it, pass R CMD check.
+  navbar <- if ("navbar_options" %in% getNamespaceExports("bslib")) {
+    navbar_options <- getExportedValue("bslib", "navbar_options")
+    list(navbar_options = navbar_options(bg = navbar_bg, theme = "dark"))
+  } else {
+    list(bg = navbar_bg, inverse = TRUE)
+  }
+  defaults <- c(defaults, navbar)
   for (nm in names(defaults)) if (!nm %in% names(args)) args[nm] <- list(defaults[[nm]])
   page <- do.call(bslib::page_navbar, args)
   prepend_header(page, do.call(phw_header, c(list(title, subtitle), header_args)))
