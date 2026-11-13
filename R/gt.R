@@ -95,8 +95,8 @@ phw_gt <- function(data, caption = NULL, subtitle = NULL, number = NULL, source 
   x <- do.call(gt::gt, c(list(df), gt_args))
   num <- names(df)[vapply(df, is.numeric, logical(1))]
   is_int <- vapply(df[num], function(v) all(v == round(v), na.rm = TRUE), logical(1))
-  if (any(is_int)) x <- gt::fmt_integer(x, columns = gt::all_of(num[is_int]))
-  if (any(!is_int)) x <- gt::fmt_number(x, columns = gt::all_of(num[!is_int]), decimals = digits)
+  if (any(is_int)) x <- gt::fmt_integer(x, columns = gt_cols(num[is_int]))
+  if (any(!is_int)) x <- gt::fmt_number(x, columns = gt_cols(num[!is_int]), decimals = digits)
   x <- gt::sub_missing(x, missing_text = "")
   if (is_sum) x <- style_summary_gt(x, data, ids, labels)
   if (!is.null(caption) || !is.null(subtitle)) {
@@ -112,6 +112,11 @@ phw_gt <- function(data, caption = NULL, subtitle = NULL, number = NULL, source 
   x
 }
 
+# Column names for gt's `columns` arguments. gt only re-exports all_of()
+# from version 0.11.1, and a function call that returns the names selects
+# the same columns on every version.
+gt_cols <- function(x) x
+
 style_summary_gt <- function(x, s, ids, labels) {
   types <- attr(s, "row_type")
   depth <- attr(s, "depth") %||% as.integer(types == "level")
@@ -121,19 +126,19 @@ style_summary_gt <- function(x, s, ids, labels) {
   lab_ids <- ids[seq_len(nl)]
   data_ids <- ids[-seq_len(nl)]
   x <- gt::cols_label(x, .list = labels)
-  x <- gt::cols_align(x, "left", columns = gt::all_of(lab_ids))
-  if (length(data_ids)) x <- gt::cols_align(x, "right", columns = gt::all_of(data_ids))
+  x <- gt::cols_align(x, "left", columns = gt_cols(lab_ids))
+  if (length(data_ids)) x <- gt::cols_align(x, "right", columns = gt_cols(data_ids))
   bold <- which(types %in% c("variable", "total", "subtotal"))
   if (length(bold)) x <- gt::tab_style(x, gt::cell_text(weight = "bold"), gt::cells_body(rows = bold))
   top <- which(types == "variable" & depth == 0)
   if (length(top)) {
-    x <- gt::tab_style(x, gt::cell_text(color = col[["navy"]]), gt::cells_body(columns = gt::all_of(lab_ids), rows = top))
+    x <- gt::tab_style(x, gt::cell_text(color = col[["navy"]]), gt::cells_body(columns = gt_cols(lab_ids), rows = top))
     if (isTRUE(attr(s, "highlight") %||% TRUE)) x <- gt::tab_style(x, gt::cell_fill(col[["grey_bg"]]), gt::cells_body(rows = top))
   }
   if (indent) {
     for (d in setdiff(unique(depth), 0)) {
       x <- gt::tab_style(x, gt::cell_text(indent = gt::px(14 * d)),
-                         gt::cells_body(columns = gt::all_of(lab_ids[1]), rows = which(depth == d)))
+                         gt::cells_body(columns = gt_cols(lab_ids[1]), rows = which(depth == d)))
     }
   }
   tot <- which(types == "total")
@@ -160,12 +165,12 @@ style_summary_gt <- function(x, s, ids, labels) {
         idx <- (ends[g] - r$lengths[g] + 1):ends[g]
         lab <- ch[l, idx[1]]
         if (all(ch[, idx] == ch[nrow(ch), idx[1]])) next
-        x <- gt::tab_spanner(x, label = lab, columns = gt::all_of(data_ids[idx]), level = nrow(ch) - l,
+        x <- gt::tab_spanner(x, label = lab, columns = gt_cols(data_ids[idx]), level = nrow(ch) - l,
                              id = paste0("sp", l, "_", g))
       }
     }
   } else if (!is.null(sp) && length(data_ids)) {
-    x <- gt::tab_spanner(x, label = sp, columns = gt::all_of(data_ids))
+    x <- gt::tab_spanner(x, label = sp, columns = gt_cols(data_ids))
   }
   note <- attr(s, "note")
   if (!is.null(note)) x <- gt::tab_footnote(x, note)

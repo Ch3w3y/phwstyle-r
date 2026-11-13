@@ -56,13 +56,20 @@ with the project (and in version control). The file is plain text:
 
 The key stores the colour itself, not a position in a palette. Changing
 \code{palette} later only affects groups that don't have a colour yet. To move
-a whole key to a different palette on purpose, for example to the
-colour-blind safe \code{"accessible"} palette, use \code{\link[=phw_key_recolour]{phw_key_recolour()}}.
+a whole key to a different palette on purpose, use \code{\link[=phw_key_recolour]{phw_key_recolour()}}.
 
-When the palette runs out, the key carries on with unused colours from
-\code{"accessible"}, then \code{"extended"}, then lighter tints, and warns you. Past
-about eight groups, colour alone can't separate them: use facets, direct
-labels or \code{\link[=scale_shape_phw]{scale_shape_phw()}} as well.
+The one exception is the colour-blind safe \code{"accessible"} palette, which
+can be switched on for a whole document (see \code{\link[=phw_default_palette]{phw_default_palette()}}). A
+key then keeps a second set of colours, stored as \code{name@accessible}, with
+the groups in the same order. So the same report can be rendered in
+default and in accessible colours, and each version keeps its colours
+from one run to the next.
+
+\code{"main"} carries on into \code{"extended"} after four groups. When a palette
+runs out altogether, the key carries on with unused colours from the
+other PHW palettes, then lighter tints, and warns you. \code{"extended"} keeps
+twelve colours apart, but past about eight groups a chart is hard to read
+by colour alone: use facets, direct labels or \code{\link[=scale_shape_phw]{scale_shape_phw()}} as well.
 
 Groups called "Other", "Unknown", "Not known" and similar are drawn in
 grey so they don't compete with real groups. Change this with \code{neutral}.

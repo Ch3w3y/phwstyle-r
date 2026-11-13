@@ -1,6 +1,17 @@
 # Ready-made public health charts. Each returns an ordinary ggplot, so you
 # can add layers, labels and themes as usual.
 
+# The ready-made charts carry their own theme, so they are styled with no
+# setup. When use_phw_ggplot() has set the session theme, they follow the
+# settings it was given (say `base_size = 14` or `accessible = TRUE`)
+# rather than going back to the defaults.
+chart_theme <- function(...) {
+  args <- if (identical(ggplot2::theme_get(), phw_session$theme)) phw_session$args else list()
+  new <- list(...)
+  args[names(new)] <- new
+  do.call(theme_phw, args)
+}
+
 floor_period <- function(x, interval, week_start = 1) {
   x <- as.Date(x)
   switch(interval,
@@ -22,7 +33,8 @@ period_step <- function(interval) {
 #' no cases are shown as zero, so the time axis has no gaps.
 #'
 #' @param data A data frame with one row per case, or with a count column.
-#' @param date Name of the date column.
+#' @param date The date column, unquoted as in dplyr (`onset`). A string
+#'   (`"onset"`) works too.
 #' @param group Optional column to colour and stack by (e.g. age group or
 #'   organism).
 #' @param count Optional column of counts (for aggregated data).
@@ -44,7 +56,7 @@ period_step <- function(interval) {
 #' cases <- data.frame(
 #'   onset = as.Date("2025-01-01") + round(rgamma(300, 6, 0.15)),
 #'   group = sample(c("Group A", "Group B"), 300, TRUE))
-#' phw_epicurve(cases, "onset", group = "group") +
+#' phw_epicurve(cases, onset, group = group) +
 #'   ggplot2::labs(title = "Cases by week of onset", x = "Week beginning", y = "Cases")
 #' @export
 phw_epicurve <- function(data, date, group = NULL, count = NULL,
@@ -54,6 +66,9 @@ phw_epicurve <- function(data, date, group = NULL, count = NULL,
                          range = NULL, ...) {
   interval <- rlang::arg_match(interval)
   position <- rlang::arg_match(position)
+  date <- pick_col(rlang::enquo(date), data, "date")
+  group <- pick_col(rlang::enquo(group), data, "group", null_ok = TRUE)
+  count <- pick_col(rlang::enquo(count), data, "count", null_ok = TRUE)
   data <- as.data.frame(data)
   period <- floor_period(data[[date]], interval, week_start)
   w <- if (is.null(count)) rep(1, nrow(data)) else data[[count]]
@@ -73,7 +88,7 @@ phw_epicurve <- function(data, date, group = NULL, count = NULL,
     p <- p + ggplot2::geom_col(fill = fill, width = width, just = 0, ...)
   } else {
     p <- p + ggplot2::geom_col(ggplot2::aes(fill = .data$group), width = width, just = 0, position = pos, ...) +
-      scale_fill_phw_d(palette = palette %||% phw_discrete_auto(nlevels(g)), key = key, name = NULL)
+      scale_fill_phw_d(palette = palette %||% phw_default_palette(), key = key, name = NULL)
   }
   xargs <- list(expand = ggplot2::expansion(mult = c(0.01, 0.02)))
   if (!is.null(date_labels)) xargs$date_labels <- date_labels
@@ -81,7 +96,7 @@ phw_epicurve <- function(data, date, group = NULL, count = NULL,
   p + do.call(ggplot2::scale_x_date, xargs) +
     ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0, 0.05))) +
     ggplot2::labs(x = NULL, y = "Count") +
-    theme_phw(grid = "y")
+    chart_theme(grid = "y")
 }
 
 #' Population pyramid
@@ -92,7 +107,8 @@ phw_epicurve <- function(data, date, group = NULL, count = NULL,
 #'
 #' @param data A data frame with one row per person, or with a value
 #'   column.
-#' @param age,sex Column names. `age` should be a factor in age order (or
+#' @param age,sex The age and sex columns, unquoted as in dplyr (strings
+#'   work too). `age` should be a factor in age order (or
 #'   will be sorted as text).
 #' @param value Optional column of counts or populations.
 #' @param percent Show each bar as a percentage of the total, so
@@ -109,10 +125,13 @@ phw_epicurve <- function(data, date, group = NULL, count = NULL,
 #' ages <- c("0-14", "15-29", "30-44", "45-64", "65-79", "80+")
 #' pop <- expand.grid(age = factor(ages, ages), sex = c("Female", "Male"))
 #' pop$n <- c(240, 280, 300, 410, 260, 90, 250, 290, 295, 400, 240, 60) * 1000
-#' phw_pyramid(pop, "age", "sex", value = "n", percent = TRUE)
+#' phw_pyramid(pop, age, sex, value = n, percent = TRUE)
 #' @export
 phw_pyramid <- function(data, age, sex, value = NULL, percent = FALSE, left = NULL, compare = NULL,
                         palette = NULL, compare_colour = phw_colours[["black"]], ...) {
+  age <- pick_col(rlang::enquo(age), data, "age")
+  sex <- pick_col(rlang::enquo(sex), data, "sex")
+  value <- pick_col(rlang::enquo(value), data, "value", null_ok = TRUE)
   prep <- function(d) {
     d <- as.data.frame(d)
     w <- if (is.null(value)) rep(1, nrow(d)) else d[[value]]
@@ -145,7 +164,7 @@ phw_pyramid <- function(data, age, sex, value = NULL, percent = FALSE, left = NU
     ggplot2::scale_fill_manual(values = cols, name = NULL) +
     ggplot2::scale_x_continuous(labels = lab_fun, limits = c(-lim, lim) * 1.05) +
     ggplot2::labs(x = if (percent) "Percentage of population" else "Count", y = NULL) +
-    theme_phw(grid = "x")
+    chart_theme(grid = "x")
 }
 
 #' Funnel plot
@@ -156,8 +175,8 @@ phw_pyramid <- function(data, age, sex, value = NULL, percent = FALSE, left = NU
 #' shaped, so unusual values stand out without over-reading small areas.
 #'
 #' @param data A data frame with one row per unit (area, practice...).
-#' @param numerator,denominator Columns of events and population (or
-#'   patients, tests...).
+#' @param numerator,denominator Columns of events and of population (or
+#'   patients, tests...), unquoted as in dplyr. Strings work too.
 #' @param label Optional column of unit names; units outside the outer
 #'   limits are labelled.
 #' @param type `"proportion"` (e.g. uptake) or `"rate"` (e.g. incidence).
@@ -175,13 +194,16 @@ phw_pyramid <- function(data, age, sex, value = NULL, percent = FALSE, left = NU
 #' set.seed(2)
 #' units <- data.frame(unit = paste("Unit", 1:40), n = round(runif(40, 200, 5000)))
 #' units$events <- rbinom(40, units$n, 0.12)
-#' phw_funnel(units, "events", "n", label = "unit") +
+#' phw_funnel(units, events, n, label = unit) +
 #'   ggplot2::labs(title = "Proportion by unit", x = "Population", y = "Proportion (%)")
 #' @export
 phw_funnel <- function(data, numerator, denominator, label = NULL, type = c("proportion", "rate"),
                        multiplier = if (type[1] == "proportion") 100 else 1e5, target = NULL,
                        limits = c(0.95, 0.998), point_colour = phw_colours[["grey_mid"]]) {
   type <- rlang::arg_match(type)
+  numerator <- pick_col(rlang::enquo(numerator), data, "numerator")
+  denominator <- pick_col(rlang::enquo(denominator), data, "denominator")
+  label <- pick_col(rlang::enquo(label), data, "label", null_ok = TRUE)
   data <- as.data.frame(data)
   num <- data[[numerator]]
   den <- data[[denominator]]
@@ -216,7 +238,7 @@ phw_funnel <- function(data, numerator, denominator, label = NULL, type = c("pro
     ggplot2::scale_linetype_manual(values = c("dashed", "solid"), guide = "none") +
     ggplot2::scale_x_continuous(labels = function(x) format(x, big.mark = ",", trim = TRUE, scientific = FALSE)) +
     ggplot2::labs(x = denominator, y = if (type == "proportion") "Percentage" else "Rate") +
-    theme_phw(grid = "y")
+    chart_theme(grid = "y")
   if (!is.null(label)) {
     out <- data[grepl(paste0(limits[2] * 100, "%"), data$zone), , drop = FALSE]
     if (nrow(out)) {
@@ -240,7 +262,8 @@ phw_funnel <- function(data, numerator, denominator, label = NULL, type = c("pro
 #' "Making Data Count" charts.
 #'
 #' @param data A data frame with one row per time point.
-#' @param x,y Column names of the time (date or number) and the measure.
+#' @param x,y The time column (date or number) and the measure, unquoted as
+#'   in dplyr (strings work too).
 #' @param type `"xmr"` (centre line at the mean, limits at 2.66 times the
 #'   mean moving range) or `"run"` (median line, no limits).
 #' @param improvement Which direction is better: `"none"`, `"increase"` or
@@ -253,12 +276,14 @@ phw_funnel <- function(data, numerator, denominator, label = NULL, type = c("pro
 #' set.seed(3)
 #' spc <- data.frame(month = seq(as.Date("2023-01-01"), by = "month", length.out = 30),
 #'                   value = c(rnorm(20, 50, 4), rnorm(10, 58, 4)))
-#' phw_spc(spc, "month", "value", improvement = "increase", baseline = 20)
+#' phw_spc(spc, month, value, improvement = "increase", baseline = 20)
 #' @export
 phw_spc <- function(data, x, y, type = c("xmr", "run"), improvement = c("none", "increase", "decrease"),
                     baseline = NULL, shift = 7, trend = 6) {
   type <- rlang::arg_match(type)
   improvement <- rlang::arg_match(improvement)
+  x <- pick_col(rlang::enquo(x), data, "x")
+  y <- pick_col(rlang::enquo(y), data, "y")
   data <- as.data.frame(data)
   data <- data[order(data[[x]]), , drop = FALSE]
   v <- data[[y]]
@@ -314,5 +339,5 @@ phw_spc <- function(data, x, y, type = c("xmr", "run"), improvement = c("none", 
     ggplot2::scale_colour_manual(values = cols, name = NULL, drop = TRUE) +
     ggplot2::scale_shape_manual(values = shapes, name = NULL, drop = TRUE) +
     ggplot2::labs(x = NULL, y = y) +
-    theme_phw(grid = "y")
+    chart_theme(grid = "y")
 }

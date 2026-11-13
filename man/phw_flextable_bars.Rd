@@ -16,7 +16,8 @@ phw_flextable_bars(
 \arguments{
 \item{x}{A flextable.}
 
-\item{j}{Columns (names or positions).}
+\item{j}{Columns, chosen as in \code{\link[dplyr:select]{dplyr::select()}}: unquoted names,
+positions or strings.}
 
 \item{colour}{Bar colour.}
 
@@ -35,6 +36,6 @@ many PHW summary tables).
 \examples{
 if (requireNamespace("flextable", quietly = TRUE)) {
   df <- data.frame(Area = paste("Area", LETTERS[1:4]), Cases = c(120, 85, 64, 19))
-  phw_flextable_bars(phw_flextable(df), "Cases")
+  phw_flextable_bars(phw_flextable(df), Cases)
 }
 }

@@ -50,4 +50,32 @@ Typst options: \code{phw-team: "Communicable Disease Surveillance Centre"}
 adds a team line to the cover, and \code{phw-no-cover: true} drops the cover.
 \code{phw-org}, \code{phw-page-label} and \code{phw-of-label} change the footer wording
 ("Public Health Wales", "Page", "of").
+
+The extension styles the document. The charts and tables your R code
+makes are styled by phwstyle itself, so call \code{\link[=use_phw_ggplot]{use_phw_ggplot()}} (and
+\code{\link[=use_phw_flextable]{use_phw_flextable()}} for flextable) once in the setup chunk, as the
+starter documents do.
+
+\strong{Accessible colours.} Add \code{phw-palette: accessible} to the document's
+YAML header and every chart, table and widget made with phwstyle uses the
+colour-blind safe palette:
+
+\if{html}{\out{<div class="sourceCode yaml">}}\preformatted{title: "Report title"
+phw-palette: accessible
+format: phw-docx
+}\if{html}{\out{</div>}}
+
+To make both versions from one unchanged document, set the environment
+variable \code{PHWSTYLE_PALETTE} for the second render instead:
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{quarto render report.qmd --to phw-docx
+PHWSTYLE_PALETTE=accessible quarto render report.qmd --to phw-docx -o report-accessible.docx
+}\if{html}{\out{</div>}}
+
+In PowerShell, set it first with \verb{$env:PHWSTYLE_PALETTE = "accessible"}
+(and clear it afterwards with \verb{Remove-Item Env:PHWSTYLE_PALETTE}). From
+R, use \code{Sys.setenv(PHWSTYLE_PALETTE = "accessible")} before rendering and
+\code{Sys.unsetenv("PHWSTYLE_PALETTE")} after. The key has to be in the
+document itself: Quarto doesn't pass \code{-M} values or \verb{_quarto.yml}
+settings on to R. See \code{\link[=phw_default_palette]{phw_default_palette()}}.
 }

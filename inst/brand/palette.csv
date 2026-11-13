@@ -13,6 +13,15 @@ phw_magenta,#D50B5C,Link hover colour on web
 phw_cyan,#27B8CD,End of header gradient band
 phw_light_teal,#7CC7D3,Table header shading
 phw_purple,#846AA4,Extra categorical series
+phw_mint,#5FBDAF,Long-Term Strategy 2023 to 2035 priority colour (sustainable health and care system); extended palette slot 8
+phw_green_bright,#50AF31,Long-Term Strategy 2023 to 2035 priority colour (climate change); extended palette slot 9
+extended_blue,#5A82E6,Not a PHW colour: chosen to stay distinct; extended palette slot 10
+extended_green_dark,#274309,Not a PHW colour: chosen to stay distinct; extended palette slot 11
+extended_violet,#730BB1,Not a PHW colour: chosen to stay distinct; extended palette slot 12
+strategy_purple,#5A356B,Long-Term Strategy 2023 to 2035 priority colour (wider determinants of health)
+strategy_pink,#E05A8C,Long-Term Strategy 2023 to 2035 priority colour (mental and social wellbeing)
+strategy_orange,#ED6F18,Long-Term Strategy 2023 to 2035 priority colour (healthy behaviours)
+strategy_blue,#215B8B,Long-Term Strategy 2023 to 2035 priority colour (excellent public health services)
 text,#212B32,Body text
 text_secondary,#4C6272,Secondary text / captions
 grey_mid,#768692,Rules / dividers / axis lines

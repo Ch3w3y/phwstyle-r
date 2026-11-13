@@ -10,6 +10,8 @@
 #'   (Pantone 534 and 465).
 #' * `blue`, `green`, `magenta` come from the phw.nhs.wales website.
 #' * Greys and `text` are the NHS digital front-end neutrals used on the site.
+#' * `mint` and `green_bright` are two of the six strategic priority colours
+#'   in PHW's Long-Term Strategy 2023 to 2035.
 #'
 #' @format A named character vector of hex colours.
 #' @examples
@@ -32,6 +34,8 @@ phw_colours <- c(
   light_teal     = "#7CC7D3",
   purple         = "#846AA4",
   amber          = "#D97F00",
+  mint           = "#5FBDAF",
+  green_bright   = "#50AF31",
   text           = "#212B32",
   text_secondary = "#4C6272",
   grey_mid       = "#768692",
@@ -74,44 +78,94 @@ phw_col <- function(..., names = TRUE) {
 #'
 #' * `main` (qualitative, 4): navy, teal, orange, pink. The default. It stays
 #'   distinguishable under all three colour-vision deficiencies.
-#' * `extended` (qualitative, 8): `main` plus gold, purple, green and mid grey.
-#'   Use facets or direct labels instead where you can. Some of these pairs
-#'   are hard to tell apart for colour-blind readers.
+#' * `extended` (qualitative, 12): `main` and eight more. Charts with more
+#'   than four groups carry on into it automatically, so every chart in a
+#'   report starts with the same four colours. It is built in order of how
+#'   well each colour is sourced:
+#'   * 1 to 4 are `main`.
+#'   * 5 to 7 have a published source: black and gold (Pantone 465) from the
+#'     NHS Wales logo guidelines, and the green of the phw.nhs.wales
+#'     website.
+#'   * 8 and 9 are mint and bright green from the Long-Term Strategy.
+#'   * 10 to 12 (blue, dark green, violet) are not PHW colours. They were
+#'     chosen in the same hues to stay distinct from the other nine.
+#'
+#'   Every pair of the twelve stays apart for colour-blind readers (CIELAB
+#'   distance of at least 15 under deuteranopia and protanopia). Gold, mint
+#'   and bright green are below 3:1 contrast on white, so they suit filled
+#'   shapes better than thin lines. Twelve lines on one chart are still hard
+#'   to read: use facets or direct labels where you can.
 #' * `accessible` (qualitative, 8): chosen so every pair stays distinct under
 #'   simulated deuteranopia, protanopia and tritanopia (minimum CIELAB
 #'   distance of about 20), and every colour has at least 3:1 contrast on
 #'   white. It starts with navy, teal and orange, so short series still look
-#'   like PHW. Use it for public-facing outputs with more than four groups.
+#'   like PHW. It is never used unless you ask for it: see
+#'   [phw_default_palette()] for how to switch a whole script or document
+#'   to it.
 #' * `highlight` (qualitative, 2): navy for the focus series, light grey for
 #'   everything else.
 #' * `rag` (qualitative, 3): red / amber / green that keeps 3:1 contrast on
-#'   white. (A guess: PHW reports use Excel defaults that fail accessibility.)
+#'   white. These were chosen for phwstyle, not taken from a PHW source.
 #' * `rag_accessible` (qualitative, 3): like `rag`, but "good" is navy
 #'   instead of green, because red and green look alike to many colour-blind
 #'   readers.
-#' * `blues`, `teals`, `gradient` (sequential).
+#' * `strategy` (qualitative, 6): the colours of the six strategic
+#'   priorities in PHW's Long-Term Strategy 2023 to 2035, named `services`,
+#'   `system`, `behaviours`, `wellbeing`, `determinants` and `climate`. Use
+#'   it for work reported by priority. The order is not the strategy's own
+#'   numbering: it follows `main` (blue, teal, orange, pink, then the rest),
+#'   so the first groups in a chart look the same whichever palette is used.
+#'   To colour by priority, match on the names.
+#' * `blues`, `teals`, `greens`, `gradient` (sequential). `greens` runs from
+#'   a pale tint to the website green and its dark shade.
 #' * `orange_navy` (diverging).
+#'
+#' **Colour order.** `main`, `extended` and `accessible` all start navy,
+#' teal, orange, so a chart with up to three groups looks the same
+#' whichever of them a report uses. `highlight` starts with the same navy,
+#' then grey. `strategy` has its own shades in the same order: blue, mint,
+#' orange, pink. The exceptions are the palettes where colour carries a
+#' fixed meaning (`rag`, `rag_accessible`), and the sequential and diverging
+#' palettes, which run from light to dark.
 #'
 #' @format A named list of character vectors.
 #' @export
 phw_palettes <- list(
   main      = unname(phw_colours[c("navy", "teal", "orange", "pink")]),
-  extended  = unname(phw_colours[c("navy", "teal", "orange", "pink",
-                                   "gold_465", "purple", "green", "grey_mid")]),
+  extended  = c(
+    # 1-4: the chart colours PHW reports use.
+    unname(phw_colours[c("navy", "teal", "orange", "pink")]),
+    # 5-7: published sources (NHS Wales logo guidelines; phw.nhs.wales).
+    unname(phw_colours[c("black", "green", "gold_465")]),
+    # 8-9: Long-Term Strategy 2023 to 2035 priority colours.
+    unname(phw_colours[c("mint", "green_bright")]),
+    # 10-12: not PHW colours; chosen in the same hues to stay distinct from
+    # the rest. See data-raw/palette-search.R.
+    "#5A82E6", "#274309", "#730BB1"),
   accessible = c("#285087", "#24A2B5", "#FF5D0C", "#000000", "#9D5659",
                  "#8478CF", "#882255", "#332288"),
   highlight = unname(phw_colours[c("navy", "grey_light")]),
   rag       = c(red = "#D50B5C", amber = "#D97F00", green = "#338276"),
   rag_accessible = c(red = "#D50B5C", amber = "#D97F00", green = "#285087"),
+  strategy  = c(services = "#215B8B", system = "#5FBDAF", behaviours = "#ED6F18",
+                wellbeing = "#E05A8C", determinants = "#5A356B", climate = "#50AF31"),
   blues     = c("#E8EDF4", "#C9D3E1", "#93A7C3", "#5D7BA5", "#285087", "#1B3660"),
   teals     = c("#E6F5F7", "#B2E0E7", "#7CC7D3", "#24A2B5", "#2D78A0", "#285087"),
+  greens    = c("#E8F1F0", "#CCE0DD", "#99C1BB", "#66A198", "#338276", "#173934"),
   gradient  = c("#325082", "#326791", "#2A8DAC", "#2BADC5", "#27B8CD"),
   orange_navy = c("#C94100", "#FF5D0C", "#FFB088", "#F0F4F5", "#93A7C3",
                   "#285087", "#1B3660")
 )
 
+# "main" is the first four colours of "extended". Past four groups the
+# default carries on into "extended", so a chart with six groups starts with
+# the same colours as a chart with four.
+palette_for <- function(palette, n) {
+  if (identical(palette, "main") && n > length(phw_palettes$main)) "extended" else palette
+}
+
 palette_type <- function(name) {
-  if (name %in% c("main", "extended", "accessible", "highlight", "rag", "rag_accessible")) return("qualitative")
+  if (name %in% c("main", "extended", "accessible", "highlight", "rag", "rag_accessible", "strategy")) return("qualitative")
   if (name %in% c("orange_navy")) return("diverging")
   "sequential"
 }
@@ -120,7 +174,8 @@ palette_type <- function(name) {
 #'
 #' Qualitative palettes return their colours in order (and refuse to make up
 #' extra ones). Sequential and diverging palettes are interpolated to any
-#' length.
+#' length. Asking `"main"` for more than four colours carries on into
+#' `"extended"`, as the charts do.
 #'
 #' `palette` can be a PHW palette name, your own vector of colours, or a
 #' function of `n`. So any scale or table function in phwstyle accepts a
@@ -144,6 +199,7 @@ phw_pal <- function(n = NULL, palette = phw_default_palette(), reverse = FALSE,
   if (is.function(palette)) {
     out <- palette(n %||% 1L)
   } else {
+    palette <- palette_for(palette, n %||% 0L)
     pal <- palette_colours(palette)
     if (is.character(palette) && length(palette) == 1 && palette %in% names(phw_palettes)) {
       type <- if (palette_type(palette) == "qualitative") "qualitative" else "sequential"
@@ -153,7 +209,7 @@ phw_pal <- function(n = NULL, palette = phw_default_palette(), reverse = FALSE,
       if (n > length(pal)) {
         cli::cli_abort(c(
           "The palette has {length(pal)} colours but {n} were requested.",
-          i = "Use {.code palette = \"accessible\"} (8 colours), facets, or direct labels."))
+          i = "Use facets, direct labels, or highlight one group with {.code palette = \"highlight\"}."))
       }
       out <- pal[seq_len(n)]
     } else {
@@ -185,15 +241,57 @@ is_colour <- function(x) {
 
 #' The default qualitative palette
 #'
-#' phwstyle uses `"main"` (navy, teal, orange, pink) for up to four groups
-#' and `"accessible"` above that. Set `options(phwstyle.palette =
-#' "accessible")` to use the colour-blind safe palette everywhere: ggplot2
-#' defaults, plotly, colour keys and tables. You can also set it to your own
-#' vector of colours.
+#' The palette that charts, tables and widgets use for groups when you
+#' don't name one. Out of the box it is `"main"` (navy, teal, orange, pink),
+#' carrying on into `"extended"` past four groups, so every chart in a
+#' report draws from one set of colours however many groups it has.
+#'
+#' The colour-blind safe `"accessible"` palette is a switch you turn on
+#' once, and it then applies to every chart, table and widget, for any
+#' number of groups. The first of these that is set wins:
+#'
+#' 1. `options(phwstyle.palette = "accessible")`, which is also what
+#'    `use_phw_ggplot(palette = "accessible")` and the `palette` argument of
+#'    [phw_html_document()], [phw_word_document()] and [phw_pdf_document()]
+#'    set.
+#' 2. The environment variable `PHWSTYLE_PALETTE`, for switching one render
+#'    from the command line without editing the document, e.g.
+#'    `PHWSTYLE_PALETTE=accessible quarto render report.qmd`.
+#' 3. `phw-palette: accessible` in the YAML header of a Quarto or R Markdown
+#'    document.
+#'
+#' The option can also be any other palette name from [phw_palettes], or
+#' your own vector of colours.
+#'
+#' This switch changes colours only. Larger text and thicker lines are a
+#' separate setting, `accessible = TRUE` in [theme_phw()] or
+#' [use_phw_ggplot()]; neither turns the other on.
 #'
 #' @return A palette name or vector.
+#' @examples
+#' phw_default_palette()
+#' phw_pal(6)
+#'
+#' old <- options(phwstyle.palette = "accessible")
+#' phw_pal(6)
+#' options(old)
 #' @export
-phw_default_palette <- function() getOption("phwstyle.palette", "main")
+phw_default_palette <- function() {
+  opt <- getOption("phwstyle.palette")
+  if (!is.null(opt)) return(opt)
+  env <- Sys.getenv("PHWSTYLE_PALETTE")
+  if (nzchar(env)) return(env)
+  document_palette() %||% "main"
+}
+
+# `phw-palette` from the YAML header of the document being knitted (Quarto
+# or R Markdown). Only looked up while knitting, so a document rendered
+# earlier in the session doesn't leave its palette behind.
+document_palette <- function() {
+  if (!isTRUE(getOption("knitr.in.progress")) || !isNamespaceLoaded("rmarkdown")) return(NULL)
+  pal <- tryCatch(rmarkdown::metadata[["phw-palette"]], error = function(e) NULL)
+  if (is.character(pal) && length(pal) >= 1 && all(nzchar(pal))) pal else NULL
+}
 
 #' Palette functions for scales
 #'

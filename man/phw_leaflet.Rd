@@ -46,8 +46,9 @@ API key) that keeps your colours readable.}
 
 \item{map}{A leaflet map.}
 
-\item{fill}{Column of \code{data} to colour by. Numbers get a continuous or
-binned scale; text and factors get distinct colours.}
+\item{fill}{Column of \code{data} to colour by, unquoted as in dplyr (a string
+works too). Numbers get a continuous or binned scale; text and factors
+get distinct colours.}
 
 \item{palette}{Palette name or colours, as in \code{\link[=phw_pal]{phw_pal()}}. Defaults to
 \code{"blues"} for numbers and the default palette for groups.}
@@ -55,11 +56,13 @@ binned scale; text and factors get distinct colours.}
 \item{bins}{Number of bins, or a vector of breaks, for numeric \code{fill}.
 \code{NULL} gives a continuous scale.}
 
-\item{label}{Column used for the hover label.}
+\item{label, popup}{What to show on hover and on click: a column of
+\code{data}, unquoted, or an expression built from its columns such as
+\code{paste(name, rate)}. A string naming a column, or a vector with one
+value per row, works too.}
 
-\item{popup}{Column, or vector, used for the click popup.}
-
-\item{legend_title}{Legend title, or \code{NULL} for no legend.}
+\item{legend_title}{Legend title, or \code{NULL} for no legend. Defaults to
+the name of the \code{fill} column.}
 
 \item{opacity}{Fill opacity.}
 
@@ -99,7 +102,7 @@ if (requireNamespace("leaflet", quietly = TRUE) && requireNamespace("sf", quietl
   hb <- phw_boundaries("health_board", crs = 4326)
   hb$rate <- runif(nrow(hb), 10, 50)
   phw_leaflet() |>
-    phw_leaflet_polygons(hb, fill = "rate", label = "name", legend_title = "Rate")
+    phw_leaflet_polygons(hb, fill = rate, label = name, legend_title = "Rate")
 }
 }
 }

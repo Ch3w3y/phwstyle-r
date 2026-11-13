@@ -61,8 +61,11 @@ as_levels <- function(x, missing) {
 #' grouping variable becomes a header spanning its columns.
 #'
 #' @param data A data frame with one row per person (or case, episode...).
-#' @param vars Columns to summarise. Defaults to every column except `by`.
-#' @param by Optional column to split by (e.g. outcome or year).
+#' @param vars Columns to summarise, chosen as in [dplyr::select()], e.g.
+#'   `c(age_group, sex)` or `starts_with("sym")`. Defaults to every column
+#'   except `by`.
+#' @param by Optional column to split by (e.g. outcome or year), unquoted as
+#'   in dplyr. A string works too.
 #' @param labels Named list of display names, e.g.
 #'   `list(age_group = "Age group")`. Variable `label` attributes are used
 #'   otherwise.
@@ -83,7 +86,7 @@ as_levels <- function(x, missing) {
 #'   days = rpois(200, 6),
 #'   group = sample(c("Group A", "Group B"), 200, TRUE)
 #' )
-#' tab <- phw_summary_table(df, by = "group",
+#' tab <- phw_summary_table(df, by = group,
 #'                          labels = list(age_group = "Age group", sex = "Sex",
 #'                                        days = "Days"))
 #' tab
@@ -96,6 +99,8 @@ phw_summary_table <- function(data, vars = NULL, by = NULL, labels = list(),
                               label_header = "Characteristic") {
   percent <- rlang::arg_match(percent)
   numeric <- rlang::arg_match(numeric)
+  vars <- pick_cols(rlang::enquo(vars), data, "vars", null_ok = TRUE)
+  by <- pick_col(rlang::enquo(by), data, "by", null_ok = TRUE)
   data <- as.data.frame(data)
   vars <- vars %||% setdiff(names(data), by)
   groups <- if (is.null(by)) list(All = rep(TRUE, nrow(data))) else {
@@ -162,7 +167,8 @@ phw_summary_table <- function(data, vars = NULL, by = NULL, labels = list(),
 #' [phw_flextable_heat()].
 #'
 #' @param data A data frame with one row per case, or with a count column.
-#' @param rows,cols Column names for the rows and columns of the table.
+#' @param rows,cols The columns that make the rows and the columns of the
+#'   table, unquoted as in dplyr. Strings work too.
 #' @param count Optional column of counts (for aggregated data).
 #' @param percent `"none"`, `"row"`, `"column"` or `"total"`.
 #' @param totals Add a total row and column?
@@ -174,13 +180,16 @@ phw_summary_table <- function(data, vars = NULL, by = NULL, labels = list(),
 #' @examples
 #' df <- data.frame(period = sample(1:6, 300, TRUE),
 #'                  group = sample(c("Group A", "Group B", "Group C"), 300, TRUE))
-#' phw_crosstab(df, "period", "group")
-#' phw_crosstab(df, "group", "period", percent = "row")
+#' phw_crosstab(df, period, group)
+#' phw_crosstab(df, group, period, percent = "row")
 #' @export
 phw_crosstab <- function(data, rows, cols, count = NULL,
                          percent = c("none", "row", "column", "total"), totals = TRUE,
                          missing = "Unknown", digits = 1, labels = list()) {
   percent <- rlang::arg_match(percent)
+  rows <- pick_col(rlang::enquo(rows), data, "rows")
+  cols <- pick_col(rlang::enquo(cols), data, "cols")
+  count <- pick_col(rlang::enquo(count), data, "count", null_ok = TRUE)
   data <- as.data.frame(data)
   r <- as_levels(data[[rows]], missing)
   k <- as_levels(data[[cols]], missing)
@@ -221,8 +230,10 @@ phw_crosstab <- function(data, rows, cols, count = NULL,
 #'
 #' @param data Aggregated data: one row per group (or finer), with columns
 #'   of case counts and population. Rows are summed within each group.
-#' @param groups Grouping columns. Each gets its own section.
-#' @param cases,population Columns holding counts and denominators.
+#' @param groups Grouping columns, chosen as in [dplyr::select()], e.g.
+#'   `c(age_group, sex)`. Each gets its own section.
+#' @param cases,population Columns holding counts and denominators, unquoted
+#'   as in dplyr. Strings work too.
 #' @param per Rate multiplier, e.g. `1e5` for per 100,000.
 #' @param conf_level Confidence level for the intervals.
 #' @param digits Decimal places for rates.
@@ -239,11 +250,14 @@ phw_crosstab <- function(data, rows, cols, count = NULL,
 #'                  sex = c("Female", "Male"))
 #' d$cases <- c(12, 30, 41, 66, 10, 28, 45, 70)
 #' d$pop <- c(250, 600, 400, 300, 260, 590, 390, 260) * 1000
-#' phw_rate_table(d, c("age_group", "sex"), "cases", "pop",
+#' phw_rate_table(d, c(age_group, sex), cases, pop,
 #'                labels = list(age_group = "Age group", sex = "Sex"))
 #' @export
 phw_rate_table <- function(data, groups, cases, population, per = 1e5, conf_level = 0.95,
                            digits = 1, labels = list(), total = TRUE, rate_label = NULL) {
+  groups <- pick_cols(rlang::enquo(groups), data, "groups")
+  cases <- pick_col(rlang::enquo(cases), data, "cases")
+  population <- pick_col(rlang::enquo(population), data, "population")
   data <- as.data.frame(data)
   rate_label <- rate_label %||% paste("Rate per", fmt_n(per))
   ci_label <- sprintf("%s%% CI", 100 * conf_level)
@@ -293,7 +307,8 @@ phw_poisson_ci <- function(x, conf_level = 0.95) {
 #' exact p-value.
 #'
 #' @param data A data frame with one row per person.
-#' @param exposures Exposure columns. Logical or yes/no columns work best;
+#' @param exposures Exposure columns, chosen as in [dplyr::select()], e.g.
+#'   `c(item_a, item_b)`. Logical or yes/no columns work best;
 #'   the first level (or `FALSE`/"No") is the reference.
 #' @param outcome Outcome column: logical, 0/1 or yes/no (case = `TRUE`, 1
 #'   or "Yes").
@@ -307,11 +322,13 @@ phw_poisson_ci <- function(x, conf_level = 0.95) {
 #' d <- data.frame(item_a = sample(c("Yes", "No"), 120, TRUE),
 #'                 item_b = sample(c("Yes", "No"), 120, TRUE))
 #' d$ill <- rbinom(120, 1, ifelse(d$item_a == "Yes", 0.5, 0.15))
-#' phw_risk_table(d, c("item_a", "item_b"), "ill",
+#' phw_risk_table(d, c(item_a, item_b), ill,
 #'                labels = list(item_a = "Item A", item_b = "Item B"))
 #' @export
 phw_risk_table <- function(data, exposures, outcome, labels = list(), conf_level = 0.95,
                            digits = 1, p_value = TRUE) {
+  exposures <- pick_cols(rlang::enquo(exposures), data, "exposures")
+  outcome <- pick_col(rlang::enquo(outcome), data, "outcome")
   data <- as.data.frame(data)
   y <- data[[outcome]]
   y <- if (is.logical(y)) y else if (is.numeric(y)) y == 1 else tolower(as.character(y)) %in% c("yes", "y", "true", "1", "case")

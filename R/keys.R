@@ -20,13 +20,20 @@ default_neutral <- c("Other", "Others", "Unknown", "Not known", "Not stated", "M
 #'
 #' The key stores the colour itself, not a position in a palette. Changing
 #' `palette` later only affects groups that don't have a colour yet. To move
-#' a whole key to a different palette on purpose, for example to the
-#' colour-blind safe `"accessible"` palette, use [phw_key_recolour()].
+#' a whole key to a different palette on purpose, use [phw_key_recolour()].
 #'
-#' When the palette runs out, the key carries on with unused colours from
-#' `"accessible"`, then `"extended"`, then lighter tints, and warns you. Past
-#' about eight groups, colour alone can't separate them: use facets, direct
-#' labels or [scale_shape_phw()] as well.
+#' The one exception is the colour-blind safe `"accessible"` palette, which
+#' can be switched on for a whole document (see [phw_default_palette()]). A
+#' key then keeps a second set of colours, stored as `name@accessible`, with
+#' the groups in the same order. So the same report can be rendered in
+#' default and in accessible colours, and each version keeps its colours
+#' from one run to the next.
+#'
+#' `"main"` carries on into `"extended"` after four groups. When a palette
+#' runs out altogether, the key carries on with unused colours from the
+#' other PHW palettes, then lighter tints, and warns you. `"extended"` keeps
+#' twelve colours apart, but past about eight groups a chart is hard to read
+#' by colour alone: use facets, direct labels or [scale_shape_phw()] as well.
 #'
 #' Groups called "Other", "Unknown", "Not known" and similar are drawn in
 #' grey so they don't compete with real groups. Change this with `neutral`.
@@ -59,8 +66,16 @@ phw_colour_key <- function(levels, name = NULL, palette = phw_default_palette(),
                            neutral_colour = phw_colours[["grey_mid"]], save = TRUE) {
   lv <- if (is.factor(levels)) levels(levels) else unique(as.character(levels))
   lv <- lv[!is.na(lv)]
-  old <- if (is.null(name)) character() else phw_key(name)
+  # "main" is the start of "extended", so groups past the fourth carry on
+  # into it. A key grows over time, so it can't wait to see how many groups
+  # there are.
+  if (identical(palette, "main")) palette <- "extended"
+  id <- key_id(name, palette)
+  old <- if (is.null(id)) character() else phw_key(id)
   vals <- old
+  if (!length(vals) && !identical(id, name)) {
+    vals <- key_mirror(phw_key(name), palette, neutral_colour)
+  }
   if (length(fixed)) {
     if (is.null(names(fixed))) cli::cli_abort("{.arg fixed} must be a named vector, e.g. {.code c(Wales = \"#285087\")}.")
     vals[names(fixed)] <- unname(fixed)
@@ -69,13 +84,34 @@ phw_colour_key <- function(levels, name = NULL, palette = phw_default_palette(),
   is_neutral <- tolower(new) %in% tolower(neutral)
   vals[new[is_neutral]] <- neutral_colour
   todo <- new[!is_neutral]
-  if (is.null(name) && identical(palette, "main") &&
-      length(todo) > length(phw_palettes$main)) {
-    palette <- "accessible"
-  }
   for (l in todo) vals[[l]] <- next_colour(vals, palette, neutral_colour)
-  if (!is.null(name) && save && !identical(vals, old)) key_store(name, vals)
+  if (!is.null(id) && save && !identical(vals, old)) key_store(id, vals)
   vals[lv]
+}
+
+# The accessible palette keeps its own copy of each key, so switching a
+# document to it changes keyed charts too, without losing the colours the
+# default version of the report uses.
+key_id <- function(name, palette) {
+  if (!is.null(name) && identical(palette, "accessible")) paste0(name, "@accessible") else name
+}
+
+# Start the accessible copy of a key from the default one, with the groups
+# in the same order so the two versions of a report line up. Colours that
+# are in both palettes (navy, teal, orange), grey and hand-picked colours
+# stay as they are; the rest take the next free accessible colour.
+key_mirror <- function(default, palette, neutral_colour) {
+  if (!length(default)) return(default)
+  col <- toupper(default)
+  house <- toupper(c(phw_palettes$extended, phw_palettes$accessible))
+  keep <- col %in% toupper(palette_colours(palette)) | !col %in% house |
+    col == toupper(neutral_colour)
+  out <- default
+  out[!keep] <- NA
+  for (l in names(default)[!keep]) {
+    out[[l]] <- next_colour(out[!is.na(out)], palette, neutral_colour)
+  }
+  out
 }
 
 next_colour <- function(used, palette, neutral_colour) {
@@ -87,7 +123,7 @@ next_colour <- function(used, palette, neutral_colour) {
   if (length(free) && !(free[1] %in% first_extra)) return(free[1])
   if (length(free)) {
     cli::cli_warn(c("The palette has run out, so new groups take colours from other PHW palettes.",
-                    i = "Past about 8 groups, add facets, direct labels or {.fn scale_shape_phw}."),
+                    i = "With this many groups, add facets, direct labels or {.fn scale_shape_phw}."),
                   .frequency = "regularly", .frequency_id = "phw_key_overflow")
     return(free[1])
   }
@@ -106,13 +142,15 @@ next_colour <- function(used, palette, neutral_colour) {
 
 #' Manage colour keys
 #'
-#' * `phw_key()` returns a stored key.
+#' * `phw_key()` returns a stored key. The accessible copy of a key is
+#'   called `name@accessible` (see [phw_colour_key()]).
 #' * `phw_keys()` lists every key as a data frame.
 #' * `phw_key_set()` adds or changes colours by hand.
 #' * `phw_key_recolour()` reassigns a whole key from a new palette, keeping
 #'   the group order. Use it on purpose, e.g. to move to the
 #'   `"accessible"` palette, because every report after that changes.
-#' * `phw_key_reset()` forgets a key, or all of them.
+#' * `phw_key_reset()` forgets a key (and its accessible copy), or all of
+#'   them.
 #' * `phw_key_file()` sets a CSV file that keys are read from and saved to,
 #'   so colours stay the same across sessions and reports. Call it at the
 #'   top of your script or in a setup chunk, or set
@@ -185,7 +223,7 @@ phw_key_recolour <- function(name, palette = "accessible") {
 #' @export
 phw_key_reset <- function(name = NULL) {
   load_key_file()
-  nms <- name %||% ls(phw_key_env)
+  nms <- if (is.null(name)) ls(phw_key_env) else c(name, paste0(name, "@accessible"))
   rm(list = intersect(nms, ls(phw_key_env)), envir = phw_key_env)
   file <- getOption("phwstyle.key_file")
   if (!is.null(file) && file.exists(file)) write_key_file(file, drop = nms)

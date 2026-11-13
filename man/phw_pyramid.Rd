@@ -21,7 +21,8 @@ phw_pyramid(
 \item{data}{A data frame with one row per person, or with a value
 column.}
 
-\item{age, sex}{Column names. \code{age} should be a factor in age order (or
+\item{age, sex}{The age and sex columns, unquoted as in dplyr (strings
+work too). \code{age} should be a factor in age order (or
 will be sorted as text).}
 
 \item{value}{Optional column of counts or populations.}
@@ -53,5 +54,5 @@ or a previous year) as outlines.
 ages <- c("0-14", "15-29", "30-44", "45-64", "65-79", "80+")
 pop <- expand.grid(age = factor(ages, ages), sex = c("Female", "Male"))
 pop$n <- c(240, 280, 300, 410, 260, 90, 250, 290, 295, 400, 240, 60) * 1000
-phw_pyramid(pop, "age", "sex", value = "n", percent = TRUE)
+phw_pyramid(pop, age, sex, value = n, percent = TRUE)
 }

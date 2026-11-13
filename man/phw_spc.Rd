@@ -18,7 +18,8 @@ phw_spc(
 \arguments{
 \item{data}{A data frame with one row per time point.}
 
-\item{x, y}{Column names of the time (date or number) and the measure.}
+\item{x, y}{The time column (date or number) and the measure, unquoted as
+in dplyr (strings work too).}
 
 \item{type}{\code{"xmr"} (centre line at the mean, limits at 2.66 times the
 mean moving range) or \code{"run"} (median line, no limits).}
@@ -47,5 +48,5 @@ good direction are blue and in the bad direction orange, as in NHS
 set.seed(3)
 spc <- data.frame(month = seq(as.Date("2023-01-01"), by = "month", length.out = 30),
                   value = c(rnorm(20, 50, 4), rnorm(10, 58, 4)))
-phw_spc(spc, "month", "value", improvement = "increase", baseline = 20)
+phw_spc(spc, month, value, improvement = "increase", baseline = 20)
 }

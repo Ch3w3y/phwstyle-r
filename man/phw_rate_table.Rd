@@ -21,9 +21,11 @@ phw_rate_table(
 \item{data}{Aggregated data: one row per group (or finer), with columns
 of case counts and population. Rows are summed within each group.}
 
-\item{groups}{Grouping columns. Each gets its own section.}
+\item{groups}{Grouping columns, chosen as in \code{\link[dplyr:select]{dplyr::select()}}, e.g.
+\code{c(age_group, sex)}. Each gets its own section.}
 
-\item{cases, population}{Columns holding counts and denominators.}
+\item{cases, population}{Columns holding counts and denominators, unquoted
+as in dplyr. Strings work too.}
 
 \item{per}{Rate multiplier, e.g. \code{1e5} for per 100,000.}
 
@@ -58,6 +60,6 @@ d <- expand.grid(age_group = c("0-14", "15-44", "45-64", "65+"),
                  sex = c("Female", "Male"))
 d$cases <- c(12, 30, 41, 66, 10, 28, 45, 70)
 d$pop <- c(250, 600, 400, 300, 260, 590, 390, 260) * 1000
-phw_rate_table(d, c("age_group", "sex"), "cases", "pop",
+phw_rate_table(d, c(age_group, sex), cases, pop,
                labels = list(age_group = "Age group", sex = "Sex"))
 }

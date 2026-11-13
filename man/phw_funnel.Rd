@@ -19,8 +19,8 @@ phw_funnel(
 \arguments{
 \item{data}{A data frame with one row per unit (area, practice...).}
 
-\item{numerator, denominator}{Columns of events and population (or
-patients, tests...).}
+\item{numerator, denominator}{Columns of events and of population (or
+patients, tests...), unquoted as in dplyr. Strings work too.}
 
 \item{label}{Optional column of unit names; units outside the outer
 limits are labelled.}
@@ -55,6 +55,6 @@ proportions) or Poisson (for rates) distribution around the target.
 set.seed(2)
 units <- data.frame(unit = paste("Unit", 1:40), n = round(runif(40, 200, 5000)))
 units$events <- rbinom(40, units$n, 0.12)
-phw_funnel(units, "events", "n", label = "unit") +
+phw_funnel(units, events, n, label = unit) +
   ggplot2::labs(title = "Proportion by unit", x = "Population", y = "Proportion (\%)")
 }

@@ -66,6 +66,7 @@ reference:
   - theme_phw
   - theme_phw_map
   - phw_scales
+  - phw_sec_axis
   - phw_finalise
   - phw_save
   - phw_style_extensions

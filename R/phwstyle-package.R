@@ -8,13 +8,15 @@
 #' * [phw_setup_check()] lists the fonts, packages and tools each output
 #'   needs, and offers to install what is missing.
 #' * [use_phw_ggplot()] styles every ggplot in the session.
-#' * `vignette("phwstyle")` walks through each output type, and the script
+#' * `vignette("phwstyle")` explains how the pieces fit together (what is
+#'   set once for a document, what is added to one chart, and how your own
+#'   changes take priority), then walks through each output type. The script
 #'   `examples/phwstyle-demo.R` in the source repository runs them all from
 #'   one raw data frame.
 #'
 #' @section Charts:
 #' [theme_phw()], [theme_phw_map()], the `scale_*_phw_*()` colour and fill
-#' scales, [scale_shape_phw()], [scale_linetype_phw()], [phw_finalise()],
+#' scales, [scale_shape_phw()], [scale_linetype_phw()], [phw_sec_axis()], [phw_finalise()],
 #' [phw_save()], [phw_arrange()], [phw_style_extensions()], and public
 #' health charts: [phw_epicurve()], [phw_pyramid()], [phw_funnel()] and
 #' [phw_spc()].
@@ -42,7 +44,10 @@
 #' ([phw_bs_theme()], [phw_page_navbar()], [phw_header()]).
 #'
 #' @section Options:
-#' * `phwstyle.palette`: default palette name, e.g. `"accessible"`.
+#' * `phwstyle.palette`: default palette name, e.g. `"accessible"` for the
+#'   colour-blind safe palette in every chart, table and widget. The
+#'   environment variable `PHWSTYLE_PALETTE` and `phw-palette` in a
+#'   document's YAML header do the same; see [phw_default_palette()].
 #' * `phwstyle.font`: font family to use instead of Ubuntu.
 #' * `phwstyle.logo_dir`: folder with your own logo files.
 #' * `phwstyle.boundary_dir`: where downloaded boundaries are cached.

@@ -16,7 +16,9 @@ style the result.
 \item \code{\link[=phw_setup_check]{phw_setup_check()}} lists the fonts, packages and tools each output
 needs, and offers to install what is missing.
 \item \code{\link[=use_phw_ggplot]{use_phw_ggplot()}} styles every ggplot in the session.
-\item \code{vignette("phwstyle")} walks through each output type, and the script
+\item \code{vignette("phwstyle")} explains how the pieces fit together (what is
+set once for a document, what is added to one chart, and how your own
+changes take priority), then walks through each output type. The script
 \code{examples/phwstyle-demo.R} in the source repository runs them all from
 one raw data frame.
 }
@@ -25,7 +27,7 @@ one raw data frame.
 \section{Charts}{
 
 \code{\link[=theme_phw]{theme_phw()}}, \code{\link[=theme_phw_map]{theme_phw_map()}}, the \verb{scale_*_phw_*()} colour and fill
-scales, \code{\link[=scale_shape_phw]{scale_shape_phw()}}, \code{\link[=scale_linetype_phw]{scale_linetype_phw()}}, \code{\link[=phw_finalise]{phw_finalise()}},
+scales, \code{\link[=scale_shape_phw]{scale_shape_phw()}}, \code{\link[=scale_linetype_phw]{scale_linetype_phw()}}, \code{\link[=phw_sec_axis]{phw_sec_axis()}}, \code{\link[=phw_finalise]{phw_finalise()}},
 \code{\link[=phw_save]{phw_save()}}, \code{\link[=phw_arrange]{phw_arrange()}}, \code{\link[=phw_style_extensions]{phw_style_extensions()}}, and public
 health charts: \code{\link[=phw_epicurve]{phw_epicurve()}}, \code{\link[=phw_pyramid]{phw_pyramid()}}, \code{\link[=phw_funnel]{phw_funnel()}} and
 \code{\link[=phw_spc]{phw_spc()}}.
@@ -64,7 +66,10 @@ PowerPoint (\code{\link[=phw_pptx]{phw_pptx()}}, \code{\link[=phw_add_slide]{phw
 \section{Options}{
 
 \itemize{
-\item \code{phwstyle.palette}: default palette name, e.g. \code{"accessible"}.
+\item \code{phwstyle.palette}: default palette name, e.g. \code{"accessible"} for the
+colour-blind safe palette in every chart, table and widget. The
+environment variable \code{PHWSTYLE_PALETTE} and \code{phw-palette} in a
+document's YAML header do the same; see \code{\link[=phw_default_palette]{phw_default_palette()}}.
 \item \code{phwstyle.font}: font family to use instead of Ubuntu.
 \item \code{phwstyle.logo_dir}: folder with your own logo files.
 \item \code{phwstyle.boundary_dir}: where downloaded boundaries are cached.

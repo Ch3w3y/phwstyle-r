@@ -152,9 +152,10 @@ A ggplot2 scale.
 \description{
 \itemize{
 \item \verb{_d} scales are discrete and use the qualitative palettes (\code{main},
-\code{extended}, \code{accessible}, \code{highlight}, \code{rag}).
+\code{extended}, \code{accessible}, \code{highlight}, \code{rag}, \code{strategy}).
 \item \verb{_c} scales are continuous, \verb{_b} scales are binned. Both use sequential
-or diverging palettes (\code{blues}, \code{teals}, \code{gradient}, \code{orange_navy}).
+or diverging palettes (\code{blues}, \code{teals}, \code{greens}, \code{gradient},
+\code{orange_navy}).
 \item \verb{scale_*_phw_div()} centres the diverging palette on \code{midpoint}.
 }
 }
@@ -164,18 +165,33 @@ Every scale takes a palette name, your own vector of colours, or (for
 so \code{name}, \code{labels}, \code{breaks}, \code{limits}, \code{guide}, \code{na.value} and so on work
 as usual.
 
+\strong{Do you need one?} After \code{\link[=use_phw_ggplot]{use_phw_ggplot()}}, or inside a
+\verb{phw_*_document()}, plots already use these palettes, so a scale adds
+nothing unless you give it something to change: another \code{palette}, a
+colour \code{key}, pinned \code{values}, or a legend \code{name}. In a plain script with
+no setup, add one to each plot. A scale added to a plot always replaces
+the default for that aesthetic, whether it is one of these or a ggplot2
+scale such as \code{\link[ggplot2:scale_fill_manual]{ggplot2::scale_fill_manual()}}.
+
+\strong{More than four groups.} \code{"main"} has four colours and carries on into
+\code{"extended"} (twelve), so a chart with six groups starts with the same
+four colours as a chart with four. The first seven have a published
+source; see \link{phw_palettes} for where the rest come from. Past the end of a palette you get
+colours from the other PHW palettes and a warning.
+
 \strong{Colours that stick to groups.} By default a \verb{_d} scale colours groups
 in the order they appear. To keep the same colour for a group in every
 chart and every report, give a \code{key}, e.g. \code{key = "age_group"}. New groups
 get the next free colour and old ones never move (see
 \code{\link[=phw_colour_key]{phw_colour_key()}}). You can also pin colours with \code{values}, a named
 vector such as \code{c(Wales = "#285087")}. Groups named "Other" or "Unknown"
-are drawn in grey.
+are drawn in grey. (Only these scales know the group names, so a plot
+left on the default colours gives "Other" an ordinary colour.)
 
-\strong{Colour-blind readers.} Use \code{palette = "accessible"}, or set
-\code{options(phwstyle.palette = "accessible")} for every chart. Add
-\code{\link[=scale_shape_phw]{scale_shape_phw()}} or \code{\link[=scale_linetype_phw]{scale_linetype_phw()}} so groups differ by more
-than colour.
+\strong{Colour-blind readers.} Use \code{palette = "accessible"} for one chart, or
+switch every chart, table and widget at once: see
+\code{\link[=phw_default_palette]{phw_default_palette()}}. Add \code{\link[=scale_shape_phw]{scale_shape_phw()}} or
+\code{\link[=scale_linetype_phw]{scale_linetype_phw()}} so groups differ by more than colour.
 }
 \examples{
 library(ggplot2)

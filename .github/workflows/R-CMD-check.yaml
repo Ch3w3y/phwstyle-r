@@ -1,6 +1,32 @@
-# Runs R CMD check (with the tests) on every push and pull request, on the
-# platforms CRAN checks: Linux (R devel, release and oldrel), macOS and
-# Windows. Based on r-lib/actions.
+# Runs R CMD check (with the tests) on every push and pull request. Based on
+# r-lib/actions.
+#
+# Analysts don't all have the same versions of R, of the packages phwstyle
+# uses, or of the document tools, and phwstyle takes different routes
+# depending on what is installed (most of all for ggplot2 before and after
+# 4.0). So the jobs cover versions as well as platforms:
+#
+# * Platforms: the latest of everything on Linux, macOS and Windows, and
+#   older R on Windows, which is what most analysts use.
+# * R versions: R devel, the release, the two releases before it, and the
+#   minimum in DESCRIPTION (R 4.3), all with the latest packages available
+#   for that R. R 4.3 is the minimum because it is the oldest R whose CRAN
+#   Windows binaries meet every minimum version in DESCRIPTION. When a new
+#   R is released, add a job for any version between the minimum and
+#   oldrel-2.
+# * "ggplot2 3.5": the latest of everything else with ggplot2 3.5.2, the
+#   last release before 4.0.
+# * "CRAN <date>": a version of R with every package as it was on CRAN that
+#   day, and the Quarto and Pandoc of the time. This is what a machine set
+#   up then and not updated since has. The first of them, "oldest", is the
+#   minimum versions in DESCRIPTION, with ggplot2 3.5.0. If you raise a
+#   minimum there, move its `snapshot` to a date when that version was on
+#   CRAN (and keep `r` to a version of R that was current then).
+# * "ggplot2 dev": the development version of ggplot2, as an early warning.
+#   It is allowed to fail.
+#
+# data-raw/version-battery/battery.sh runs the same cells on one machine,
+# with more versions of Pandoc and Quarto.
 on:
   push:
     branches: [main, master]
@@ -14,33 +40,84 @@ permissions: read-all
 jobs:
   R-CMD-check:
     runs-on: ${{ matrix.config.os }}
-    name: ${{ matrix.config.os }} (${{ matrix.config.r }})
+    name: ${{ matrix.config.os }} (${{ matrix.config.r }}) ${{ matrix.config.label }}
+    continue-on-error: ${{ matrix.config.allow-failure == true }}
     strategy:
       fail-fast: false
       matrix:
         config:
           - {os: macos-latest,   r: 'release'}
           - {os: windows-latest, r: 'release'}
+          - {os: windows-latest, r: 'oldrel-1'}
+          - {os: windows-latest, r: '4.3', label: 'minimum R'}
           - {os: ubuntu-latest,  r: 'devel', http-user-agent: 'release'}
-          - {os: ubuntu-latest,  r: 'release'}
+          - {os: ubuntu-latest,  r: 'release', latex: true}
           - {os: ubuntu-latest,  r: 'oldrel-1'}
+          - {os: ubuntu-latest,  r: 'oldrel-2'}
+          - {os: ubuntu-latest,  r: '4.3', label: 'minimum R'}
+          - {os: ubuntu-latest,  r: 'release', label: 'ggplot2 3.5', extra: 'ggplot2@3.5.2'}
+          - {os: ubuntu-22.04,   r: '4.3.3',   label: 'oldest (CRAN 2024-06)', extra: 'ggplot2@3.5.0', snapshot: '2024-06-03', quarto: '1.5.57', pandoc: '2.19.2', error-on: '"error"'}
+          - {os: ubuntu-22.04,   r: '4.4.2',   label: 'CRAN 2024-12', snapshot: '2024-12-02', quarto: '1.6.43', pandoc: '3.1.11', error-on: '"error"'}
+          - {os: ubuntu-24.04,   r: '4.5.0',   label: 'CRAN 2025-06', snapshot: '2025-06-02', quarto: '1.7.34', pandoc: '3.6.4', error-on: '"error"'}
+          - {os: ubuntu-24.04,   r: '4.5.2',   label: 'CRAN 2025-12', snapshot: '2025-12-01', quarto: '1.8.26', pandoc: '3.6.4', error-on: '"error"'}
+          - {os: ubuntu-latest,  r: 'release', label: 'ggplot2 dev', extra: 'tidyverse/ggplot2', allow-failure: true}
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
     steps:
       - uses: actions/checkout@v4
+
+      # Take packages from a dated snapshot of CRAN instead of the latest.
+      # RSPM (Linux binaries) and CRAN (source) are the two repositories
+      # that setup-r puts in options(repos), so both point at the snapshot.
+      - name: Use a CRAN snapshot
+        if: matrix.config.snapshot
+        shell: bash
+        run: |
+          codename=$(. /etc/os-release && echo "$VERSION_CODENAME")
+          echo "RSPM=https://packagemanager.posit.co/cran/__linux__/${codename}/${{ matrix.config.snapshot }}" >> "$GITHUB_ENV"
+          echo "CRAN=https://packagemanager.posit.co/cran/${{ matrix.config.snapshot }}" >> "$GITHUB_ENV"
+
       - uses: r-lib/actions/setup-pandoc@v2
+        with:
+          pandoc-version: ${{ matrix.config.pandoc || '3.1.11' }}
+
+      # So the test that renders a PDF with XeLaTeX runs. It is skipped
+      # where LaTeX is not installed.
+      - uses: r-lib/actions/setup-tinytex@v2
+        if: matrix.config.latex
+
+      # So the tests that render Quarto documents run. They are skipped
+      # where Quarto is not installed.
+      - uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: ${{ matrix.config.quarto || 'release' }}
+
       - uses: r-lib/actions/setup-r@v2
         with:
           r-version: ${{ matrix.config.r }}
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
+
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck
+          extra-packages: |
+            any::rcmdcheck
+            ${{ matrix.config.extra }}
           needs: check
+
+      # Shown in the log, so a failure can be matched to the versions used.
+      - name: Package versions
+        shell: Rscript {0}
+        run: |
+          pkgs <- c("ggplot2", "scales", "flextable", "officer", "gt", "gtsummary",
+                    "reactable", "plotly", "DT", "leaflet", "bslib", "rmarkdown",
+                    "knitr", "openxlsx2", "patchwork", "sf", "testthat")
+          have <- pkgs[vapply(pkgs, requireNamespace, logical(1), quietly = TRUE)]
+          print(vapply(have, function(p) as.character(utils::packageVersion(p)), ""))
+
       - uses: r-lib/actions/check-r-package@v2
         with:
           args: 'c("--no-manual", "--as-cran")'
-          error-on: '"warning"'
+          error-on: ${{ matrix.config.error-on || '"warning"' }}
           upload-snapshots: true

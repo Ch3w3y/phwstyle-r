@@ -18,8 +18,12 @@
   \setsansfont{Ubuntu}[BoldFont={Ubuntu Bold}, ItalicFont={Ubuntu Italic}, BoldItalicFont={Ubuntu Bold Italic}]
 }{%
   \IfFileExists{%%FONTDIR%%Ubuntu-Regular.ttf}{%
-    \setmainfont{Ubuntu}[Path=%%FONTDIR%%, Extension=.ttf, UprightFont=*-Regular, BoldFont=*-Bold, ItalicFont=*-Italic, BoldItalicFont=*-BoldItalic]
-    \setsansfont{Ubuntu}[Path=%%FONTDIR%%, Extension=.ttf, UprightFont=*-Regular, BoldFont=*-Bold, ItalicFont=*-Italic, BoldItalicFont=*-BoldItalic]
+    % Set as the defaults for the name "Ubuntu", so a later request for the
+    % font by name loads the bundled files too. flextable makes one in
+    % every table cell.
+    \defaultfontfeatures[Ubuntu]{Path=%%FONTDIR%%, Extension=.ttf, UprightFont=*-Regular, BoldFont=*-Bold, ItalicFont=*-Italic, BoldItalicFont=*-BoldItalic}
+    \setmainfont{Ubuntu}
+    \setsansfont{Ubuntu}
   }{%
     \setmainfont{TeX Gyre Heros}\setsansfont{TeX Gyre Heros}
   }%

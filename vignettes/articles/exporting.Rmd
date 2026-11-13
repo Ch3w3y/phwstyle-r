@@ -8,11 +8,12 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", message = FALSE, warning 
 
 ```{r}
 library(phwstyle)
+library(dplyr)
 set.seed(1)
-dat <- data.frame(group = sample(c("Group A", "Group B", "Group C"), 300, TRUE),
-                  type = sample(c("Type 1", "Type 2", "Type 3"), 300, TRUE),
-                  year = sample(2024:2025, 300, TRUE))
-tab <- phw_group_table(dat, c("group", "type"), "year")
+dat <- tibble(group = sample(c("Group A", "Group B", "Group C"), 300, replace = TRUE),
+              type = sample(c("Type 1", "Type 2", "Type 3"), 300, replace = TRUE),
+              year = sample(2024:2025, 300, replace = TRUE))
+tab <- phw_group_table(dat, c(group, type), year)
 ```
 
 ## Excel

@@ -8,8 +8,16 @@ vignette: >
 ---
 
 ```{r, include = FALSE}
+# The examples use dplyr and flextable, which are optional packages. Without
+# them the code is shown but not run.
+have_pkgs <- requireNamespace("dplyr", quietly = TRUE) && requireNamespace("flextable", quietly = TRUE)
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4.2,
+                      eval = have_pkgs,
                       dev = if (requireNamespace("ragg", quietly = TRUE)) "ragg_png" else "png")
+```
+
+```{r, echo = FALSE, results = "asis", eval = !have_pkgs}
+cat("*The examples on this page need the dplyr and flextable packages, which are not installed here, so their output is not shown.*\n")
 ```
 
 phwstyle applies the Public Health Wales (PHW) and CDSC house style to R
@@ -18,6 +26,117 @@ outputs. You write your analysis as usual, then add one function to brand it.
 ```{r}
 library(phwstyle)
 library(ggplot2)
+library(dplyr)
+```
+
+## How the pieces fit together
+
+phwstyle works at three levels. Something set at a wider level is already
+done for everything inside it, so you don't repeat it lower down.
+
+**1. Once for a document, project or session.** Each of these is a switch
+you set once.
+
+| Set once | What it switches on | So don't also add |
+|---|---|---|
+| An R Markdown format: `phw_html_document()`, `phw_word_document()`, `phw_pdf_document()` | The page design (fonts, headings, header band, Word or LaTeX template, figure sizes), and it calls `use_phw_ggplot()` and `use_phw_flextable()` for you | `use_phw_ggplot()` or `use_phw_flextable()` in the document |
+| A Quarto format: `phw-html`, `phw-docx`, `phw-typst` and the rest, after `use_phw_quarto()` | The page design only. A Quarto extension can't run R code, so call `use_phw_ggplot()` and `use_phw_flextable()` yourself in the setup chunk | |
+| `use_phw_ggplot()` | For every ggplot: `theme_phw()`, the PHW palette for groups, PHW blues for numbers, navy for bars, lines and points that have no colour of their own, the PHW font in text layers, and the same for extension geoms | `+ theme_phw()` or `+ scale_*_phw_*()` on each plot, or `phw_style_extensions()` |
+| `use_phw_flextable()` | PHW style for every flextable you make with flextable's own functions | `phw_flextable_theme()` on each table |
+| `use_phw_gtsummary()` | PHW style for every gtsummary table. The document formats don't call this one, so add it when you use gtsummary | |
+| The palette switch: `palette = "accessible"` in a format or in `use_phw_ggplot()`, or `options(phwstyle.palette = )` | Which colours groups get in every chart, table and widget | `palette = ` in each function |
+| `options(phwstyle.font = )` | The font everywhere | |
+| `phw_key_file()` | Where colour keys are kept between sessions. It colours nothing on its own: a key is used when you give a function `key = "name"` | |
+
+**2. For one chart.** `theme_phw()` and `theme_phw_map()`, the colour and
+fill scales (`scale_fill_phw_d()`, `scale_colour_phw_c()` and so on),
+`scale_shape_phw()`, `scale_linetype_phw()` and `phw_sec_axis()` are added
+to a plot with `+`, and affect only that plot.
+
+**3. For one kind of chart or output.** The ready-made charts
+(`phw_epicurve()`, `phw_pyramid()`, `phw_funnel()`, `phw_spc()`) bring
+their own theme and colours, so they need no setup. So do the functions
+that make a whole output: `phw_flextable()`, `phw_gt()`, `phw_reactable()`,
+`phw_datatable()`, `phw_plotly()`, `phw_leaflet()`, `phw_write_xlsx()` and
+`phw_add_slide()`. The setup functions at level 1 don't reach interactive
+widgets, so use these each time (`phw_plotly(p)`, not
+`plotly::ggplotly(p)`).
+`phw_finalise()` and `phw_save()` are for a chart that leaves the report.
+
+### Do I still need to add this?
+
+"After setup" means inside a `phw_*_document()`, or after
+`use_phw_ggplot()` in a script or Quarto document.
+
+| You are about to add | Covered after setup? | Add it when |
+|---|---|---|
+| `+ theme_phw()` | Yes | You want different settings for this plot, e.g. `theme_phw(grid = "x")` or `legend = "right"` |
+| `+ scale_fill_phw_d()` or `scale_colour_phw_d()` | Yes: groups get the PHW palette | You want a colour `key`, another `palette`, pinned `values`, a legend `name`, or "Other" and "Unknown" drawn in grey |
+| `+ scale_fill_phw_c()` or `scale_colour_phw_c()` | Yes: numbers get PHW blues | You want another palette such as `"teals"`, or the full range including the palest blue |
+| `fill = phw_col("navy")` inside a geom | Yes: bars, areas, lines and points are navy | You want a different colour |
+| `family = phw_font()` in `geom_text()` | Yes | Never |
+| `phw_style_extensions()` | Yes, for packages loaded before the setup ran | You load ggrepel, ggridges and the like afterwards |
+| `scale_*_phw_b()` (binned) or `scale_*_phw_div()` (diverging) | No | The data need them, e.g. a choropleth in bands |
+| `scale_shape_phw()`, `scale_linetype_phw()` | No | Groups should differ by more than colour |
+| `theme_phw_map()` | No | The plot is a map |
+| `labs(caption = phw_caption(...))` | No | The chart shows its source |
+| `phw_finalise()` | No | The chart is used outside a branded report |
+
+In a plain script with no setup, nothing is covered: add `+ theme_phw()`
+and a PHW scale to each plot, or call `use_phw_ggplot()` at the top and
+skip both.
+
+```{r}
+old <- use_phw_ggplot()
+
+# Themed and coloured, with nothing added to the plot:
+ggplot(mpg, aes(class, fill = drv)) +
+  geom_bar() +
+  labs(title = "After use_phw_ggplot(), plain ggplot2 is enough", x = NULL, y = "Cars")
+```
+
+All of this is the same on ggplot2 3.5 and 4.0. One thing differs without
+setup: from ggplot2 4.0, `+ theme_phw()` on its own also gives groups the
+PHW palette, because themes can carry colours. With ggplot2 3.5 it styles
+the text, gridlines and legend only. `use_phw_ggplot()` does the full job
+on both.
+
+### Your changes win
+
+Anything you add to a plot takes priority over the session and document
+defaults. This is deliberate: the house style is a starting point, and you
+can adjust on top of it when a chart needs something different.
+
+* A scale added to a plot replaces the PHW default for that aesthetic. That
+  goes for a PHW scale with other arguments, a ggplot2 scale such as
+  `scale_fill_manual()`, and scales from other packages.
+* `+ theme(...)`, or the same settings passed as arguments to
+  `theme_phw(...)`, override the theme.
+* `fill = ` or `colour = ` inside a geom overrides the default navy.
+* A `palette = ` given to one function overrides the palette switch for
+  that chart or table.
+
+```{r}
+ggplot(mpg, aes(class, fill = drv)) +
+  geom_bar() +
+  scale_fill_manual(values = c("4" = "#846AA4", f = "#338276", r = "#CFAB7A")) +
+  theme(legend.position = "right") +
+  labs(title = "A scale and a theme setting added to the plot replace the defaults",
+       x = NULL, y = "Cars")
+```
+
+Two things follow from the same rule:
+
+* `theme_phw()` is a complete theme, so adding it resets any `+ theme()`
+  that came before it on that plot. Put your own `+ theme()` after it, or
+  pass the settings to `theme_phw()`.
+* The ready-made charts already have a fill or colour scale. Adding another
+  one replaces theirs, and ggplot2 says so with "Scale for fill is already
+  present". To change their colours, use their `palette` and `key`
+  arguments instead.
+
+```{r, include = FALSE}
+theme_set(old)
 ```
 
 ## Colours
@@ -26,8 +145,13 @@ library(ggplot2)
 
 ```{r}
 phw_pal()                 # navy, teal, orange, pink: the default chart colours
+phw_pal(6)                # more than four groups carry on into "extended"
 phw_pal(5, "blues")       # sequential, for maps and heat tables
 ```
+
+Every chart, table and widget draws groups from this one palette, however
+many groups it has. A chart with six groups starts with the same four
+colours as a chart with four, so charts in the same report match.
 
 ```{r, fig.height = 3}
 show_phw_palettes()
@@ -39,12 +163,36 @@ colours, e.g. `scale_colour_phw_d(palette = c("#285087", "#FF5D0C"))`.
 ## Colour-blind readers
 
 About 1 in 12 men can't tell some reds and greens apart. The `accessible`
-palette stays distinct for all three common types of colour blindness. Use
-it everywhere with one line:
+palette stays distinct for all three common types of colour blindness. It
+is never used unless you ask for it. Switch it on once and it applies to
+every chart, table and widget, for any number of groups:
 
 ```{r, eval = FALSE}
 use_phw_ggplot(palette = "accessible")  # or options(phwstyle.palette = "accessible")
 ```
+
+In a document, set it where you choose the format, and render the same
+document both ways:
+
+```{r, eval = FALSE}
+# R Markdown
+word <- "phwstyle::phw_word_document"
+rmarkdown::render("report.Rmd", word, output_file = "report.docx")
+rmarkdown::render("report.Rmd", word, output_file = "report-accessible.docx",
+                  output_options = list(palette = "accessible"))
+```
+
+```{r, eval = FALSE}
+# Quarto (this works on Windows too)
+system2("quarto", c("render", "report.qmd", "--to", "phw-docx"))
+Sys.setenv(PHWSTYLE_PALETTE = "accessible")
+system2("quarto", c("render", "report.qmd", "--to", "phw-docx", "-o", "report-accessible.docx"))
+Sys.unsetenv("PHWSTYLE_PALETTE")
+```
+
+Or fix it in the YAML header: `palette: accessible` under an R Markdown
+format, or `phw-palette: accessible` at the top level of a Quarto document.
+`?phw_default_palette` lists every way to switch and which one wins.
 
 Check any set of colours, and see them as a colour-blind reader would:
 
@@ -59,8 +207,12 @@ show_phw_palettes(c("main", "accessible", "rag", "rag_accessible"), cvd = "deuta
 Colour should never be the only cue. Add `scale_shape_phw()` or
 `scale_linetype_phw()` to charts. `phw_flextable_heat(palette = "rag")` adds
 shapes to RAG cells, and `"rag_accessible"` uses navy for "good" instead of
-green. `theme_phw(accessible = TRUE)` makes text and lines
-larger.
+green.
+
+Larger text and thicker lines are a separate setting:
+`use_phw_ggplot(accessible = TRUE)` for every plot, or
+`theme_phw(accessible = TRUE)` for one. It doesn't change the colours, and
+the palette switch doesn't change the sizes, so use either or both.
 
 ## Colours that stay with their groups
 
@@ -85,6 +237,9 @@ phw_key_file("phw-colours.csv")
 
 Keys store the colours themselves, so changing palette later only affects new
 groups. `phw_key_recolour()` moves a whole key to a new palette on purpose.
+The accessible palette is the exception: when it is switched on, each key
+keeps a second set of colours (stored as `name@accessible`), so both
+versions of a report stay consistent from one run to the next.
 
 ```{r, include = FALSE}
 phw_key_reset("age_vignette")
@@ -92,9 +247,9 @@ phw_key_reset("age_vignette")
 
 ## ggplot2
 
-Add `theme_phw()` to a plot, or call `use_phw_ggplot()` once to style every
-plot in the session. The source line goes in the caption, the way PHW
-reports show it.
+Call `use_phw_ggplot()` once to style every plot in the session, or add
+`theme_phw()` and a PHW scale to one plot, as here. The source line goes in
+the caption, the way PHW reports show it.
 
 ```{r}
 ggplot(mpg, aes(displ, hwy, colour = drv)) +
@@ -127,8 +282,8 @@ to any of these.
 ## Tables
 
 ```{r}
-tbl <- data.frame(Area = paste("Area", LETTERS[1:3]),
-                  Count = c(12L, 28L, 1L), Value = c(2.0, 5.5, 0.7))
+tbl <- tibble(Area = paste("Area", LETTERS[1:3]),
+              Count = c(12L, 28L, 1L), Value = c(2.0, 5.5, 0.7))
 phw_flextable(tbl, caption = "Table caption", source = "Example data",
               bold_first_col = TRUE)
 ```
@@ -159,21 +314,21 @@ frame that renders properly with both `phw_flextable()` and
   all groups, and choose an indented or column layout.
 
 ```{r}
-dat <- data.frame(
-  group = sample(c("Group A", "Group B", "Group C"), 300, TRUE),
-  type = sample(c("Type 1", "Type 2", "Type 3"), 300, TRUE),
-  year = sample(2023:2024, 300, TRUE))
-phw_flextable(phw_group_table(dat, rows = c("group", "type"), cols = "year",
+set.seed(1)
+dat <- tibble(
+  group = sample(c("Group A", "Group B", "Group C"), 300, replace = TRUE),
+  type = sample(c("Type 1", "Type 2", "Type 3"), 300, replace = TRUE),
+  year = sample(2023:2024, 300, replace = TRUE))
+phw_flextable(phw_group_table(dat, rows = c(group, type), cols = year,
                               labels = list(group = "Group", type = "Type", year = "Year")))
 ```
 
 ```{r}
-set.seed(1)
-ll <- data.frame(
-  age_group = sample(c("0-14", "15-44", "45-64", "65+"), 200, TRUE),
-  sex = sample(c("Female", "Male"), 200, TRUE),
-  outcome = sample(c("Outcome X", "Outcome Y"), 200, TRUE))
-phw_flextable(phw_summary_table(ll, by = "outcome",
+ll <- tibble(
+  age_group = sample(c("0-14", "15-44", "45-64", "65+"), 200, replace = TRUE),
+  sex = sample(c("Female", "Male"), 200, replace = TRUE),
+  outcome = sample(c("Outcome X", "Outcome Y"), 200, replace = TRUE))
+phw_flextable(phw_summary_table(ll, by = outcome,
                                 labels = list(age_group = "Age group", sex = "Sex")))
 ```
 
@@ -219,9 +374,10 @@ functions behind every example.
 ## Documents
 
 - R Markdown: `output: phwstyle::phw_html_document`, `phw_word_document`
-  or `phw_pdf_document`.
+  or `phw_pdf_document`. Charts and flextables inside are styled for you.
 - Quarto: run `use_phw_quarto()` in your project, then use `format: phw-html`,
-  `phw-docx`, `phw-typst`, `phw-pdf`, `phw-revealjs` or `phw-dashboard`.
+  `phw-docx`, `phw-typst`, `phw-pdf`, `phw-revealjs` or `phw-dashboard`, and
+  call `use_phw_ggplot()` in the setup chunk.
 - Shiny: `phw_page_navbar()` or `theme = phw_bs_theme()`.
 
 ## Wording
@@ -235,14 +391,14 @@ phw_caption("Example data", source_prefix = "Data: ", note = "Provisional figure
 
 ## Changing anything else
 
-Each function passes extra arguments to the function it wraps, so you can
-override any default: `theme_phw(plot.title = element_text(size = 18))`,
+Most functions pass extra arguments to the function they wrap (the `...`
+on each help page), so you can override a default: `theme_phw(plot.title = element_text(size = 18))`,
 `phw_reactable(data, pagination = FALSE)`, `phw_plotly(p, hovermode = "x")`,
 `phw_bs_theme(primary = "#24A2B5")`.
 
 ## Logos
 
 The PHW logo is a trade mark. `phw_logo()` finds it in your
-`phwstyle.logo_dir` option, bundled with the package, or in a copy saved by
-`phw_download_logos()`. Without a logo, outputs are still branded, just
+`phwstyle.logo_dir` folder, or in a copy saved by `phw_download_logos()`.
+It is not included in the package. Without a logo, outputs are still branded, just
 without the logo.

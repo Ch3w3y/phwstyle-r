@@ -28,7 +28,8 @@ A character vector of hex colours.
 \description{
 Qualitative palettes return their colours in order (and refuse to make up
 extra ones). Sequential and diverging palettes are interpolated to any
-length.
+length. Asking \code{"main"} for more than four colours carries on into
+\code{"extended"}, as the charts do.
 }
 \details{
 \code{palette} can be a PHW palette name, your own vector of colours, or a

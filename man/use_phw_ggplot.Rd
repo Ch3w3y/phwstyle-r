@@ -8,23 +8,46 @@ use_phw_ggplot(..., palette = NULL)
 }
 \arguments{
 \item{...}{Passed to \code{\link[=theme_phw]{theme_phw()}}, e.g. \code{base_size = 14} or
-\code{accessible = TRUE}.}
+\code{accessible = TRUE} (larger text and thicker lines).}
 
 \item{palette}{Default qualitative palette for every chart, table and
-widget, e.g. \code{"accessible"}. Sets \code{options(phwstyle.palette)}.}
+widget, e.g. \code{"accessible"} for the colour-blind safe palette. Sets
+\code{options(phwstyle.palette)}; see \code{\link[=phw_default_palette]{phw_default_palette()}}. \code{NULL} leaves
+the palette as it is.}
 }
 \value{
 The previous theme, invisibly.
 }
 \description{
-Sets \code{\link[=theme_phw]{theme_phw()}} as the default theme and makes PHW palettes the default
-discrete and continuous scales. Text geoms use Ubuntu too. Put it at the
-top of a script or in an R Markdown/Quarto setup chunk.
+Call it once at the top of a script, or in the setup chunk of a Quarto
+document, and every plot after it is in the PHW style with no further
+code. The R Markdown formats (\code{\link[=phw_html_document]{phw_html_document()}} and friends) call it
+for you. It sets:
 }
 \details{
-This is like calling \code{theme_set()} in base ggplot2. The difference is
-that it also sets colours, which \code{theme_set()} can't do before ggplot2 4.0.
-It also restyles geoms from extension packages that are already loaded
+\itemize{
+\item \code{\link[=theme_phw]{theme_phw()}} as the default theme
+\item the PHW palette for groups (colour and fill), and PHW blues for
+continuous and binned colours
+\item default colours for layers that don't map a colour: navy bars, areas,
+lines and points, with text and reference lines in the PHW text colour
+\item the PHW font for text and labels
+\item the same for geoms from extension packages that are already loaded
 (see \code{\link[=phw_style_extensions]{phw_style_extensions()}}), so load ggrepel, ggridges and the like
-first.
+first
+}
+
+The result is the same on ggplot2 3.5 and 4.0.
+
+After this, add \code{\link[=theme_phw]{theme_phw()}} or a \verb{scale_*_phw_*()} to a plot only to
+change something for that plot, such as \code{theme_phw(grid = "x")} or
+\code{scale_fill_phw_d(key = "age_group")}. Anything you add to a plot wins
+over these defaults.
+}
+\examples{
+library(ggplot2)
+old <- use_phw_ggplot()
+ggplot(mpg, aes(class)) + geom_bar()
+ggplot(mpg, aes(displ, hwy, colour = drv)) + geom_point()
+theme_set(old)
 }

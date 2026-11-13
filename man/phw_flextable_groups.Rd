@@ -17,7 +17,8 @@ phw_flextable_groups(
 \arguments{
 \item{x}{A flextable.}
 
-\item{j}{Column that holds the groups.}
+\item{j}{Column that holds the groups, unquoted as in dplyr. A string or
+a position works too.}
 
 \item{key, palette, values}{Passed to \code{\link[=phw_colour_key]{phw_colour_key()}} as \code{name},
 \code{palette} and \code{fixed}.}

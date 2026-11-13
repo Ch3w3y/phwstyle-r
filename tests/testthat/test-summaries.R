@@ -115,7 +115,7 @@ test_that("phw_group_table total options and layouts work", {
   expect_false("total" %in% attr(t3, "row_type"))
   t4 <- phw_group_table(dat, "group", value = "days", fun = mean, totals = "table")
   expect_equal(t4$days[t4$group == "Total"], mean(dat$days))
-  expect_error(phw_group_table(dat, "nope"), "not found")
+  expect_error(phw_group_table(dat, "nope"), "doesn't exist")
   expect_error(phw_group_table(dat, "group", "year", col_totals = "none", percent = "row"), "total column")
   expect_output(print(t3), "Group A")
 })

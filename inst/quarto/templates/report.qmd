@@ -5,6 +5,9 @@ author: "Team name"
 date: today
 date-format: "D MMMM YYYY"
 phw-team: "Team name"
+# Colour-blind safe colours in every chart and table: uncomment the next
+# line, or render with the environment variable PHWSTYLE_PALETTE=accessible.
+# phw-palette: accessible
 format:
   phw-html: default
   phw-docx: default
@@ -17,15 +20,18 @@ execute:
 
 ```{r}
 #| label: setup
+library(dplyr)
 library(ggplot2)
 library(phwstyle)
+# Style every chart and flextable below. After this, add theme_phw() or a
+# scale_*_phw_*() to a plot only to change something for that plot.
 use_phw_ggplot()
 use_phw_flextable()
 # Optional: keep group colours the same in every report.
 # phw_key_file("phw-colours.csv")
 set.seed(44)
-d <- expand.grid(period = 1:13, group = paste("Group", 1:4))
-d$value <- round(runif(nrow(d), 20, 120) + d$period * 4, 1)
+d <- tidyr::expand_grid(group = paste("Group", 1:4), period = 1:13) |>
+  mutate(value = round(runif(n(), 20, 120) + period * 4, 1))
 ```
 
 ## Summary
@@ -64,9 +70,10 @@ ggplot(d, aes(period, value)) +
 ```{r}
 #| label: tbl-example
 #| tbl-cap: "Table caption"
-tbl <- data.frame(Category = paste("Category", LETTERS[1:5]),
-                  Count = c(114L, 84L, 64L, 19L, 23L),
-                  `Share (%)` = c(11.7, 8.6, 6.6, 1.9, 2.4), check.names = FALSE)
+tbl <- tibble(Category = paste("Category", LETTERS[1:5]),
+              Count = c(114L, 84L, 64L, 19L, 23L),
+              `Share (%)` = c(11.7, 8.6, 6.6, 1.9, 2.4))
+# flextable for HTML and Word; a plain table for Typst and PDF.
 if (knitr::is_html_output() || knitr::pandoc_to("docx")) {
   phw_flextable(tbl, source = "Example data")
 } else {

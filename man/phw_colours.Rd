@@ -22,6 +22,8 @@ use today, in that order.
 (Pantone 534 and 465).
 \item \code{blue}, \code{green}, \code{magenta} come from the phw.nhs.wales website.
 \item Greys and \code{text} are the NHS digital front-end neutrals used on the site.
+\item \code{mint} and \code{green_bright} are two of the six strategic priority colours
+in PHW's Long-Term Strategy 2023 to 2035.
 }
 }
 \examples{

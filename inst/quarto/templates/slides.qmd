@@ -4,6 +4,7 @@ subtitle: "Subtitle"
 author: "Team name"
 date: today
 date-format: "D MMMM YYYY"
+# phw-palette: accessible   # colour-blind safe colours in every chart
 format: phw-revealjs
 execute:
   echo: false
@@ -13,6 +14,7 @@ execute:
 
 ```{r}
 #| label: setup
+library(dplyr)
 library(ggplot2)
 library(phwstyle)
 use_phw_ggplot(base_size = 16)
@@ -30,8 +32,8 @@ use_phw_ggplot(base_size = 16)
 #| fig-width: 11
 #| fig-height: 5.2
 set.seed(1)
-d <- expand.grid(period = 1:13, group = paste("Group", 1:4))
-d$value <- runif(nrow(d), 20, 120) + d$period * 4
+d <- tidyr::expand_grid(group = paste("Group", 1:4), period = 1:13) |>
+  mutate(value = runif(n(), 20, 120) + period * 4)
 ggplot(d, aes(period, value, colour = group)) + geom_line(linewidth = 1.2) +
   scale_colour_phw_d(key = "group") +
   labs(x = "Period", y = "Value", caption = phw_caption("Example data"))

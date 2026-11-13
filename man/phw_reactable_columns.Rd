@@ -35,7 +35,7 @@ phw_col_percent(digits = 1, ...)
 \item{data}{The data frame (bar and heat columns need it to find the
 range).}
 
-\item{column}{Column name.}
+\item{column}{The column, unquoted as in dplyr. A string works too.}
 
 \item{colour}{Bar colour.}
 
@@ -75,8 +75,8 @@ if (requireNamespace("reactable", quietly = TRUE)) {
   df <- data.frame(area = paste("Area", LETTERS[1:5]), cases = c(120, 85, 64, 19, 23),
                    rate = c(4.1, 2.2, 6.3, 1.0, 2.5), share = c(.38, .27, .2, .06, .07))
   phw_reactable(df, columns = list(
-    cases = phw_col_bar(df, "cases", name = "Cases"),
-    rate = phw_col_heat(df, "rate", name = "Rate"),
+    cases = phw_col_bar(df, cases, name = "Cases"),
+    rate = phw_col_heat(df, rate, name = "Rate"),
     share = phw_col_percent(name = "Share")
   ))
 }

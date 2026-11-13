@@ -17,7 +17,8 @@ phw_flextable_heat(
 \arguments{
 \item{x}{A flextable.}
 
-\item{j}{Columns to colour (names or positions).}
+\item{j}{Columns to colour, chosen as in \code{\link[dplyr:select]{dplyr::select()}}: unquoted
+names such as \code{c(rate, cases)}, positions such as \code{2:5}, or strings.}
 
 \item{palette}{A sequential or diverging palette name, a vector of
 colours, \code{"rag"} or \code{"rag_accessible"} (navy instead of green).}

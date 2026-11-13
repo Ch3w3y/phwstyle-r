@@ -32,13 +32,30 @@
 
   set document(title: if title != none { title } else { "" })
   set text(font: font, size: fontsize, fill: phw-text, lang: base, region: region)
-  set par(justify: false, leading: 0.68em, spacing: 0.9em)
-  set heading(numbering: sectionnumbering)
+  // The space between paragraphs is set on `par` from Typst 0.12 (Quarto
+  // 1.7) and on `block` before that (Quarto 1.5 and 1.6).
+  let par-has-spacing = sys.version >= version(0, 12, 0)
+  set par(justify: false, leading: 0.68em, ..if par-has-spacing { (spacing: 0.9em) } else { (:) })
+  show par: set block(..if par-has-spacing { (:) } else { (spacing: 0.9em) })
+  // Quarto 1.5 and 1.6 write a document's top-level headings at level 2
+  // (Quarto 1.7 and later write them at level 1). When nothing is at level
+  // 1, treat level 2 as the top: same sizes, and no leading "0." in the
+  // section numbers.
+  let shifted() = query(heading.where(level: 1)).len() == 0
+  let numbered = sectionnumbering != none and sectionnumbering != ""
+  set heading(numbering: if numbered {
+    (..n) => context {
+      let v = n.pos()
+      if shifted() and v.len() > 1 { v = v.slice(1) }
+      numbering(sectionnumbering, ..v)
+    }
+  } else { none })
   show heading: set text(fill: phw-navy, weight: "bold")
-  show heading.where(level: 1): set text(size: 16pt)
-  show heading.where(level: 2): set text(size: 13pt)
-  show heading.where(level: 3): set text(size: 11.5pt)
-  show heading: it => block(above: 1.3em, below: 0.7em, it)
+  show heading: it => context {
+    let level = if shifted() { it.level - 1 } else { it.level }
+    set text(size: if level <= 1 { 16pt } else if level == 2 { 13pt } else if level == 3 { 11.5pt } else { 11pt })
+    block(above: 1.3em, below: 0.7em, it)
+  }
   show link: set text(fill: rgb("#2D78A0"))
   show figure.caption: set text(fill: phw-navy, weight: "bold", size: 10pt)
   show figure.caption: set align(left)

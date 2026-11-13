@@ -6,7 +6,9 @@ test_that("extension geoms pick up PHW defaults", {
   expect_true("ggrepel::GeomTextRepel" %in% changed)
   expect_equal(ggrepel::GeomTextRepel$default_aes$family, phw_font())
   expect_equal(ggrepel::GeomTextRepel$default_aes$colour, phw_colours[["text"]])
-  expect_equal(treemapify::GeomTreemapText$default_aes$colour, "#FFFFFF")
+  # Older versions of treemapify don't export their geoms.
+  treemap_text <- get("GeomTreemapText", asNamespace("treemapify"))
+  expect_equal(treemap_text$default_aes$colour, "#FFFFFF")
 })
 
 test_that("extension rules leave theme-based defaults alone", {
