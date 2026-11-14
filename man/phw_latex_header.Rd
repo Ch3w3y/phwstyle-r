@@ -9,7 +9,8 @@ phw_latex_header(file = tempfile(fileext = ".tex"), team = NULL, cover = TRUE)
 \arguments{
 \item{file}{Where to write the header.}
 
-\item{team}{Optional team line for the cover.}
+\item{team}{Optional team line for the cover. Characters that LaTeX
+treats as commands, such as \code{&} and \verb{\%}, are printed as written.}
 
 \item{cover}{Keep the full-page cover?}
 }

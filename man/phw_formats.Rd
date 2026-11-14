@@ -40,7 +40,12 @@ phw_pdf_document(
 )
 }
 \arguments{
-\item{...}{Passed to the underlying rmarkdown format.}
+\item{...}{Passed to the underlying rmarkdown format. Your own \code{css},
+\code{includes} and \code{pandoc_args} are added to the PHW ones, and other
+arguments such as \code{toc_float}, \code{dev} or \code{fig_caption} replace the PHW
+defaults. The arguments that make the PHW look (\code{theme} for HTML,
+\code{reference_docx} for Word and \code{latex_engine} for PDF) can't be changed
+here: use the plain rmarkdown format for your own.}
 
 \item{toc}{Include a table of contents?}
 
