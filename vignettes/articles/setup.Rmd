@@ -8,6 +8,7 @@ description: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", message = TRUE, warning = FALSE,
                       fig.width = 8, fig.height = 4.5, dev = "ragg_png", dpi = 110)
+library(phwstyle)
 ```
 
 This guide gets phwstyle installed and ready on your computer. It covers the
