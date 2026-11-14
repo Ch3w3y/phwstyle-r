@@ -293,7 +293,8 @@ phw_pptx <- function(template = NULL) {
 #' @param table_fit Enlarge a table built here from a data frame or summary
 #'   table so it fills the width of the slide's content area? The text grows
 #'   with it, by up to 1.6 times, and a narrow table is widened by at most
-#'   another 80%. `FALSE` keeps the table at the size [phw_flextable()] gives
+#'   another 80% (more for a table with more columns). A tall table tightens
+#'   its row spacing so the text can grow. `FALSE` keeps the table at the size [phw_flextable()] gives
 #'   it. A flextable you pass in is never resized.
 #' @param title_size Title font size. On a layout with a dark background (the
 #'   title slide and section header) the template sets the size and colour, and
@@ -407,22 +408,48 @@ scale_plot_text <- function(plot, scale) {
   plot
 }
 
-# Grows a table's text, up to max_grow times, so it fills the area, then
-# widens its columns a little. It never shrinks the text.
-fit_table_to_area <- function(ft, width, height, max_grow = 1.6, max_pad = 1.8) {
-  dims <- flextable::flextable_dim(ft)
-  grow <- min(width / dims$widths, height / dims$heights, max_grow)
+# Grows a table's text so it fills the area, then widens its columns. A tall
+# table is bound by height, so it squeezes its vertical padding and sets row
+# heights from the text size and padding: the heights flextable measures are
+# larger than the text needs, and slides treat them as minimums. It never
+# shrinks the text.
+fit_table_to_area <- function(ft, width, height, max_grow = 1.6, max_pad = 1.8,
+                              line_height = 1.25, tight_pad = 1) {
+  parts <- Filter(function(part) flextable::nrow_part(ft, part) > 0, c("header", "body", "footer"))
+  sizes <- lapply(parts, function(part) apply(ft[[part]]$styles$text$font.size$data, 1, max))
+  pads <- lapply(parts, function(part) {
+    pars <- ft[[part]]$styles$pars
+    apply(pars$padding.top$data, 1, max) + apply(pars$padding.bottom$data, 1, max)
+  })
+  text_pt <- sum(unlist(sizes)) * line_height
+  grow_for <- function(pad_pt) (height * 72 - pad_pt) / text_pt
+  grow_w <- flextable::flextable_dim(ft)$widths
+  grow_w <- width / grow_w
+  wanted <- min(grow_w, max_grow)
+  pad_pt <- sum(unlist(pads))
+  tall <- grow_for(pad_pt) < wanted
+  if (tall) {
+    pads <- lapply(pads, function(p) rep(2 * tight_pad, length(p)))
+    pad_pt <- sum(unlist(pads))
+    ft <- flextable::padding(ft, padding.top = tight_pad, padding.bottom = tight_pad, part = "all")
+  }
+  grow <- min(wanted, grow_for(pad_pt))
   if (grow > 1) {
-    for (part in c("header", "body", "footer")) {
-      if (flextable::nrow_part(ft, part) == 0) next
-      sizes <- ft[[part]]$styles$text$font.size$data
-      for (i in seq_len(nrow(sizes))) {
-        ft <- flextable::fontsize(ft, i = i, size = max(sizes[i, ]) * grow, part = part)
+    for (k in seq_along(parts)) {
+      for (i in seq_along(sizes[[k]])) {
+        ft <- flextable::fontsize(ft, i = i, size = sizes[[k]][i] * grow, part = parts[k])
       }
     }
     ft <- flextable::autofit(ft)
+    if (tall) {
+      for (k in seq_along(parts)) {
+        ft <- flextable::height(ft, i = seq_along(sizes[[k]]), part = parts[k], unit = "in",
+                                height = (sizes[[k]] * grow * line_height + pads[[k]]) / 72)
+      }
+    }
   }
   widths <- ft$body$colwidths
+  max_pad <- max_pad + 0.3 * max(length(widths) - 2, 0)
   pad <- min(width / sum(widths), max_pad)
   flextable::width(ft, j = seq_along(widths), width = widths * pad)
 }

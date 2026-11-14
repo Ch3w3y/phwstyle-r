@@ -281,7 +281,27 @@ test_that("phw_add_slide fills the content area with a table", {
   expect_equal(plain$size, 10)
   narrow <- widths(data.frame(a = 1:3, b = 4:6))
   expect_lt(narrow$width, 0.3 * area)
-  expect_lte(widths(head(mtcars, 25))$width, area)
+  expect_lte(widths(head(mtcars, 25))$width, area + 0.001)
   own <- flextable::flextable(head(mtcars[, 1:3]))
   expect_equal(widths(own)$width, widths(own, table_fit = FALSE)$width)
+})
+
+test_that("phw_add_slide makes a tall table readable and keeps it inside the placeholder", {
+  skip_if_not_installed("officer")
+  skip_if_not_installed("flextable")
+  area_width <- 12.133
+  area_height <- 4.9
+  set.seed(1)
+  ops <- data.frame(category = sample(paste("Category", LETTERS[1:4]), 600, TRUE),
+                    subgroup = sample(paste("Type", 1:3), 600, TRUE),
+                    year = sample(2023:2024, 600, TRUE))
+  grouped <- phw_group_table(ops, c(category, subgroup), year)
+  expect_gte(nrow(grouped), 13)
+  xml <- slide_xml(phw_add_slide(phw_pptx(), "Tall", table = grouped))
+  sizes <- setdiff(xml_numbers(xml, 'sz="[0-9]+"'), 2800) / 100
+  expect_gte(min(sizes), 12)
+  expect_gte(sum(xml_numbers(xml, '<a:gridCol w="[0-9]+"')) / 914400, 0.7 * area_width)
+  expect_lte(sum(xml_numbers(xml, '<a:tr h="[0-9]+"')) / 914400, area_height + 0.001)
+  plain <- slide_xml(phw_add_slide(phw_pptx(), "Tall", table = grouped, table_fit = FALSE))
+  expect_gt(sum(xml_numbers(plain, '<a:tr h="[0-9]+"')) / 914400, area_height)
 })

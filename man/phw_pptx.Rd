@@ -77,7 +77,8 @@ or later. Text you gave an exact size in your own \code{theme()} keeps it.}
 \item{table_fit}{Enlarge a table built here from a data frame or summary
 table so it fills the width of the slide's content area? The text grows
 with it, by up to 1.6 times, and a narrow table is widened by at most
-another 80\%. \code{FALSE} keeps the table at the size \code{\link[=phw_flextable]{phw_flextable()}} gives
+another 80\% (more for a table with more columns). A tall table tightens
+its row spacing so the text can grow. \code{FALSE} keeps the table at the size \code{\link[=phw_flextable]{phw_flextable()}} gives
 it. A flextable you pass in is never resized.}
 }
 \value{

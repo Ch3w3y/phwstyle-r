@@ -39,7 +39,8 @@
   your own templates work.
 * `phw_add_slide()` makes charts and tables readable on a slide. Chart text
   is enlarged 1.5 times (`plot_scale`), and tables built from a data frame or
-  summary grow to fill the content area (`table_fit`).
+  summary grow to fill the content area (`table_fit`). A tall table tightens
+  its row spacing so the text can still grow.
 * The Quarto extension gains a `phw-pptx` format.
 
 # phwstyle 0.2.0
