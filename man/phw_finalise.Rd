@@ -38,7 +38,7 @@ place.}
 \item{logo_height}{Logo height in cm.}
 
 \item{logo_position}{\code{"left"} or \code{"right"}. The text goes on the other
-side.}
+side, or above the logo, wrapped, when the chart is too narrow for both.}
 
 \item{text_size}{Footer text size in points.}
 

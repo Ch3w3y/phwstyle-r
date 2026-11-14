@@ -30,6 +30,38 @@ test_that("phw_finalise writes the organisation name when no logo is installed",
   expect_false("Public Health Wales" %in% footer_text(phw_finalise(p, logo = FALSE)))
 })
 
+test_that("the organisation name and the source never overlap", {
+  local_mocked_bindings(phw_logo = function(...) NULL)
+  p <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) + ggplot2::geom_point()
+  src <- "Public Health Wales Observatory analysis of hospital admissions"
+  boxes <- function(fp, width_cm) {
+    footer <- fp$grobs[[which(fp$layout$name == "phw-footer")]]
+    grid::pushViewport(grid::viewport(width = grid::unit(width_cm, "cm")))
+    grid::pushViewport(grid::viewport(height = grid::grobHeight(footer)))
+    on.exit(grid::popViewport(2))
+    labels <- lapply(grid::forceGrob(footer)$children, function(g) if (inherits(g, "text")) g)
+    labels <- Filter(Negate(is.null), labels)
+    is_org <- vapply(labels, function(g) identical(g$label, phw_org), logical(1))
+    lapply(list(text = labels[!is_org][[1]], logo = labels[is_org][[1]]), function(g) c(
+      x0 = grid::convertX(grid::grobX(g, "west"), "cm", valueOnly = TRUE),
+      x1 = grid::convertX(grid::grobX(g, "east"), "cm", valueOnly = TRUE),
+      y0 = grid::convertY(grid::grobY(g, "south"), "cm", valueOnly = TRUE),
+      y1 = grid::convertY(grid::grobY(g, "north"), "cm", valueOnly = TRUE)))
+  }
+  apart <- function(a, b) a[["x1"]] <= b[["x0"]] || b[["x1"]] <= a[["x0"]] ||
+    a[["y1"]] <= b[["y0"]] || b[["y1"]] <= a[["y0"]]
+  for (side in c("left", "right")) {
+    fp <- phw_finalise(p, source = src, logo_position = side)
+    for (w in c(6, 10, 16)) {
+      b <- boxes(fp, w)
+      expect_true(apart(b$text, b$logo), label = paste(side, w, "cm"))
+      expect_true(b$text[["x0"]] >= 0 && b$text[["x1"]] <= w, label = paste(side, w, "cm"))
+    }
+    wide <- boxes(fp, 16)
+    expect_equal(mean(wide$text[c("y0", "y1")]), mean(wide$logo[c("y0", "y1")]))
+  }
+})
+
 test_that("phw_finalise says when a logo file is missing or logo is wrong", {
   p <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) + ggplot2::geom_point()
   expect_error(phw_finalise(p, logo = "my-logo.png"), "file not found")

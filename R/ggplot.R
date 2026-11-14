@@ -611,7 +611,7 @@ set_geom_defaults <- function(geoms, new) {
 #'   `"Communicable Disease Surveillance Centre"`.
 #' @param logo_height Logo height in cm.
 #' @param logo_position `"left"` or `"right"`. The text goes on the other
-#'   side.
+#'   side, or above the logo, wrapped, when the chart is too narrow for both.
 #' @param text_size Footer text size in points.
 #' @param text_colour,rule_colour Colours of the footer text and rule.
 #' @param rule Draw the rule above the footer?
@@ -681,7 +681,7 @@ phw_finalise <- function(plot, source = NULL, date = NULL, logo = "blue",
   m <- grid::unit(margin, "mm")
   left <- logo_position == "left"
   text <- grid::textGrob(txt, x = if (left) grid::unit(1, "npc") - m else m,
-                         hjust = if (left) 1 else 0,
+                         hjust = if (left) 1 else 0, name = "text",
                          gp = grid::gpar(fontfamily = fam, fontface = "bold",
                                          fontsize = text_size, col = text_colour,
                                          lineheight = 1.1))
@@ -689,24 +689,25 @@ phw_finalise <- function(plot, source = NULL, date = NULL, logo = "blue",
   if (rule) {
     kids <- c(kids, list(grid::segmentsGrob(
       x0 = m, x1 = grid::unit(1, "npc") - m, y0 = grid::unit(1, "npc"), y1 = grid::unit(1, "npc"),
-      gp = grid::gpar(col = rule_colour, lwd = 1.5))))
+      gp = grid::gpar(col = rule_colour, lwd = 1.5), name = "rule")))
   }
   if (!isFALSE(logo)) {
     path <- if (file.exists(logo)) logo else phw_logo(logo, "png")
     at <- if (left) m else grid::unit(1, "npc") - m
     lg <- if (is.null(path)) {
-      grid::textGrob(org, x = at, hjust = if (left) 0 else 1,
+      grid::textGrob(org, x = at, hjust = if (left) 0 else 1, name = "logo",
                      gp = grid::gpar(fontfamily = fam, fontface = "bold", fontsize = text_size * 1.4,
                                      col = phw_colours[["navy"]]))
     } else {
       rlang::check_installed("png", "to draw a logo")
       grid::rasterGrob(png::readPNG(path), height = grid::unit(logo_height, "cm"),
-                       x = at, hjust = if (left) 0 else 1, interpolate = TRUE)
+                       x = at, hjust = if (left) 0 else 1, interpolate = TRUE, name = "logo")
     }
     kids <- c(kids, list(lg))
   }
-  footer <- grid::gTree(children = do.call(grid::gList, kids))
-  g <- gtable::gtable_add_rows(g, grid::unit(logo_height + 0.5, "cm"))
+  footer <- grid::gTree(children = do.call(grid::gList, kids), margin = margin / 10,
+                        height = logo_height + 0.5, name = "phw-footer", cl = "phw_footer")
+  g <- gtable::gtable_add_rows(g, grid::grobHeight(footer))
   g <- gtable::gtable_add_grob(g, footer, t = nrow(g), l = 1, r = ncol(g),
                                clip = "off", name = "phw-footer")
   class(g) <- c("phw_finalised", class(g))
@@ -718,6 +719,62 @@ print.phw_finalised <- function(x, ...) {
   grid::grid.newpage()
   grid::grid.draw(x)
   invisible(x)
+}
+
+# The footer is laid out when drawn, because only then is its width known.
+# The text stays beside the logo when every line fits there as written;
+# otherwise it moves above the logo and wraps to the full width.
+footer_layout <- function(x) {
+  cm <- function(u) grid::convertWidth(u, "cm", valueOnly = TRUE)
+  text <- x$children$text
+  logo <- x$children$logo
+  measure <- function(s) cm(grid::grobWidth(grid::textGrob(s, gp = text$gp)))
+  room <- cm(grid::unit(1, "npc")) - 2 * x$margin
+  beside <- room - if (is.null(logo)) 0 else cm(grid::grobWidth(logo)) + x$margin
+  lines <- strsplit(text$label, "\n", fixed = TRUE)[[1]]
+  stacked <- !is.null(logo) && any(vapply(lines, measure, numeric(1)) > beside)
+  label <- wrap_lines(lines, if (stacked) room else beside, measure)
+  text_h <- grid::convertHeight(grid::grobHeight(grid::editGrob(text, label = label)), "cm", valueOnly = TRUE)
+  height <- if (stacked) {
+    text_h + grid::convertHeight(grid::grobHeight(logo), "cm", valueOnly = TRUE) + 3 * footer_pad
+  } else {
+    max(x$height, text_h + 2 * footer_pad)
+  }
+  list(label = label, stacked = stacked, height = height)
+}
+
+footer_pad <- 0.25
+
+wrap_lines <- function(lines, room, measure) {
+  wrapped <- lapply(lines, function(line) {
+    if (measure(line) <= room) return(line)
+    out <- character()
+    for (word in strsplit(line, " ", fixed = TRUE)[[1]]) {
+      n <- length(out)
+      if (n > 0 && measure(paste(out[n], word)) <= room) {
+        out[n] <- paste(out[n], word)
+      } else {
+        out <- c(out, word)
+      }
+    }
+    out
+  })
+  paste(unlist(wrapped), collapse = "\n")
+}
+
+#' @exportS3Method grid::heightDetails
+heightDetails.phw_footer <- function(x) grid::unit(footer_layout(x)$height, "cm")
+
+#' @exportS3Method grid::makeContent
+makeContent.phw_footer <- function(x) {
+  layout <- footer_layout(x)
+  text <- grid::editGrob(x$children$text, label = layout$label)
+  if (layout$stacked) {
+    pad <- grid::unit(footer_pad, "cm")
+    text <- grid::editGrob(text, y = grid::unit(1, "npc") - pad, vjust = 1)
+    x <- grid::addGrob(x, grid::editGrob(x$children$logo, y = pad, vjust = 0))
+  }
+  grid::addGrob(x, text)
 }
 
 #' Save a PHW chart

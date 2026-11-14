@@ -48,6 +48,9 @@ says what to change.
 * `phw_finalise()` shows the organisation name when no logo is installed
   (change it with the new `org`), and stops with "file not found" for a
   missing logo file.
+* `phw_finalise()` keeps the footer readable on narrow charts. When the
+  source does not fit beside the logo or organisation name, it moves above
+  them and wraps to the width of the chart.
 
 ## Tables
 
