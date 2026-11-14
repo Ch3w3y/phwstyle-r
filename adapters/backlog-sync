@@ -1,15 +1,28 @@
 #!/bin/sh
 # Sync open GitHub issues for this repo into the noodle backlog (NDJSON on stdout).
-# Settings (adapters/backlog.env or env): GH_REPO, ISSUE_LABEL, DONE_LABEL, ISSUE_LIMIT.
+# Settings (adapters/backlog.env or env): GH_REPO, ISSUE_LABEL, DONE_LABEL, ISSUE_LIMIT,
+# BACKLOG_CACHE_SECONDS.
+# Noodle runs this on every one-second tick, so the result is cached for
+# BACKLOG_CACHE_SECONDS (default 30) to stay inside GitHub's API rate limit.
 set -eu
 . "$(dirname -- "$0")/lib.sh"
+
+CACHE="$ADAPTER_DIR/../.noodle/backlog-cache.ndjson"
+TTL=${BACKLOG_CACHE_SECONDS:-30}
+if [ -f "$CACHE" ] && [ $(( $(date +%s) - $(date -r "$CACHE" +%s) )) -lt "$TTL" ]; then
+  cat "$CACHE"
+  exit 0
+fi
 
 DONE_LABEL=${DONE_LABEL:-noodle-done}
 set -- --state open --limit "${ISSUE_LIMIT:-200}" --json number,title,body,labels,milestone,url
 [ -n "${GH_REPO:-}" ] && set -- "$@" --repo "$GH_REPO"
 [ -n "${ISSUE_LABEL:-}" ] && set -- "$@" --label "$ISSUE_LABEL"
 
-gh issue list "$@" | jq -c --arg done "$DONE_LABEL" '.[] | {
+# Read the issues first, so a failed gh call stops here instead of looking like
+# an empty backlog.
+issues=$(gh issue list "$@")
+printf '%s\n' "$issues" | jq -c --arg done "$DONE_LABEL" '.[] | {
     id: (.number | tostring),
     title: .title,
     status: (if any(.labels[]; .name == $done) then "done" else "open" end),
@@ -17,4 +30,6 @@ gh issue list "$@" | jq -c --arg done "$DONE_LABEL" '.[] | {
     milestone: (.milestone.title // null),
     url: .url,
     body: ((.body // "") | .[0:2000])
-  } | with_entries(select(.value != null))' | attach_plans
+  } | with_entries(select(.value != null))' | attach_plans > "$CACHE.$$"
+mv "$CACHE.$$" "$CACHE"
+cat "$CACHE"
