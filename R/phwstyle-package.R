@@ -56,6 +56,10 @@
 #' * `phwstyle.font`: font family to use instead of Ubuntu.
 #' * `phwstyle.logo_dir`: folder with your own logo files.
 #' * `phwstyle.boundary_dir`: where downloaded boundaries are cached.
+#' * `phwstyle.boundary_update`: `FALSE` stops [phw_boundaries()] checking
+#'   for a newer list of boundary layers.
+#' * `phwstyle.boundary_list_url`: the address of that list. Point it at
+#'   your own copy of `boundaries.csv` if your network blocks GitHub.
 #' * `phwstyle.quiet`: `TRUE` hides the startup reminder.
 #'
 #' @keywords internal
