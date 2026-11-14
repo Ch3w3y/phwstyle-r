@@ -3,9 +3,11 @@
 #' Builds a [DT::datatable()] in the PHW style: PHW font, navy header, light
 #' row lines, thousands separators, and a title and source line. Useful in
 #' Shiny apps and HTML reports when readers need to search, sort or page
-#' through a long table. For styled summary tables use [phw_reactable()].
+#' through a long table. A summary table (see [phw_summary_table()] and
+#' [phw_as_summary()]) keeps its bold variable and total rows and indented
+#' levels, and is shown whole, without sorting or paging.
 #'
-#' @param data A data frame.
+#' @param data A data frame, or a `phw_summary` table.
 #' @param caption Title shown above the table.
 #' @param source,date Passed to [phw_caption()] and shown under the table.
 #' @param caption_args List of other [phw_caption()] arguments.
@@ -24,18 +26,60 @@
 phw_datatable <- function(data, caption = NULL, source = NULL, date = NULL, digits = 1,
                           page_length = 10, options = list(), caption_args = list(), ...) {
   rlang::check_installed("DT")
+  sm <- NULL
+  if (inherits(data, "phw_summary")) {
+    sm <- summary_dt_parts(data)
+    if (!is.null(attr(data, "note"))) caption_args$note <- caption_args$note %||% attr(data, "note")
+    data <- sm$data
+  }
   data <- as.data.frame(data)
-  opts <- utils::modifyList(list(pageLength = page_length, dom = "ftip", autoWidth = FALSE,
-                                 language = list(search = "Search:")), options)
+  defaults <- if (is.null(sm)) {
+    list(pageLength = page_length, dom = "ftip")
+  } else {
+    list(paging = FALSE, ordering = FALSE, dom = "t", columnDefs = list(list(visible = FALSE, targets = sm$hidden)))
+  }
+  opts <- utils::modifyList(c(defaults, list(autoWidth = FALSE, language = list(search = "Search:"))), options)
   args <- utils::modifyList(list(data = data, rownames = FALSE, class = "phw-dt compact hover",
                                  options = opts, style = "default"), list(...))
   w <- do.call(DT::datatable, args)
-  num <- names(data)[vapply(data, is.numeric, logical(1))]
+  num <- setdiff(names(data)[vapply(data, is.numeric, logical(1))], sm$helpers)
   is_int <- vapply(data[num], function(v) all(v == round(v), na.rm = TRUE), logical(1))
   if (any(is_int)) w <- DT::formatRound(w, num[is_int], digits = 0)
   if (any(!is_int)) w <- DT::formatRound(w, num[!is_int], digits = digits)
+  if (!is.null(sm)) w <- style_summary_dt(w, sm)
   w$dependencies <- c(w$dependencies, list(phw_font_dependency(), phw_dt_css()))
   wrap_widget(w, caption, caption_from(source, date, caption_args))
+}
+
+# The row types and indent depths travel as two hidden columns, which
+# formatStyle() reads to style each row.
+summary_dt_parts <- function(x) {
+  types <- attr(x, "row_type")
+  depth <- attr(x, "depth") %||% as.integer(types == "level")
+  indent <- isTRUE(attr(x, "indent") %||% TRUE)
+  df <- as.data.frame(unclass(x)[names(x)], check.names = FALSE)
+  helpers <- c(".phw_row_type", ".phw_depth")
+  df[[helpers[1]]] <- types
+  df[[helpers[2]]] <- if (indent) depth else rep(0L, nrow(df))
+  list(data = df, helpers = helpers, hidden = ncol(df) - 2:1,
+       label = names(x)[1])
+}
+
+style_summary_dt <- function(w, sm) {
+  col <- phw_colours
+  bold <- c("variable", "subtotal", "total")
+  all_cols <- setdiff(names(sm$data), sm$helpers)
+  w <- DT::formatStyle(w, all_cols, valueColumns = sm$helpers[1],
+    fontWeight = DT::styleEqual(bold, rep("700", 3)),
+    borderTop = DT::styleEqual("total", paste("2px solid", col[["navy"]])))
+  w <- DT::formatStyle(w, sm$label, valueColumns = sm$helpers[1],
+    fontStyle = DT::styleEqual("subtotal", "italic"))
+  depths <- sort(setdiff(unique(sm$data[[sm$helpers[2]]]), 0))
+  if (length(depths)) {
+    w <- DT::formatStyle(w, sm$label, valueColumns = sm$helpers[2],
+      paddingLeft = DT::styleEqual(depths, paste0(8 + 14 * depths, "px")))
+  }
+  w
 }
 
 phw_dt_css <- function() {
