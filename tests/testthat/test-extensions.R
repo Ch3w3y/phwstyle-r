@@ -44,3 +44,16 @@ test_that("phw_finalise and phw_title_grob work with gridExtra", {
   expect_true("phw-footer" %in% f$layout$name)
   expect_s3_class(phw_title_grob("Only a title"), "gtable")
 })
+
+test_that("phw_arrange checks legend, each plot and caption_args", {
+  skip_if_not_installed("patchwork")
+  p1 <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) + ggplot2::geom_point()
+  expect_error(phw_arrange(p1, p1, legend = "bottm"), "bottom")
+  expect_error(phw_arrange(p1, mtcars), "Plot 2 is <data.frame>")
+  expect_error(phw_arrange(plots = list(p1, NULL)), "Plot 2 is <NULL>")
+  expect_error(phw_arrange(p1, source = "S", caption_args = "x"), "named list")
+})
+
+test_that("phw_style_extensions stops on a package that is not installed", {
+  expect_error(phw_style_extensions("notapkg"), "not installed")
+})

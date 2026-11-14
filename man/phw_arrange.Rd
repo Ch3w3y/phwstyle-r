@@ -39,7 +39,8 @@ figure's source line.}
 \item{guides}{\code{"collect"} merges identical legends from all panels into
 one, at \code{legend}; \code{"keep"} leaves each legend with its plot.}
 
-\item{legend}{Position of collected legends.}
+\item{legend}{Position of collected legends: \code{"bottom"}, \code{"top"},
+\code{"right"}, \code{"left"} or \code{"none"}.}
 
 \item{tag_levels}{Panel tags, e.g. \code{"A"} for A, B, C or \code{"1"}. \code{NULL} for
 none.}
