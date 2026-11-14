@@ -137,7 +137,7 @@ test_that("phw_epicurve keeps its default date labels within the data", {
 
 test_that("phw_epicurve stops on dates written as text in another format", {
   d <- data.frame(onset = c("01/02/2025", "03/02/2025"))
-  expect_error(phw_epicurve(d, onset), "must hold dates")
+  expect_error(phw_epicurve(d, onset), "must be a date")
   iso <- phw_epicurve(data.frame(onset = c("2025-02-03", "2025-02-04")), onset)
   expect_equal(iso$data$period, as.Date("2025-02-03"))
 })

@@ -10,7 +10,7 @@ test_that("dates are read only from Date, POSIXct or ISO text", {
   expect_equal(as_date_col(data.frame(when = as.POSIXct("2026-11-14 23:30", tz = "UTC")), "when"),
                as.Date("2026-11-14"))
   expect_error(as_date_col(data.frame(when = "05/01/2026"), "when"), "05/01/2026")
-  expect_error(as_date_col(data.frame(when = 1:2), "when"), "must be a date column")
+  expect_error(as_date_col(data.frame(when = 1:2), "when"), "must be a Date, a date-time or ISO text")
 })
 
 test_that("drop_missing says how many rows went and stops when none are left", {

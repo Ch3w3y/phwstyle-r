@@ -154,7 +154,7 @@ phw_boundaries <- function(level, detail = c("generalised", "super", "ultra", "f
 #' phw_boundary_levels()
 #' @export
 phw_boundary_levels <- function(detail = FALSE) {
-  check_flag(detail, "detail")
+  check_true_false(detail, "detail")
   reg <- boundary_registry()
   if (detail) return(reg[, c("level", "label", "detail", "source", "layer", "release")])
   out <- do.call(rbind, lapply(split(reg, factor(reg$level, unique(reg$level))), function(r) {
@@ -176,7 +176,7 @@ phw_boundary_levels <- function(detail = FALSE) {
 #' phw_boundaries_cache()
 #' @export
 phw_boundaries_cache <- function(clear = FALSE) {
-  check_flag(clear, "clear")
+  check_true_false(clear, "clear")
   dir <- getOption("phwstyle.boundary_dir", file.path(tools::R_user_dir("phwstyle", which = "cache"), "boundaries"))
   if (clear) {
     files <- list.files(dir, pattern = "\\.geojson$", full.names = TRUE)
@@ -356,10 +356,6 @@ check_crs <- function(crs, call = rlang::caller_env()) {
                      i = "Use {.code 27700} for British National Grid or {.code 4326} for longitude and latitude."),
                    call = call)
   }
-}
-
-check_flag <- function(x, arg, call = rlang::caller_env()) {
-  if (!rlang::is_bool(x)) cli::cli_abort("{.arg {arg}} must be {.code TRUE} or {.code FALSE}.", call = call)
 }
 
 pick_boundary <- function(rows, detail) boundary_candidates(rows, detail)[1, ]

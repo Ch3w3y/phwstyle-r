@@ -34,29 +34,6 @@ phw_date <- function(x, style = "short") {
   format(x, style)
 }
 
-# Dates as Date, POSIXt or ISO 8601 text, like as_date_col() in checks.R but
-# for a value rather than a data column. Other text stops instead of being
-# guessed at; NA stays NA.
-as_date_value <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
-  if (inherits(x, "Date")) return(x)
-  if (inherits(x, "POSIXt")) return(as.Date(x, tz = attr(x, "tzone") %||% ""))
-  if (is.logical(x) && all(is.na(x))) return(as.Date(x))
-  if (is.character(x) || is.factor(x)) {
-    x <- as.character(x)
-    iso <- !is.na(x) & grepl("^\\d{4}-\\d{2}-\\d{2}", x)
-    out <- as.Date(ifelse(iso, substr(x, 1, 10), NA_character_), format = "%Y-%m-%d", optional = TRUE)
-    bad <- !is.na(x) & is.na(out)
-    if (!any(bad)) return(out)
-    example <- 'as.Date(x, format = "%d/%m/%Y")'
-    cli::cli_abort(c("{.arg {arg}} must be a date.",
-                     x = "{.val {x[bad][1]}} is not an ISO date.",
-                     i = "Use ISO dates like {.val 2026-11-14}, or convert it first with {.code {example}}."),
-                   call = call)
-  }
-  cli::cli_abort("{.arg {arg}} must be a Date, a date-time or ISO text such as {.val 2026-11-14}, not {.obj_type_friendly {x}}.",
-                 call = call)
-}
-
 #' Build a PHW source caption
 #'
 #' PHW reports put a bold, right-aligned line under each chart and table,
@@ -140,19 +117,3 @@ caption_from <- function(source, date, caption_args = list(), arg = "caption_arg
   do.call(phw_caption, c(list(source = source, date = date), caption_args))
 }
 
-# Argument checks used by several exported functions. They belong with the
-# shared checks in checks.R.
-check_true_false <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
-  if (!isTRUE(x) && !isFALSE(x)) {
-    cli::cli_abort("{.arg {arg}} must be {.code TRUE} or {.code FALSE}, not {.obj_type_friendly {x}}.", call = call)
-  }
-  invisible(x)
-}
-
-check_one_string <- function(x, arg = rlang::caller_arg(x), allow_null = FALSE, call = rlang::caller_env()) {
-  if (allow_null && is.null(x)) return(invisible(x))
-  if (!is.character(x) || length(x) != 1 || is.na(x)) {
-    cli::cli_abort("{.arg {arg}} must be a single string, not {.obj_type_friendly {x}}.", call = call)
-  }
-  invisible(x)
-}

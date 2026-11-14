@@ -19,25 +19,10 @@ check_numeric_col <- function(data, col, arg = col, call = rlang::caller_env()) 
 }
 
 # Dates as Date, POSIXct or ISO 8601 text ("2026-11-14"). Text in another
-# format, such as "14/11/2026", stops instead of being guessed at.
+# format, such as "14/11/2026", stops instead of being guessed at. NA stays
+# NA. as_date_col() reads a data column, as_date_value() an argument.
 as_date_col <- function(data, col, arg = col, call = rlang::caller_env()) {
-  x <- data[[col]]
-  if (inherits(x, "Date")) return(x)
-  if (inherits(x, "POSIXt")) return(as.Date(x, tz = attr(x, "tzone") %||% ""))
-  if (is.character(x) || is.factor(x)) {
-    x <- as.character(x)
-    out <- as.Date(ifelse(grepl("^\\d{4}-\\d{2}-\\d{2}", x), substr(x, 1, 10), NA_character_),
-                   format = "%Y-%m-%d", optional = TRUE)
-    bad <- !is.na(x) & is.na(out)
-    if (!any(bad)) return(out)
-    example <- 'as.Date(x, format = "%d/%m/%Y")'
-    cli::cli_abort(c("{.arg {arg}} must hold dates.",
-                     x = "Column {.field {col}} has text such as {.val {x[bad][1]}}.",
-                     i = "Use ISO dates like {.val 2026-11-14}, or convert the column first with {.code {example}}."),
-                   call = call)
-  }
-  cli::cli_abort(c("{.arg {arg}} must be a date column.",
-                   x = "Column {.field {col}} is {.cls {class(x)[1]}}."), call = call)
+  as_date_value(data[[col]], arg = arg, call = call)
 }
 
 # Drops rows with a missing value in any of `cols`, or an infinite one in a
@@ -70,4 +55,40 @@ check_colours <- function(x, arg, call = rlang::caller_env()) {
 call_label <- function(call) {
   fn <- tryCatch(rlang::call_name(rlang::frame_call(call)), error = function(e) NULL)
   if (is.null(fn)) "" else paste0(fn, "(): ")
+}
+
+as_date_value <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
+  if (inherits(x, "Date")) return(x)
+  if (inherits(x, "POSIXt")) return(as.Date(x, tz = attr(x, "tzone") %||% ""))
+  if (is.logical(x) && all(is.na(x))) return(as.Date(x))
+  if (is.character(x) || is.factor(x)) {
+    x <- as.character(x)
+    iso <- !is.na(x) & grepl("^\\d{4}-\\d{2}-\\d{2}", x)
+    out <- as.Date(ifelse(iso, substr(x, 1, 10), NA_character_), format = "%Y-%m-%d", optional = TRUE)
+    bad <- !is.na(x) & is.na(out)
+    if (!any(bad)) return(out)
+    example <- 'as.Date(x, format = "%d/%m/%Y")'
+    cli::cli_abort(c("{.arg {arg}} must be a date.",
+                     x = "{.val {x[bad][1]}} is not an ISO date.",
+                     i = "Use ISO dates like {.val 2026-11-14}, or convert it first with {.code {example}}."),
+                   call = call)
+  }
+  cli::cli_abort("{.arg {arg}} must be a Date, a date-time or ISO text such as {.val 2026-11-14}, not {.obj_type_friendly {x}}.",
+                 call = call)
+}
+
+# Single TRUE or FALSE, and single non-NA string, for arguments.
+check_true_false <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
+  if (!isTRUE(x) && !isFALSE(x)) {
+    cli::cli_abort("{.arg {arg}} must be {.code TRUE} or {.code FALSE}, not {.obj_type_friendly {x}}.", call = call)
+  }
+  invisible(x)
+}
+
+check_one_string <- function(x, arg = rlang::caller_arg(x), allow_null = FALSE, call = rlang::caller_env()) {
+  if (allow_null && is.null(x)) return(invisible(x))
+  if (!is.character(x) || length(x) != 1 || is.na(x)) {
+    cli::cli_abort("{.arg {arg}} must be a single string, not {.obj_type_friendly {x}}.", call = call)
+  }
+  invisible(x)
 }
