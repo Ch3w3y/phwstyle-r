@@ -54,7 +54,9 @@ share a layout name.}
 
 \item{editable}{Add charts as editable vector graphics (needs rvg)?}
 
-\item{title_size}{Title font size.}
+\item{title_size}{Title font size. On a layout with a dark background (the
+title slide and section header) the template sets the size and colour, and
+this applies only when you give it.}
 
 \item{caption_args}{List of other \code{\link[=phw_caption]{phw_caption()}} arguments.}
 

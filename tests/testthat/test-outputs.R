@@ -146,3 +146,34 @@ test_that("phw_add_slide lists the layouts when the layout is unknown", {
   expect_error(phw_add_slide(phw_pptx(), "x", layout = "Nope"), "Title and Content")
   expect_error(phw_add_slide(officer::read_pptx(), "x", layout = "Nope"), "no slide layout called")
 })
+
+test_that("slide titles are readable on dark and light layouts", {
+  skip_if_not_installed("officer")
+  deck <- phw_pptx()
+  for (layout in c("Title Slide", "Section Header", "Title and Content")) {
+    deck <- phw_add_slide(deck, "Headline", text = "Sub", layout = layout)
+  }
+  dir <- withr::local_tempdir()
+  f <- file.path(dir, "deck.pptx")
+  print(deck, target = f)
+  utils::unzip(f, exdir = dir)
+  title_fill <- function(path) {
+    doc <- xml2::read_xml(file.path(dir, path))
+    xml2::xml_attr(xml2::xml_find_all(
+      doc, "//p:sp[.//p:ph[@type='title' or @type='ctrTitle']]//a:rPr/a:solidFill/a:srgbClr"), "val")
+  }
+  layout_default <- function(path) {
+    doc <- xml2::read_xml(file.path(dir, path))
+    xml2::xml_attr(xml2::xml_find_first(
+      doc, "//p:sp[.//p:ph[@type='title' or @type='ctrTitle']]//a:defRPr/a:solidFill/a:srgbClr"), "val")
+  }
+  expect_length(title_fill("ppt/slides/slide1.xml"), 0)
+  expect_length(title_fill("ppt/slides/slide2.xml"), 0)
+  expect_equal(title_fill("ppt/slides/slide3.xml"), "285087")
+
+  layouts <- officer::layout_summary(officer::read_pptx(f))
+  for (name in c("Title Slide", "Section Header")) {
+    n <- which(layouts$layout == name)
+    expect_equal(layout_default(sprintf("ppt/slideLayouts/slideLayout%d.xml", n)), "FFFFFF")
+  }
+})

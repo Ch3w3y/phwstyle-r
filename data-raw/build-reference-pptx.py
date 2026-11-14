@@ -187,6 +187,16 @@ for name in ("Title Slide", "Section Header"):
     # The master's top bar disappears into the navy background.
     layout._element.set("showMasterSp", "0")
 
+# 16:9 is a custom size, which PowerPoint writes without a type.
+sld_sz = prs.part._element.find("p:sldSz", NS)
+if "type" in sld_sz.attrib:
+    del sld_sz.attrib["type"]
+
+# The default template's thumbnail shows officer's old slide, so drop it.
+for rel_id, rel in list(prs.part.package._rels.items()):
+    if rel.reltype.endswith("/thumbnail"):
+        prs.part.package._rels.pop(rel_id)
+
 OUT.parent.mkdir(parents=True, exist_ok=True)
 prs.save(str(OUT))
 print(f"Wrote {OUT} ({OUT.stat().st_size} bytes)")

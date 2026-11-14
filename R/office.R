@@ -239,7 +239,9 @@ phw_pptx <- function(template = NULL) {
 #'   first one, if several do), so you only need `master` when two masters
 #'   share a layout name.
 #' @param editable Add charts as editable vector graphics (needs rvg)?
-#' @param title_size Title font size.
+#' @param title_size Title font size. On a layout with a dark background (the
+#'   title slide and section header) the template sets the size and colour, and
+#'   this applies only when you give it.
 #' @param caption_args List of other [phw_caption()] arguments.
 #' @param alt Alternative text for the chart or table on the slide, read out
 #'   by screen readers. `NULL` adds none, except that a ggplot's own
@@ -262,10 +264,18 @@ phw_add_slide <- function(x, title = NULL, plot = NULL, table = NULL, text = NUL
   }
   x <- officer::add_slide(x, layout = layout, master = master)
   types <- officer::layout_properties(x, layout = layout, master = master)$type
-  navy <- phw_colours[["navy"]]
+  on_navy <- "subTitle" %in% types || layout == "Section Header"
   if (!is.null(title)) {
-    tp <- officer::fpar(officer::ftext(title, officer::fp_text(font.family = phw_font(), font.size = title_size,
-                                                                  bold = TRUE, color = navy)))
+    # Cover layouts have a dark background and set their own title colour and size,
+    # so the run leaves both to the placeholder. A fixed navy would vanish there.
+    title_props <- if (on_navy) {
+      officer::fp_text_lite(font.family = phw_font(), bold = TRUE,
+                            font.size = if (missing(title_size)) NA else title_size)
+    } else {
+      officer::fp_text(font.family = phw_font(), font.size = title_size, bold = TRUE,
+                       color = phw_colours[["navy"]])
+    }
+    tp <- officer::fpar(officer::ftext(title, title_props))
     x <- officer::ph_with(x, tp, location = officer::ph_location_type(if ("ctrTitle" %in% types) "ctrTitle" else "title"))
   }
   body <- officer::ph_location_type(if ("subTitle" %in% types) "subTitle" else "body")
@@ -297,7 +307,6 @@ phw_add_slide <- function(x, title = NULL, plot = NULL, table = NULL, text = NUL
   cap <- caption_from(source, date, caption_args)
   if (!is.null(cap)) {
     size <- officer::slide_size(x)
-    on_navy <- "subTitle" %in% types || layout == "Section Header"
     fp <- officer::fp_text(font.family = phw_font(), font.size = 10, bold = TRUE,
                            color = phw_colours[[if (on_navy) "white" else "text"]])
     x <- officer::ph_with(x, officer::fpar(officer::ftext(gsub("\n", " | ", cap), fp),
