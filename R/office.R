@@ -236,14 +236,14 @@ phw_write_xlsx <- function(x, file, title = NULL, source = NULL, date = NULL, ca
 
 #' PowerPoint slides with officer
 #'
-#' `phw_pptx()` starts a PowerPoint deck, from your organisation's template
-#' if you have one. `phw_add_slide()` adds a slide with a PHW-styled title
+#' `phw_pptx()` starts a PowerPoint deck, from the PHW template (16:9, Ubuntu
+#' text, navy titles) or from your own. `phw_add_slide()` adds a slide with a PHW-styled title
 #' and a chart, table or text, so a set of results becomes a deck in a few
 #' lines. Charts are added as editable vector graphics when the rvg package
 #' is installed, so colleagues can tweak them in PowerPoint.
 #'
 #' @param template Path to a `.pptx` template, e.g. the PHW corporate
-#'   template. `NULL` uses the officer default.
+#'   template. `NULL` uses the PHW template from [phw_reference_pptx()].
 #' @return An officer `rpptx` object. Save it with `print(deck, target =
 #'   "file.pptx")`.
 #' @examples
@@ -260,7 +260,7 @@ phw_write_xlsx <- function(x, file, title = NULL, source = NULL, date = NULL, ca
 #' @export
 phw_pptx <- function(template = NULL) {
   rlang::check_installed("officer")
-  if (is.null(template)) officer::read_pptx() else officer::read_pptx(template)
+  officer::read_pptx(template %||% phw_file("rmarkdown", "resources", "phw-reference.pptx"))
 }
 
 #' @rdname phw_pptx
@@ -275,42 +275,100 @@ phw_pptx <- function(template = NULL) {
 #' @param layout,master Slide layout and slide master names in the
 #'   template. A slide master is the set of layouts a template provides;
 #'   see them in PowerPoint under View > Slide Master, or with
-#'   `officer::layout_summary(x)`.
+#'   `officer::layout_summary(x)`. The default layout suits the PHW template,
+#'   which also has `"Title Slide"` (the title and `text` as a subtitle),
+#'   `"Section Header"`, `"Two Content"`, `"Title Only"` and `"Blank"`. With
+#'   your own template, give the layout names it uses. The default
+#'   `master = NULL` uses the master in the deck that has the layout (the
+#'   first one, if several do), so you only need `master` when two masters
+#'   share a layout name.
 #' @param editable Add charts as editable vector graphics (needs rvg)?
-#' @param title_size Title font size.
+#' @param title_size Title font size. On a layout with a dark background (the
+#'   title slide and section header) the template sets the size and colour, and
+#'   this applies only when you give it.
+#' @param caption_args List of other [phw_caption()] arguments.
+#' @param alt Alternative text for the chart or table on the slide, read out
+#'   by screen readers. `NULL` adds none, except that a ggplot's own
+#'   `labs(alt = )` text is used when there is one.
 #' @export
 phw_add_slide <- function(x, title = NULL, plot = NULL, table = NULL, text = NULL,
                           source = NULL, date = NULL, layout = "Title and Content",
-                          master = "Office Theme", editable = TRUE, title_size = 28) {
+                          master = NULL, editable = TRUE, title_size = 28,
+                          caption_args = list(), alt = NULL) {
   rlang::check_installed("officer")
-  x <- officer::add_slide(x, layout = layout, master = master)
-  navy <- phw_colours[["navy"]]
-  if (!is.null(title)) {
-    tp <- officer::fpar(officer::ftext(title, officer::fp_text(font.family = phw_font(), font.size = title_size,
-                                                                  bold = TRUE, color = navy)))
-    x <- officer::ph_with(x, tp, location = officer::ph_location_type("title"))
+  if (is.null(master)) {
+    available <- officer::layout_summary(x)
+    master <- available$master[available$layout == layout][1]
+    if (is.na(master)) {
+      cli::cli_abort(c(
+        "This deck has no slide layout called {.val {layout}}.",
+        "i" = "Layouts available: {.val {unique(available$layout)}}."
+      ))
+    }
   }
-  body <- officer::ph_location_type("body")
+  x <- officer::add_slide(x, layout = layout, master = master)
+  types <- officer::layout_properties(x, layout = layout, master = master)$type
+  on_navy <- "subTitle" %in% types || layout == "Section Header"
+  if (!is.null(title)) {
+    # Cover layouts have a dark background and set their own title colour and size,
+    # so the run leaves both to the placeholder. A fixed navy would vanish there.
+    title_props <- if (on_navy) {
+      officer::fp_text_lite(font.family = phw_font(), bold = TRUE,
+                            font.size = if (missing(title_size)) NA else title_size)
+    } else {
+      officer::fp_text(font.family = phw_font(), font.size = title_size, bold = TRUE,
+                       color = phw_colours[["navy"]])
+    }
+    tp <- officer::fpar(officer::ftext(title, title_props))
+    x <- officer::ph_with(x, tp, location = officer::ph_location_type(if ("ctrTitle" %in% types) "ctrTitle" else "title"))
+  }
+  body <- officer::ph_location_type(if ("subTitle" %in% types) "subTitle" else "body")
   if (!is.null(plot)) {
     value <- if (editable && inherits(plot, "ggplot") && requireNamespace("rvg", quietly = TRUE)) {
       rvg::dml(ggobj = plot, fonts = list(sans = phw_font()))
     } else {
       plot
     }
-    x <- officer::ph_with(x, value, location = body)
+    if (!is.null(alt) && inherits(value, "ggplot")) {
+      x <- officer::ph_with(x, value, location = body, alt_text = alt)
+    } else {
+      x <- officer::ph_with(x, value, location = body)
+      x <- set_slide_alt(x, alt)
+    }
   } else if (!is.null(table)) {
     ft <- if (inherits(table, "flextable")) table else phw_flextable(table)
     x <- officer::ph_with(x, ft, location = body)
+    x <- set_slide_alt(x, alt)
   } else if (!is.null(text)) {
-    props <- officer::fp_text(font.family = phw_font(), font.size = 20, color = phw_colours[["text"]])
-    x <- officer::ph_with(x, officer::unordered_list(str_list = text, level_list = rep(1L, length(text)), style = props), location = body)
+    if ("subTitle" %in% types) {
+      props <- officer::fp_text(font.family = phw_font(), font.size = 22, color = phw_colours[["grey_bg"]])
+      x <- officer::ph_with(x, do.call(officer::block_list, lapply(text, function(t) officer::fpar(officer::ftext(t, props)))), location = body)
+    } else {
+      props <- officer::fp_text(font.family = phw_font(), font.size = 20, color = phw_colours[["text"]])
+      x <- officer::ph_with(x, officer::unordered_list(str_list = text, level_list = rep(1L, length(text)), style = props), location = body)
+    }
   }
-  cap <- caption_from(source, date, list())
+  cap <- caption_from(source, date, caption_args)
   if (!is.null(cap)) {
-    fp <- officer::fp_text(font.family = phw_font(), font.size = 10, bold = TRUE, color = phw_colours[["text"]])
+    size <- officer::slide_size(x)
+    fp <- officer::fp_text(font.family = phw_font(), font.size = 10, bold = TRUE,
+                           color = phw_colours[[if (on_navy) "white" else "text"]])
     x <- officer::ph_with(x, officer::fpar(officer::ftext(gsub("\n", " | ", cap), fp),
                                            fp_p = officer::fp_par(text.align = "right")),
-                          location = officer::ph_location(left = 0.5, top = 6.9, width = 9, height = 0.4))
+                          location = officer::ph_location(left = 0.6, top = size$height - 0.6,
+                                                          width = size$width - 1.2, height = 0.4))
   }
+  x
+}
+
+# officer's ph_with() takes alt text only for ggplot images, so editable
+# charts and tables get it written onto the shape just added.
+set_slide_alt <- function(x, alt) {
+  if (is.null(alt)) return(x)
+  rlang::check_installed("xml2")
+  doc <- x$slide$get_slide(x$cursor)$get()
+  shapes <- xml2::xml_find_all(doc, "//p:spTree/*[p:nvSpPr or p:nvGrpSpPr or p:nvGraphicFramePr or p:nvPicPr]")
+  last <- shapes[[length(shapes)]]
+  xml2::xml_set_attr(xml2::xml_find_first(last, "*[1]/p:cNvPr"), "descr", alt)
   x
 }

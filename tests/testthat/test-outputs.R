@@ -93,3 +93,110 @@ test_that("phw_datatable styles a phw_summary like the other renderers", {
   expect_null(plain$x$options$rowCallback)
   expect_equal(plain$x$options$pageLength, 10)
 })
+
+slide_alt_texts <- function(deck, i) {
+  f <- withr::local_tempfile(fileext = ".pptx")
+  print(deck, target = f)
+  dir <- withr::local_tempdir()
+  utils::unzip(f, exdir = dir)
+  xml <- paste(readLines(file.path(dir, "ppt", "slides", paste0("slide", i, ".xml")), warn = FALSE), collapse = "")
+  regmatches(xml, gregexpr('descr="[^"]*"', xml))[[1]]
+}
+
+test_that("phw_add_slide writes alt text for charts and tables", {
+  skip_if_not_installed("officer")
+  skip_if_not_installed("flextable")
+  skip_if_not_installed("rvg")
+  skip_if_not_installed("xml2")
+  p <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) + ggplot2::geom_point()
+  deck <- phw_pptx()
+  deck <- phw_add_slide(deck, "Image", plot = p, editable = FALSE, alt = "Scatter of weight and mpg")
+  deck <- phw_add_slide(deck, "Editable", plot = p, alt = "Editable scatter")
+  deck <- phw_add_slide(deck, "Table", table = head(mtcars[, 1:3]), alt = "First rows of mtcars")
+  deck <- phw_add_slide(deck, "None", plot = p, editable = FALSE)
+  expect_true('descr="Scatter of weight and mpg"' %in% slide_alt_texts(deck, 1))
+  expect_true('descr="Editable scatter"' %in% slide_alt_texts(deck, 2))
+  expect_true('descr="First rows of mtcars"' %in% slide_alt_texts(deck, 3))
+  expect_false(any(grepl("Scatter|Editable|First rows", slide_alt_texts(deck, 4))))
+})
+
+test_that("phw_add_slide passes caption_args to the source line", {
+  skip_if_not_installed("officer")
+  deck <- phw_add_slide(phw_pptx(), "Text", text = "a", source = "Survey", caption_args = list(note = "Provisional"))
+  expect_match(officer::pptx_summary(deck)$text, "Provisional", all = FALSE)
+})
+
+test_that("a deck built with all defaults uses the PHW master and layouts", {
+  skip_if_not_installed("officer")
+  skip_if_not_installed("flextable")
+  p <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) + ggplot2::geom_point()
+  deck <- phw_pptx()
+  deck <- phw_add_slide(deck, "Title", text = "Subtitle", layout = "Title Slide")
+  deck <- phw_add_slide(deck, "Chart", plot = p, editable = FALSE, source = "mtcars")
+  deck <- phw_add_slide(deck, "Table", table = head(mtcars[, 1:3]))
+  deck <- phw_add_slide(deck, "Points", text = c("a", "b"))
+  f <- withr::local_tempfile(fileext = ".pptx")
+  print(deck, target = f)
+  saved <- officer::read_pptx(f)
+  expect_equal(length(saved), 4)
+  expect_equal(unique(officer::layout_summary(saved)$master), "PHW")
+  expect_setequal(officer::layout_summary(saved)$layout,
+                  c("Title Slide", "Title and Content", "Section Header", "Two Content", "Title Only", "Blank"))
+  expect_equal(unname(unlist(officer::slide_size(saved))), c(13.333, 7.5), tolerance = 1e-3)
+  expect_equal(officer::pptx_summary(saved)$text[1], "Title")
+})
+
+test_that("phw_reference_pptx writes the template and stays small", {
+  f <- phw_reference_pptx()
+  expect_true(file.exists(f))
+  expect_lt(file.size(f), 100 * 1024)
+})
+
+test_that("phw_add_slide finds the master that has the layout", {
+  skip_if_not_installed("officer")
+  masters <- function(deck) officer::layout_summary(deck)$master
+  deck <- phw_add_slide(phw_pptx(), "Bundled", text = "a")
+  expect_equal(length(deck), 1)
+  expect_equal(unique(masters(deck)), "PHW")
+  own <- officer::read_pptx()
+  expect_equal(unique(masters(own)), "Office Theme")
+  own <- phw_add_slide(own, "Own template", text = "a")
+  expect_equal(length(own), 1)
+})
+
+test_that("phw_add_slide lists the layouts when the layout is unknown", {
+  skip_if_not_installed("officer")
+  expect_error(phw_add_slide(phw_pptx(), "x", layout = "Nope"), "Title and Content")
+  expect_error(phw_add_slide(officer::read_pptx(), "x", layout = "Nope"), "no slide layout called")
+})
+
+test_that("slide titles are readable on dark and light layouts", {
+  skip_if_not_installed("officer")
+  deck <- phw_pptx()
+  for (layout in c("Title Slide", "Section Header", "Title and Content")) {
+    deck <- phw_add_slide(deck, "Headline", text = "Sub", layout = layout)
+  }
+  dir <- withr::local_tempdir()
+  f <- file.path(dir, "deck.pptx")
+  print(deck, target = f)
+  utils::unzip(f, exdir = dir)
+  title_fill <- function(path) {
+    doc <- xml2::read_xml(file.path(dir, path))
+    xml2::xml_attr(xml2::xml_find_all(
+      doc, "//p:sp[.//p:ph[@type='title' or @type='ctrTitle']]//a:rPr/a:solidFill/a:srgbClr"), "val")
+  }
+  layout_default <- function(path) {
+    doc <- xml2::read_xml(file.path(dir, path))
+    xml2::xml_attr(xml2::xml_find_first(
+      doc, "//p:sp[.//p:ph[@type='title' or @type='ctrTitle']]//a:defRPr/a:solidFill/a:srgbClr"), "val")
+  }
+  expect_length(title_fill("ppt/slides/slide1.xml"), 0)
+  expect_length(title_fill("ppt/slides/slide2.xml"), 0)
+  expect_equal(title_fill("ppt/slides/slide3.xml"), "285087")
+
+  layouts <- officer::layout_summary(officer::read_pptx(f))
+  for (name in c("Title Slide", "Section Header")) {
+    n <- which(layouts$layout == name)
+    expect_equal(layout_default(sprintf("ppt/slideLayouts/slideLayout%d.xml", n)), "FFFFFF")
+  }
+})
