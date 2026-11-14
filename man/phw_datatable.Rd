@@ -17,7 +17,7 @@ phw_datatable(
 )
 }
 \arguments{
-\item{data}{A data frame.}
+\item{data}{A data frame, or a \code{phw_summary} table.}
 
 \item{caption}{Title shown above the table.}
 
@@ -40,7 +40,9 @@ A DT htmlwidget (wrapped with the title and source when given).
 Builds a \code{\link[DT:datatable]{DT::datatable()}} in the PHW style: PHW font, navy header, light
 row lines, thousands separators, and a title and source line. Useful in
 Shiny apps and HTML reports when readers need to search, sort or page
-through a long table. For styled summary tables use \code{\link[=phw_reactable]{phw_reactable()}}.
+through a long table. A summary table (see \code{\link[=phw_summary_table]{phw_summary_table()}} and
+\code{\link[=phw_as_summary]{phw_as_summary()}}) keeps its bold variable and total rows and indented
+levels, and is shown whole, without sorting or paging.
 }
 \examples{
 if (requireNamespace("DT", quietly = TRUE)) {

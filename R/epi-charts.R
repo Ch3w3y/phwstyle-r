@@ -167,6 +167,30 @@ phw_pyramid <- function(data, age, sex, value = NULL, percent = FALSE, left = NU
     chart_theme(grid = "x")
 }
 
+signal_points <- function(mapping, ...) {
+  args <- utils::modifyList(list(size = 2.4), list(...))
+  do.call(ggplot2::geom_point, c(list(mapping), args))
+}
+
+relabel_levels <- function(f, labels, call = rlang::caller_env()) {
+  if (is.null(labels)) return(f)
+  if (!is.character(labels) || is.null(names(labels)) || anyNA(names(labels)) || any(names(labels) == "")) {
+    cli::cli_abort("{.arg labels} must be a named character vector, such as {.code c(old = \"new\")}.", call = call)
+  }
+  bad <- setdiff(names(labels), levels(f))
+  if (length(bad)) {
+    cli::cli_abort(c("{.arg labels} names {.val {bad}} {?is/are} not {?a level/levels} of this chart.",
+                     i = "The levels are {.val {levels(f)}}."), call = call)
+  }
+  lv <- levels(f)
+  lv[match(names(labels), lv)] <- unname(labels)
+  if (anyDuplicated(lv)) {
+    cli::cli_abort("{.arg labels} gives two levels the same text.", call = call)
+  }
+  levels(f) <- lv
+  f
+}
+
 #' Funnel plot
 #'
 #' Compares areas, providers or practices of different sizes against a
@@ -186,6 +210,11 @@ phw_pyramid <- function(data, age, sex, value = NULL, percent = FALSE, left = NU
 #'   overall value (sum of numerators over sum of denominators).
 #' @param limits Two confidence levels for the inner and outer limits.
 #' @param point_colour Colour of points within the limits.
+#' @param labels Optional named character vector that renames the zones in
+#'   the legend and in `$data`, e.g. `c("Within limits" = "Gerllaw'r terfynau")`.
+#'   Names are the default zone text and values the replacement. Each zone
+#'   keeps its colour and shape.
+#' @param ... Passed to [ggplot2::geom_point()], e.g. `size = 3`.
 #' @return A ggplot. The units, with a `zone` column ("Within limits",
 #'   "Above 95%"...), are in `$data`.
 #' @details Limits use the normal approximation to the binomial (for
@@ -199,7 +228,8 @@ phw_pyramid <- function(data, age, sex, value = NULL, percent = FALSE, left = NU
 #' @export
 phw_funnel <- function(data, numerator, denominator, label = NULL, type = c("proportion", "rate"),
                        multiplier = if (type[1] == "proportion") 100 else 1e5, target = NULL,
-                       limits = c(0.95, 0.998), point_colour = phw_colours[["grey_mid"]]) {
+                       limits = c(0.95, 0.998), point_colour = phw_colours[["grey_mid"]],
+                       labels = NULL, ...) {
   type <- rlang::arg_match(type)
   numerator <- pick_col(rlang::enquo(numerator), data, "numerator")
   denominator <- pick_col(rlang::enquo(denominator), data, "denominator")
@@ -218,6 +248,8 @@ phw_funnel <- function(data, numerator, denominator, label = NULL, type = c("pro
                       ifelse(dev < -z[1], paste0("Below ", limits[1] * 100, "%"), "Within limits")))),
                       levels = c(paste0("Above ", rev(limits) * 100, "%"), "Within limits",
                                  paste0("Below ", limits * 100, "%")))
+  outer <- grepl(paste0(limits[2] * 100, "%"), data$zone)
+  data$zone <- relabel_levels(data$zone, labels)
   grid_n <- exp(seq(log(max(1, min(den) * 0.8)), log(max(den) * 1.1), length.out = 200))
   lines <- do.call(rbind, lapply(seq_along(z), function(k) {
     rbind(data.frame(n = grid_n, y = multiplier * (p0 + z[k] * se(grid_n)), limit = k, side = "upper"),
@@ -232,7 +264,7 @@ phw_funnel <- function(data, numerator, denominator, label = NULL, type = c("pro
     ggplot2::geom_line(data = lines, ggplot2::aes(x = .data$n, y = .data$y, group = .data$grp,
                                                   linetype = factor(.data$limit)),
                        colour = phw_colours[["text_secondary"]], linewidth = 0.4, inherit.aes = FALSE) +
-    ggplot2::geom_point(ggplot2::aes(colour = .data$zone, shape = .data$zone), size = 2.4) +
+    signal_points(ggplot2::aes(colour = .data$zone, shape = .data$zone), ...) +
     ggplot2::scale_colour_manual(values = zone_cols, name = NULL, drop = TRUE) +
     ggplot2::scale_shape_manual(values = zone_shapes, name = NULL, drop = TRUE) +
     ggplot2::scale_linetype_manual(values = c("dashed", "solid"), guide = "none") +
@@ -240,7 +272,7 @@ phw_funnel <- function(data, numerator, denominator, label = NULL, type = c("pro
     ggplot2::labs(x = denominator, y = if (type == "proportion") "Percentage" else "Rate") +
     chart_theme(grid = "y")
   if (!is.null(label)) {
-    out <- data[grepl(paste0(limits[2] * 100, "%"), data$zone), , drop = FALSE]
+    out <- data[outer, , drop = FALSE]
     if (nrow(out)) {
       geom <- if (requireNamespace("ggrepel", quietly = TRUE)) ggrepel::geom_text_repel else ggplot2::geom_text
       p <- p + geom(data = out, ggplot2::aes(label = .data[[label]]), size = 3, colour = phw_colours[["text"]],
@@ -273,6 +305,11 @@ phw_funnel <- function(data, numerator, denominator, label = NULL, type = c("pro
 #' @param baseline Number of points to calculate the centre line and limits
 #'   from (e.g. the first 20). `NULL` uses all points.
 #' @param shift,trend Run lengths that count as special causes.
+#' @param labels Optional named character vector that renames the signals
+#'   in the legend and in `$data`, e.g. `c("Common cause" = "Achos cyffredin")`.
+#'   Names are the default signal text and values the replacement. Each
+#'   signal keeps its colour and shape.
+#' @param ... Passed to [ggplot2::geom_point()], e.g. `size = 3`.
 #' @return A ggplot. The points, with a `signal` column, are in `$data`.
 #' @examples
 #' set.seed(3)
@@ -281,7 +318,7 @@ phw_funnel <- function(data, numerator, denominator, label = NULL, type = c("pro
 #' phw_spc(spc, month, value, improvement = "increase", baseline = 20)
 #' @export
 phw_spc <- function(data, x, y, type = c("xmr", "run"), improvement = c("none", "increase", "decrease"),
-                    baseline = NULL, shift = 7, trend = 6) {
+                    baseline = NULL, shift = 7, trend = 6, labels = NULL, ...) {
   type <- rlang::arg_match(type)
   improvement <- rlang::arg_match(improvement)
   x <- pick_col(rlang::enquo(x), data, "x")
@@ -323,9 +360,11 @@ phw_spc <- function(data, x, y, type = c("xmr", "run"), improvement = c("none", 
                   increase = ifelse(high, "Improvement", "Concern"),
                   decrease = ifelse(low, "Improvement", "Concern"))),
     levels = c("Common cause", "Special cause", "Improvement", "Concern"))
+  data$signal <- relabel_levels(data$signal, labels)
   cols <- c("Common cause" = phw_colours[["grey_mid"]], "Special cause" = phw_colours[["orange"]],
             "Improvement" = phw_colours[["navy"]], "Concern" = phw_colours[["orange"]])
   shapes <- c("Common cause" = 16, "Special cause" = 17, "Improvement" = 15, "Concern" = 17)
+  names(cols) <- names(shapes) <- levels(data$signal)
   p <- ggplot2::ggplot(data, ggplot2::aes(x = .data[[x]], y = .data[[y]])) +
     ggplot2::geom_hline(yintercept = centre, colour = phw_colours[["text"]], linewidth = 0.5)
   if (type == "xmr") {
@@ -337,7 +376,7 @@ phw_spc <- function(data, x, y, type = c("xmr", "run"), improvement = c("none", 
                                  linetype = "dotted")
   }
   p + ggplot2::geom_line(colour = phw_colours[["grey_mid"]], linewidth = 0.5) +
-    ggplot2::geom_point(ggplot2::aes(colour = .data$signal, shape = .data$signal), size = 2.4) +
+    signal_points(ggplot2::aes(colour = .data$signal, shape = .data$signal), ...) +
     ggplot2::scale_colour_manual(values = cols, name = NULL, drop = TRUE) +
     ggplot2::scale_shape_manual(values = shapes, name = NULL, drop = TRUE) +
     ggplot2::labs(x = NULL, y = y) +

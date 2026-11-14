@@ -70,3 +70,26 @@ test_that("phw_pptx builds a deck", {
   expect_equal(length(deck), 3)
   expect_true(file.exists(f))
 })
+
+test_that("phw_datatable styles a phw_summary like the other renderers", {
+  skip_if_not_installed("DT")
+  d <- data.frame(label = c("Age", "0-14", "65+", "All"), n = c(NA, 12, 30, 42),
+                  kind = c("variable", "level", "level", "total"))
+  w <- phw_datatable(phw_as_summary(d, kind))
+  expect_s3_class(w, "datatables")
+  expect_equal(names(w$x$data), c("label", "n", ".phw_row_type", ".phw_depth"))
+  expect_false(w$x$options$paging)
+  expect_false(w$x$options$ordering)
+  defs <- w$x$options$columnDefs
+  hidden <- defs[[which(vapply(defs, function(d) isFALSE(d$visible), logical(1)))]]
+  expect_equal(hidden$targets, c(2, 3))
+  expect_equal(w$x$data$.phw_row_type, d$kind)
+  expect_equal(w$x$data$.phw_depth, c(0, 1, 1, 0))
+  styles <- as.character(w$x$options$rowCallback)
+  expect_match(styles, '"variable" ? "700"', fixed = TRUE)
+  expect_match(styles, '"total" ? "2px solid', fixed = TRUE)
+  expect_match(styles, "padding-left':value == 1 ? \"22px\"", fixed = TRUE)
+  plain <- phw_datatable(d)
+  expect_null(plain$x$options$rowCallback)
+  expect_equal(plain$x$options$pageLength, 10)
+})
