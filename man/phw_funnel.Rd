@@ -22,7 +22,8 @@ phw_funnel(
 \item{data}{A data frame with one row per unit (area, practice...).}
 
 \item{numerator, denominator}{Columns of events and of population (or
-patients, tests...), unquoted as in dplyr. Strings work too.}
+patients, tests...), unquoted as in dplyr. Strings work too. Rows with
+a missing value or a denominator of 0 are left out, with a message.}
 
 \item{label}{Optional column of unit names; units outside the outer
 limits are labelled.}
@@ -33,7 +34,9 @@ limits are labelled.}
 rate per 100,000.}
 
 \item{target}{The target value on the multiplied scale. Defaults to the
-overall value (sum of numerators over sum of denominators).}
+overall value (sum of numerators over sum of denominators). It must be
+above 0 (and below \code{multiplier} for a proportion), since otherwise the
+limits have no width.}
 
 \item{limits}{Two confidence levels for the inner and outer limits.}
 
