@@ -234,10 +234,15 @@ phw_pptx <- function(template = NULL) {
 #'   `officer::layout_summary(x)`.
 #' @param editable Add charts as editable vector graphics (needs rvg)?
 #' @param title_size Title font size.
+#' @param caption_args List of other [phw_caption()] arguments.
+#' @param alt Alternative text for the chart or table on the slide, read out
+#'   by screen readers. `NULL` adds none, except that a ggplot's own
+#'   `labs(alt = )` text is used when there is one.
 #' @export
 phw_add_slide <- function(x, title = NULL, plot = NULL, table = NULL, text = NULL,
                           source = NULL, date = NULL, layout = "Title and Content",
-                          master = "Office Theme", editable = TRUE, title_size = 28) {
+                          master = "Office Theme", editable = TRUE, title_size = 28,
+                          caption_args = list(), alt = NULL) {
   rlang::check_installed("officer")
   x <- officer::add_slide(x, layout = layout, master = master)
   navy <- phw_colours[["navy"]]
@@ -253,20 +258,38 @@ phw_add_slide <- function(x, title = NULL, plot = NULL, table = NULL, text = NUL
     } else {
       plot
     }
-    x <- officer::ph_with(x, value, location = body)
+    if (!is.null(alt) && inherits(value, "ggplot")) {
+      x <- officer::ph_with(x, value, location = body, alt_text = alt)
+    } else {
+      x <- officer::ph_with(x, value, location = body)
+      x <- set_slide_alt(x, alt)
+    }
   } else if (!is.null(table)) {
     ft <- if (inherits(table, "flextable")) table else phw_flextable(table)
     x <- officer::ph_with(x, ft, location = body)
+    x <- set_slide_alt(x, alt)
   } else if (!is.null(text)) {
     props <- officer::fp_text(font.family = phw_font(), font.size = 20, color = phw_colours[["text"]])
     x <- officer::ph_with(x, officer::unordered_list(str_list = text, level_list = rep(1L, length(text)), style = props), location = body)
   }
-  cap <- caption_from(source, date, list())
+  cap <- caption_from(source, date, caption_args)
   if (!is.null(cap)) {
     fp <- officer::fp_text(font.family = phw_font(), font.size = 10, bold = TRUE, color = phw_colours[["text"]])
     x <- officer::ph_with(x, officer::fpar(officer::ftext(gsub("\n", " | ", cap), fp),
                                            fp_p = officer::fp_par(text.align = "right")),
                           location = officer::ph_location(left = 0.5, top = 6.9, width = 9, height = 0.4))
   }
+  x
+}
+
+# officer's ph_with() takes alt text only for ggplot images, so editable
+# charts and tables get it written onto the shape just added.
+set_slide_alt <- function(x, alt) {
+  if (is.null(alt)) return(x)
+  rlang::check_installed("xml2")
+  doc <- x$slide$get_slide(x$cursor)$get()
+  shapes <- xml2::xml_find_all(doc, "//p:spTree/*[p:nvSpPr or p:nvGrpSpPr or p:nvGraphicFramePr or p:nvPicPr]")
+  last <- shapes[[length(shapes)]]
+  xml2::xml_set_attr(xml2::xml_find_first(last, "*[1]/p:cNvPr"), "descr", alt)
   x
 }

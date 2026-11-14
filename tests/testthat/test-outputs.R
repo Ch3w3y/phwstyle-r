@@ -70,3 +70,35 @@ test_that("phw_pptx builds a deck", {
   expect_equal(length(deck), 3)
   expect_true(file.exists(f))
 })
+
+slide_alt_texts <- function(deck, i) {
+  f <- withr::local_tempfile(fileext = ".pptx")
+  print(deck, target = f)
+  dir <- withr::local_tempdir()
+  utils::unzip(f, exdir = dir)
+  xml <- paste(readLines(file.path(dir, "ppt", "slides", paste0("slide", i, ".xml")), warn = FALSE), collapse = "")
+  regmatches(xml, gregexpr('descr="[^"]*"', xml))[[1]]
+}
+
+test_that("phw_add_slide writes alt text for charts and tables", {
+  skip_if_not_installed("officer")
+  skip_if_not_installed("flextable")
+  skip_if_not_installed("rvg")
+  skip_if_not_installed("xml2")
+  p <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) + ggplot2::geom_point()
+  deck <- phw_pptx()
+  deck <- phw_add_slide(deck, "Image", plot = p, editable = FALSE, alt = "Scatter of weight and mpg")
+  deck <- phw_add_slide(deck, "Editable", plot = p, alt = "Editable scatter")
+  deck <- phw_add_slide(deck, "Table", table = head(mtcars[, 1:3]), alt = "First rows of mtcars")
+  deck <- phw_add_slide(deck, "None", plot = p, editable = FALSE)
+  expect_true('descr="Scatter of weight and mpg"' %in% slide_alt_texts(deck, 1))
+  expect_true('descr="Editable scatter"' %in% slide_alt_texts(deck, 2))
+  expect_true('descr="First rows of mtcars"' %in% slide_alt_texts(deck, 3))
+  expect_false(any(grepl("Scatter|Editable|First rows", slide_alt_texts(deck, 4))))
+})
+
+test_that("phw_add_slide passes caption_args to the source line", {
+  skip_if_not_installed("officer")
+  deck <- phw_add_slide(phw_pptx(), "Text", text = "a", source = "Survey", caption_args = list(note = "Provisional"))
+  expect_match(officer::pptx_summary(deck)$text, "Provisional", all = FALSE)
+})

@@ -18,7 +18,9 @@ phw_add_slide(
   layout = "Title and Content",
   master = "Office Theme",
   editable = TRUE,
-  title_size = 28
+  title_size = 28,
+  caption_args = list(),
+  alt = NULL
 )
 }
 \arguments{
@@ -47,6 +49,12 @@ see them in PowerPoint under View > Slide Master, or with
 \item{editable}{Add charts as editable vector graphics (needs rvg)?}
 
 \item{title_size}{Title font size.}
+
+\item{caption_args}{List of other \code{\link[=phw_caption]{phw_caption()}} arguments.}
+
+\item{alt}{Alternative text for the chart or table on the slide, read out
+by screen readers. \code{NULL} adds none, except that a ggplot's own
+\code{labs(alt = )} text is used when there is one.}
 }
 \value{
 An officer \code{rpptx} object. Save it with \code{print(deck, target = "file.pptx")}.
