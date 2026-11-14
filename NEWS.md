@@ -1,3 +1,98 @@
+# phwstyle (development version)
+
+This release makes every function check what it is given. Where a call
+used to draw a wrong chart, drop content without a word or fail inside
+another package, it now does the right thing or stops with a message that
+says what to change.
+
+## Changes that may affect existing code
+
+* Text dates must be ISO dates such as `"2026-11-14"`. `phw_epicurve()`,
+  `phw_date()` and the caption `date` stop on text such as `"05/01/2026"`
+  instead of misreading it, and show how to convert it. `phw_epicurve()`
+  also stops on a numeric date column.
+* Rows with a missing date, count, value, estimate or code are left out with
+  one message saying how many. Before, they could turn a whole period into 0
+  or blank a chart.
+* `phw_reactable()` rows are no longer striped by default, to match the
+  other tables. Pass `striped = TRUE` to stripe them.
+* `phw_add_slide()` stops when given more content than the layout has room
+  for, instead of silently using only the plot. It also refuses a chart or
+  table on the navy Title Slide and Section Header layouts.
+* A group with an empty name (`""`) stops `phw_colour_key()` and the PHW
+  colour scales. Give it a label, or make it `NA` to show it as missing.
+
+## Charts and maps
+
+* Ready-made charts check their data first. Text where numbers are needed,
+  negative counts and impossible settings (funnel limits, targets, SPC
+  baseline, pyramid `left`) stop with a message that says what to change.
+  Epidemic curves say how many cases fall outside `range`.
+* `phw_map()` lists codes it could not match, and says when an area is drawn
+  twice in one panel or when `bins` or `key` do not apply.
+* `scale_shape_phw()` and `scale_linetype_phw()` keep missing groups on the
+  chart (new `na.value`). Past eight groups they stop with a clear message.
+* `reverse = TRUE` now works when the palette is a function, and a palette
+  function gives groups its colours in its own order.
+* `width` and other bar settings passed through `...` work in
+  `phw_epicurve()` and `phw_pyramid()`.
+* `theme_phw()`, `theme_phw_map()`, `phw_arrange()`, `phw_style_extensions()`
+  and the colour scales check their arguments when called, not when the
+  plot is drawn.
+* `phw_finalise()` shows the organisation name when no logo is installed
+  (change it with the new `org`), and stops with "file not found" for a
+  missing logo file.
+
+## Tables
+
+* Summary and group tables look the same in `phw_flextable()`, `phw_gt()`,
+  `phw_reactable()`, `phw_datatable()` and `phw_write_xlsx()`. Variable rows
+  are shaded unless `highlight = FALSE`. `phw_datatable()` gains the
+  spanner, two-level column headers, group separators and right-aligned
+  statistics.
+* `phw_reactable()` tables close with a navy rule and have a navy spanner.
+* `phw_write_xlsx()` writes the spanner, navy labels, italic subtotals, a rule
+  above the total, ISO dates and a bold right-aligned source. It checks `x`
+  and accepts `header_fill = "navy"`.
+* `phw_gt()` tables carry the bundled Ubuntu web font, dates are
+  left-aligned and subtotals are italic.
+* `phw_summary_table()` shows a blank, not "( to )", when a statistic can't
+  be calculated, and `labels` can be a named character vector.
+* Table and column helpers give clear errors for duplicated column names,
+  negative bar values, a data frame where a flextable is needed, or an
+  unknown style.
+
+## Slides and documents
+
+* `phw_add_slide()` places content on every layout. Two Content fills the
+  left side first, and Title Only and Blank place the chart, table or text
+  in the free space.
+* `phw_add_slide()` checks its arguments before it adds a slide, so a call
+  that stops leaves the deck unchanged. It warns when a table has more rows
+  than fit on the slide, and accepts a `phw_finalise()` chart as a picture.
+* Captions leave out a missing or empty source, date or note instead of
+  printing "NA", and name a misspelt caption argument.
+* The R Markdown formats add your own `css`, `includes` and `pandoc_args` to
+  the PHW ones, and LaTeX characters in `team` print as typed.
+* `phw_download_logos()` saves nothing when the reply isn't an SVG.
+
+## Interactive outputs and colours
+
+* Leaflet maps draw areas with a missing value in the house grey, matching
+  the legend, and give one clear message when a numeric fill has no values
+  to colour by.
+* `phw_plotly()` colours traces that map `color` with the PHW palette, gives
+  heatmaps and contours the PHW sequential scale, and keeps your own
+  `annotations`.
+* `phw_leaflet_polygons()`, `phw_boundaries()`, `phw_plotly()` and the
+  colour key functions check their input first. `phw_boundaries()` checks
+  `crs` before downloading anything.
+* `phw_contrast()`, `phw_text_on()` and `phw_cvd()` return `NA` for a missing
+  colour instead of treating it as white, and accept palette names.
+* `phw_page_navbar(header_args = )` overrides the title and subtitle by name,
+  so the logo link keeps its address.
+* `phw_bs_theme()` takes Bootstrap version 4 or 5 only.
+
 # phwstyle 0.3.0
 
 ## New charts and maps
