@@ -22,7 +22,7 @@ test_that("phw_forest renames the comparison levels", {
   p <- phw_forest(units, est, lo, hi, area, target = 60, labels = c(Higher = "Above Wales", Lower = "Below Wales"))
   expect_equal(levels(p$data$compared), c("Above Wales", "Similar", "Below Wales"))
   expect_equal(as.character(p$data$compared[p$data$area == "A"]), "Above Wales")
-  expect_error(phw_forest(units, est, lo, hi, area, target = 60, labels = c(Bigger = "x")), "must be named")
+  expect_error(phw_forest(units, est, lo, hi, area, target = 60, labels = c(Bigger = "x")), "Bigger")
 })
 
 test_that("phw_forest without a target draws every unit alike", {

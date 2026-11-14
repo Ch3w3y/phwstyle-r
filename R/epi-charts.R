@@ -111,8 +111,7 @@ phw_epicurve <- function(data, date, group = NULL, count = NULL,
       scale_fill_phw_d(palette = palette %||% phw_default_palette(), key = key, name = NULL)
   }
   if (!is.null(average)) {
-    unit <- switch(interval, day = "day", week = "week", month = "month", quarter = "quarter", year = "year")
-    label <- average_label %||% paste0(average, "-", unit, " average")
+    label <- average_label %||% paste0(average, "-", interval, " average")
     p <- p +
       ggplot2::geom_line(ggplot2::aes(x = .data$period + width / 2, y = .data$average, colour = label),
                          data = full[!duplicated(full$period), ], linewidth = 1, na.rm = TRUE) +
@@ -195,8 +194,8 @@ phw_pyramid <- function(data, age, sex, value = NULL, percent = FALSE, left = NU
     chart_theme(grid = "x")
 }
 
-signal_points <- function(mapping, ...) {
-  args <- utils::modifyList(list(size = 2.4), list(...))
+signal_points <- function(mapping, ..., .defaults = list(size = 2.4)) {
+  args <- utils::modifyList(.defaults, list(...))
   do.call(ggplot2::geom_point, c(list(mapping), args))
 }
 

@@ -42,13 +42,7 @@ phw_forest <- function(data, value, lower, upper, label, target = NULL, labels =
     cli::cli_abort("Each {.arg value} must lie between its {.arg lower} and {.arg upper}.")
   }
   levs <- c("Higher", "Similar", "Lower")
-  if (!is.null(labels)) {
-    unknown <- setdiff(names(labels), levs)
-    if (is.null(names(labels)) || length(unknown)) {
-      cli::cli_abort("{.arg labels} must be named with {.val {levs}}.")
-    }
-    levs[match(names(labels), levs)] <- unname(labels)
-  }
+  levs <- levels(relabel_levels(factor(levs, levs), labels))
   data <- data[order(data[[value]]), , drop = FALSE]
   rows <- ggplot2::aes(x = .data[[value]], y = factor(.data[[label]], unique(.data[[label]])))
   if (!is.null(target)) {
@@ -60,7 +54,7 @@ phw_forest <- function(data, value, lower, upper, label, target = NULL, labels =
     return(p +
       ggplot2::geom_errorbar(ggplot2::aes(xmin = .data[[lower]], xmax = .data[[upper]]), colour = navy,
                              width = 0.25, linewidth = 0.8, orientation = "y") +
-      ggplot2::geom_point(colour = navy, size = 3, ...) +
+      signal_points(NULL, ..., .defaults = list(colour = navy, size = 3)) +
       ggplot2::labs(x = value, y = NULL) +
       chart_theme(grid = "x"))
   }
@@ -70,9 +64,9 @@ phw_forest <- function(data, value, lower, upper, label, target = NULL, labels =
     ggplot2::geom_vline(xintercept = target, linetype = "dashed", colour = phw_colours[["text_secondary"]]) +
     ggplot2::geom_errorbar(ggplot2::aes(xmin = .data[[lower]], xmax = .data[[upper]], colour = .data$compared),
                            width = 0.25, linewidth = 0.8, orientation = "y") +
-    ggplot2::geom_point(ggplot2::aes(colour = .data$compared, shape = .data$compared), size = 3, ...) +
-    ggplot2::scale_colour_manual(values = cols, breaks = levs, drop = FALSE) +
-    ggplot2::scale_shape_manual(values = shapes, breaks = levs, drop = FALSE) +
+    signal_points(ggplot2::aes(colour = .data$compared, shape = .data$compared), ..., .defaults = list(size = 3)) +
+    ggplot2::scale_colour_manual(values = cols, breaks = levs, drop = TRUE) +
+    ggplot2::scale_shape_manual(values = shapes, breaks = levs, drop = TRUE) +
     ggplot2::labs(x = value, y = NULL, colour = NULL, shape = NULL) +
     chart_theme(grid = "x")
 }
