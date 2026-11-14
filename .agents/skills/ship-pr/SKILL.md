@@ -26,7 +26,11 @@ The order ID is the GitHub issue number.
 gh pr list --head noodle/issue-<id> --state open --json number,headRefOid,mergeStateStatus
 ```
 
-No open PR: the issue was declined or already landed. Yield saying which, and stop.
+No open PR:
+
+- The issue is closed: it was declined or already landed. Yield saying which, and stop.
+- The issue is open and a merged PR from `noodle/issue-<id>` exists: close the issue (`gh issue close <id> --comment "Fixed by #<n>."`), yield, and stop.
+- The issue is open and no PR was ever merged: the execute stage gave up without a PR. Go to step 4, so the issue is retried and then blocked rather than rescheduled without end.
 
 Read the PR's latest comment whose first line is `PASS`, `PASS+NOTES` or `FAIL`, and its `Head:` line.
 
@@ -34,8 +38,8 @@ Read the PR's latest comment whose first line is `PASS`, `PASS+NOTES` or `FAIL`,
 
 - **Verdict for an older head, or no verdict:** do not merge. Go to step 4 (this counts as a retry, so it cannot repeat without end).
 - **FAIL:** do not merge. Go to step 4.
-- **PASS or PASS+NOTES for the current head:** wait for CI with `gh pr checks <n> --watch --interval 60`, then read `gh pr checks <n>`.
-  - All green: go to step 3. Green means every reported check passed AND the `R-CMD-check` jobs are among them. "no checks reported", pending checks or a missing R-CMD-check job are not green: wait again, and after 60 minutes treat it as a failure.
+- **PASS or PASS+NOTES for the current head:** wait for CI with `gh pr checks <n> --watch --interval 60`, then read `gh pr checks <n> --json name,state,workflow`.
+  - All green: go to step 3. Green means at least one check has `"workflow": "R-CMD-check"` and every check has `"state": "SUCCESS"`. An empty list ("no checks reported") or any pending check is not green: wait again, and after 60 minutes treat it as a failure.
   - Any failure: post a comment on the PR whose first line is `FAIL`, second line `Head: <sha>`, then the failing jobs and the key error lines from `gh run view <run> --log-failed` (at most 15 lines). Go to step 4.
 
 ## 3. Merge

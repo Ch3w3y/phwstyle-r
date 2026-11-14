@@ -51,7 +51,7 @@ Severity must be high or medium. Leave out cosmetic problems that need an unusua
 
 ## 3. Avoid duplicates
 
-List every issue, open and closed, with `gh issue list --state all --label noodle --limit 500 --json number,title,state,body`. Do not file anything already covered. If a closed issue's defect is back, file a new issue that links the old one.
+List every issue, open and closed, with `gh issue list --state all --label noodle --limit 500 --json number,title,state,stateReason,body`. Do not file anything already covered, and never file again a defect from an issue closed as not planned (`stateReason` NOT_PLANNED): that was a decision. If an issue closed as completed has its defect back, file a new issue that links the old one.
 
 ## 4. Probe
 

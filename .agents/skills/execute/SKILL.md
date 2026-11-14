@@ -34,9 +34,14 @@ Changes reach `main` only through a GitHub pull request, so do not commit in the
 ID=<order id>                       # the GitHub issue number
 B=noodle/issue-$ID
 W=$HOME/.cache/phwstyle-dev/wt/issue-$ID
-git -C $P fetch -q origin
-git -C $P worktree add "$W" -B "$B" "origin/$B" 2>/dev/null \
-  || git -C $P worktree add "$W" -b "$B" origin/main
+git -C "$P" fetch -q origin
+# A crashed earlier run may have left the worktree behind.
+git -C "$P" worktree remove --force "$W" 2>/dev/null; git -C "$P" worktree prune
+if git -C "$P" rev-parse -q --verify "origin/$B" >/dev/null; then
+  git -C "$P" worktree add "$W" -B "$B" "origin/$B"
+else
+  git -C "$P" worktree add "$W" -B "$B" origin/main
+fi
 ```
 
 - **Retry:** if `gh pr list --head "$B" --state open` shows a PR, this is a fix round. Read its latest verdict comment. If its first line is `FAIL` and its `Head:` is the PR's current head, fix exactly the defects it names, on the same branch. Otherwise (no verdict for this head, for example after a CI wait) change nothing, push nothing and yield `no fix needed`. Do not start over.

@@ -73,7 +73,7 @@ Labels on the item (in `tags`):
 ## Priorities
 
 - Finish one plan before starting another. If the current plan is blocked, schedule nothing for it rather than spreading work across plans. Unrelated small items may still run.
-- An item that failed 2 or more times in `recent_history` gets split into a planning stage or left in `action_needed`. Do not retry it unchanged.
+- An item that failed 2 or more times in `recent_history` gets the `noodle-blocked` label (`gh issue edit <id> --add-label noodle-blocked`) and goes in `action_needed`. Do not retry it unchanged.
 - After `merge.conflict`, do not reschedule the affected order straight away; list it in `action_needed`.
 - Every order needs a `rationale` naming the rule above that placed it.
 
