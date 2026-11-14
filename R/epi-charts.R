@@ -172,7 +172,6 @@ signal_points <- function(mapping, ...) {
   do.call(ggplot2::geom_point, c(list(mapping), args))
 }
 
-# Renames the levels of a factor from a named vector of old = new text.
 relabel_levels <- function(f, labels, call = rlang::caller_env()) {
   if (is.null(labels)) return(f)
   if (!is.character(labels) || is.null(names(labels)) || anyNA(names(labels)) || any(names(labels) == "")) {
