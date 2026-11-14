@@ -78,6 +78,10 @@ document's YAML header do the same; see \code{\link[=phw_default_palette]{phw_de
 \item \code{phwstyle.font}: font family to use instead of Ubuntu.
 \item \code{phwstyle.logo_dir}: folder with your own logo files.
 \item \code{phwstyle.boundary_dir}: where downloaded boundaries are cached.
+\item \code{phwstyle.boundary_update}: \code{FALSE} stops \code{\link[=phw_boundaries]{phw_boundaries()}} checking
+for a newer list of boundary layers.
+\item \code{phwstyle.boundary_list_url}: the address of that list. Point it at
+your own copy of \code{boundaries.csv} if your network blocks GitHub.
 \item \code{phwstyle.quiet}: \code{TRUE} hides the startup reminder.
 }
 }
