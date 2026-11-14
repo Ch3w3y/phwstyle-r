@@ -18,6 +18,8 @@ phw_epicurve(
   date_labels = NULL,
   date_breaks = NULL,
   range = NULL,
+  average = NULL,
+  average_label = NULL,
   ...
 )
 }
@@ -49,11 +51,21 @@ Sunday.}
 \item{range}{Optional two dates for the start and end of the axis,
 e.g. to show a full year even when the first weeks have no cases.}
 
+\item{average}{Optional whole number of periods, \code{k}, for a rolling
+average line. It is the mean of the total count (all groups added
+together) over the latest \code{k} periods, drawn at the centre of each
+period's column. The first \code{k - 1} periods have no average and draw
+nothing.}
+
+\item{average_label}{Legend text for the average line. Defaults to, for
+example, \code{"7-day average"} or \code{"4-week average"}.}
+
 \item{...}{Passed to \code{\link[ggplot2:geom_col]{ggplot2::geom_col()}}.}
 }
 \value{
 A ggplot. The counts by period are in \verb{$data} (columns \code{period},
-\code{group} and \code{n}).
+\code{group} and \code{n}, plus \code{average} when \code{average} is set, the same on
+every group row of a period).
 }
 \description{
 Counts of cases (or any events) by day, week, month, quarter or year,
@@ -67,4 +79,7 @@ cases <- data.frame(
   group = sample(c("Group A", "Group B"), 300, TRUE))
 phw_epicurve(cases, onset, group = group) +
   ggplot2::labs(title = "Cases by week of onset", x = "Week beginning", y = "Cases")
+
+# A four-week rolling average of the total
+phw_epicurve(cases, onset, group = group, average = 4)
 }

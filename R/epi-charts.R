@@ -48,9 +48,17 @@ period_step <- function(interval) {
 #' @param date_labels,date_breaks Passed to [ggplot2::scale_x_date()].
 #' @param range Optional two dates for the start and end of the axis,
 #'   e.g. to show a full year even when the first weeks have no cases.
+#' @param average Optional whole number of periods, `k`, for a rolling
+#'   average line. It is the mean of the total count (all groups added
+#'   together) over the latest `k` periods, drawn at the centre of each
+#'   period's column. The first `k - 1` periods have no average and draw
+#'   nothing.
+#' @param average_label Legend text for the average line. Defaults to, for
+#'   example, `"7-day average"` or `"4-week average"`.
 #' @param ... Passed to [ggplot2::geom_col()].
 #' @return A ggplot. The counts by period are in `$data` (columns `period`,
-#'   `group` and `n`).
+#'   `group` and `n`, plus `average` when `average` is set, the same on
+#'   every group row of a period).
 #' @examples
 #' set.seed(1)
 #' cases <- data.frame(
@@ -58,14 +66,21 @@ period_step <- function(interval) {
 #'   group = sample(c("Group A", "Group B"), 300, TRUE))
 #' phw_epicurve(cases, onset, group = group) +
 #'   ggplot2::labs(title = "Cases by week of onset", x = "Week beginning", y = "Cases")
+#'
+#' # A four-week rolling average of the total
+#' phw_epicurve(cases, onset, group = group, average = 4)
 #' @export
 phw_epicurve <- function(data, date, group = NULL, count = NULL,
                          interval = c("week", "day", "month", "quarter", "year"), week_start = 1,
                          position = c("stack", "dodge"), palette = NULL, key = NULL,
                          fill = phw_colours[["navy"]], date_labels = NULL, date_breaks = NULL,
-                         range = NULL, ...) {
+                         range = NULL, average = NULL, average_label = NULL, ...) {
   interval <- rlang::arg_match(interval)
   position <- rlang::arg_match(position)
+  if (!is.null(average) &&
+      !(is.numeric(average) && length(average) == 1 && !is.na(average) && average >= 1 && average == round(average))) {
+    cli::cli_abort("{.arg average} must be a whole number of periods, 1 or more.")
+  }
   date <- pick_col(rlang::enquo(date), data, "date")
   group <- pick_col(rlang::enquo(group), data, "group", null_ok = TRUE)
   count <- pick_col(rlang::enquo(count), data, "count", null_ok = TRUE)
@@ -81,6 +96,11 @@ phw_epicurve <- function(data, date, group = NULL, count = NULL,
   full$group <- factor(full$group, levels(g))
   full <- merge(full, agg, all.x = TRUE)
   full$n[is.na(full$n)] <- 0
+  if (!is.null(average)) {
+    total <- tapply(full$n, full$period, sum)
+    roll <- as.numeric(stats::filter(as.numeric(total), rep(1 / average, average), sides = 1))
+    full$average <- roll[match(as.character(full$period), names(total))]
+  }
   width <- switch(interval, day = 0.9, week = 6.3, month = 27, quarter = 82, year = 330)
   p <- ggplot2::ggplot(full, ggplot2::aes(x = .data$period, y = .data$n))
   pos <- if (position == "stack") ggplot2::position_stack(reverse = TRUE) else ggplot2::position_dodge()
@@ -89,6 +109,14 @@ phw_epicurve <- function(data, date, group = NULL, count = NULL,
   } else {
     p <- p + ggplot2::geom_col(ggplot2::aes(fill = .data$group), width = width, just = 0, position = pos, ...) +
       scale_fill_phw_d(palette = palette %||% phw_default_palette(), key = key, name = NULL)
+  }
+  if (!is.null(average)) {
+    unit <- switch(interval, day = "day", week = "week", month = "month", quarter = "quarter", year = "year")
+    label <- average_label %||% paste0(average, "-", unit, " average")
+    p <- p +
+      ggplot2::geom_line(ggplot2::aes(x = .data$period + width / 2, y = .data$average, colour = label),
+                         data = full[!duplicated(full$period), ], linewidth = 1, na.rm = TRUE) +
+      ggplot2::scale_colour_manual(values = stats::setNames(phw_colours[["black"]], label), name = NULL)
   }
   xargs <- list(expand = ggplot2::expansion(mult = c(0.01, 0.02)))
   if (!is.null(date_labels)) xargs$date_labels <- date_labels
