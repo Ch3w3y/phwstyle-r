@@ -64,8 +64,18 @@ default_neutral <- c("Other", "Others", "Unknown", "Not known", "Not stated", "M
 phw_colour_key <- function(levels, name = NULL, palette = phw_default_palette(),
                            fixed = NULL, neutral = default_neutral,
                            neutral_colour = phw_colours[["grey_mid"]], save = TRUE) {
+  check_key_name(name, null_ok = TRUE)
   lv <- if (is.factor(levels)) levels(levels) else unique(as.character(levels))
   lv <- lv[!is.na(lv)]
+  if (any(!nzchar(lv))) {
+    cli::cli_abort(c("A group has an empty name ({.val {\"\"}}), which can't keep a colour.",
+                     i = "Give the group a label, or make it {.code NA} to show it as missing."))
+  }
+  check_colours(neutral_colour, "neutral_colour")
+  if (length(neutral_colour) != 1) cli::cli_abort("{.arg neutral_colour} must be one colour.")
+  # A palette function is asked once for every group, so its colours stay
+  # in its own order.
+  if (is.function(palette) && length(lv)) palette <- phw_pal(length(lv), palette)
   # "main" is the start of "extended", so groups past the fourth carry on
   # into it. A key grows over time, so it can't wait to see how many groups
   # there are.
@@ -77,7 +87,7 @@ phw_colour_key <- function(levels, name = NULL, palette = phw_default_palette(),
     vals <- key_mirror(phw_key(name), palette, neutral_colour)
   }
   if (length(fixed)) {
-    if (is.null(names(fixed))) cli::cli_abort("{.arg fixed} must be a named vector, e.g. {.code c(Wales = \"#285087\")}.")
+    check_named_colours(fixed, "fixed")
     vals[names(fixed)] <- unname(fixed)
   }
   new <- setdiff(lv, names(vals))
@@ -115,7 +125,7 @@ key_mirror <- function(default, palette, neutral_colour) {
 }
 
 next_colour <- function(used, palette, neutral_colour) {
-  pal <- if (is.function(palette)) palette(length(used) + 1) else palette_colours(palette)
+  pal <- palette_colours(palette)
   pool <- unique(toupper(c(pal, phw_palettes$accessible, phw_palettes$extended)))
   taken <- toupper(c(used, neutral_colour))
   free <- setdiff(pool, taken)
@@ -179,6 +189,7 @@ NULL
 #' @rdname phw_key
 #' @export
 phw_key <- function(name) {
+  check_key_name(name)
   load_key_file()
   phw_key_env[[name]] %||% stats::setNames(character(), character())
 }
@@ -193,10 +204,8 @@ phw_keys <- function() {
 #' @rdname phw_key
 #' @export
 phw_key_set <- function(name, values) {
-  if (is.null(names(values)) || any(!nzchar(names(values)))) {
-    cli::cli_abort("{.arg values} must be a named vector of colours.")
-  }
-  palette_colours(values)
+  check_key_name(name)
+  check_named_colours(values, "values")
   vals <- phw_key(name)
   vals[names(values)] <- unname(values)
   key_store(name, vals)
@@ -209,6 +218,7 @@ phw_key_recolour <- function(name, palette = "accessible") {
   old <- phw_key(name)
   if (!length(old)) cli::cli_abort("No key called {.val {name}}.")
   neutral <- old == phw_colours[["grey_mid"]]
+  if (is.function(palette)) palette <- phw_pal(max(sum(!neutral), 1), palette)
   vals <- old
   fresh <- character()
   for (l in names(old)[!neutral]) {
@@ -237,6 +247,9 @@ phw_key_file <- function(path) {
     options(phwstyle.key_file = NULL)
     return(invisible(NULL))
   }
+  if (!rlang::is_string(path) || !nzchar(path)) cli::cli_abort("{.arg path} must be a file path or {.code NULL}.")
+  if (dir.exists(path)) cli::cli_abort("{.arg path} is a folder: give a CSV file in it, such as {.file {file.path(path, 'keys.csv')}}.")
+  if (!dir.exists(dirname(path))) cli::cli_abort("The folder {.file {dirname(path)}} does not exist. Create it first.")
   options(phwstyle.key_file = path)
   load_key_file(force = TRUE)
   invisible(path)
@@ -247,9 +260,19 @@ load_key_file <- function(force = FALSE) {
   if (is.null(file) || !file.exists(file)) return(invisible())
   stamp <- paste(normalizePath(file), file.mtime(file))
   if (!force && identical(phw_key_state$stamp, stamp)) return(invisible())
+  # An empty file has no keys yet; the first key saved writes the header.
+  if (file.size(file) == 0) {
+    phw_key_state$stamp <- stamp
+    return(invisible())
+  }
   df <- utils::read.csv(file, colClasses = "character", check.names = FALSE)
   if (!all(c("key", "level", "colour") %in% names(df))) {
     cli::cli_abort("{.file {file}} needs columns {.field key}, {.field level} and {.field colour}.")
+  }
+  bad <- is.na(df$colour) | !is_colour(df$colour)
+  if (any(bad)) {
+    cli::cli_abort(c("{.file {file}} has values in {.field colour} that are not colours: {.val {df$colour[bad]}}.",
+                     i = "Fix them in the file, e.g. {.val #285087}."))
   }
   for (k in unique(df$key)) {
     rows <- df[df$key == k, ]
@@ -267,7 +290,7 @@ key_store <- function(name, vals) {
 
 write_key_file <- function(file, drop = character()) {
   # Keep keys in the file that this session hasn't loaded or changed.
-  keep <- if (file.exists(file)) utils::read.csv(file, colClasses = "character") else NULL
+  keep <- if (file.exists(file) && file.size(file) > 0) utils::read.csv(file, colClasses = "character") else NULL
   mine <- phw_keys_raw()
   if (!is.null(keep)) keep <- keep[!keep$key %in% c(mine$key, drop), c("key", "level", "colour")]
   out <- rbind(keep, mine)
@@ -282,4 +305,18 @@ phw_keys_raw <- function() {
     v <- phw_key_env[[k]]
     data.frame(key = rep(k, length(v)), level = names(v), colour = unname(v))
   }))
+}
+
+check_key_name <- function(name, null_ok = FALSE, call = rlang::caller_env()) {
+  if (null_ok && is.null(name)) return(invisible())
+  if (!rlang::is_string(name) || !nzchar(name)) {
+    cli::cli_abort("{.arg name} must be one key name, such as {.val age_group}.", call = call)
+  }
+}
+
+check_named_colours <- function(x, arg, call = rlang::caller_env()) {
+  if (is.null(names(x)) || anyNA(names(x)) || any(!nzchar(names(x)))) {
+    cli::cli_abort("{.arg {arg}} must be a named vector of colours, e.g. {.code c(Wales = \"#285087\")}.", call = call)
+  }
+  check_colours(x, arg, call = call)
 }
