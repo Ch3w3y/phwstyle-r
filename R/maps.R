@@ -86,9 +86,10 @@ phw_map <- function(data, by, fill, level, bins = NULL, palette = NULL, key = NU
     pts <- suppressWarnings(sf::st_point_on_surface(sf::st_geometry(joined)))
     pts <- sf::st_sf(joined[setdiff(names(joined), attr(joined, "sf_column"))], geometry = pts)
     pts$.label <- text
-    p <- p + ggplot2::geom_sf_text(ggplot2::aes(label = .data$.label), data = pts, size = 2.8,
-                                   family = phw_font(), colour = phw_colours[["text"]],
-                                   inherit.aes = FALSE)
+    p <- p + suppressWarnings(ggplot2::geom_sf_text(
+      ggplot2::aes(label = .data$.label, fill = .data[[fill]],
+                   colour = ggplot2::after_scale(phw_text_on(.data$fill))),
+      data = pts, size = 2.8, family = phw_font(), inherit.aes = FALSE, show.legend = FALSE))
   }
   p
 }

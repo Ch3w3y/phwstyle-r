@@ -73,3 +73,26 @@ test_that("labels are added at each area and level needs code and name", {
   expect_equal(lab$label, paste(areas$name, 1:4))
   expect_error(phw_map(d, by = area, fill = rate, level = areas[, "code"]), "code")
 })
+
+test_that("each label takes white or dark text from its own area's fill", {
+  areas <- tiny_areas()
+  dark <- phw_colours[["text"]]
+  label_cols <- function(p) ggplot2::layer_data(p, length(p$layers))$colour
+  d <- data.frame(area = areas$code, rate = c(1, 100, 1, 100),
+                  band = c("Deep", "Pale", "Deep", "Pale"))
+
+  cont <- phw_map(d, by = area, fill = rate, level = areas, label = rate)
+  expect_equal(label_cols(cont), phw_text_on(fills(cont)))
+  expect_equal(unique(label_cols(cont)), c(dark, "#FFFFFF"))
+  expect_equal(label_cols(cont)[2], "#FFFFFF")
+
+  disc <- phw_map(d, by = area, fill = band, level = areas, label = band) +
+    ggplot2::scale_fill_manual(values = c(Deep = unname(phw_col("navy")), Pale = unname(phw_col("light_teal"))))
+  ld <- ggplot2::layer_data(disc, length(disc$layers))
+  expect_equal(ld$colour[ld$label == "Deep"], rep("#FFFFFF", 2))
+  expect_equal(ld$colour[ld$label == "Pale"], rep(dark, 2))
+
+  d$rate[2] <- NA
+  gap <- phw_map(d, by = area, fill = rate, level = areas, label = rate)
+  expect_equal(label_cols(gap), phw_text_on(fills(gap)))
+})
