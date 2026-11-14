@@ -200,3 +200,18 @@ test_that("slide titles are readable on dark and light layouts", {
     expect_equal(layout_default(sprintf("ppt/slideLayouts/slideLayout%d.xml", n)), "FFFFFF")
   }
 })
+
+test_that("phw_add_slide uses a ggplot's own alt text on the editable path too", {
+  skip_if_not_installed("officer")
+  skip_if_not_installed("rvg")
+  skip_if_not_installed("xml2")
+  p <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) + ggplot2::geom_point() +
+    ggplot2::labs(alt = "Heavier cars use more fuel")
+  deck <- phw_add_slide(phw_pptx(), "Fuel", plot = p, editable = TRUE)
+  f <- withr::local_tempfile(fileext = ".pptx")
+  print(deck, target = f)
+  dir <- withr::local_tempdir()
+  utils::unzip(f, exdir = dir)
+  xml <- paste(readLines(file.path(dir, "ppt", "slides", "slide1.xml"), warn = FALSE), collapse = "")
+  expect_match(xml, 'descr="Heavier cars use more fuel"', fixed = TRUE)
+})

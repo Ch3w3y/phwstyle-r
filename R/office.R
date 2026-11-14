@@ -324,6 +324,9 @@ phw_add_slide <- function(x, title = NULL, plot = NULL, table = NULL, text = NUL
   }
   body <- officer::ph_location_type(if ("subTitle" %in% types) "subTitle" else "body")
   if (!is.null(plot)) {
+    if (is.null(alt) && inherits(plot, "ggplot") && nzchar(ggplot2::get_alt_text(plot))) {
+      alt <- ggplot2::get_alt_text(plot)
+    }
     value <- if (editable && inherits(plot, "ggplot") && requireNamespace("rvg", quietly = TRUE)) {
       rvg::dml(ggobj = plot, fonts = list(sans = phw_font()))
     } else {
