@@ -227,6 +227,7 @@ script. Each one has a default that works without you doing anything.
 | `phwstyle.key_file` | The CSV file that colour keys are read from and saved to, so colours stay the same across sessions. `phw_key_file()` sets it for you. | [Colours](colours.html#colours-that-stay-with-their-groups) |
 | `phwstyle.boundary_dir` | The folder where downloaded boundaries are cached. | [Maps](maps.html#keeping-boundaries-up-to-date) |
 | `phwstyle.boundary_update` | `FALSE` stops `phw_boundaries()` checking each week for a newer list of boundary releases. | [Maps](maps.html#keeping-boundaries-up-to-date) |
+| `phwstyle.boundary_list_url` | The address of that list. Point it at your own copy of `boundaries.csv` if your network blocks GitHub. | [Maps](maps.html#keeping-boundaries-up-to-date) |
 | `phwstyle.quiet` | `TRUE` hides the reminder that appears when the package loads. | [Check your setup](#check-your-setup) |
 
 For example:
