@@ -25,6 +25,9 @@
 * `phw_datatable()` now styles summary tables like `phw_reactable()`: bold
   variable, subtotal and total rows, indented levels, and no paging or
   sorting by default.
+* `phw_reactable()` rounds numbers like the other renderers: whole-number
+  columns show no decimals and other numbers show `digits` (default 1), with
+  thousands separators.
 
 ## Slides
 
@@ -34,6 +37,9 @@
 * `phw_add_slide()` gains `alt`, the screen-reader text for the chart or
   table, and `caption_args`. It takes the slide master from the layout, so
   your own templates work.
+* `phw_add_slide()` makes charts and tables readable on a slide. Chart text
+  is enlarged 1.5 times (`plot_scale`), and tables built from a data frame or
+  summary grow to fill the content area (`table_fit`).
 * The Quarto extension gains a `phw-pptx` format.
 
 # phwstyle 0.2.0
