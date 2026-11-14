@@ -1,0 +1,16 @@
+#!/bin/sh
+# backlog-edit <issue-number>: JSON on stdin ({"title"?: ..., "body"?: ...}); updates the issue.
+set -eu
+. "$(dirname -- "$0")/lib.sh"
+id=${1:-}
+[ -n "$id" ] || { echo "id required" >&2; exit 1; }
+payload=$(cat)
+set --
+[ -n "${GH_REPO:-}" ] && set -- --repo "$GH_REPO"
+title=$(printf '%s' "$payload" | jq -r '.title // empty')
+[ -n "$title" ] && set -- "$@" --title "$title"
+if printf '%s' "$payload" | jq -e 'has("body")' >/dev/null; then
+  set -- "$@" --body "$(printf '%s' "$payload" | jq -r '.body')"
+fi
+[ $# -gt 0 ] || { echo "nothing to edit" >&2; exit 1; }
+gh issue edit "$id" "$@" >/dev/null

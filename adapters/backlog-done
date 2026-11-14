@@ -1,0 +1,23 @@
+#!/bin/sh
+# Called by noodle when an order completes: backlog-done <issue-number>.
+# DONE_ACTION=label (default) tags the issue; the work is only merged locally at this point.
+# DONE_ACTION=close closes it. DONE_ACTION=none does nothing.
+set -eu
+. "$(dirname -- "$0")/lib.sh"
+
+id=${1:-}
+[ -n "$id" ] || { echo "id required" >&2; exit 1; }
+case "$id" in *[!0-9]*) exit 0 ;; esac   # standalone orders (slug IDs) have no issue
+
+DONE_LABEL=${DONE_LABEL:-noodle-done}
+set --
+[ -n "${GH_REPO:-}" ] && set -- --repo "$GH_REPO"
+
+case "${DONE_ACTION:-label}" in
+  none) ;;
+  close) gh issue close "$id" "$@" --comment "Completed by noodle." ;;
+  label)
+    gh label create "$DONE_LABEL" "$@" --color 0e8a16 --description "Implemented by noodle, pending push/review" >/dev/null 2>&1 || true
+    gh issue edit "$id" "$@" --add-label "$DONE_LABEL" >/dev/null ;;
+  *) echo "unknown DONE_ACTION: $DONE_ACTION" >&2; exit 1 ;;
+esac

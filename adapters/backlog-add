@@ -1,0 +1,12 @@
+#!/bin/sh
+# backlog-add: JSON on stdin ({"title": ..., "body"?: ...}); creates an issue and prints its number.
+set -eu
+. "$(dirname -- "$0")/lib.sh"
+payload=$(cat)
+title=$(printf '%s' "$payload" | jq -r '.title // empty')
+[ -n "$title" ] || { echo "title required" >&2; exit 1; }
+body=$(printf '%s' "$payload" | jq -r '.body // ""')
+set -- --title "$title" --body "$body"
+[ -n "${GH_REPO:-}" ] && set -- "$@" --repo "$GH_REPO"
+[ -n "${ISSUE_LABEL:-}" ] && set -- "$@" --label "$ISSUE_LABEL"
+gh issue create "$@" | sed -E 's#.*/issues/([0-9]+).*#\1#'

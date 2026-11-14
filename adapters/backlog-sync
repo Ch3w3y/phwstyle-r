@@ -1,0 +1,20 @@
+#!/bin/sh
+# Sync open GitHub issues for this repo into the noodle backlog (NDJSON on stdout).
+# Settings (adapters/backlog.env or env): GH_REPO, ISSUE_LABEL, DONE_LABEL, ISSUE_LIMIT.
+set -eu
+. "$(dirname -- "$0")/lib.sh"
+
+DONE_LABEL=${DONE_LABEL:-noodle-done}
+set -- --state open --limit "${ISSUE_LIMIT:-200}" --json number,title,body,labels,milestone,url
+[ -n "${GH_REPO:-}" ] && set -- "$@" --repo "$GH_REPO"
+[ -n "${ISSUE_LABEL:-}" ] && set -- "$@" --label "$ISSUE_LABEL"
+
+gh issue list "$@" | jq -c --arg done "$DONE_LABEL" '.[] | {
+    id: (.number | tostring),
+    title: .title,
+    status: (if any(.labels[]; .name == $done) then "done" else "open" end),
+    tags: [.labels[].name | select(. != $done)],
+    milestone: (.milestone.title // null),
+    url: .url,
+    body: ((.body // "") | .[0:2000])
+  } | with_entries(select(.value != null))' | attach_plans

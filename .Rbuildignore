@@ -16,3 +16,11 @@
 ^man/figures$
 ^vignettes/articles$
 ^pkgdown$
+^\.noodle\.toml$
+^\.noodle$
+^\.agents$
+^\.claude$
+^adapters$
+^brain$
+^CLAUDE\.md$
+^\.obsidian$
