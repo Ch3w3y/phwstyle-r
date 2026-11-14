@@ -58,7 +58,15 @@ phw_gt_theme <- function(x, font_size = 14, accent = phw_colours[["navy"]], stri
                      locations = list(gt::cells_title(), gt::cells_column_labels(), gt::cells_column_spanners(),
                                       gt::cells_row_groups()))
   x <- gt::tab_style(x, gt::cell_text(weight = "bold"), locations = gt::cells_title("title"))
+  if (!inherits(x, "phw_gt")) class(x) <- c("phw_gt", class(x))
   x
+}
+
+# gt builds its HTML in as.tags(), which drops any dependency attached to the
+# table, so the Ubuntu web font goes on there.
+#' @exportS3Method htmltools::as.tags
+as.tags.phw_gt <- function(x, ...) {
+  htmltools::attachDependencies(NextMethod(), phw_font_dependency(), append = TRUE)
 }
 
 #' @rdname phw_gt_theme
@@ -81,6 +89,7 @@ phw_gt <- function(data, caption = NULL, subtitle = NULL, number = NULL, source 
                    digits = 1, number_prefix = "Table", caption_args = list(), gt_args = list(),
                    theme_args = list()) {
   rlang::check_installed("gt")
+  check_unique_names(data)
   is_sum <- inherits(data, "phw_summary")
   df <- as.data.frame(unclass(data)[names(data)], check.names = FALSE)
   if (is_sum) {
@@ -97,6 +106,8 @@ phw_gt <- function(data, caption = NULL, subtitle = NULL, number = NULL, source 
   is_int <- vapply(df[num], function(v) all(v == round(v), na.rm = TRUE), logical(1))
   if (any(is_int)) x <- gt::fmt_integer(x, columns = gt_cols(num[is_int]))
   if (any(!is_int)) x <- gt::fmt_number(x, columns = gt_cols(num[!is_int]), decimals = digits)
+  dates <- names(df)[vapply(df, inherits, logical(1), c("Date", "POSIXt"))]
+  if (length(dates)) x <- gt::cols_align(x, "left", columns = gt_cols(dates))
   x <- gt::sub_missing(x, missing_text = "")
   if (is_sum) x <- style_summary_gt(x, data, ids, labels)
   if (!is.null(caption) || !is.null(subtitle)) {
@@ -118,42 +129,28 @@ phw_gt <- function(data, caption = NULL, subtitle = NULL, number = NULL, source 
 gt_cols <- function(x) x
 
 style_summary_gt <- function(x, s, ids, labels) {
-  types <- attr(s, "row_type")
-  depth <- attr(s, "depth") %||% as.integer(types == "level")
+  r <- summary_rows(s)
   nl <- attr(s, "label_cols") %||% 1L
-  indent <- attr(s, "indent") %||% TRUE
   col <- phw_colours
   lab_ids <- ids[seq_len(nl)]
   data_ids <- ids[-seq_len(nl)]
   x <- gt::cols_label(x, .list = labels)
   x <- gt::cols_align(x, "left", columns = gt_cols(lab_ids))
   if (length(data_ids)) x <- gt::cols_align(x, "right", columns = gt_cols(data_ids))
-  bold <- which(types %in% c("variable", "total", "subtotal"))
-  if (length(bold)) x <- gt::tab_style(x, gt::cell_text(weight = "bold"), gt::cells_body(rows = bold))
-  top <- which(types == "variable" & depth == 0)
-  if (length(top)) {
-    x <- gt::tab_style(x, gt::cell_text(color = col[["navy"]]), gt::cells_body(columns = gt_cols(lab_ids), rows = top))
-    if (isTRUE(attr(s, "highlight") %||% TRUE)) x <- gt::tab_style(x, gt::cell_fill(col[["grey_bg"]]), gt::cells_body(rows = top))
+  rows_where <- function(x, rows, style, columns = ids) {
+    if (!any(rows)) return(x)
+    gt::tab_style(x, style, gt::cells_body(columns = gt_cols(columns), rows = which(rows)))
   }
-  if (indent) {
-    for (d in setdiff(unique(depth), 0)) {
-      x <- gt::tab_style(x, gt::cell_text(indent = gt::px(14 * d)),
-                         gt::cells_body(columns = gt_cols(lab_ids[1]), rows = which(depth == d)))
-    }
+  x <- rows_where(x, r$bold, gt::cell_text(weight = "bold"))
+  x <- rows_where(x, r$navy, gt::cell_text(color = col[["navy"]]), lab_ids)
+  x <- rows_where(x, r$shade, gt::cell_fill(col[["grey_bg"]]))
+  x <- rows_where(x, r$italic, gt::cell_text(style = "italic"), lab_ids)
+  for (d in setdiff(unique(r$indent), 0)) {
+    x <- rows_where(x, r$indent == d, gt::cell_text(indent = gt::px(14 * d)), lab_ids[1])
   }
-  tot <- which(types == "total")
-  if (length(tot)) x <- gt::tab_style(x, gt::cell_borders(sides = "top", color = col[["navy"]], weight = gt::px(2)),
-                                      gt::cells_body(rows = tot))
-  starts <- attr(s, "group_start") %||% integer()
-  sep <- attr(s, "separate") %||% "none"
-  starts <- setdiff(starts, tot)
-  if (length(starts) && sep %in% c("line", "both")) {
-    x <- gt::tab_style(x, gt::cell_borders(sides = "top", color = col[["grey_mid"]], weight = gt::px(1)),
-                       gt::cells_body(rows = starts))
-  }
-  if (length(starts) && sep %in% c("space", "both")) {
-    x <- gt::tab_style(x, "padding-top: 14px;", gt::cells_body(rows = starts))
-  }
+  x <- rows_where(x, r$rule, gt::cell_borders(sides = "top", color = col[["navy"]], weight = gt::px(2)))
+  x <- rows_where(x, r$line, gt::cell_borders(sides = "top", color = col[["grey_mid"]], weight = gt::px(1)))
+  x <- rows_where(x, r$space, "padding-top: 14px;")
   ch <- attr(s, "col_header")
   sp <- attr(s, "spanner")
   if (!is.null(ch) && nrow(ch) > 1) {
@@ -198,7 +195,8 @@ style_summary_gt <- function(x, s, ids, labels) {
 #' @export
 use_phw_gtsummary <- function(style = "booktabs", font_size = 10, ...) {
   rlang::check_installed(c("gtsummary", "gt"))
-  force(style); force(font_size)
+  style <- rlang::arg_match(style, c("booktabs", "header", "light", "zebra"))
+  force(font_size)
   theme <- c(
     list(
       "pkgwide-str:theme_name" = "PHW",
