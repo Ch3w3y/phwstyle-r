@@ -7,3 +7,8 @@ gallery/_output/
 Rplots.pdf
 docs/
 dev/
+
+# Noodle runtime state
+.noodle/
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
