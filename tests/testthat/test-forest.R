@@ -66,3 +66,14 @@ test_that("phw_forest repeats units across facets quietly, but says when a unit 
   expect_message(ggplot2::ggplot_build(phw_forest(d, v, lo, hi, area, target = 60)),
                  "more than one row")
 })
+
+test_that("units left off the y axis are not reported as repeats", {
+  d <- data.frame(area = c("A", "B", "C", "D"), v = c(50, 60, 70, 80))
+  d$lo <- d$v - 5
+  d$hi <- d$v + 5
+  p <- phw_forest(d, v, lo, hi, area, target = 60) + ggplot2::scale_y_discrete(limits = c("A", "B"))
+  msgs <- character()
+  withCallingHandlers(suppressWarnings(ggplot2::ggplot_build(p)),
+                      message = function(m) { msgs <<- c(msgs, conditionMessage(m)); invokeRestart("muffleMessage") })
+  expect_false(any(grepl("more than one row", msgs)))
+})

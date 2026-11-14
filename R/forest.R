@@ -87,7 +87,8 @@ phw_forest <- function(data, value, lower, upper, label, target = NULL, labels =
 StatPhwForestUnits <- ggplot2::ggproto("StatPhwForestUnits", ggplot2::StatIdentity,
   compute_layer = function(self, data, params, layout) {
     twice <- unique(unlist(lapply(split(data, data$PANEL), function(d) {
-      pos <- unique(as.integer(d$y[duplicated(d$y)]))
+      y <- d$y[!is.na(d$y)]
+      pos <- unique(as.integer(y[duplicated(y)]))
       if (length(pos)) as.character(layout$get_scales(d$PANEL[1])$y$get_limits()[pos])
     })))
     if (length(twice)) {
