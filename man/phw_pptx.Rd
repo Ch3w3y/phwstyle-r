@@ -31,13 +31,13 @@ template. \code{NULL} uses the PHW template from \code{\link[=phw_reference_pptx
 
 \item{x}{An \code{rpptx} object from \code{phw_pptx()}.}
 
-\item{title}{Slide title.}
+\item{title}{Slide title, a single string.}
 
-\item{plot}{A ggplot (or anything \code{\link[officer:ph_with]{officer::ph_with()}} accepts as a
-graphic).}
+\item{plot}{A ggplot, or a grob or gtable such as a \code{\link[=phw_finalise]{phw_finalise()}}
+result. A grob goes on the slide as a picture.}
 
 \item{table}{A data frame, flextable or summary table (rendered with
-\code{\link[=phw_flextable]{phw_flextable()}}).}
+\code{\link[=phw_flextable]{phw_flextable()}}). It must have at least one row.}
 
 \item{text}{Character vector of bullet points.}
 
@@ -46,13 +46,25 @@ graphic).}
 \item{layout, master}{Slide layout and slide master names in the
 template. A slide master is the set of layouts a template provides;
 see them in PowerPoint under View > Slide Master, or with
-\code{officer::layout_summary(x)}. The default layout suits the PHW template,
-which also has \code{"Title Slide"} (the title and \code{text} as a subtitle),
-\code{"Section Header"}, \code{"Two Content"}, \code{"Title Only"} and \code{"Blank"}. With
-your own template, give the layout names it uses. The default
-\code{master = NULL} uses the master in the deck that has the layout (the
-first one, if several do), so you only need \code{master} when two masters
-share a layout name.}
+\code{officer::layout_summary(x)}. The default \code{master = NULL} uses the
+master in the deck that has the layout (the first one, if several do),
+so you only need \code{master} when two masters share a layout name.
+
+Give one of \code{plot}, \code{table} or \code{text} for each content area. The PHW
+template has these layouts:
+\itemize{
+\item \code{"Title and Content"} (the default): one chart, table or text.
+\item \code{"Two Content"}: two side by side. With one, it goes on the left.
+With two, the first of \code{plot}, \code{table} and \code{text} goes on the left.
+\item \code{"Title Only"}: one chart, table or text in the space below the
+title.
+\item \code{"Blank"}: one chart, table or text filling the slide. It has no
+title.
+\item \code{"Title Slide"} and \code{"Section Header"}: a title and \code{text} on navy.
+They have no room for a chart or table.
+}
+
+With your own template, give the layout names it uses.}
 
 \item{editable}{Add charts as editable vector graphics (needs rvg)?}
 
@@ -64,7 +76,8 @@ this applies only when you give it.}
 
 \item{alt}{Alternative text for the chart or table on the slide, read out
 by screen readers. \code{NULL} adds none, except that a ggplot's own
-\code{labs(alt = )} text is used when there is one.}
+\code{labs(alt = )} text is used when there is one. On a slide with two
+contents, it goes on the first.}
 
 \item{plot_scale}{How much to enlarge a chart's text on the slide, as a
 multiple of the size the chart already uses. The default \code{1.5} brings
@@ -72,14 +85,17 @@ axis and legend text to about 14 points, which reads from the back of a
 room. \code{1} leaves the chart as it is. It scales the text and legend keys
 that follow the plot's base size, as \code{\link[=theme_phw]{theme_phw()}} and the ggplot2
 themes do, and the size of text drawn by \code{geom_text()} with ggplot2 4.0.0
-or later. Text you gave an exact size in your own \code{theme()} keeps it.}
+or later. Text you gave an exact size in your own \code{theme()} keeps it.
+A grob keeps the sizes it was drawn with.}
 
 \item{table_fit}{Enlarge a table built here from a data frame or summary
 table so it fills the width of the slide's content area? The text grows
 with it, by up to 1.6 times, and a narrow table is widened by at most
 another 80\% (more for a table with more columns). A tall table tightens
 its row spacing so the text can grow. \code{FALSE} keeps the table at the size \code{\link[=phw_flextable]{phw_flextable()}} gives
-it. A flextable you pass in is never resized.}
+it. A flextable you pass in is never resized. The text never shrinks,
+so a table with too many rows for the slide gives a warning that says
+how many fit.}
 }
 \value{
 An officer \code{rpptx} object. Save it with \code{print(deck, target = "file.pptx")}.
@@ -91,6 +107,10 @@ and a chart, table or text, so a set of results becomes a deck in a few
 lines. Charts are added as editable vector graphics when the rvg package
 is installed, so colleagues can tweak them in PowerPoint.
 }
+\details{
+Every argument is checked before the slide is added, so a call that
+stops leaves the deck as it was.
+}
 \examples{
 if (requireNamespace("officer", quietly = TRUE)) {
   deck <- phw_pptx()
@@ -99,6 +119,9 @@ if (requireNamespace("officer", quietly = TRUE)) {
   if (requireNamespace("ggplot2", quietly = TRUE)) {
     p <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) + ggplot2::geom_point()
     deck <- phw_add_slide(deck, "A chart", plot = p, source = "mtcars", editable = FALSE)
+    deck <- phw_add_slide(deck, "A chart and its data", plot = p,
+                          table = head(mtcars[, c("wt", "mpg")]),
+                          layout = "Two Content", editable = FALSE)
   }
   print(deck, target = tempfile(fileext = ".pptx"))
 }
