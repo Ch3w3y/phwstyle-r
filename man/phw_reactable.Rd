@@ -13,6 +13,7 @@ phw_reactable(
   header = "booktabs",
   accent = phw_colours[["navy"]],
   caption_args = list(),
+  digits = 1,
   group_col = NULL,
   key = NULL,
   palette = phw_default_palette()
@@ -33,6 +34,10 @@ bold headings, indented levels and no sorting or paging).}
 \item{header, accent}{Passed to \code{\link[=phw_reactable_theme]{phw_reactable_theme()}}.}
 
 \item{caption_args}{List of other \code{\link[=phw_caption]{phw_caption()}} arguments.}
+
+\item{digits}{Decimal places for non-integer numbers, as in
+\code{\link[=phw_flextable]{phw_flextable()}} and \code{\link[=phw_gt]{phw_gt()}}. A column of whole numbers shows none.
+A column you format yourself in \code{columns} or \code{...} keeps your format.}
 
 \item{group_col, key, palette}{Colour the cells of the column \code{group_col}
 (unquoted as in dplyr, or a string) by group, with the same colours as
