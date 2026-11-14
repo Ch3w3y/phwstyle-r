@@ -49,11 +49,6 @@ phw_forest <- function(data, value, lower, upper, label, target = NULL, labels =
   data <- drop_missing(data, c(value, lower, upper))
   units <- data[[label]]
   if (anyNA(units)) cli::cli_abort("Every unit needs a {.arg label}: {.field {label}} has a missing value.")
-  twice <- unique(units[duplicated(units)])
-  if (length(twice)) {
-    cli::cli_abort(c("Each unit needs its own row, but {.field {label}} repeats.",
-                     x = "{.val {as.character(twice)}} {?appears/appear} more than once."))
-  }
   if (any(data[[lower]] > data[[value]] | data[[value]] > data[[upper]], na.rm = TRUE)) {
     cli::cli_abort("Each {.arg value} must lie between its {.arg lower} and {.arg upper}.")
   }
@@ -69,7 +64,7 @@ phw_forest <- function(data, value, lower, upper, label, target = NULL, labels =
     navy <- phw_colours[["navy"]]
     return(p +
       ggplot2::geom_errorbar(ggplot2::aes(xmin = .data[[lower]], xmax = .data[[upper]]), colour = navy,
-                             width = 0.25, linewidth = 0.8, orientation = "y") +
+                             width = 0.25, linewidth = 0.8, orientation = "y", stat = StatPhwForestUnits) +
       signal_points(NULL, ..., .defaults = list(colour = navy, size = 3)) +
       ggplot2::labs(x = value, y = NULL) +
       chart_theme(grid = "x"))
@@ -79,10 +74,25 @@ phw_forest <- function(data, value, lower, upper, label, target = NULL, labels =
   p +
     ggplot2::geom_vline(xintercept = target, linetype = "dashed", colour = phw_colours[["text_secondary"]]) +
     ggplot2::geom_errorbar(ggplot2::aes(xmin = .data[[lower]], xmax = .data[[upper]], colour = .data$compared),
-                           width = 0.25, linewidth = 0.8, orientation = "y") +
+                           width = 0.25, linewidth = 0.8, orientation = "y", stat = StatPhwForestUnits) +
     signal_points(ggplot2::aes(colour = .data$compared, shape = .data$compared), ..., .defaults = list(size = 3)) +
     ggplot2::scale_colour_manual(values = cols, breaks = levs, drop = TRUE) +
     ggplot2::scale_shape_manual(values = shapes, breaks = levs, drop = TRUE) +
     ggplot2::labs(x = value, y = NULL, colour = NULL, shape = NULL) +
     chart_theme(grid = "x")
 }
+
+# Checks for a unit drawn twice on one row at build time, once the facets
+# are known: one row per unit and period is fine when faceted by period.
+StatPhwForestUnits <- ggplot2::ggproto("StatPhwForestUnits", ggplot2::StatIdentity,
+  compute_layer = function(self, data, params, layout) {
+    twice <- unique(unlist(lapply(split(data, data$PANEL), function(d) {
+      pos <- unique(as.integer(d$y[duplicated(d$y)]))
+      if (length(pos)) as.character(layout$get_scales(d$PANEL[1])$y$get_limits()[pos])
+    })))
+    if (length(twice)) {
+      cli::cli_inform(c("phw_forest(): {.val {twice}} {?has/have} more than one row, so {?its intervals share a row/their intervals share rows}.",
+                        i = "Give one row per unit, or facet by period with {.fn ggplot2::facet_wrap}."))
+    }
+    data
+  })

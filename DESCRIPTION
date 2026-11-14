@@ -28,7 +28,7 @@ Language: en-GB
 Roxygen: list(markdown = TRUE)
 Depends: R (>= 4.3)
 Imports:
-    cli,
+    cli (>= 3.6.0),
     ggplot2 (>= 3.5.0),
     grDevices,
     grid,

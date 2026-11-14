@@ -21,6 +21,10 @@ says what to change.
   table on the navy Title Slide and Section Header layouts.
 * A group with an empty name (`""`) stops `phw_colour_key()` and the PHW
   colour scales. Give it a label, or make it `NA` to show it as missing.
+* `phw_map()` stops when every fill value is missing.
+* `phw_epicurve()` leaves unused factor levels out of the legend unless you
+  give a colour `key`. Groups after an unused level take the next colour,
+  so pass `key` to keep colours fixed across charts.
 
 ## Charts and maps
 
@@ -29,7 +33,9 @@ says what to change.
   baseline, pyramid `left`) stop with a message that says what to change.
   Epidemic curves say how many cases fall outside `range`.
 * `phw_map()` lists codes it could not match, and says when an area is drawn
-  twice in one panel or when `bins` or `key` do not apply.
+  twice in one panel or when `bins` or `key` do not apply. `phw_forest()`
+  says when a unit has more than one row in a panel. Faceting by period
+  stays quiet in both.
 * `scale_shape_phw()` and `scale_linetype_phw()` keep missing groups on the
   chart (new `na.value`). Past eight groups they stop with a clear message.
 * `reverse = TRUE` now works when the palette is a function, and a palette

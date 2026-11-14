@@ -40,7 +40,7 @@ drop_missing <- function(data, cols, call = rlang::caller_env()) {
   if (n == NROW(data)) {
     cli::cli_abort("Every row has a missing value in {.field {cols}}.", call = call)
   }
-  cli::cli_inform("{fn}Left out {n} row{?s} with a missing value in {.field {cols}}.")
+  cli::cli_inform("{fn}Left out {n} row{?s} with a missing value in {.or {.field {cols}}}.")
   data[!bad, , drop = FALSE]
 }
 
