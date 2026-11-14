@@ -3,9 +3,11 @@
 #' Builds a [DT::datatable()] in the PHW style: PHW font, navy header, light
 #' row lines, thousands separators, and a title and source line. Useful in
 #' Shiny apps and HTML reports when readers need to search, sort or page
-#' through a long table. For styled summary tables use [phw_reactable()].
+#' through a long table. A summary table (see [phw_summary_table()] and
+#' [phw_as_summary()]) keeps its bold variable and total rows and indented
+#' levels, and is shown whole, without sorting or paging.
 #'
-#' @param data A data frame.
+#' @param data A data frame, or a `phw_summary` table.
 #' @param caption Title shown above the table.
 #' @param source,date Passed to [phw_caption()] and shown under the table.
 #' @param caption_args List of other [phw_caption()] arguments.
@@ -24,18 +26,60 @@
 phw_datatable <- function(data, caption = NULL, source = NULL, date = NULL, digits = 1,
                           page_length = 10, options = list(), caption_args = list(), ...) {
   rlang::check_installed("DT")
+  sm <- NULL
+  if (inherits(data, "phw_summary")) {
+    sm <- summary_dt_parts(data)
+    if (!is.null(attr(data, "note"))) caption_args$note <- caption_args$note %||% attr(data, "note")
+    data <- sm$data
+  }
   data <- as.data.frame(data)
-  opts <- utils::modifyList(list(pageLength = page_length, dom = "ftip", autoWidth = FALSE,
-                                 language = list(search = "Search:")), options)
+  defaults <- if (is.null(sm)) {
+    list(pageLength = page_length, dom = "ftip")
+  } else {
+    list(paging = FALSE, ordering = FALSE, dom = "t", columnDefs = list(list(visible = FALSE, targets = sm$hidden)))
+  }
+  opts <- utils::modifyList(c(defaults, list(autoWidth = FALSE, language = list(search = "Search:"))), options)
   args <- utils::modifyList(list(data = data, rownames = FALSE, class = "phw-dt compact hover",
                                  options = opts, style = "default"), list(...))
   w <- do.call(DT::datatable, args)
-  num <- names(data)[vapply(data, is.numeric, logical(1))]
+  num <- setdiff(names(data)[vapply(data, is.numeric, logical(1))], sm$helpers)
   is_int <- vapply(data[num], function(v) all(v == round(v), na.rm = TRUE), logical(1))
   if (any(is_int)) w <- DT::formatRound(w, num[is_int], digits = 0)
   if (any(!is_int)) w <- DT::formatRound(w, num[!is_int], digits = digits)
+  if (!is.null(sm)) w <- style_summary_dt(w, sm)
   w$dependencies <- c(w$dependencies, list(phw_font_dependency(), phw_dt_css()))
   wrap_widget(w, caption, caption_from(source, date, caption_args))
+}
+
+# The row types and indent depths travel as two hidden columns, which
+# formatStyle() reads to style each row.
+summary_dt_parts <- function(x) {
+  types <- attr(x, "row_type")
+  depth <- attr(x, "depth") %||% as.integer(types == "level")
+  indent <- isTRUE(attr(x, "indent") %||% TRUE)
+  df <- as.data.frame(unclass(x)[names(x)], check.names = FALSE)
+  helpers <- c(".phw_row_type", ".phw_depth")
+  df[[helpers[1]]] <- types
+  df[[helpers[2]]] <- if (indent) depth else rep(0L, nrow(df))
+  list(data = df, helpers = helpers, hidden = ncol(df) - 2:1,
+       label = names(x)[1])
+}
+
+style_summary_dt <- function(w, sm) {
+  col <- phw_colours
+  bold <- c("variable", "subtotal", "total")
+  all_cols <- setdiff(names(sm$data), sm$helpers)
+  w <- DT::formatStyle(w, all_cols, valueColumns = sm$helpers[1],
+    fontWeight = DT::styleEqual(bold, rep("700", 3)),
+    borderTop = DT::styleEqual("total", paste("2px solid", col[["navy"]])))
+  w <- DT::formatStyle(w, sm$label, valueColumns = sm$helpers[1],
+    fontStyle = DT::styleEqual("subtotal", "italic"))
+  depths <- sort(setdiff(unique(sm$data[[sm$helpers[2]]]), 0))
+  if (length(depths)) {
+    w <- DT::formatStyle(w, sm$label, valueColumns = sm$helpers[2],
+      paddingLeft = DT::styleEqual(depths, paste0(8 + 14 * depths, "px")))
+  }
+  w
 }
 
 phw_dt_css <- function() {
@@ -192,14 +236,14 @@ phw_write_xlsx <- function(x, file, title = NULL, source = NULL, date = NULL, ca
 
 #' PowerPoint slides with officer
 #'
-#' `phw_pptx()` starts a PowerPoint deck, from your organisation's template
-#' if you have one. `phw_add_slide()` adds a slide with a PHW-styled title
+#' `phw_pptx()` starts a PowerPoint deck, from the PHW template (16:9, Ubuntu
+#' text, navy titles) or from your own. `phw_add_slide()` adds a slide with a PHW-styled title
 #' and a chart, table or text, so a set of results becomes a deck in a few
 #' lines. Charts are added as editable vector graphics when the rvg package
 #' is installed, so colleagues can tweak them in PowerPoint.
 #'
 #' @param template Path to a `.pptx` template, e.g. the PHW corporate
-#'   template. `NULL` uses the officer default.
+#'   template. `NULL` uses the PHW template from [phw_reference_pptx()].
 #' @return An officer `rpptx` object. Save it with `print(deck, target =
 #'   "file.pptx")`.
 #' @examples
@@ -216,7 +260,7 @@ phw_write_xlsx <- function(x, file, title = NULL, source = NULL, date = NULL, ca
 #' @export
 phw_pptx <- function(template = NULL) {
   rlang::check_installed("officer")
-  if (is.null(template)) officer::read_pptx() else officer::read_pptx(template)
+  officer::read_pptx(template %||% phw_file("rmarkdown", "resources", "phw-reference.pptx"))
 }
 
 #' @rdname phw_pptx
@@ -231,42 +275,196 @@ phw_pptx <- function(template = NULL) {
 #' @param layout,master Slide layout and slide master names in the
 #'   template. A slide master is the set of layouts a template provides;
 #'   see them in PowerPoint under View > Slide Master, or with
-#'   `officer::layout_summary(x)`.
+#'   `officer::layout_summary(x)`. The default layout suits the PHW template,
+#'   which also has `"Title Slide"` (the title and `text` as a subtitle),
+#'   `"Section Header"`, `"Two Content"`, `"Title Only"` and `"Blank"`. With
+#'   your own template, give the layout names it uses. The default
+#'   `master = NULL` uses the master in the deck that has the layout (the
+#'   first one, if several do), so you only need `master` when two masters
+#'   share a layout name.
 #' @param editable Add charts as editable vector graphics (needs rvg)?
-#' @param title_size Title font size.
+#' @param plot_scale How much to enlarge a chart's text on the slide, as a
+#'   multiple of the size the chart already uses. The default `1.5` brings
+#'   axis and legend text to about 14 points, which reads from the back of a
+#'   room. `1` leaves the chart as it is. It scales the text and legend keys
+#'   that follow the plot's base size, as [theme_phw()] and the ggplot2
+#'   themes do, and the size of text drawn by `geom_text()` with ggplot2 4.0.0
+#'   or later. Text you gave an exact size in your own `theme()` keeps it.
+#' @param table_fit Enlarge a table built here from a data frame or summary
+#'   table so it fills the width of the slide's content area? The text grows
+#'   with it, by up to 1.6 times, and a narrow table is widened by at most
+#'   another 80% (more for a table with more columns). A tall table tightens
+#'   its row spacing so the text can grow. `FALSE` keeps the table at the size [phw_flextable()] gives
+#'   it. A flextable you pass in is never resized.
+#' @param title_size Title font size. On a layout with a dark background (the
+#'   title slide and section header) the template sets the size and colour, and
+#'   this applies only when you give it.
+#' @param caption_args List of other [phw_caption()] arguments.
+#' @param alt Alternative text for the chart or table on the slide, read out
+#'   by screen readers. `NULL` adds none, except that a ggplot's own
+#'   `labs(alt = )` text is used when there is one.
 #' @export
 phw_add_slide <- function(x, title = NULL, plot = NULL, table = NULL, text = NULL,
                           source = NULL, date = NULL, layout = "Title and Content",
-                          master = "Office Theme", editable = TRUE, title_size = 28) {
+                          master = NULL, editable = TRUE, title_size = 28,
+                          caption_args = list(), alt = NULL,
+                          plot_scale = 1.5, table_fit = TRUE) {
   rlang::check_installed("officer")
-  x <- officer::add_slide(x, layout = layout, master = master)
-  navy <- phw_colours[["navy"]]
-  if (!is.null(title)) {
-    tp <- officer::fpar(officer::ftext(title, officer::fp_text(font.family = phw_font(), font.size = title_size,
-                                                                  bold = TRUE, color = navy)))
-    x <- officer::ph_with(x, tp, location = officer::ph_location_type("title"))
+  if (is.null(master)) {
+    available <- officer::layout_summary(x)
+    master <- available$master[available$layout == layout][1]
+    if (is.na(master)) {
+      cli::cli_abort(c(
+        "This deck has no slide layout called {.val {layout}}.",
+        "i" = "Layouts available: {.val {unique(available$layout)}}."
+      ))
+    }
   }
-  body <- officer::ph_location_type("body")
+  # Scale before adding the slide, so a bad plot_scale leaves the deck as it was.
+  if (inherits(plot, "ggplot")) plot <- scale_plot_text(plot, plot_scale)
+  x <- officer::add_slide(x, layout = layout, master = master)
+  types <- officer::layout_properties(x, layout = layout, master = master)$type
+  on_navy <- "subTitle" %in% types || layout == "Section Header"
+  if (!is.null(title)) {
+    # Cover layouts have a dark background and set their own title colour and size,
+    # so the run leaves both to the placeholder. A fixed navy would vanish there.
+    title_props <- if (on_navy) {
+      officer::fp_text_lite(font.family = phw_font(), bold = TRUE,
+                            font.size = if (missing(title_size)) NA else title_size)
+    } else {
+      officer::fp_text(font.family = phw_font(), font.size = title_size, bold = TRUE,
+                       color = phw_colours[["navy"]])
+    }
+    tp <- officer::fpar(officer::ftext(title, title_props))
+    x <- officer::ph_with(x, tp, location = officer::ph_location_type(if ("ctrTitle" %in% types) "ctrTitle" else "title"))
+  }
+  body <- officer::ph_location_type(body_type(types))
+  area <- officer::layout_properties(x, layout = layout, master = master)
+  area <- area[area$type == body_type(types), ][1, ]
   if (!is.null(plot)) {
+    if (is.null(alt) && inherits(plot, "ggplot") && nzchar(ggplot2::get_alt_text(plot))) {
+      alt <- ggplot2::get_alt_text(plot)
+    }
     value <- if (editable && inherits(plot, "ggplot") && requireNamespace("rvg", quietly = TRUE)) {
       rvg::dml(ggobj = plot, fonts = list(sans = phw_font()))
     } else {
       plot
     }
-    x <- officer::ph_with(x, value, location = body)
+    if (!is.null(alt) && inherits(value, "ggplot")) {
+      x <- officer::ph_with(x, value, location = body, alt_text = alt)
+    } else {
+      x <- officer::ph_with(x, value, location = body)
+      x <- set_slide_alt(x, alt)
+    }
   } else if (!is.null(table)) {
-    ft <- if (inherits(table, "flextable")) table else phw_flextable(table)
+    ft <- if (inherits(table, "flextable")) {
+      table
+    } else {
+      built <- phw_flextable(table)
+      if (isTRUE(table_fit)) fit_table_to_area(built, area$cx, area$cy) else built
+    }
     x <- officer::ph_with(x, ft, location = body)
+    x <- set_slide_alt(x, alt)
   } else if (!is.null(text)) {
-    props <- officer::fp_text(font.family = phw_font(), font.size = 20, color = phw_colours[["text"]])
-    x <- officer::ph_with(x, officer::unordered_list(str_list = text, level_list = rep(1L, length(text)), style = props), location = body)
+    if (on_navy) {
+      props <- officer::fp_text(font.family = phw_font(), font.size = 22, color = phw_colours[["grey_bg"]])
+      x <- officer::ph_with(x, do.call(officer::block_list, lapply(text, function(t) officer::fpar(officer::ftext(t, props)))), location = body)
+    } else {
+      props <- officer::fp_text(font.family = phw_font(), font.size = 20, color = phw_colours[["text"]])
+      x <- officer::ph_with(x, officer::unordered_list(str_list = text, level_list = rep(1L, length(text)), style = props), location = body)
+    }
   }
-  cap <- caption_from(source, date, list())
+  cap <- caption_from(source, date, caption_args)
   if (!is.null(cap)) {
-    fp <- officer::fp_text(font.family = phw_font(), font.size = 10, bold = TRUE, color = phw_colours[["text"]])
+    size <- officer::slide_size(x)
+    fp <- officer::fp_text(font.family = phw_font(), font.size = 10, bold = TRUE,
+                           color = phw_colours[[if (on_navy) "white" else "text"]])
     x <- officer::ph_with(x, officer::fpar(officer::ftext(gsub("\n", " | ", cap), fp),
                                            fp_p = officer::fp_par(text.align = "right")),
-                          location = officer::ph_location(left = 0.5, top = 6.9, width = 9, height = 0.4))
+                          location = officer::ph_location(left = 0.6, top = size$height - 0.6,
+                                                          width = size$width - 1.2, height = 0.4))
   }
+  x
+}
+
+body_type <- function(types) if ("subTitle" %in% types) "subTitle" else "body"
+
+scale_plot_text <- function(plot, scale) {
+  if (!is.numeric(scale) || length(scale) != 1 || is.na(scale) || scale <= 0) {
+    cli::cli_abort("{.arg plot_scale} must be a single positive number, not {.val {scale}}.")
+  }
+  if (scale == 1) return(plot)
+  current <- ggplot2::theme_get() + plot$theme
+  plot <- plot + ggplot2::theme(
+    text = ggplot2::element_text(size = ggplot2::calc_element("text", current)$size * scale),
+    legend.key.size = ggplot2::calc_element("legend.key.size", current) * scale
+  )
+  if (ggplot2_v4()) {
+    # element_geom() reads points but calc_element() returns millimetres
+    fontsize <- ggplot2::calc_element("geom", current)$fontsize
+    if (!is.null(fontsize)) {
+      # Looked up by name: ggplot2 before 4.0 has no element_geom(), as in theme_phw().
+      element_geom <- getExportedValue("ggplot2", "element_geom")
+      plot <- plot + ggplot2::theme(geom = element_geom(fontsize = fontsize * scale * ggplot2::.pt))
+    }
+  }
+  plot
+}
+
+# Grows a table's text so it fills the area, then widens its columns. A tall
+# table is bound by height, so it squeezes its vertical padding and sets row
+# heights from the text size and padding: the heights flextable measures are
+# larger than the text needs, and slides treat them as minimums. It never
+# shrinks the text.
+fit_table_to_area <- function(ft, width, height, max_grow = 1.6, max_pad = 1.8,
+                              line_height = 1.25, tight_pad = 1) {
+  parts <- Filter(function(part) flextable::nrow_part(ft, part) > 0, c("header", "body", "footer"))
+  sizes <- lapply(parts, function(part) apply(ft[[part]]$styles$text$font.size$data, 1, max))
+  pads <- lapply(parts, function(part) {
+    pars <- ft[[part]]$styles$pars
+    apply(pars$padding.top$data, 1, max) + apply(pars$padding.bottom$data, 1, max)
+  })
+  text_pt <- sum(unlist(sizes)) * line_height
+  grow_for <- function(pad_pt) (height * 72 - pad_pt) / text_pt
+  grow_w <- flextable::flextable_dim(ft)$widths
+  grow_w <- width / grow_w
+  wanted <- min(grow_w, max_grow)
+  pad_pt <- sum(unlist(pads))
+  tall <- grow_for(pad_pt) < wanted
+  if (tall) {
+    pads <- lapply(pads, function(p) rep(2 * tight_pad, length(p)))
+    pad_pt <- sum(unlist(pads))
+    ft <- flextable::padding(ft, padding.top = tight_pad, padding.bottom = tight_pad, part = "all")
+  }
+  grow <- min(wanted, grow_for(pad_pt))
+  if (grow > 1) {
+    for (k in seq_along(parts)) {
+      for (i in seq_along(sizes[[k]])) {
+        ft <- flextable::fontsize(ft, i = i, size = sizes[[k]][i] * grow, part = parts[k])
+      }
+    }
+    ft <- flextable::autofit(ft)
+    if (tall) {
+      for (k in seq_along(parts)) {
+        ft <- flextable::height(ft, i = seq_along(sizes[[k]]), part = parts[k], unit = "in",
+                                height = (sizes[[k]] * grow * line_height + pads[[k]]) / 72)
+      }
+    }
+  }
+  widths <- ft$body$colwidths
+  max_pad <- max_pad + 0.3 * max(length(widths) - 2, 0)
+  pad <- min(width / sum(widths), max_pad)
+  flextable::width(ft, j = seq_along(widths), width = widths * pad)
+}
+
+# officer's ph_with() takes alt text only for ggplot images, so editable
+# charts and tables get it written onto the shape just added.
+set_slide_alt <- function(x, alt) {
+  if (is.null(alt)) return(x)
+  rlang::check_installed("xml2")
+  doc <- x$slide$get_slide(x$cursor)$get()
+  shapes <- xml2::xml_find_all(doc, "//p:spTree/*[p:nvSpPr or p:nvGrpSpPr or p:nvGraphicFramePr or p:nvPicPr]")
+  last <- shapes[[length(shapes)]]
+  xml2::xml_set_attr(xml2::xml_find_first(last, "*[1]/p:cNvPr"), "descr", alt)
   x
 }

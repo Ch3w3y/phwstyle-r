@@ -13,7 +13,9 @@ phw_funnel(
   multiplier = if (type[1] == "proportion") 100 else 1e+05,
   target = NULL,
   limits = c(0.95, 0.998),
-  point_colour = phw_colours[["grey_mid"]]
+  point_colour = phw_colours[["grey_mid"]],
+  labels = NULL,
+  ...
 )
 }
 \arguments{
@@ -36,6 +38,13 @@ overall value (sum of numerators over sum of denominators).}
 \item{limits}{Two confidence levels for the inner and outer limits.}
 
 \item{point_colour}{Colour of points within the limits.}
+
+\item{labels}{Optional named character vector that renames the zones in
+the legend and in \verb{$data}, e.g. \code{c("Within limits" = "Gerllaw'r terfynau")}.
+Names are the default zone text and values the replacement. Each zone
+keeps its colour and shape.}
+
+\item{...}{Passed to \code{\link[ggplot2:geom_point]{ggplot2::geom_point()}}, e.g. \code{size = 3}.}
 }
 \value{
 A ggplot. The units, with a \code{zone} column ("Within limits",

@@ -55,3 +55,24 @@ test_that("phw_page_navbar builds a navy navbar on every bslib", {
   expect_match(html, phw_colours[["navy"]], ignore.case = TRUE)
   expect_match(html, phw_org, fixed = TRUE)
 })
+
+reactable_formats <- function(w) {
+  cols <- w$x$tag$attribs$columns
+  stats::setNames(lapply(cols, function(cd) cd$format$cell$digits), vapply(cols, function(cd) cd$id, ""))
+}
+
+test_that("phw_reactable rounds numbers like phw_flextable and phw_gt", {
+  skip_if_not_installed("reactable")
+  df <- data.frame(area = c("A", "B", "C"), cases = c(10, 20, 30), rate = c(1.5, 2.25, 3))
+  fmt <- reactable_formats(phw_reactable(df))
+  expect_equal(fmt$cases, 0)
+  expect_equal(fmt$rate, 1)
+  expect_equal(reactable_formats(phw_reactable(df, digits = 2))$rate, 2)
+  own <- reactable::colDef(format = reactable::colFormat(digits = 3))
+  expect_equal(reactable_formats(phw_reactable(df, columns = list(rate = own)))$rate, 3)
+  sm <- new_phw_summary(data.frame(label = c("X", "Y", "Z"), n = c(10, 20, 30), rate = c(1.5, 2.25, 3)),
+                         row_type = rep("level", 3))
+  fmt <- reactable_formats(phw_reactable(sm))
+  expect_equal(fmt$rate, 1)
+  expect_equal(fmt$n, 0)
+})

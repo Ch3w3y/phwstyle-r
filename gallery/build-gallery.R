@@ -84,12 +84,11 @@ save(p5, "05-stacked-100")
 # 6. Choropleth map (random values)
 if (requireNamespace("sf", quietly = TRUE)) {
   la <- sf::st_read("gallery/wales-la-2023.geojson", quiet = TRUE)
+  names(la)[names(la) %in% c("LAD23CD", "LAD23NM")] <- c("code", "name")
   la$value <- round(runif(nrow(la), 0, 9.2), 1)
-  p6 <- ggplot(la) + geom_sf(aes(fill = value), colour = "white", linewidth = 0.3) +
-    scale_fill_phw_b(name = "Value", breaks = c(1, 2, 3, 5)) +
-    labs(title = "Choropleth map", subtitle = "Random values. theme_phw_map() + scale_fill_phw_b()",
-         caption = phw_caption("Example data. Boundaries: ONS (OGL v3)")) +
-    theme_phw_map()
+  p6 <- phw_map(sf::st_drop_geometry(la), by = code, fill = value, level = la, bins = c(1, 2, 3, 5)) +
+    labs(title = "Choropleth map", subtitle = "Random values. phw_map()", fill = "Value",
+         caption = phw_caption("Example data. Boundaries: ONS (OGL v3)"))
   save(p6, "06-map", w = 14, h = 14)
 
   # 6b. Boundaries for several levels, downloaded and cached by phw_boundaries()
@@ -381,16 +380,10 @@ fa$cases <- rpois(7, fa$pop / 1e5 * c(40, 55, 30, 70, 45, 38, 52))
 fci <- phw_poisson_ci(fa$cases)
 fa$rate <- fa$cases / fa$pop * 1e5; fa$lower <- fci$lower / fa$pop * 1e5; fa$upper <- fci$upper / fa$pop * 1e5
 overall <- sum(fa$cases) / sum(fa$pop) * 1e5
-fa$vs <- ifelse(fa$lower > overall, "Higher", ifelse(fa$upper < overall, "Lower", "Similar"))
-p25 <- ggplot(fa, aes(rate, reorder(area, rate), colour = vs)) +
-  geom_vline(xintercept = overall, linetype = "dashed", colour = phw_col("text_secondary")) +
-  geom_errorbar(aes(xmin = lower, xmax = upper), width = 0.25, linewidth = 0.8, orientation = "y") +
-  geom_point(size = 3) +
-  scale_colour_manual(values = c(Higher = unname(phw_col("magenta")), Similar = unname(phw_col("grey_mid")), Lower = unname(phw_col("navy"))),
-                      breaks = c("Higher", "Similar", "Lower"), name = "Compared with overall") +
-  labs(title = "Rates by area with confidence intervals", subtitle = "Dashed line: overall rate. phw_poisson_ci() and phw_col()",
-       x = "Rate per 100,000", y = NULL, caption = src) +
-  theme_phw(grid = "x", legend_title = TRUE)
+p25 <- phw_forest(fa, rate, lower, upper, area, target = overall) +
+  labs(title = "Rates by area with confidence intervals", subtitle = "phw_forest()",
+       x = "Rate per 100,000", colour = "Compared with overall", shape = "Compared with overall",
+       caption = src)
 save(p25, "25-forest")
 
 # 26. Scatter with a continuous colour scale and a fitted line
@@ -419,14 +412,8 @@ save(p27, "27-stacked-area")
 # 28. Bars with a rolling average line
 rb <- data.frame(day = seq(as.Date("2025-03-01"), by = "day", length.out = 60))
 rb$n <- rpois(60, 20 + 10 * sin((1:60) / 9))
-rb$avg <- as.numeric(stats::filter(rb$n, rep(1 / 7, 7), sides = 1))
-p28 <- ggplot(rb, aes(day)) +
-  geom_col(aes(y = n, fill = "Daily count"), width = 0.8) +
-  geom_line(aes(y = avg, colour = "7-day average"), linewidth = 1.1, na.rm = TRUE) +
-  scale_fill_manual(values = unname(phw_col("light_teal")), name = NULL) +
-  scale_colour_manual(values = unname(phw_col("navy")), name = NULL) +
-  scale_x_date(date_labels = "%d %b") +
-  labs(title = "Daily counts with a rolling average", subtitle = "geom_col() and geom_line() with PHW colours",
+p28 <- phw_epicurve(rb, day, count = n, interval = "day", average = 7) +
+  labs(title = "Daily counts with a rolling average", subtitle = "phw_epicurve(average = 7)",
        x = NULL, y = "Count", caption = src)
 save(p28, "28-bar-line")
 
@@ -468,12 +455,10 @@ save(p31, "31-dumbbell")
 if (requireNamespace("sf", quietly = TRUE)) {
   # 32. Small-multiple maps, one per year
   la3 <- do.call(rbind, lapply(2023:2025, function(y) { d <- la; d$year <- y; d$value <- round(runif(nrow(la), 0, 9), 1); d }))
-  p32 <- ggplot(la3) + geom_sf(aes(fill = value), colour = "white", linewidth = 0.2) +
+  p32 <- phw_map(sf::st_drop_geometry(la3), by = code, fill = value, level = la, bins = c(2, 4, 6, 8)) +
     facet_wrap(~year) +
-    scale_fill_phw_b(name = "Value", breaks = c(2, 4, 6, 8)) +
-    labs(title = "One map per year", subtitle = "facet_wrap() on an sf data frame with theme_phw_map()",
-         caption = phw_caption("Example data. Boundaries: ONS (OGL v3)")) +
-    theme_phw_map()
+    labs(title = "One map per year", subtitle = "phw_map() with facet_wrap()", fill = "Value",
+         caption = phw_caption("Example data. Boundaries: ONS (OGL v3)"))
   save(p32, "32-map-facets", w = 20, h = 10)
 
   # 33. Health boards by name with sites as points and labels

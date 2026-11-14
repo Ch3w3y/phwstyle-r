@@ -72,6 +72,9 @@ phw_reactable_theme <- function(font_size = 14, header = c("booktabs", "navy", "
 #' @param source,date Passed to [phw_caption()] and shown below the table.
 #' @param header,accent Passed to [phw_reactable_theme()].
 #' @param caption_args List of other [phw_caption()] arguments.
+#' @param digits Decimal places for non-integer numbers, as in
+#'   [phw_flextable()] and [phw_gt()]. A column of whole numbers shows none.
+#'   A column you format yourself in `columns` or `...` keeps your format.
 #' @param group_col,key,palette Colour the cells of the column `group_col`
 #'   (unquoted as in dplyr, or a string) by group, with the same colours as
 #'   your charts. `key` and `palette` are
@@ -99,7 +102,7 @@ phw_reactable_theme <- function(font_size = 14, header = c("booktabs", "navy", "
 #' @export
 phw_reactable <- function(data, ..., caption = NULL, source = NULL, date = NULL,
                           header = "booktabs", accent = phw_colours[["navy"]],
-                          caption_args = list(), group_col = NULL, key = NULL,
+                          caption_args = list(), digits = 1, group_col = NULL, key = NULL,
                           palette = phw_default_palette()) {
   rlang::check_installed("reactable")
   group_col <- pick_col(rlang::enquo(group_col), data, "group_col", null_ok = TRUE)
@@ -116,6 +119,7 @@ phw_reactable <- function(data, ..., caption = NULL, source = NULL, date = NULL,
     data <- as.data.frame(unclass(data)[names(data)], check.names = FALSE)
   }
   for (nm in names(defaults)) if (is.null(args[[nm]])) args[[nm]] <- defaults[[nm]]
+  args$columns <- with_number_formats(args$columns, data, digits)
   if (!is.null(group_col)) {
     cols <- phw_colour_key(data[[group_col]], name = key, palette = palette)
     style_fun <- function(value) {
@@ -130,6 +134,21 @@ phw_reactable <- function(data, ..., caption = NULL, source = NULL, date = NULL,
   tbl <- do.call(reactable::reactable, c(list(data), args))
   tbl <- htmltools::attachDependencies(tbl, phw_font_dependency(), append = TRUE)
   wrap_widget(tbl, caption, caption_from(source, date, caption_args))
+}
+
+with_number_formats <- function(columns, data, digits) {
+  columns <- columns %||% list()
+  for (nm in names(data)[vapply(data, is.numeric, logical(1))]) {
+    v <- data[[nm]]
+    places <- if (all(v == round(v), na.rm = TRUE)) 0 else digits
+    def <- columns[[nm]] %||% reactable::colDef()
+    if (is.null(def$format)) {
+      fmt <- reactable::colFormat(separators = TRUE, digits = places)
+      def$format <- list(cell = fmt, aggregated = fmt)
+    }
+    columns[[nm]] <- def
+  }
+  columns
 }
 
 wrap_widget <- function(widget, caption, cap) {

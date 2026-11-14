@@ -29,6 +29,7 @@ use_phw_ggplot(base_size = 16)
 ## A chart
 
 ```{r}
+#| fig-alt: "Line chart of the value over 13 periods for four groups. Every group rises."
 #| fig-width: 11
 #| fig-height: 5.2
 set.seed(1)

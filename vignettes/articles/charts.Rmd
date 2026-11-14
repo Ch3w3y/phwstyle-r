@@ -104,6 +104,15 @@ phw_epicurve(cases, onset, group = organism) +
   labs(title = "Cases by week of onset", x = "Week beginning", y = "Cases")
 ```
 
+`average` adds a trailing average of the total count over that many
+periods, as a black line with its own legend entry. `average_label`
+changes the legend text.
+
+```{r}
+phw_epicurve(cases, onset, average = 4) +
+  labs(title = "Cases by week of onset", x = "Week beginning", y = "Cases")
+```
+
 ```{r}
 phw_pyramid(cases, age_group, sex, percent = TRUE) +
   labs(title = "Cases by age and sex")
@@ -116,10 +125,33 @@ phw_funnel(units, events, eligible, label = area) +
   labs(title = "Proportion by area", x = "Population", y = "Proportion (%)")
 ```
 
+`phw_forest()` draws estimates and intervals you have already calculated,
+one row per unit, sorted by value. With `target`, units whose whole
+interval lies above or below it are coloured and shaped Higher or Lower,
+and the rest Similar.
+
+```{r}
+areas <- tibble(area = paste("Area", LETTERS[1:10]), rate = round(runif(10, 40, 90), 1)) |>
+  mutate(lower = rate - round(runif(10, 4, 12), 1), upper = rate + round(runif(10, 4, 12), 1))
+phw_forest(areas, rate, lower, upper, label = area, target = 65) +
+  labs(title = "Rate by area", x = "Rate per 100,000",
+       colour = "Compared with Wales", shape = "Compared with Wales")
+```
+
 ```{r}
 monthly <- tibble(month = seq(as.Date("2023-01-01"), by = "month", length.out = 30),
                   value = c(rnorm(20, 50, 4), rnorm(10, 57, 4)))
 phw_spc(monthly, month, value, improvement = "increase", baseline = 20) +
+  labs(title = "Monthly measure")
+```
+
+To change the words in a funnel's zones or an SPC chart's signals, give
+`labels` a named vector. The names are the default text and the values
+replace them. Each keeps its colour and shape.
+
+```{r}
+phw_spc(monthly, month, value, improvement = "increase", baseline = 20,
+        labels = c("Common cause" = "Within normal variation")) +
   labs(title = "Monthly measure")
 ```
 

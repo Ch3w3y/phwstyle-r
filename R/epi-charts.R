@@ -48,9 +48,17 @@ period_step <- function(interval) {
 #' @param date_labels,date_breaks Passed to [ggplot2::scale_x_date()].
 #' @param range Optional two dates for the start and end of the axis,
 #'   e.g. to show a full year even when the first weeks have no cases.
+#' @param average Optional whole number of periods, `k`, for a rolling
+#'   average line. It is the mean of the total count (all groups added
+#'   together) over the latest `k` periods, drawn at the centre of each
+#'   period's column. The first `k - 1` periods have no average and draw
+#'   nothing.
+#' @param average_label Legend text for the average line. Defaults to, for
+#'   example, `"7-day average"` or `"4-week average"`.
 #' @param ... Passed to [ggplot2::geom_col()].
 #' @return A ggplot. The counts by period are in `$data` (columns `period`,
-#'   `group` and `n`).
+#'   `group` and `n`, plus `average` when `average` is set, the same on
+#'   every group row of a period).
 #' @examples
 #' set.seed(1)
 #' cases <- data.frame(
@@ -58,14 +66,21 @@ period_step <- function(interval) {
 #'   group = sample(c("Group A", "Group B"), 300, TRUE))
 #' phw_epicurve(cases, onset, group = group) +
 #'   ggplot2::labs(title = "Cases by week of onset", x = "Week beginning", y = "Cases")
+#'
+#' # A four-week rolling average of the total
+#' phw_epicurve(cases, onset, group = group, average = 4)
 #' @export
 phw_epicurve <- function(data, date, group = NULL, count = NULL,
                          interval = c("week", "day", "month", "quarter", "year"), week_start = 1,
                          position = c("stack", "dodge"), palette = NULL, key = NULL,
                          fill = phw_colours[["navy"]], date_labels = NULL, date_breaks = NULL,
-                         range = NULL, ...) {
+                         range = NULL, average = NULL, average_label = NULL, ...) {
   interval <- rlang::arg_match(interval)
   position <- rlang::arg_match(position)
+  if (!is.null(average) &&
+      !(is.numeric(average) && length(average) == 1 && !is.na(average) && average >= 1 && average == round(average))) {
+    cli::cli_abort("{.arg average} must be a whole number of periods, 1 or more.")
+  }
   date <- pick_col(rlang::enquo(date), data, "date")
   group <- pick_col(rlang::enquo(group), data, "group", null_ok = TRUE)
   count <- pick_col(rlang::enquo(count), data, "count", null_ok = TRUE)
@@ -81,6 +96,11 @@ phw_epicurve <- function(data, date, group = NULL, count = NULL,
   full$group <- factor(full$group, levels(g))
   full <- merge(full, agg, all.x = TRUE)
   full$n[is.na(full$n)] <- 0
+  if (!is.null(average)) {
+    total <- tapply(full$n, full$period, sum)
+    roll <- as.numeric(stats::filter(as.numeric(total), rep(1 / average, average), sides = 1))
+    full$average <- roll[match(as.character(full$period), names(total))]
+  }
   width <- switch(interval, day = 0.9, week = 6.3, month = 27, quarter = 82, year = 330)
   p <- ggplot2::ggplot(full, ggplot2::aes(x = .data$period, y = .data$n))
   pos <- if (position == "stack") ggplot2::position_stack(reverse = TRUE) else ggplot2::position_dodge()
@@ -90,9 +110,24 @@ phw_epicurve <- function(data, date, group = NULL, count = NULL,
     p <- p + ggplot2::geom_col(ggplot2::aes(fill = .data$group), width = width, just = 0, position = pos, ...) +
       scale_fill_phw_d(palette = palette %||% phw_default_palette(), key = key, name = NULL)
   }
+  if (!is.null(average)) {
+    label <- average_label %||% paste0(average, "-", interval, " average")
+    p <- p +
+      ggplot2::geom_line(ggplot2::aes(x = .data$period + width / 2, y = .data$average, colour = label),
+                         data = full[!duplicated(full$period), ], linewidth = 1, na.rm = TRUE) +
+      ggplot2::scale_colour_manual(values = stats::setNames(phw_colours[["black"]], label), name = NULL)
+  }
   xargs <- list(expand = ggplot2::expansion(mult = c(0.01, 0.02)))
   if (!is.null(date_labels)) xargs$date_labels <- date_labels
-  if (!is.null(date_breaks)) xargs$date_breaks <- date_breaks
+  if (!is.null(date_breaks)) {
+    xargs$date_breaks <- date_breaks
+  } else {
+    # The default breaks can land in the axis padding past the last bar, where the label is cut off.
+    xargs$breaks <- function(x) {
+      b <- scales::breaks_pretty()(x)
+      b[b >= lims[1] & b <= lims[2]]
+    }
+  }
   p + do.call(ggplot2::scale_x_date, xargs) +
     ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0, 0.05))) +
     ggplot2::labs(x = NULL, y = "Count") +
@@ -167,6 +202,30 @@ phw_pyramid <- function(data, age, sex, value = NULL, percent = FALSE, left = NU
     chart_theme(grid = "x")
 }
 
+signal_points <- function(mapping, ..., .defaults = list(size = 2.4)) {
+  args <- utils::modifyList(.defaults, list(...))
+  do.call(ggplot2::geom_point, c(list(mapping), args))
+}
+
+relabel_levels <- function(f, labels, call = rlang::caller_env()) {
+  if (is.null(labels)) return(f)
+  if (!is.character(labels) || is.null(names(labels)) || anyNA(names(labels)) || any(names(labels) == "")) {
+    cli::cli_abort("{.arg labels} must be a named character vector, such as {.code c(old = \"new\")}.", call = call)
+  }
+  bad <- setdiff(names(labels), levels(f))
+  if (length(bad)) {
+    cli::cli_abort(c("{.arg labels} names {.val {bad}} {?is/are} not {?a level/levels} of this chart.",
+                     i = "The levels are {.val {levels(f)}}."), call = call)
+  }
+  lv <- levels(f)
+  lv[match(names(labels), lv)] <- unname(labels)
+  if (anyDuplicated(lv)) {
+    cli::cli_abort("{.arg labels} gives two levels the same text.", call = call)
+  }
+  levels(f) <- lv
+  f
+}
+
 #' Funnel plot
 #'
 #' Compares areas, providers or practices of different sizes against a
@@ -186,6 +245,11 @@ phw_pyramid <- function(data, age, sex, value = NULL, percent = FALSE, left = NU
 #'   overall value (sum of numerators over sum of denominators).
 #' @param limits Two confidence levels for the inner and outer limits.
 #' @param point_colour Colour of points within the limits.
+#' @param labels Optional named character vector that renames the zones in
+#'   the legend and in `$data`, e.g. `c("Within limits" = "Gerllaw'r terfynau")`.
+#'   Names are the default zone text and values the replacement. Each zone
+#'   keeps its colour and shape.
+#' @param ... Passed to [ggplot2::geom_point()], e.g. `size = 3`.
 #' @return A ggplot. The units, with a `zone` column ("Within limits",
 #'   "Above 95%"...), are in `$data`.
 #' @details Limits use the normal approximation to the binomial (for
@@ -199,7 +263,8 @@ phw_pyramid <- function(data, age, sex, value = NULL, percent = FALSE, left = NU
 #' @export
 phw_funnel <- function(data, numerator, denominator, label = NULL, type = c("proportion", "rate"),
                        multiplier = if (type[1] == "proportion") 100 else 1e5, target = NULL,
-                       limits = c(0.95, 0.998), point_colour = phw_colours[["grey_mid"]]) {
+                       limits = c(0.95, 0.998), point_colour = phw_colours[["grey_mid"]],
+                       labels = NULL, ...) {
   type <- rlang::arg_match(type)
   numerator <- pick_col(rlang::enquo(numerator), data, "numerator")
   denominator <- pick_col(rlang::enquo(denominator), data, "denominator")
@@ -218,6 +283,8 @@ phw_funnel <- function(data, numerator, denominator, label = NULL, type = c("pro
                       ifelse(dev < -z[1], paste0("Below ", limits[1] * 100, "%"), "Within limits")))),
                       levels = c(paste0("Above ", rev(limits) * 100, "%"), "Within limits",
                                  paste0("Below ", limits * 100, "%")))
+  outer <- grepl(paste0(limits[2] * 100, "%"), data$zone)
+  data$zone <- relabel_levels(data$zone, labels)
   grid_n <- exp(seq(log(max(1, min(den) * 0.8)), log(max(den) * 1.1), length.out = 200))
   lines <- do.call(rbind, lapply(seq_along(z), function(k) {
     rbind(data.frame(n = grid_n, y = multiplier * (p0 + z[k] * se(grid_n)), limit = k, side = "upper"),
@@ -232,7 +299,7 @@ phw_funnel <- function(data, numerator, denominator, label = NULL, type = c("pro
     ggplot2::geom_line(data = lines, ggplot2::aes(x = .data$n, y = .data$y, group = .data$grp,
                                                   linetype = factor(.data$limit)),
                        colour = phw_colours[["text_secondary"]], linewidth = 0.4, inherit.aes = FALSE) +
-    ggplot2::geom_point(ggplot2::aes(colour = .data$zone, shape = .data$zone), size = 2.4) +
+    signal_points(ggplot2::aes(colour = .data$zone, shape = .data$zone), ...) +
     ggplot2::scale_colour_manual(values = zone_cols, name = NULL, drop = TRUE) +
     ggplot2::scale_shape_manual(values = zone_shapes, name = NULL, drop = TRUE) +
     ggplot2::scale_linetype_manual(values = c("dashed", "solid"), guide = "none") +
@@ -240,7 +307,7 @@ phw_funnel <- function(data, numerator, denominator, label = NULL, type = c("pro
     ggplot2::labs(x = denominator, y = if (type == "proportion") "Percentage" else "Rate") +
     chart_theme(grid = "y")
   if (!is.null(label)) {
-    out <- data[grepl(paste0(limits[2] * 100, "%"), data$zone), , drop = FALSE]
+    out <- data[outer, , drop = FALSE]
     if (nrow(out)) {
       geom <- if (requireNamespace("ggrepel", quietly = TRUE)) ggrepel::geom_text_repel else ggplot2::geom_text
       p <- p + geom(data = out, ggplot2::aes(label = .data[[label]]), size = 3, colour = phw_colours[["text"]],
@@ -273,6 +340,11 @@ phw_funnel <- function(data, numerator, denominator, label = NULL, type = c("pro
 #' @param baseline Number of points to calculate the centre line and limits
 #'   from (e.g. the first 20). `NULL` uses all points.
 #' @param shift,trend Run lengths that count as special causes.
+#' @param labels Optional named character vector that renames the signals
+#'   in the legend and in `$data`, e.g. `c("Common cause" = "Achos cyffredin")`.
+#'   Names are the default signal text and values the replacement. Each
+#'   signal keeps its colour and shape.
+#' @param ... Passed to [ggplot2::geom_point()], e.g. `size = 3`.
 #' @return A ggplot. The points, with a `signal` column, are in `$data`.
 #' @examples
 #' set.seed(3)
@@ -281,7 +353,7 @@ phw_funnel <- function(data, numerator, denominator, label = NULL, type = c("pro
 #' phw_spc(spc, month, value, improvement = "increase", baseline = 20)
 #' @export
 phw_spc <- function(data, x, y, type = c("xmr", "run"), improvement = c("none", "increase", "decrease"),
-                    baseline = NULL, shift = 7, trend = 6) {
+                    baseline = NULL, shift = 7, trend = 6, labels = NULL, ...) {
   type <- rlang::arg_match(type)
   improvement <- rlang::arg_match(improvement)
   x <- pick_col(rlang::enquo(x), data, "x")
@@ -323,9 +395,11 @@ phw_spc <- function(data, x, y, type = c("xmr", "run"), improvement = c("none", 
                   increase = ifelse(high, "Improvement", "Concern"),
                   decrease = ifelse(low, "Improvement", "Concern"))),
     levels = c("Common cause", "Special cause", "Improvement", "Concern"))
+  data$signal <- relabel_levels(data$signal, labels)
   cols <- c("Common cause" = phw_colours[["grey_mid"]], "Special cause" = phw_colours[["orange"]],
             "Improvement" = phw_colours[["navy"]], "Concern" = phw_colours[["orange"]])
   shapes <- c("Common cause" = 16, "Special cause" = 17, "Improvement" = 15, "Concern" = 17)
+  names(cols) <- names(shapes) <- levels(data$signal)
   p <- ggplot2::ggplot(data, ggplot2::aes(x = .data[[x]], y = .data[[y]])) +
     ggplot2::geom_hline(yintercept = centre, colour = phw_colours[["text"]], linewidth = 0.5)
   if (type == "xmr") {
@@ -337,7 +411,7 @@ phw_spc <- function(data, x, y, type = c("xmr", "run"), improvement = c("none", 
                                  linetype = "dotted")
   }
   p + ggplot2::geom_line(colour = phw_colours[["grey_mid"]], linewidth = 0.5) +
-    ggplot2::geom_point(ggplot2::aes(colour = .data$signal, shape = .data$signal), size = 2.4) +
+    signal_points(ggplot2::aes(colour = .data$signal, shape = .data$signal), ...) +
     ggplot2::scale_colour_manual(values = cols, name = NULL, drop = TRUE) +
     ggplot2::scale_shape_manual(values = shapes, name = NULL, drop = TRUE) +
     ggplot2::labs(x = NULL, y = y) +

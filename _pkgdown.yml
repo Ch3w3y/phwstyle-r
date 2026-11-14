@@ -111,6 +111,7 @@ reference:
   - phw_epicurve
   - phw_pyramid
   - phw_funnel
+  - phw_forest
   - phw_spc
 
 - title: Maps
@@ -119,12 +120,14 @@ reference:
   - phw_boundaries
   - phw_boundary_levels
   - phw_boundaries_cache
+  - phw_map
   - phw_leaflet
 
 - title: Building tables
   desc: Build a table once from a data frame, then render it with any table package.
   contents:
   - phw_summary_table
+  - phw_as_summary
   - phw_crosstab
   - phw_rate_table
   - phw_poisson_ci
@@ -180,6 +183,7 @@ reference:
   - phw_formats
   - use_phw_quarto
   - phw_reference_docx
+  - phw_reference_pptx
   - phw_latex_header
 
 - title: Shiny and bslib

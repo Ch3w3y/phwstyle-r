@@ -1,6 +1,6 @@
 Package: phwstyle
 Title: Public Health Wales Corporate Styling for R Outputs
-Version: 0.2.0
+Version: 0.3.0
 Authors@R: c(
     person("Daryn", "Sutton", role = c("aut", "cre"), email = "cheweych3w3y@gmail.com"),
     person("Canonical Ltd", role = "cph", comment = "Ubuntu font family, Ubuntu Font Licence 1.0")
@@ -76,7 +76,8 @@ Suggests:
     testthat (>= 3.2.0),
     tidyr,
     treemapify,
-    withr
+    withr,
+    xml2
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 Config/roxygen2/version: 8.1.1

@@ -50,6 +50,9 @@ contributes:
       toc: false
       number-sections: false
       fig-dpi: 300
+    pptx:
+      reference-doc: phw-reference.pptx
+      fig-dpi: 200
     typst:
       template-partials:
         - typst-template.typ

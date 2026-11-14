@@ -40,6 +40,26 @@ phw_reference_docx <- function(file = tempfile(fileext = ".docx")) {
   zip_dir(dir, file)
 }
 
+#' Path to the PHW PowerPoint template
+#'
+#' The template behind [phw_pptx()] and the Quarto `phw-pptx` format: 16:9,
+#' Ubuntu text (named, not embedded), navy titles, PHW theme colours and the
+#' layouts Title Slide, Title and Content, Section Header, Two Content,
+#' Title Only and Blank, all in one slide master called `"PHW"`. Use it with
+#' any tool that takes a PowerPoint template. Examples are
+#' `officer::read_pptx(phw_reference_pptx())` or `reference-doc:` in Quarto.
+#'
+#' @param file Where to write the template.
+#' @return A file path.
+#' @examples
+#' f <- phw_reference_pptx()
+#' file.exists(f)
+#' @export
+phw_reference_pptx <- function(file = tempfile(fileext = ".pptx")) {
+  file.copy(phw_file("rmarkdown", "resources", "phw-reference.pptx"), file, overwrite = TRUE)
+  file
+}
+
 zip_dir <- function(dir, file) {
   file <- file.path(normalizePath(dirname(file), mustWork = TRUE), basename(file))
   if (file.exists(file)) unlink(file)

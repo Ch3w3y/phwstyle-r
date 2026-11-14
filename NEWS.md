@@ -1,3 +1,48 @@
+# phwstyle 0.3.0
+
+## New charts and maps
+
+* `phw_forest()` draws your own estimates and intervals by unit, sorted by
+  value. With `target`, a dashed line marks the target and units are
+  coloured and shaped Higher, Similar or Lower. It calculates nothing.
+* `phw_map()` joins your data to Welsh boundaries by area code and returns a
+  styled choropleth for Word and PDF. Fills can be continuous, binned or
+  by group, areas with no data are grey, and the boundary attribution is the
+  default caption. It works with `facet_wrap()`. Area labels are moved
+  apart when ggrepel is installed.
+* `phw_epicurve()` gains `average` and `average_label`, which draw a
+  trailing average of the total count as a black line with its own legend
+  entry. `$data` gains an `average` column. Its default date labels now
+  stay within the data, so the last label is no longer cut off.
+* `phw_funnel()` and `phw_spc()` gain `labels`, a named vector that renames
+  zones or signals, and pass `...` to their points.
+
+## Tables
+
+* `phw_as_summary()` gives a table you built yourself, for example with
+  dplyr, the bold variable rows, indented levels and total rows of the
+  built-in summary tables in every renderer.
+* `phw_datatable()` now styles summary tables like `phw_reactable()`: bold
+  variable, subtotal and total rows, indented levels, and no paging or
+  sorting by default.
+* `phw_reactable()` rounds numbers like the other renderers: whole-number
+  columns show no decimals and other numbers show `digits` (default 1), with
+  thousands separators.
+
+## Slides
+
+* `phw_pptx()` opens a bundled 16:9 PHW template with Ubuntu text and navy
+  titles. `phw_reference_pptx()` writes it to a file, like
+  `phw_reference_docx()`.
+* `phw_add_slide()` gains `alt`, the screen-reader text for the chart or
+  table, and `caption_args`. It takes the slide master from the layout, so
+  your own templates work.
+* `phw_add_slide()` makes charts and tables readable on a slide. Chart text
+  is enlarged 1.5 times (`plot_scale`), and tables built from a data frame or
+  summary grow to fill the content area (`table_fit`). A tall table tightens
+  its row spacing so the text can still grow.
+* The Quarto extension gains a `phw-pptx` format.
+
 # phwstyle 0.2.0
 
 ## Tidyverse-style column arguments

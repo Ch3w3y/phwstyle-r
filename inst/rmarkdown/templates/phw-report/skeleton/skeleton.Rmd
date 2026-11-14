@@ -32,7 +32,7 @@ type, navy headings, PHW chart colours and booktabs tables.
 
 # Section heading
 
-```{r chart, fig.cap = "Figure caption describing the chart"}
+```{r chart, fig.cap = "Figure caption describing the chart", fig.alt = "Bar chart of the value for each year from 2016 to 2025. It falls from 118 in 2016 to 73 in 2025."}
 d <- tibble(year = 2016:2025, value = c(118, 104, 104, 98, 96, 78, 82, 75, 89, 73))
 ggplot(d, aes(year, value)) +
   geom_col(fill = phw_col("navy")) +
