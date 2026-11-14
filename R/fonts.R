@@ -95,6 +95,10 @@ phw_install_fonts <- function(dest = NULL, ask = interactive()) {
       file.path(Sys.getenv("HOME"), ".local", "share", "fonts")
     )
   }
+  if (!rlang::is_string(dest) || !nzchar(dest)) cli::cli_abort("{.arg dest} must be a folder path.")
+  if (file.exists(dest) && !dir.exists(dest)) {
+    cli::cli_abort("{.arg dest} is a file, not a folder: {.file {dest}}.")
+  }
   # CRAN policy: never write to the home folder without the user's say-so.
   if (default_dest && !interactive()) {
     cli::cli_abort(c("Fonts are only installed to your font folder in an interactive session.",

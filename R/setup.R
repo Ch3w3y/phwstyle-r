@@ -38,11 +38,15 @@ setup_packages <- list(
 #' @export
 phw_setup_check <- function(install = interactive()) {
   rows <- list()
-  add <- function(item, ok, fix = "") rows[[length(rows) + 1]] <<- data.frame(item = item, ok = ok, fix = fix)
+  # Each fix is code to run, a note in words, or code followed by a note.
+  add <- function(item, ok, code = "", note = "") {
+    rows[[length(rows) + 1]] <<- data.frame(item = item, ok = ok, code = code, note = note)
+  }
 
   font_sys <- tryCatch("Ubuntu" %in% systemfonts::system_fonts()$family, error = function(e) FALSE)
   add("Ubuntu font installed on this computer", font_sys, "phw_install_fonts()")
-  add("PHW logo available", phw_has_logo(), "phw_download_logos() or options(phwstyle.logo_dir = ...)")
+  add("PHW logo available", phw_has_logo(), "phw_download_logos()",
+      "or set the phwstyle.logo_dir option to a folder of logos")
   for (what in names(setup_packages)) {
     pk <- setup_packages[[what]]
     have <- vapply(pk, requireNamespace, logical(1), quietly = TRUE)
@@ -50,16 +54,18 @@ phw_setup_check <- function(install = interactive()) {
       sprintf("install.packages(c(%s))", paste0('"', pk[!have], '"', collapse = ", ")))
   }
   pandoc <- requireNamespace("rmarkdown", quietly = TRUE) && rmarkdown::pandoc_available()
-  add("Pandoc (R Markdown)", pandoc, "Install RStudio, or Pandoc from https://pandoc.org")
-  add("Quarto", nzchar(Sys.which("quarto")), "Install from https://quarto.org")
-  add("XeLaTeX (PDF via LaTeX)", nzchar(Sys.which("xelatex")),
-      "tinytex::install_tinytex(), or use the phw-typst format instead")
+  add("Pandoc (R Markdown)", pandoc, note = "install RStudio, or Pandoc from https://pandoc.org")
+  add("Quarto", nzchar(Sys.which("quarto")), note = "install it from https://quarto.org")
+  add("XeLaTeX (PDF via LaTeX)", nzchar(Sys.which("xelatex")), "tinytex::install_tinytex()",
+      "or use the phw-typst format instead")
   res <- do.call(rbind, rows)
-
-  msgs <- stats::setNames(ifelse(res$ok, res$item, paste0(res$item, ": run {.code ", res$fix, "}")),
+  joined <- function(code) {
+    paste0(code, ifelse(nzchar(res$code) & nzchar(res$note), ", ", ""), res$note)
+  }
+  shown <- joined(ifelse(nzchar(res$code), paste0("run {.code ", res$code, "}"), ""))
+  msgs <- stats::setNames(ifelse(res$ok, res$item, paste0(res$item, ": ", shown)),
                           ifelse(res$ok, "v", "x"))
-  # Hints with URLs aren't code.
-  msgs <- gsub("\\{\\.code (Install[^}]*)\\}", "\\1", msgs)
+  res <- data.frame(item = res$item, ok = res$ok, fix = joined(res$code))
   cli::cli_h2("phwstyle setup")
   cli::cli_bullets(msgs)
   if (all(res$ok)) cli::cli_alert_success("Everything is ready.")
