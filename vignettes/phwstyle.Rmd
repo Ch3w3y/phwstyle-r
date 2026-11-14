@@ -26,9 +26,7 @@ write your analysis as usual, then add one function to style it. phwstyle
 styles results you have already calculated and doesn't analyse anything. It is
 not an official PHW product.
 
-This page has a quick start, a worked example, a guide to choosing a function,
-and an explanation of how the pieces fit together. [Where next](#where-next)
-lists the guide for each kind of output.
+[Where next](#where-next) lists the guide for each kind of output.
 
 ## Quick start
 
@@ -82,12 +80,10 @@ population <- tibble(age_group  = c("0-14", "15-44", "45-64", "65+"),
 The chart of weekly rates is ordinary dplyr and ggplot2, and
 `phw_arrange()` puts the three together under one title and source line.
 
-Each chart colours a different thing, so each has its own colours. The
-organisms take the default palette. Age groups have an order, so they get
-shades of one colour. In the pyramid the side already tells the sexes
-apart, so two quiet colours are enough.
+Organisms take the default palette, age groups have an order so they get
+shades of one colour, and the pyramid's two sides need only two quiet colours.
 
-```{r, fig.width = 10, fig.height = 7.5, out.width = "100%", eval = have_pkgs && requireNamespace("patchwork", quietly = TRUE)}
+```{r, fig.width = 10, fig.height = 7.5, out.width = "100%", fig.alt = "Three charts under one title. A stacked column chart of weekly cases by organism, a line chart of weekly rates for four age groups, and a population pyramid of cases by age band and sex.", eval = have_pkgs && requireNamespace("patchwork", quietly = TRUE)}
 curve <- phw_epicurve(cases, onset, group = organism) +
   labs(title = "Cases by week of onset", x = "Week beginning", y = "Cases")
 
@@ -112,11 +108,8 @@ figure <- phw_arrange(curve, rates_over_time, pyramid, design = "AA\nBC", guides
 figure
 ```
 
-When two charts show the same groups, give both the same colour key, for
-example `scale_fill_phw_d(key = "organism")`, and each group keeps its
-colour in every chart. See the
-[Colours](`r site`articles/colours.html#colours-that-stay-with-their-groups)
-article.
+To keep a group the same colour in every chart, use a
+[colour key](`r site`articles/colours.html#colours-that-stay-with-their-groups).
 
 ### A table of characteristics
 
@@ -151,15 +144,13 @@ phw_flextable(rates, caption = "Cases per 100,000 population by age group",
               source = "Example data")
 ```
 
-Apart from the colours chosen for age group and sex in the figure, none of
-this code sets a colour, a font, a border or a number format. Columns
-are given as in dplyr: unquoted names, `c(a, b)` for several, or helpers
-such as `starts_with()`. Strings work too.
+Apart from the palettes in the figure, none of this code sets a colour, a
+font, a border or a number format. Columns are given as in dplyr, as unquoted
+names, `c(a, b)` or helpers such as `starts_with()`. Strings work too.
 
 ### The same results in any output
 
-The figure and the two tables are ordinary objects, so the same ones go
-into a report, a workbook or a slide:
+The figure and the tables are ordinary objects, so they go into a workbook or a slide:
 
 ```{r, eval = FALSE}
 # Excel: one sheet per table, with the same headings and number formats
@@ -171,16 +162,10 @@ phw_pptx() |>
   print(target = "summary.pptx")
 ```
 
-For a whole report, name a phwstyle format in the YAML header of an R
-Markdown document, and every chart and table in it is styled:
-
-```yaml
-output: phwstyle::phw_word_document
-```
-
-For Quarto, run `use_phw_quarto()` once in the project and use
-`format: phw-docx` (or `phw-html`, `phw-typst` and others), then call
-`use_phw_ggplot()` in the setup chunk.
+For a whole report, use `output: phwstyle::phw_word_document` in an R
+Markdown header. For Quarto, run `use_phw_quarto()` once and use
+`format: phw-docx` (or `phw-html`, `phw-typst`), then call `use_phw_ggplot()`
+in the setup chunk.
 
 ## Which function do I need?
 
@@ -204,9 +189,6 @@ For Quarto, run `use_phw_quarto()` once in the project and use
 | Write a whole report, slides or a dashboard | `phw_word_document()` and friends, `use_phw_quarto()` | [Reports, slides and dashboards](`r site`articles/documents.html) |
 | Write tables to Excel, or slides to PowerPoint | `phw_write_xlsx()`, `phw_pptx()` | [Excel, PowerPoint and Word](`r site`articles/exporting.html) |
 | Install the package, fonts and logos, or check what is installed | `phw_setup_check()`, `phw_install_fonts()`, `phw_download_logos()` | [Installation and setup](`r site`articles/setup.html) |
-
-The [gallery](`r site`articles/gallery.html) shows every kind of output
-with the functions behind it.
 
 ## How the pieces fit together
 
@@ -252,38 +234,34 @@ functions at level 1 don't reach interactive widgets, so use these each time
 | `+ theme_phw()` | Yes | You want different settings for this plot, e.g. `theme_phw(grid = "x")` or `legend = "right"` |
 | `+ scale_fill_phw_d()` or `scale_colour_phw_d()` | Yes: groups get the PHW palette | You want a colour `key`, another `palette`, pinned `values`, a legend `name`, or "Other" and "Unknown" drawn in grey |
 | `+ scale_fill_phw_c()` or `scale_colour_phw_c()` | Yes: numbers get PHW blues | You want another palette such as `"teals"`, or the full range including the palest blue |
-| `fill = phw_col("navy")` inside a geom | Yes: bars, areas, lines and points are navy | You want a different colour |
-| `family = phw_font()` in `geom_text()` | Yes | Never |
-| `phw_style_extensions()` | Yes, for packages loaded before the setup ran | You load ggrepel, ggridges and the like afterwards |
 | `scale_*_phw_b()` (binned) or `scale_*_phw_div()` (diverging) | No | The data need them, e.g. a choropleth in bands |
 | `scale_shape_phw()`, `scale_linetype_phw()` | No | Groups should differ by more than colour |
 | `theme_phw_map()` | No | The plot is a map you draw yourself. `phw_map()` applies it for you |
 | `labs(caption = phw_caption(...))` | No | The chart shows its source |
 | `phw_finalise()` | No | The chart is used outside a branded report |
 
-In a plain script with no setup, nothing is covered: add `+ theme_phw()`
-and a PHW scale to each plot, or call `use_phw_ggplot()` at the top and
-skip both. `use_phw_ggplot()` gives the same result on ggplot2 3.5 and
-4.0. Without it, `+ theme_phw()` alone also gives groups the PHW palette
-on ggplot2 4.0 (themes there can carry colours), but on ggplot2 3.5 it
-styles only the text, gridlines and legend.
+In a plain script with no setup, nothing is covered. Call `use_phw_ggplot()`
+at the top, which gives the same result on ggplot2 3.5 and 4.0. Without it,
+`+ theme_phw()` alone also colours groups on ggplot2 4.0, but on 3.5 it styles
+only the text, gridlines and legend.
 
 ### Your changes win
 
 Anything you add to a plot takes priority over the session and document
-defaults. This is deliberate: the house style is a starting point, and you
-can adjust on top of it when a chart needs something different.
+defaults. The house style is a starting point.
 
-* A scale added to a plot replaces the PHW default for that aesthetic. That
-  goes for a PHW scale with other arguments, a ggplot2 scale such as
-  `scale_fill_manual()`, and scales from other packages.
-* `+ theme(...)`, or the same settings passed as arguments to
-  `theme_phw(...)`, override the theme.
+* A scale added to a plot replaces the PHW default for that aesthetic, whether
+  it is a PHW scale with other arguments, a ggplot2 scale or one from another
+  package.
+* `+ theme(...)`, or the same settings passed to `theme_phw(...)`, override the
+  theme. `theme_phw()` is a complete theme, so put your own `+ theme()` after it.
 * `fill = ` or `colour = ` inside a geom overrides the default navy.
-* A `palette = ` given to one function overrides the palette switch for
-  that chart or table.
+* A `palette = ` given to one function overrides the palette switch for it.
+* The ready-made charts and `phw_map()` already have a fill or colour scale, so
+  adding another replaces theirs and ggplot2 warns "Scale for fill is already
+  present". Use their `palette` and `key` arguments instead.
 
-```{r}
+```{r, fig.alt = "Stacked bars of car counts by class, filled by drive type in purple, green and sand, with the legend on the right."}
 ggplot(mpg, aes(class, fill = drv)) +
   geom_bar() +
   scale_fill_manual(values = c("4" = "#846AA4", f = "#338276", r = "#CFAB7A")) +
@@ -292,72 +270,24 @@ ggplot(mpg, aes(class, fill = drv)) +
        x = NULL, y = "Cars")
 ```
 
-Two things follow from the same rule:
-
-* `theme_phw()` is a complete theme, so adding it resets any `+ theme()`
-  that came before it on that plot. Put your own `+ theme()` after it, or
-  pass the settings to `theme_phw()`.
-* The ready-made charts and `phw_map()` already have a fill or colour scale. Adding another
-  one replaces theirs, and ggplot2 says so with "Scale for fill is already
-  present". To change their colours, use their `palette` and `key`
-  arguments instead.
-
 ## Wording
 
-phwstyle writes few words of its own, and each one can be replaced. A source
-line, a legend entry or a comparison label takes your text through an
-argument, so a report in another language needs no change to the package. For
-example, with your own Welsh text:
-
-```{r}
-phw_caption("Example data", date = as.Date("2026-11-03"))
-phw_caption("Example data", source_prefix = "Data: ", date_prefix = "As of ",
-            note = "Provisional figures")
-```
-
-`phw_forest()` names its three comparison levels, and `labels` renames them.
-It draws estimates and intervals you have already calculated.
-
-```{r, fig.height = 3.2, fig.alt = "Forest plot of eight made-up areas with intervals, coloured by whether each interval lies above, overlaps or lies below the dashed target line."}
-areas <- tibble(area = paste("Area", LETTERS[1:8]),
-                value = c(44, 52, 57, 61, 64, 69, 73, 78)) |>
-  mutate(lower = value - 7, upper = value + 7)
-
-phw_forest(areas, value, lower, upper, label = area, target = 60,
-           labels = c(Higher = "Above target", Similar = "Close to target",
-                      Lower = "Below target")) +
-  labs(title = "Made-up estimates by area", x = "Rate per 100,000")
-```
-
-The same idea applies in `phw_funnel()` and `phw_spc()` (`labels`),
-`phw_epicurve()` (`average_label`), `phw_arrange()` and `phw_add_slide()`
-(`caption_args`), `phw_finalise()` (`source_prefix` and the other
-`phw_caption()` arguments), `labs()` for any title or axis, and the `phw-org`
-and `phw-page-label` keys in a Typst document. The
+phwstyle writes few words of its own, and each one can be replaced through an
+argument, so a report in another language needs no change to the package.
+`phw_caption("Example data", source_prefix = "Data: ", date_prefix = "As of ")`
+is one example. The
 [Charts](`r site`articles/charts.html#source-lines-dates-and-numbers) guide
-shows these in use.
+lists the arguments for forest, funnel, SPC, epicurve and slide labels.
 
 ## Where next
 
-Each guide is a how-to for one kind of output. They use made-up data and run
-every chunk.
+Each guide covers one kind of output and runs on made-up data. The
+[gallery](`r site`articles/gallery.html) shows every kind of output with the
+functions behind it.
 
-- [Charts](`r site`articles/charts.html): the style, colour scales, the public
-  health charts, several charts in one figure, source lines and saving.
-- [Colours and accessibility](`r site`articles/colours.html): palettes, colour
-  keys, colour-blind safe colours and a second cue besides colour.
-- [Tables](`r site`articles/tables.html): summary tables, groups, and the same
-  table in flextable, gt and gtsummary.
-- [Maps and boundaries](`r site`articles/maps.html): `phw_map()`, your own maps
-  and interactive maps.
-- [Interactive charts, tables and apps](`r site`articles/interactive.html):
-  reactable, DT, plotly, Shiny and bslib.
-- [Reports, slides and dashboards](`r site`articles/documents.html): R Markdown
-  and Quarto formats.
-- [Excel, PowerPoint and Word](`r site`articles/exporting.html): workbooks and
-  the 16:9 slide template.
-- [Installation and setup](`r site`articles/setup.html): install routes, fonts,
-  logos and package options.
-
-The [gallery](`r site`articles/gallery.html) shows every kind of output with
-the functions behind it.
+- [Charts](`r site`articles/charts.html) and [Colours and accessibility](`r site`articles/colours.html)
+- [Tables](`r site`articles/tables.html) and [Maps and boundaries](`r site`articles/maps.html)
+- [Interactive charts, tables and apps](`r site`articles/interactive.html)
+- [Reports, slides and dashboards](`r site`articles/documents.html)
+- [Excel, PowerPoint and Word](`r site`articles/exporting.html)
+- [Installation and setup](`r site`articles/setup.html), including fonts, logos and options
