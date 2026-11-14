@@ -1,0 +1,221 @@
+---
+title: "Reports and documents"
+description: >
+  R Markdown and Quarto formats for HTML, Word and PDF reports, slides and
+  dashboards, the starter documents, and rendering one document in default
+  and accessible colours.
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+```
+
+phwstyle gives whole documents the PHW look: the Ubuntu font, navy
+headings, the gradient header band, a cover page for PDFs and slides, and
+"Page x of y" footers. You choose a format once in the document's YAML
+header, and the charts and tables inside follow the same style.
+
+There are two routes. Use whichever your team already uses:
+
+| | R Markdown (`.Rmd`) | Quarto (`.qmd`) |
+|---|---|---|
+| Formats | HTML, Word, PDF | HTML, Word, PDF (Typst or LaTeX), slides, dashboards |
+| Setup | None: the formats come with phwstyle | Run `use_phw_quarto()` once in each project |
+| Charts and flextables | Styled for you | Call `use_phw_ggplot()` and `use_phw_flextable()` in the setup chunk |
+| Needs | The rmarkdown package; LaTeX for PDF | Quarto 1.5 or later (recent versions of RStudio include it) |
+
+`phw_setup_check()` tells you whether Pandoc, Quarto and LaTeX are
+available on your computer.
+
+## R Markdown
+
+Put a phwstyle format in the YAML header, and knit as usual:
+
+```yaml
+---
+title: "Report title"
+author: "Team name"
+output: phwstyle::phw_word_document
+---
+```
+
+| Format | Output |
+|---|---|
+| `phwstyle::phw_html_document` | A web page with the header band, a floating table of contents and the PHW Bootstrap theme. Works offline: the fonts are inside the file |
+| `phwstyle::phw_word_document` | A Word document built from the PHW reference document: Ubuntu, navy headings, tables with horizontal rules only, a header band and a page footer |
+| `phwstyle::phw_pdf_document` | A PDF through LaTeX (XeLaTeX), with a full-page cover, a running header band and a footer |
+
+To start from a working example in RStudio, choose **File > New File > R
+Markdown > From Template > PHW report**. It knits to all three formats.
+
+The formats call `use_phw_ggplot()` and `use_phw_flextable()` before
+knitting, so don't repeat them in the document. Add `theme_phw()` or a
+PHW scale to a plot only to change something for that plot.
+
+Options go under the format name:
+
+```yaml
+output:
+  phwstyle::phw_pdf_document:
+    toc: true
+    team: "Team name"
+    number_sections: false
+```
+
+`?phw_formats` lists every option, including `fig_width` and `fig_height`,
+`cover = FALSE` to drop the PDF cover, and `palette`.
+
+## Quarto
+
+Run this once in your project folder. It adds the PHW extension in
+`_extensions/phw` and writes a starter report:
+
+```{r}
+phwstyle::use_phw_quarto(template = "report")
+```
+
+`template = "slides"` and `template = "dashboard"` write a starter
+presentation or dashboard instead, and `template = "none"` adds only the
+extension. Run it again with `overwrite = TRUE` after updating phwstyle,
+to pick up changes to the extension.
+
+Then name the format in the YAML header:
+
+```yaml
+---
+title: "Report title"
+format: phw-docx
+---
+```
+
+| Format | Output |
+|---|---|
+| `phw-html` | A web page with the header band and a table of contents |
+| `phw-docx` | A Word document built from the PHW reference document |
+| `phw-typst` | A PDF through Typst, which comes with Quarto, so no LaTeX is needed. Cover page, running header band, page numbers |
+| `phw-pdf` | A PDF through LaTeX, for teams that already use it |
+| `phw-revealjs` | 16:9 HTML slides with a title slide, logo and footer |
+| `phw-dashboard` | A one-page dashboard with a navy navigation bar and PHW cards |
+
+A Quarto extension styles the page but can't run R code, so style the
+charts and tables in the setup chunk, as the starter documents do:
+
+````markdown
+```{r}
+#| label: setup
+library(ggplot2)
+library(phwstyle)
+use_phw_ggplot()
+use_phw_flextable()
+```
+````
+
+The Typst PDF takes a few extra options in the YAML header:
+`phw-team: "Team name"` adds a team line to the cover, `phw-no-cover:
+true` drops the cover, and `phw-org`, `phw-page-label` and `phw-of-label`
+change the footer wording. See `?use_phw_quarto`.
+
+To make several formats from one document, list them:
+
+```yaml
+format:
+  phw-html: default
+  phw-docx: default
+  phw-typst: default
+```
+
+<p align="center">
+  <img src="../reference/figures/quarto-typst-1.webp" width="30%" alt="PDF report cover">
+  <img src="../reference/figures/quarto-typst-2.webp" width="30%" alt="PDF report page with a chart">
+  <img src="../reference/figures/quarto-word-1.webp" width="30%" alt="Word report page">
+</p>
+
+The [gallery](gallery.html#documents) shows every format, including the
+slides and dashboard.
+
+## Default and accessible colours
+
+Some readers need colours that stay distinct for every type of colour
+blindness. The `accessible` palette does that, and switching it on for a
+document changes every chart, table and widget made with phwstyle (see
+[Colours and accessibility](colours.html#colour-blind-safe-colours)).
+
+**To switch a document for good**, add one line to its YAML header. It
+works the same in R Markdown and Quarto:
+
+```yaml
+phw-palette: accessible
+```
+
+**To make both versions from one unchanged document**, set the palette
+when you render. In R Markdown, use `output_options`:
+
+```{r}
+word <- "phwstyle::phw_word_document"
+rmarkdown::render("report.Rmd", word, output_file = "report.docx")
+rmarkdown::render("report.Rmd", word, output_file = "report-accessible.docx",
+                  output_options = list(palette = "accessible"))
+```
+
+In Quarto, set the environment variable `PHWSTYLE_PALETTE` for the second
+render. From R (this works on Windows too):
+
+```{r}
+system2("quarto", c("render", "report.qmd", "--to", "phw-docx"))
+
+Sys.setenv(PHWSTYLE_PALETTE = "accessible")
+system2("quarto", c("render", "report.qmd", "--to", "phw-docx",
+                    "-o", "report-accessible.docx"))
+Sys.unsetenv("PHWSTYLE_PALETTE")
+```
+
+Or from a terminal:
+
+```sh
+quarto render report.qmd --to phw-docx
+PHWSTYLE_PALETTE=accessible quarto render report.qmd --to phw-docx -o report-accessible.docx
+```
+
+In PowerShell, set it with `$env:PHWSTYLE_PALETTE = "accessible"` before
+the second render, and clear it with `Remove-Item Env:PHWSTYLE_PALETTE`
+afterwards.
+
+The setting has to reach R through the document or the environment:
+Quarto doesn't pass `-M` values or `_quarto.yml` settings on to R.
+
+If you keep colour keys in a file (`phw_key_file()` in the setup chunk),
+each group keeps its colour in both versions, from one run to the next.
+
+## Fonts and the logo
+
+The fonts travel with the outputs where they can: HTML pages, slides and
+dashboards embed Ubuntu, and the PDF formats use the copy inside phwstyle.
+Word documents name Ubuntu, so Word shows it only on computers that have
+it. Run `phw_install_fonts()` once if you can; otherwise Word uses a
+similar font.
+
+The PHW logo isn't included in phwstyle. Without it, every format is
+still styled and shows the organisation name instead. To add it, run
+`phw_download_logos()` once, or point phwstyle at an approved copy with
+`options(phwstyle.logo_dir = "path/to/logos")`. For Quarto, run
+`use_phw_quarto(overwrite = TRUE)` afterwards so the extension picks it
+up.
+
+## Shiny apps
+
+For an app, `phw_page_navbar()` gives a complete page with the header
+band, navigation bar and footer, and `phw_bs_theme()` styles any bslib or
+Shiny page:
+
+```{r}
+library(shiny)
+library(bslib)
+ui <- phw_page_navbar(
+  title = "Weekly surveillance",
+  nav_panel("Overview", plotOutput("epicurve")),
+  nav_panel("Data", reactable::reactableOutput("table"))
+)
+```
+
+Interactive charts and tables in an app are styled the same way as in an
+HTML report: `phw_plotly()`, `phw_reactable()` and `phw_datatable()`.

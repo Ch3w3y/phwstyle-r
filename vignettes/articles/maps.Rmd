@@ -17,8 +17,8 @@ library(dplyr)
 
 ## Boundaries for every level
 
-`phw_boundaries()` downloads boundaries from the ONS Open Geography Portal
-or DataMapWales, keeps them only for Wales, and caches them so later calls
+`phw_boundaries()` downloads boundaries from the Office for National
+Statistics (ONS) Open Geography Portal or DataMapWales, keeps them only for Wales, and caches them so later calls
 work offline. The list of releases is kept up to date in the package.
 
 ```{r, eval = TRUE}
@@ -61,11 +61,27 @@ phw_leaflet() |>
 
 ## Keeping boundaries up to date
 
-A scheduled GitHub Actions workflow in the repository checks ONS and
-DataMapWales every month and opens a pull request when a new release
-appears. After updating phwstyle, refresh your cached copies:
+When ONS or the Welsh Government publish new boundaries, a new version of
+phwstyle points to them. After updating phwstyle, refresh your cached
+copies:
 
 ```{r, eval = FALSE}
 phw_boundaries("electoral_ward", refresh = TRUE)
 phw_boundaries_cache(clear = TRUE)   # or clear everything
 ```
+
+You don't have to update phwstyle for your maps to keep working:
+
+- Boundaries you have already downloaded are read from your cache, so they
+  don't change and don't need a connection.
+- Where a geography has two sources, the second is used if the first can't
+  be reached.
+- If a publisher withdraws a layer that your version of phwstyle lists,
+  `phw_boundaries()` fetches the current list of layers from the phwstyle
+  repository on GitHub and uses that. The list is checked against both
+  publishers every week. Set `options(phwstyle.boundary_update = FALSE)` if
+  you'd rather it didn't look.
+- If nothing can be downloaded, boundaries saved from an earlier release are
+  returned with a warning.
+
+In each of those cases a warning says what you were given.

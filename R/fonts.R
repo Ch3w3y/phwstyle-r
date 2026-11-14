@@ -37,6 +37,9 @@ font_available <- function(family) {
 #' run [phw_install_fonts()] once.
 #'
 #' @return `TRUE` invisibly if the fonts were registered.
+#' @examples
+#' # Runs when phwstyle loads; call it again only if fonts were reset.
+#' phw_register_fonts()
 #' @export
 phw_register_fonts <- function() {
   dir <- system.file("fonts", package = "phwstyle")
@@ -78,6 +81,9 @@ phw_register_fonts <- function() {
 #' @param ask Ask for confirmation before copying? Defaults to `TRUE` in
 #'   interactive sessions.
 #' @return The destination folder, invisibly, or `NULL` if cancelled.
+#' @examples
+#' # Run once per computer. It asks before copying anything.
+#' if (interactive()) phw_install_fonts()
 #' @export
 phw_install_fonts <- function(dest = NULL, ask = interactive()) {
   default_dest <- is.null(dest)
@@ -119,6 +125,11 @@ phw_install_fonts <- function(dest = NULL, ask = interactive()) {
 #' files are bundled, so nothing is fetched from the internet.
 #'
 #' @return An [htmltools::htmlDependency()].
+#' @examples
+#' dep <- phw_font_dependency()
+#' dep$name
+#' # Attach it to any HTML you build with htmltools
+#' page <- htmltools::tagList(dep, htmltools::p("Text in Ubuntu"))
 #' @export
 phw_font_dependency <- function() {
   htmltools::htmlDependency(

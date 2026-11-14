@@ -79,3 +79,10 @@ R, use \code{Sys.setenv(PHWSTYLE_PALETTE = "accessible")} before rendering and
 document itself: Quarto doesn't pass \code{-M} values or \verb{_quarto.yml}
 settings on to R. See \code{\link[=phw_default_palette]{phw_default_palette()}}.
 }
+\examples{
+project <- file.path(tempdir(), "phw-quarto-example")
+use_phw_quarto(project, template = "report")
+list.files(project)
+# Then render report.qmd with Quarto, e.g. the Render button in RStudio.
+unlink(project, recursive = TRUE)
+}

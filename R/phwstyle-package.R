@@ -13,6 +13,9 @@
 #'   changes take priority), then walks through each output type. The script
 #'   `examples/phwstyle-demo.R` in the source repository runs them all from
 #'   one raw data frame.
+#' * The website, <https://ch3w3y.github.io/phwstyle-r/>, has a guide for
+#'   charts, colours, tables, maps, documents and exports, and a gallery of
+#'   every kind of output.
 #'
 #' @section Charts:
 #' [theme_phw()], [theme_phw_map()], the `scale_*_phw_*()` colour and fill
@@ -22,9 +25,11 @@
 #' [phw_spc()].
 #'
 #' @section Colours and accessibility:
-#' [phw_colours], [phw_pal()], [phw_colour_key()] (colours that stay with
-#' their groups across reports), [phw_check_colours()], [phw_cvd()] and the
-#' `accessible` and `rag_accessible` palettes.
+#' [phw_colours], [phw_pal()] and the palettes in [phw_palettes] (including
+#' `strategy` for the Long-Term Strategy priorities and `greens`),
+#' [phw_colour_key()] (colours that stay with their groups across reports),
+#' [phw_default_palette()] (switching everything to the colour-blind safe
+#' `accessible` palette), [phw_check_colours()] and [phw_cvd()].
 #'
 #' @section Tables:
 #' Build with [phw_summary_table()], [phw_crosstab()], [phw_rate_table()],

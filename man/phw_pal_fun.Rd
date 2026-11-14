@@ -18,4 +18,8 @@ A function.
 \description{
 Returns a function of \code{n}, as the scales package expects.
 }
+\examples{
+pal <- phw_pal_fun("blues")
+pal(3)
+}
 \keyword{internal}

@@ -5,8 +5,8 @@
 #'
 #' * navy is `primary`
 #' * the website green is `success`
-#' * `danger`, `warning` and `info` use the accessible RAG red, amber and
-#'   teal
+#' * `danger`, `warning` and `info` use the red and amber of the `rag`
+#'   palette (red, amber, green status colours) and teal
 #' * links are the website blue, with magenta on hover
 #'
 #' Navbars are navy, and focus outlines are the NHS yellow.
@@ -19,6 +19,17 @@
 #' @param ... Extra variables passed to [bslib::bs_theme()]. They override
 #'   the PHW values, e.g. `primary = "#24A2B5"` or `"navbar-bg" = "#1B3660"`.
 #' @return A bslib theme.
+#' @examples
+#' if (requireNamespace("bslib", quietly = TRUE)) {
+#'   theme <- phw_bs_theme()
+#'   # Teal as the main colour instead of navy
+#'   theme_teal <- phw_bs_theme(primary = "#24A2B5")
+#' }
+#' if (requireNamespace("bslib", quietly = TRUE) && requireNamespace("shiny", quietly = TRUE) &&
+#'     interactive()) {
+#'   ui <- bslib::page_fluid(theme = phw_bs_theme(), shiny::h2("A styled page"))
+#'   shiny::shinyApp(ui, function(input, output) {})
+#' }
 #' @export
 phw_bs_theme <- function(version = 5, ...) {
   rlang::check_installed("bslib")
@@ -69,6 +80,8 @@ phw_scss_rules <- function() {
 #'   `org` is shown as text instead.
 #' @param org Organisation name used as the text fallback and alt text.
 #' @return An HTML tag.
+#' @examples
+#' phw_header("Weekly surveillance", subtitle = "Team name")
 #' @export
 phw_header <- function(title = NULL, subtitle = NULL, href = "https://phw.nhs.wales/",
                        logo = TRUE, org = phw_org) {
@@ -117,6 +130,16 @@ base64enc <- function(raw) {
 #' @param header_args List of extra [phw_header()] arguments.
 #' @param navbar_bg Navigation bar colour.
 #' @return A Shiny UI.
+#' @examples
+#' if (requireNamespace("bslib", quietly = TRUE) && requireNamespace("shiny", quietly = TRUE) &&
+#'     interactive()) {
+#'   ui <- phw_page_navbar(
+#'     title = "Weekly surveillance", subtitle = "Team name",
+#'     bslib::nav_panel("Overview", "Charts go here"),
+#'     bslib::nav_panel("Data", "Tables go here")
+#'   )
+#'   shiny::shinyApp(ui, function(input, output) {})
+#' }
 #' @export
 phw_page_navbar <- function(..., title = NULL, subtitle = NULL, footer = NULL,
                             theme = phw_bs_theme(), header_args = list(),

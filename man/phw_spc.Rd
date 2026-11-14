@@ -36,8 +36,10 @@ from (e.g. the first 20). \code{NULL} uses all points.}
 A ggplot. The points, with a \code{signal} column, are in \verb{$data}.
 }
 \description{
-An XmR (individuals) chart or a run chart for a measure over time, as
-used for quality improvement. Points that show special cause variation
+An XmR chart or a run chart for a measure over time, as used for
+quality improvement. An XmR chart plots individual values (X) with
+limits worked out from the moving range (mR), the change from one point
+to the next. Points that show special cause variation
 are coloured: outside the process limits, a shift of \code{shift} or more
 points on one side of the centre line, or a trend of \code{trend} or more
 points going the same way. With \code{improvement}, special causes in the

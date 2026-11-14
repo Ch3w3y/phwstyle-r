@@ -29,7 +29,7 @@ phw_flextable_theme(
 
 \item{font_family}{Font family.}
 
-\item{bold_first_col}{Bold the first column? (Area names in CDSC tables.)}
+\item{bold_first_col}{Bold the first column? (Area names in many PHW tables.)}
 
 \item{total_row}{Treat the last row as a total row (bold with a rule
 above)?}
@@ -53,17 +53,17 @@ above)?}
 A flextable.
 }
 \description{
-Styles an existing flextable the way PHW and CDSC reports present
-tables. Four styles are available:
+Styles an existing flextable the way PHW and its Communicable Disease
+Surveillance Centre (CDSC) present tables in reports. Four styles are available:
 }
 \details{
 \itemize{
-\item \code{"booktabs"} (default): a navy rule above
-and below the header and along the bottom, a bold header, no vertical
-lines and no fill.
+\item \code{"booktabs"} (default): horizontal rules only, as in printed journal
+tables: a navy rule above and below the header and along the bottom, a
+bold header, no vertical lines and no fill.
 \item \code{"header"}: a navy header band with white bold text.
-\item \code{"light"}: a light-teal header band with dark text (as in the weekly ARI
-report).
+\item \code{"light"}: a light-teal header band with dark text (as in the weekly acute
+respiratory infection report).
 \item \code{"zebra"}: \code{"booktabs"} plus light grey banding on alternate rows.
 }
 

@@ -68,8 +68,8 @@ any colours: for the colour-blind safe palette see
 A ggplot2 theme.
 }
 \description{
-A clean theme that follows how Public Health Wales and CDSC reports draw
-charts:
+A clean theme that follows how Public Health Wales reports, including
+those of its Communicable Disease Surveillance Centre (CDSC), draw charts:
 }
 \details{
 \itemize{

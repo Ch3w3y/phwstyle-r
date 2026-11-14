@@ -1,10 +1,11 @@
-# Checks the ONS Open Geography Portal and DataMapWales once a month for new
-# boundary releases (e.g. new wards or health boards) and opens a pull
-# request updating inst/extdata/boundaries.csv when something changed.
-# The R-CMD-check workflow then runs on that pull request.
+# Checks the ONS Open Geography Portal and DataMapWales once a week. It opens
+# a pull request updating inst/extdata/boundaries.csv when a new release has
+# appeared (e.g. new wards or health boards), and the R-CMD-check workflow
+# then runs on that pull request. The run fails if a source the package
+# relies on has stopped working, so that it is noticed.
 on:
   schedule:
-    - cron: '0 6 3 * *'
+    - cron: '0 6 * * 1'
   workflow_dispatch:
 
 name: update-boundaries
@@ -27,12 +28,17 @@ jobs:
           dependencies: '"hard"'
       - name: Look for new boundary releases
         run: Rscript data-raw/boundaries.R
+        env:
+          PHW_BOUNDARY_REPORT: ${{ runner.temp }}/boundary-problems.txt
       - name: Summarise changes
         id: diff
         run: |
           {
             echo 'summary<<EOF'
             git diff --unified=0 inst/extdata/boundaries.csv | grep '^[-+]"' | cut -d, -f1,3,5 || true
+            echo 'EOF'
+            echo 'problems<<EOF'
+            cat "$RUNNER_TEMP/boundary-problems.txt" 2>/dev/null || true
             echo 'EOF'
           } >> "$GITHUB_OUTPUT"
       - name: Open a pull request
@@ -49,4 +55,16 @@ jobs:
             ```
 
             Check the new layers in a map before merging, and add a NEWS item.
+
+            Sources that could not be checked (their layers were left as they are):
+
+            ```
+            ${{ steps.diff.outputs.problems }}
+            ```
           add-paths: inst/extdata/boundaries.csv
+      - name: Fail if a source has stopped working
+        run: |
+          if [ -s "$RUNNER_TEMP/boundary-problems.txt" ]; then
+            cat "$RUNNER_TEMP/boundary-problems.txt"
+            exit 1
+          fi

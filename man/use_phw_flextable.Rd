@@ -21,3 +21,12 @@ Sets \code{\link[flextable:set_flextable_defaults]{flextable::set_flextable_defa
 PHW font, colours and padding, and applies \code{\link[=phw_flextable_theme]{phw_flextable_theme()}}
 automatically. Put it in your setup chunk.
 }
+\examples{
+if (requireNamespace("flextable", quietly = TRUE)) {
+  old <- use_phw_flextable()
+  flextable::flextable(head(airquality))
+
+  # Put back the defaults you had before
+  do.call(flextable::set_flextable_defaults, old)
+}
+}

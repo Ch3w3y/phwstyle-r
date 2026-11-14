@@ -57,6 +57,30 @@
 #'   `"accessible"`. `NULL` uses [phw_default_palette()]. The palette is put
 #'   back as it was when the render finishes.
 #' @return An R Markdown output format.
+#' @examples
+#' # Use a format in the YAML header of an .Rmd file:
+#' #
+#' #   output: phwstyle::phw_word_document
+#' #
+#' # or give it to rmarkdown::render(). Making the format object is quick:
+#' if (requireNamespace("rmarkdown", quietly = TRUE)) {
+#'   fmt <- phw_word_document(toc = TRUE)
+#' }
+#' \donttest{
+#' # Render one document twice: default colours, then accessible colours
+#' if (requireNamespace("rmarkdown", quietly = TRUE) && rmarkdown::pandoc_available() &&
+#'     interactive()) {
+#'   rmd <- file.path(tempdir(), "report.Rmd")
+#'   writeLines(c("---", "title: Example report", "---", "",
+#'                "```{r, echo = FALSE}",
+#'                "library(ggplot2)",
+#'                "ggplot(mpg, aes(class, fill = drv)) + geom_bar()",
+#'                "```"), rmd)
+#'   rmarkdown::render(rmd, phw_word_document(), output_file = "report.docx")
+#'   rmarkdown::render(rmd, phw_word_document(palette = "accessible"),
+#'                     output_file = "report-accessible.docx")
+#' }
+#' }
 #' @name phw_formats
 NULL
 
@@ -167,6 +191,9 @@ phw_pdf_document <- function(..., toc = FALSE, number_sections = TRUE,
 #' @param team Optional team line for the cover.
 #' @param cover Keep the full-page cover?
 #' @return The file path.
+#' @examples
+#' f <- phw_latex_header(team = "Team name")
+#' head(readLines(f))
 #' @export
 phw_latex_header <- function(file = tempfile(fileext = ".tex"), team = NULL, cover = TRUE) {
   slash <- function(p) gsub("\\", "/", normalizePath(p, winslash = "/"), fixed = TRUE)

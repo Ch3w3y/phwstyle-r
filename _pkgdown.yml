@@ -17,6 +17,24 @@ navbar:
     left: [intro, reference, articles, gallery, news]
     right: [search, github]
   components:
+    articles:
+      text: Articles
+      menu:
+      - text: Charts
+        href: articles/charts.html
+      - text: Colours and accessibility
+        href: articles/colours.html
+      - text: Tables from raw data
+        href: articles/tables.html
+      - text: Maps and boundaries
+        href: articles/maps.html
+      - text: Reports and documents
+        href: articles/documents.html
+      - text: Excel, PowerPoint, Word and interactive tables
+        href: articles/exporting.html
+      - text: -------
+      - text: All articles
+        href: articles/index.html
     gallery:
       text: Gallery
       href: articles/gallery.html
@@ -39,7 +57,9 @@ reference:
   - phw_graphic
 
 - title: Colours and palettes
-  desc: Brand colours, palettes, and colour keys that keep each group the same colour across reports.
+  desc: >
+    Brand colours, palettes, the default palette, and colour keys that keep
+    each group the same colour across charts and reports.
   contents:
   - phw_colours
   - phw_col
@@ -52,8 +72,12 @@ reference:
   - phw_key
 
 - title: Accessibility
-  desc: Contrast, colour blindness, and second cues besides colour.
+  desc: >
+    Switch every chart, table and widget to the colour-blind safe palette,
+    check colours for contrast and colour blindness, and give groups a second
+    cue besides colour.
   contents:
+  - phw_default_palette
   - phw_check_colours
   - phw_contrast
   - phw_text_on
@@ -61,6 +85,10 @@ reference:
   - scale_shape_phw
 
 - title: ggplot2 charts
+  desc: >
+    Style every plot with `use_phw_ggplot()`, or one plot with `theme_phw()`
+    and the PHW scales. Then add a second axis, a logo footer, or save at
+    report size.
   contents:
   - use_phw_ggplot
   - theme_phw
@@ -72,6 +100,7 @@ reference:
   - phw_style_extensions
 
 - title: Multi-plot figures
+  desc: Several charts in one figure with one title and source line.
   contents:
   - phw_arrange
   - phw_title_grob
@@ -103,6 +132,9 @@ reference:
   - phw_group_table
 
 - title: flextable (Word, PDF, PowerPoint)
+  desc: >
+    Render a data frame or a summary table as a styled flextable, colour
+    cells by value or group, and add in-cell bars.
   contents:
   - phw_flextable
   - phw_flextable_theme
@@ -112,11 +144,15 @@ reference:
   - phw_flextable_groups
 
 - title: gt and gtsummary
+  desc: The same tables rendered with gt, and a theme for every gtsummary table.
   contents:
   - phw_gt_theme
   - use_phw_gtsummary
 
 - title: Interactive HTML
+  desc: >
+    Sortable tables and charts you can hover over, for HTML reports,
+    dashboards and Shiny. They can't go in Word or PDF.
   contents:
   - phw_reactable
   - phw_reactable_theme
@@ -126,18 +162,20 @@ reference:
   - phw_plotly_colorscale
 
 - title: Excel and PowerPoint
+  desc: Tables written to Excel sheets, and slides with charts and tables.
   contents:
   - phw_write_xlsx
   - phw_pptx
 
 - title: Captions, dates and numbers
+  desc: Source lines, dates and number formats written the PHW way. Every word can be changed.
   contents:
   - phw_caption
   - phw_date
   - phw_number
 
 - title: Documents
-  desc: R Markdown formats, the Quarto extension and the files behind them.
+  desc: R Markdown formats (HTML, Word, PDF), the Quarto extension and the files behind them.
   contents:
   - phw_formats
   - use_phw_quarto
@@ -145,22 +183,28 @@ reference:
   - phw_latex_header
 
 - title: Shiny and bslib
+  desc: A Bootstrap theme, header band and complete page for Shiny apps.
   contents:
   - phw_bs_theme
   - phw_page_navbar
   - phw_header
 
 - title: Package
+  desc: An overview of the package and its options.
   contents:
   - phwstyle-package
 
 articles:
 - title: Guides
-  navbar: Guides
   contents:
   - phwstyle
-  - articles/tables
   - articles/charts
+  - articles/colours
+  - articles/tables
   - articles/maps
+  - articles/documents
   - articles/exporting
+- title: Gallery
+  desc: Every kind of output, with the functions behind each one.
+  contents:
   - articles/gallery

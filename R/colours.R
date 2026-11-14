@@ -1,6 +1,7 @@
 #' Public Health Wales brand colours
 #'
-#' A named character vector of every colour in the PHW / CDSC identity.
+#' A named character vector of every colour in the PHW identity, as used by
+#' its Communicable Disease Surveillance Centre (CDSC).
 #' Each colour and its role is listed in
 #' `system.file("brand", "palette.csv", package = "phwstyle")`.
 #'
@@ -90,22 +91,24 @@ phw_col <- function(..., names = TRUE) {
 #'   * 10 to 12 (blue, dark green, violet) are not PHW colours. They were
 #'     chosen in the same hues to stay distinct from the other nine.
 #'
-#'   Every pair of the twelve stays apart for colour-blind readers (CIELAB
-#'   distance of at least 15 under deuteranopia and protanopia). Gold, mint
+#'   Every pair of the twelve stays apart for colour-blind readers: the
+#'   colour difference (delta E in CIELAB, a scale where about 10 or more
+#'   is easy to tell apart) is at least 15 under simulated deuteranopia and
+#'   protanopia, the two red-green types. Gold, mint
 #'   and bright green are below 3:1 contrast on white, so they suit filled
 #'   shapes better than thin lines. Twelve lines on one chart are still hard
 #'   to read: use facets or direct labels where you can.
 #' * `accessible` (qualitative, 8): chosen so every pair stays distinct under
-#'   simulated deuteranopia, protanopia and tritanopia (minimum CIELAB
-#'   distance of about 20), and every colour has at least 3:1 contrast on
+#'   simulated deuteranopia, protanopia and tritanopia (minimum colour
+#'   difference, delta E, of about 20), and every colour has at least 3:1 contrast on
 #'   white. It starts with navy, teal and orange, so short series still look
 #'   like PHW. It is never used unless you ask for it: see
 #'   [phw_default_palette()] for how to switch a whole script or document
 #'   to it.
 #' * `highlight` (qualitative, 2): navy for the focus series, light grey for
 #'   everything else.
-#' * `rag` (qualitative, 3): red / amber / green that keeps 3:1 contrast on
-#'   white. These were chosen for phwstyle, not taken from a PHW source.
+#' * `rag` (qualitative, 3): red / amber / green (RAG) status colours that
+#'   keep 3:1 contrast on white. These were chosen for phwstyle, not taken from a PHW source.
 #' * `rag_accessible` (qualitative, 3): like `rag`, but "good" is navy
 #'   instead of green, because red and green look alike to many colour-blind
 #'   readers.
@@ -129,6 +132,11 @@ phw_col <- function(..., names = TRUE) {
 #' palettes, which run from light to dark.
 #'
 #' @format A named list of character vectors.
+#' @examples
+#' names(phw_palettes)
+#' phw_palettes$main
+#' phw_palettes$strategy
+#' show_phw_palettes(c("main", "extended", "accessible"))
 #' @export
 phw_palettes <- list(
   main      = unname(phw_colours[c("navy", "teal", "orange", "pink")]),
@@ -299,6 +307,9 @@ document_palette <- function() {
 #'
 #' @inheritParams phw_pal
 #' @return A function.
+#' @examples
+#' pal <- phw_pal_fun("blues")
+#' pal(3)
 #' @keywords internal
 #' @export
 phw_pal_fun <- function(palette = phw_default_palette(), reverse = FALSE) {
@@ -348,11 +359,15 @@ luminance <- function(hex) {
   as.numeric(0.2126 * lin[1, ] + 0.7152 * lin[2, ] + 0.0722 * lin[3, ])
 }
 
-#' WCAG contrast ratio between two colours
+#' Contrast ratio between two colours
+#'
+#' The contrast ratio from the Web Content Accessibility Guidelines (WCAG),
+#' the standard most public sector websites and documents are checked
+#' against.
 #'
 #' @param x,y Colours (any form [grDevices::col2rgb()] accepts).
-#' @return Contrast ratios, from 1 to 21. WCAG AA needs 4.5 for body text and
-#'   3 for large text and chart marks.
+#' @return Contrast ratios, from 1 to 21. The WCAG AA level needs 4.5 for body
+#'   text and 3 for large text and chart marks.
 #' @examples
 #' phw_contrast(phw_colours["teal"], "white")
 #' @export
@@ -365,6 +380,8 @@ phw_contrast <- function(x, y = "#FFFFFF") {
 #'
 #' @param bg Background colours.
 #' @return `"#FFFFFF"` or the PHW text colour, whichever contrasts more.
+#' @examples
+#' phw_text_on(phw_col("navy", "light_teal", "gold_465"))
 #' @export
 phw_text_on <- function(bg) {
   ifelse(phw_contrast(bg, "#FFFFFF") >= phw_contrast(bg, phw_colours[["text"]]),

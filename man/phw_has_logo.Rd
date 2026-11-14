@@ -12,3 +12,6 @@ phw_has_logo()
 \description{
 Does phwstyle have a PHW logo to use?
 }
+\examples{
+phw_has_logo()
+}

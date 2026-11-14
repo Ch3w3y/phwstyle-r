@@ -50,6 +50,8 @@ logo_cache_dir <- function() tools::R_user_dir("phwstyle", which = "cache")
 
 #' Does phwstyle have a PHW logo to use?
 #' @return `TRUE` or `FALSE`.
+#' @examples
+#' phw_has_logo()
 #' @export
 phw_has_logo <- function() !is.null(phw_logo("white", "svg")) && !is.null(phw_logo("white", "png"))
 
@@ -68,6 +70,11 @@ phw_has_logo <- function() !is.null(phw_logo("white", "svg")) && !is.null(phw_lo
 #'   sessions unless you set it to `FALSE`.
 #' @param url Where to download the white SVG logo from.
 #' @return The cache folder, invisibly, or `NULL` if nothing was downloaded.
+#' @examples
+#' \donttest{
+#' # Run once per computer. It asks before downloading anything.
+#' if (interactive()) phw_download_logos()
+#' }
 #' @export
 phw_download_logos <- function(ask = interactive(), url = logo_url) {
   dest <- logo_cache_dir()
@@ -109,6 +116,8 @@ phw_download_logos <- function(ask = interactive(), url = logo_url) {
 #'   portrait cover background) or `"cover_wide"` (the 16:9 slide
 #'   background).
 #' @return A file path.
+#' @examples
+#' phw_graphic("band")
 #' @export
 phw_graphic <- function(name = c("band", "cover", "cover_wide")) {
   name <- rlang::arg_match(name)

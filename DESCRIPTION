@@ -18,7 +18,7 @@ Description: Applies the visual identity of Public Health Wales, as used by
     'PowerPoint' slides; R Markdown output formats (HTML, Word, PDF) and a
     Quarto extension (HTML, Word, 'Typst' PDF, 'revealjs' slides and
     dashboards).
-URL: https://github.com/Ch3w3y/phwstyle-r
+URL: https://ch3w3y.github.io/phwstyle-r/, https://github.com/Ch3w3y/phwstyle-r
 BugReports: https://github.com/Ch3w3y/phwstyle-r/issues
 License: MIT + file LICENSE
 Copyright: See inst/COPYRIGHTS for the bundled Ubuntu fonts.

@@ -39,3 +39,14 @@ A thin wrapper around \code{\link[bslib:page_navbar]{bslib::page_navbar()}} that
 a footer. Use \code{\link[bslib:nav_panel]{bslib::nav_panel()}} for each tab, exactly as you would with
 \code{page_navbar()}.
 }
+\examples{
+if (requireNamespace("bslib", quietly = TRUE) && requireNamespace("shiny", quietly = TRUE) &&
+    interactive()) {
+  ui <- phw_page_navbar(
+    title = "Weekly surveillance", subtitle = "Team name",
+    bslib::nav_panel("Overview", "Charts go here"),
+    bslib::nav_panel("Data", "Tables go here")
+  )
+  shiny::shinyApp(ui, function(input, output) {})
+}
+}

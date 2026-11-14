@@ -14,3 +14,9 @@ Attach this to any HTML output (htmlwidgets, Shiny UIs, R Markdown) so
 Ubuntu works even when the computer doesn't have it installed. The font
 files are bundled, so nothing is fetched from the internet.
 }
+\examples{
+dep <- phw_font_dependency()
+dep$name
+# Attach it to any HTML you build with htmltools
+page <- htmltools::tagList(dep, htmltools::p("Text in Ubuntu"))
+}

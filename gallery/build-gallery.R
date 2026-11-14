@@ -137,9 +137,10 @@ p9 <- ggplot(hb, aes(value, reorder(area, value))) +
 save(phw_finalise(p9, source = "Example data", team = "Team name"), "09-finalised", h = 11)
 
 # 10. Palettes, as seen with normal vision and with deuteranopia
-save(show_phw_palettes(), "10-palettes", h = 9)
+# Wide enough for the twelve hex codes of "extended" to fit their tiles.
+save(show_phw_palettes(), "10-palettes", w = 26, h = 12)
 save(show_phw_palettes(cvd = "deutan") + labs(title = "The same palettes with deuteranopia (phw_cvd)"),
-     "11-palettes-deutan", h = 9.5)
+     "11-palettes-deutan", w = 26, h = 12.5)
 
 # 12. Colour keys: the same group keeps its colour when groups are added
 k1 <- data.frame(group = factor(groups[1:3], levels = groups[1:3]), value = c(4, 6, 5))
@@ -242,7 +243,7 @@ if (requireNamespace("flextable", quietly = TRUE)) {
   flextable::save_as_image(ragft, file.path(out, "table-rag.png"), res = 200)
   grp <- data.frame(Group = c(groups[1:3], "Unknown"), Count = c(120L, 85L, 64L, 9L), Share = c(0.43, 0.31, 0.23, 0.03))
   gft <- phw_flextable_groups(phw_flextable(grp, caption = "Cells coloured by group key", source = "Example data"),
-                              j = "Group", key = "gallery_groups")
+                              j = Group, key = "gallery_groups")
   flextable::save_as_image(gft, file.path(out, "table-groups.png"), res = 200)
 }
 
@@ -258,19 +259,19 @@ ll <- data.frame(
   period = sample(paste("Period", 1:6), 400, TRUE))
 labs_ll <- list(age_group = "Age group", sex = "Sex", setting = "Setting", days = "Days to recovery",
                 outcome = "Outcome")
-sum_tab <- phw_summary_table(ll, vars = c("age_group", "sex", "setting", "days"), by = "outcome", labels = labs_ll)
+sum_tab <- phw_summary_table(ll, vars = c(age_group, sex, setting, days), by = outcome, labels = labs_ll)
 agg <- expand.grid(age_group = c("0-14", "15-44", "45-64", "65+"), sex = c("Female", "Male"),
                    group = c("Group A", "Group B"))
 agg$cases <- rpois(nrow(agg), c(8, 20, 30, 45))
 agg$pop <- round(runif(nrow(agg), 40, 120)) * 1000
-rate_tab <- phw_rate_table(agg, c("age_group", "sex", "group"), "cases", "pop",
+rate_tab <- phw_rate_table(agg, c(age_group, sex, group), cases, pop,
                            labels = list(age_group = "Age group", sex = "Sex", group = "Risk group"))
 ob <- data.frame(item_a = sample(c("Yes", "No"), 150, TRUE), item_b = sample(c("Yes", "No"), 150, TRUE),
                  item_c = sample(c("Yes", "No"), 150, TRUE))
 ob$ill <- rbinom(150, 1, ifelse(ob$item_a == "Yes", 0.55, 0.15))
-risk_tab <- phw_risk_table(ob, c("item_a", "item_b", "item_c"), "ill",
+risk_tab <- phw_risk_table(ob, c(item_a, item_b, item_c), ill,
                            labels = list(item_a = "Exposure A", item_b = "Exposure B", item_c = "Exposure C"))
-xt <- phw_crosstab(ll, "period", "age_group", labels = list(period = "Period", age_group = "Age group"))
+xt <- phw_crosstab(ll, period, age_group, labels = list(period = "Period", age_group = "Age group"))
 if (requireNamespace("flextable", quietly = TRUE)) {
   st <- function(ft, name) flextable::save_as_image(ft, file.path(out, paste0(name, ".png")), res = 200)
   st(phw_flextable(sum_tab, caption = "Characteristics by outcome", number = 2, source = "Example data"), "table-summary")
@@ -283,15 +284,15 @@ if (requireNamespace("flextable", quietly = TRUE)) {
                     subgroup = sample(c("Type 1", "Type 2", "Type 3"), 400, TRUE, prob = c(.45, .45, .1)),
                     year = sample(2023:2024, 400, TRUE), half = sample(c("H1", "H2"), 400, TRUE))
   ops_lab <- list(category = "Category", subgroup = "Type", year = "Year", half = "Half")
-  st(phw_flextable(phw_group_table(dat, c("category", "subgroup"), c("year", "half"), labels = ops_lab,
+  st(phw_flextable(phw_group_table(dat, c(category, subgroup), c(year, half), labels = ops_lab,
                                    col_totals = c("group", "table")),
                    caption = "Nested row and column groups", number = 6, source = "Example data"), "table-nested")
-  st(phw_flextable(phw_group_table(dat, c("category", "subgroup"), labels = ops_lab, layout = "columns",
+  st(phw_flextable(phw_group_table(dat, c(category, subgroup), labels = ops_lab, layout = "columns",
                                    totals = c("group", "subgroup", "table"), subtotal_position = "below",
                                    percent = "parent", separate = "both"),
                    caption = "Group totals below each group", number = 7, source = "Example data"), "table-nested-columns")
   bars <- data.frame(Area = areas, Count = c(120L, 85L, 64L, 19L, 23L, 51L, 40L))
-  st(phw_flextable_bars(phw_flextable(bars, caption = "In-cell bars", source = "Example data"), "Count"), "table-bars")
+  st(phw_flextable_bars(phw_flextable(bars, caption = "In-cell bars", source = "Example data"), Count), "table-bars")
 }
 
 # Interactive widgets
@@ -308,7 +309,7 @@ if (requireNamespace("reactable", quietly = TRUE)) {
                    Rate = c(4.1, 2.2, 6.3, 1.0, 2.5, 3.3, 2.9), Status = c(0.96, 0.93, 0.91, 0.95, 0.97, 0.92, 0.94),
                    Share = c(.3, .21, .16, .05, .06, .12, .1))
   save_tags(phw_reactable(rx, caption = "Column formats", source = "Example data", columns = list(
-    Count = phw_col_bar(rx, "Count"), Rate = phw_col_heat(rx, "Rate"),
+    Count = phw_col_bar(rx, Count), Rate = phw_col_heat(rx, Rate),
     Status = phw_col_rag(breaks = c(0.93, 0.95), digits = 2), Share = phw_col_percent())), "reactable-columns")
 }
 if (requireNamespace("plotly", quietly = TRUE)) {
@@ -336,24 +337,24 @@ if (requireNamespace("plotly", quietly = TRUE)) {
 # 20-23. Public health charts
 cases <- data.frame(onset = as.Date("2025-01-01") + round(rgamma(300, 6, 0.15)),
                     group = sample(c("Group A", "Group B", "Group C"), 300, TRUE))
-save(phw_epicurve(cases, "onset", group = "group") +
+save(phw_epicurve(cases, onset, group = group) +
        labs(title = "Epidemic curve", subtitle = "phw_epicurve(), cases by week of onset",
             x = "Week beginning", y = "Cases", caption = src), "20-epicurve")
 ages <- c("0-14", "15-29", "30-44", "45-64", "65-79", "80+")
 pop <- expand.grid(age = factor(ages, ages), sex = c("Female", "Male"))
 pop$n <- c(240, 280, 300, 410, 260, 90, 250, 290, 295, 400, 240, 60) * 1000
 cmp <- pop; cmp$n <- round(cmp$n * runif(12, 0.8, 1.2))
-save(phw_pyramid(pop, "age", "sex", value = "n", percent = TRUE, compare = cmp) +
+save(phw_pyramid(pop, age, sex, value = n, percent = TRUE, compare = cmp) +
        labs(title = "Population pyramid", subtitle = "phw_pyramid(), outlines show a comparison population",
             caption = src), "21-pyramid")
 units <- data.frame(unit = paste("Unit", 1:40), n = round(runif(40, 200, 5000)))
 units$events <- rbinom(40, units$n, c(rep(0.12, 37), 0.2, 0.05, 0.17))
-save(phw_funnel(units, "events", "n", label = "unit") +
+save(phw_funnel(units, events, n, label = unit) +
        labs(title = "Funnel plot", subtitle = "phw_funnel(), 95% and 99.8% limits around the overall value",
             x = "Population", y = "Proportion (%)", caption = src), "22-funnel")
 spc <- data.frame(month = seq(as.Date("2023-01-01"), by = "month", length.out = 30),
                   value = c(rnorm(20, 50, 4), rnorm(10, 58, 4)))
-save(phw_spc(spc, "month", "value", improvement = "increase", baseline = 20) +
+save(phw_spc(spc, month, value, improvement = "increase", baseline = 20) +
        labs(title = "SPC chart", subtitle = "phw_spc(), limits from the first 20 months",
             y = "Measure", caption = src), "23-spc")
 
@@ -496,7 +497,7 @@ if (requireNamespace("sf", quietly = TRUE)) {
 ops2 <- data.frame(category = sample(c("Category A", "Category B", "Category C"), 300, TRUE),
                    subgroup = sample(c("Type 1", "Type 2", "Type 3"), 300, TRUE),
                    year = sample(2023:2024, 300, TRUE))
-grouped <- phw_group_table(ops2, c("category", "subgroup"), "year",
+grouped <- phw_group_table(ops2, c(category, subgroup), year,
                            labels = list(category = "Category", subgroup = "Type", year = "Year"))
 if (requireNamespace("gt", quietly = TRUE)) {
   gt::gtsave(phw_gt(grouped, caption = "A grouped table with gt", source = "Example data"),
@@ -519,11 +520,11 @@ if (requireNamespace("leaflet", quietly = TRUE) && requireNamespace("sf", quietl
   hb <- phw_boundaries("health_board", crs = 4326, quiet = TRUE)
   hb$rate <- round(runif(nrow(hb), 10, 50), 1)
   m <- phw_leaflet() |>
-    phw_leaflet_polygons(hb, fill = "rate", bins = c(10, 20, 30, 40, 50), label = "name", legend_title = "Rate")
+    phw_leaflet_polygons(hb, fill = rate, bins = c(10, 20, 30, 40, 50), label = name, legend_title = "Rate")
   htmlwidgets::saveWidget(m, normalizePath(file.path(out, "leaflet.html"), mustWork = FALSE), selfcontained = TRUE)
   hb$band <- cut(hb$rate, c(10, 25, 40, 50), labels = c("Low", "Middle", "High"), include.lowest = TRUE)
   m2 <- phw_leaflet() |>
-    phw_leaflet_polygons(hb, fill = "band", palette = "accessible", label = "name", legend_title = "Band")
+    phw_leaflet_polygons(hb, fill = band, palette = "accessible", label = name, legend_title = "Band")
   htmlwidgets::saveWidget(m2, normalizePath(file.path(out, "leaflet-groups.html"), mustWork = FALSE), selfcontained = TRUE)
 }
 if (requireNamespace("openxlsx2", quietly = TRUE)) {
@@ -533,7 +534,7 @@ if (requireNamespace("openxlsx2", quietly = TRUE)) {
 if (requireNamespace("officer", quietly = TRUE)) {
   deck <- phw_pptx() |>
     phw_add_slide("Key messages", text = c("First message", "Second message")) |>
-    phw_add_slide("Cases by week", plot = phw_epicurve(cases, "onset", group = "group"), source = "Example data") |>
+    phw_add_slide("Cases by week", plot = phw_epicurve(cases, onset, group = group), source = "Example data") |>
     phw_add_slide("A grouped table", table = grouped, source = "Example data")
   print(deck, target = file.path(out, "slides.pptx"))
 }

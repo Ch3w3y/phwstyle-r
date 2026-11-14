@@ -58,3 +58,24 @@ key to plotly yourself, e.g.
 \code{plot_ly(df, x = ~week, y = ~rate, color = ~age, colors = phw_colour_key(df$age, "age"))}.
 ggplots keep the colours of their \code{scale_colour_phw_d(key = ...)}.
 }
+\examples{
+if (requireNamespace("plotly", quietly = TRUE)) {
+  df <- data.frame(week = rep(1:10, 2),
+                   cases = c(3, 5, 9, 14, 20, 18, 13, 9, 6, 4,
+                             2, 4, 6, 9, 11, 13, 12, 10, 7, 5),
+                   group = rep(c("Group A", "Group B"), each = 10))
+
+  # A chart built with plot_ly()
+  p <- plotly::plot_ly(df, x = ~week, y = ~cases, color = ~group,
+                       type = "scatter", mode = "lines")
+  w1 <- phw_plotly(p, source = "Example data")
+
+  # A ggplot, converted for you
+  g <- ggplot2::ggplot(df, ggplot2::aes(week, cases, colour = group)) +
+    ggplot2::geom_line()
+  w2 <- phw_plotly(g, source = "Example data", hovermode = "x")
+
+  # Printing shows the chart in the Viewer or a browser.
+  if (interactive()) print(w1)
+}
+}

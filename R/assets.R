@@ -23,6 +23,11 @@ write_blank_png <- function(file) {
 #'
 #' @param file Where to write the document.
 #' @return A file path.
+#' @examples
+#' f <- phw_reference_docx()
+#' file.exists(f)
+#' # In Quarto:   format: docx: reference-doc: path/to/that/file.docx
+#' # In officer:  officer::read_docx(phw_reference_docx())
 #' @export
 phw_reference_docx <- function(file = tempfile(fileext = ".docx")) {
   src <- phw_file("rmarkdown", "resources", "phw-reference.docx")

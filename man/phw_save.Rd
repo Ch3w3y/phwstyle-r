@@ -41,3 +41,14 @@ A wrapper around \code{\link[ggplot2:ggsave]{ggplot2::ggsave()}} with sensible d
 outputs. It saves at 16 x 10 cm and 300 dpi, uses 'ragg' for PNG so the
 bundled Ubuntu font works, and accepts plots made with \code{\link[=phw_finalise]{phw_finalise()}}.
 }
+\examples{
+library(ggplot2)
+p <- ggplot(mtcars, aes(wt, mpg)) +
+  geom_point() +
+  theme_phw()
+f <- phw_save(p, tempfile(fileext = ".png"))
+file.exists(f)
+
+# Wider, for a slide
+phw_save(p, tempfile(fileext = ".png"), width = 25, height = 12)
+}

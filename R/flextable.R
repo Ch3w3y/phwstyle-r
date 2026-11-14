@@ -1,14 +1,14 @@
 #' Apply PHW styling to a flextable
 #'
-#' Styles an existing flextable the way PHW and CDSC reports present
-#' tables. Four styles are available:
+#' Styles an existing flextable the way PHW and its Communicable Disease
+#' Surveillance Centre (CDSC) present tables in reports. Four styles are available:
 #'
-#' * `"booktabs"` (default): a navy rule above
-#'   and below the header and along the bottom, a bold header, no vertical
-#'   lines and no fill.
+#' * `"booktabs"` (default): horizontal rules only, as in printed journal
+#'   tables: a navy rule above and below the header and along the bottom, a
+#'   bold header, no vertical lines and no fill.
 #' * `"header"`: a navy header band with white bold text.
-#' * `"light"`: a light-teal header band with dark text (as in the weekly ARI
-#'   report).
+#' * `"light"`: a light-teal header band with dark text (as in the weekly acute
+#'   respiratory infection report).
 #' * `"zebra"`: `"booktabs"` plus light grey banding on alternate rows.
 #'
 #' Numbers are right-aligned and text is left-aligned. In every style the
@@ -18,7 +18,7 @@
 #' @param style `"booktabs"`, `"header"`, `"light"` or `"zebra"`.
 #' @param font_size Body font size in points. Header uses the same size.
 #' @param font_family Font family.
-#' @param bold_first_col Bold the first column? (Area names in CDSC tables.)
+#' @param bold_first_col Bold the first column? (Area names in many PHW tables.)
 #' @param total_row Treat the last row as a total row (bold with a rule
 #'   above)?
 #' @param accent Colour of the rules and header (navy by default).
@@ -199,6 +199,14 @@ phw_flextable <- function(data, caption = NULL, number = NULL, source = NULL,
 #' @param font_size Body font size.
 #' @param ... Other [phw_flextable_theme()] arguments, e.g. `accent`.
 #' @return The previous defaults, invisibly.
+#' @examples
+#' if (requireNamespace("flextable", quietly = TRUE)) {
+#'   old <- use_phw_flextable()
+#'   flextable::flextable(head(airquality))
+#'
+#'   # Put back the defaults you had before
+#'   do.call(flextable::set_flextable_defaults, old)
+#' }
 #' @export
 use_phw_flextable <- function(style = "booktabs", font_size = 10, ...) {
   rlang::check_installed(c("flextable", "officer"))
@@ -238,6 +246,20 @@ use_phw_flextable <- function(style = "booktabs", font_size = 10, ...) {
 #' @param symbols For `"rag"`: add a shape before each value (a down
 #'   triangle for red, a square for amber, an up triangle for green)?
 #' @return A flextable.
+#' @examples
+#' if (requireNamespace("flextable", quietly = TRUE)) {
+#'   rates <- data.frame(Area = paste("Area", LETTERS[1:4]),
+#'                       `2024` = c(3.2, 1.5, 3.8, 2.3), `2025` = c(4.4, 0.7, 4.2, 0.2),
+#'                       check.names = FALSE)
+#'   phw_flextable(rates) |>
+#'     phw_flextable_heat(j = 2:3)
+#'
+#'   # Red, amber and green, with a shape in each cell as a second cue
+#'   uptake <- data.frame(Area = paste("Area", LETTERS[1:4]),
+#'                        Uptake = c(0.96, 0.93, 0.91, 0.95))
+#'   phw_flextable(uptake, digits = 2) |>
+#'     phw_flextable_heat(Uptake, palette = "rag_accessible", breaks = c(0.92, 0.95))
+#' }
 #' @export
 phw_flextable_heat <- function(x, j, palette = "teals", domain = NULL, breaks = NULL,
                                higher_is_better = TRUE, symbols = TRUE) {
@@ -293,6 +315,17 @@ phw_flextable_heat <- function(x, j, palette = "teals", domain = NULL, breaks = 
 #' @param what Colour the cell `"background"` or the `"text"`?
 #' @param rows Colour the whole row (`TRUE`) or only column `j`?
 #' @return A flextable.
+#' @examples
+#' if (requireNamespace("flextable", quietly = TRUE)) {
+#'   df <- data.frame(Group = c("Group A", "Group B", "Group C", "Unknown"),
+#'                    Cases = c(120, 85, 64, 9))
+#'   phw_flextable(df) |>
+#'     phw_flextable_groups(Group)
+#'
+#'   # Colour the text instead, across the whole row
+#'   phw_flextable(df) |>
+#'     phw_flextable_groups(Group, what = "text", rows = TRUE)
+#' }
 #' @export
 phw_flextable_groups <- function(x, j, key = NULL, palette = phw_default_palette(),
                                  values = NULL, what = c("background", "text"), rows = FALSE) {

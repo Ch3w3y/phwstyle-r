@@ -39,7 +39,10 @@ graphic).}
 
 \item{source, date}{Passed to \code{\link[=phw_caption]{phw_caption()}} and shown at the bottom.}
 
-\item{layout, master}{Slide layout and master names in the template.}
+\item{layout, master}{Slide layout and slide master names in the
+template. A slide master is the set of layouts a template provides;
+see them in PowerPoint under View > Slide Master, or with
+\code{officer::layout_summary(x)}.}
 
 \item{editable}{Add charts as editable vector graphics (needs rvg)?}
 
