@@ -192,14 +192,14 @@ phw_write_xlsx <- function(x, file, title = NULL, source = NULL, date = NULL, ca
 
 #' PowerPoint slides with officer
 #'
-#' `phw_pptx()` starts a PowerPoint deck, from your organisation's template
-#' if you have one. `phw_add_slide()` adds a slide with a PHW-styled title
+#' `phw_pptx()` starts a PowerPoint deck, from the PHW template (16:9, Ubuntu
+#' text, navy titles) or from your own. `phw_add_slide()` adds a slide with a PHW-styled title
 #' and a chart, table or text, so a set of results becomes a deck in a few
 #' lines. Charts are added as editable vector graphics when the rvg package
 #' is installed, so colleagues can tweak them in PowerPoint.
 #'
 #' @param template Path to a `.pptx` template, e.g. the PHW corporate
-#'   template. `NULL` uses the officer default.
+#'   template. `NULL` uses the PHW template from [phw_reference_pptx()].
 #' @return An officer `rpptx` object. Save it with `print(deck, target =
 #'   "file.pptx")`.
 #' @examples
@@ -216,7 +216,7 @@ phw_write_xlsx <- function(x, file, title = NULL, source = NULL, date = NULL, ca
 #' @export
 phw_pptx <- function(template = NULL) {
   rlang::check_installed("officer")
-  if (is.null(template)) officer::read_pptx() else officer::read_pptx(template)
+  officer::read_pptx(template %||% phw_file("rmarkdown", "resources", "phw-reference.pptx"))
 }
 
 #' @rdname phw_pptx
@@ -231,7 +231,10 @@ phw_pptx <- function(template = NULL) {
 #' @param layout,master Slide layout and slide master names in the
 #'   template. A slide master is the set of layouts a template provides;
 #'   see them in PowerPoint under View > Slide Master, or with
-#'   `officer::layout_summary(x)`.
+#'   `officer::layout_summary(x)`. The defaults suit the PHW template, which
+#'   also has `"Title Slide"` (the title and `text` as a subtitle),
+#'   `"Section Header"`, `"Two Content"`, `"Title Only"` and `"Blank"`. With
+#'   your own template, give the names it uses.
 #' @param editable Add charts as editable vector graphics (needs rvg)?
 #' @param title_size Title font size.
 #' @param caption_args List of other [phw_caption()] arguments.
@@ -241,17 +244,18 @@ phw_pptx <- function(template = NULL) {
 #' @export
 phw_add_slide <- function(x, title = NULL, plot = NULL, table = NULL, text = NULL,
                           source = NULL, date = NULL, layout = "Title and Content",
-                          master = "Office Theme", editable = TRUE, title_size = 28,
+                          master = "PHW", editable = TRUE, title_size = 28,
                           caption_args = list(), alt = NULL) {
   rlang::check_installed("officer")
   x <- officer::add_slide(x, layout = layout, master = master)
+  types <- officer::layout_properties(x, layout = layout, master = master)$type
   navy <- phw_colours[["navy"]]
   if (!is.null(title)) {
     tp <- officer::fpar(officer::ftext(title, officer::fp_text(font.family = phw_font(), font.size = title_size,
                                                                   bold = TRUE, color = navy)))
-    x <- officer::ph_with(x, tp, location = officer::ph_location_type("title"))
+    x <- officer::ph_with(x, tp, location = officer::ph_location_type(if ("ctrTitle" %in% types) "ctrTitle" else "title"))
   }
-  body <- officer::ph_location_type("body")
+  body <- officer::ph_location_type(if ("subTitle" %in% types) "subTitle" else "body")
   if (!is.null(plot)) {
     value <- if (editable && inherits(plot, "ggplot") && requireNamespace("rvg", quietly = TRUE)) {
       rvg::dml(ggobj = plot, fonts = list(sans = phw_font()))
@@ -269,15 +273,24 @@ phw_add_slide <- function(x, title = NULL, plot = NULL, table = NULL, text = NUL
     x <- officer::ph_with(x, ft, location = body)
     x <- set_slide_alt(x, alt)
   } else if (!is.null(text)) {
-    props <- officer::fp_text(font.family = phw_font(), font.size = 20, color = phw_colours[["text"]])
-    x <- officer::ph_with(x, officer::unordered_list(str_list = text, level_list = rep(1L, length(text)), style = props), location = body)
+    if ("subTitle" %in% types) {
+      props <- officer::fp_text(font.family = phw_font(), font.size = 22, color = phw_colours[["grey_bg"]])
+      x <- officer::ph_with(x, do.call(officer::block_list, lapply(text, function(t) officer::fpar(officer::ftext(t, props)))), location = body)
+    } else {
+      props <- officer::fp_text(font.family = phw_font(), font.size = 20, color = phw_colours[["text"]])
+      x <- officer::ph_with(x, officer::unordered_list(str_list = text, level_list = rep(1L, length(text)), style = props), location = body)
+    }
   }
   cap <- caption_from(source, date, caption_args)
   if (!is.null(cap)) {
-    fp <- officer::fp_text(font.family = phw_font(), font.size = 10, bold = TRUE, color = phw_colours[["text"]])
+    size <- officer::slide_size(x)
+    on_navy <- "subTitle" %in% types || layout == "Section Header"
+    fp <- officer::fp_text(font.family = phw_font(), font.size = 10, bold = TRUE,
+                           color = phw_colours[[if (on_navy) "white" else "text"]])
     x <- officer::ph_with(x, officer::fpar(officer::ftext(gsub("\n", " | ", cap), fp),
                                            fp_p = officer::fp_par(text.align = "right")),
-                          location = officer::ph_location(left = 0.5, top = 6.9, width = 9, height = 0.4))
+                          location = officer::ph_location(left = 0.6, top = size$height - 0.6,
+                                                          width = size$width - 1.2, height = 0.4))
   }
   x
 }

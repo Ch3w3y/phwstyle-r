@@ -102,3 +102,29 @@ test_that("phw_add_slide passes caption_args to the source line", {
   deck <- phw_add_slide(phw_pptx(), "Text", text = "a", source = "Survey", caption_args = list(note = "Provisional"))
   expect_match(officer::pptx_summary(deck)$text, "Provisional", all = FALSE)
 })
+
+test_that("a deck built with all defaults uses the PHW master and layouts", {
+  skip_if_not_installed("officer")
+  skip_if_not_installed("flextable")
+  p <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) + ggplot2::geom_point()
+  deck <- phw_pptx()
+  deck <- phw_add_slide(deck, "Title", text = "Subtitle", layout = "Title Slide")
+  deck <- phw_add_slide(deck, "Chart", plot = p, editable = FALSE, source = "mtcars")
+  deck <- phw_add_slide(deck, "Table", table = head(mtcars[, 1:3]))
+  deck <- phw_add_slide(deck, "Points", text = c("a", "b"))
+  f <- withr::local_tempfile(fileext = ".pptx")
+  print(deck, target = f)
+  saved <- officer::read_pptx(f)
+  expect_equal(length(saved), 4)
+  expect_equal(unique(officer::layout_summary(saved)$master), "PHW")
+  expect_setequal(officer::layout_summary(saved)$layout,
+                  c("Title Slide", "Title and Content", "Section Header", "Two Content", "Title Only", "Blank"))
+  expect_equal(unname(unlist(officer::slide_size(saved))), c(13.333, 7.5), tolerance = 1e-3)
+  expect_equal(officer::pptx_summary(saved)$text[1], "Title")
+})
+
+test_that("phw_reference_pptx writes the template and stays small", {
+  f <- phw_reference_pptx()
+  expect_true(file.exists(f))
+  expect_lt(file.size(f), 100 * 1024)
+})

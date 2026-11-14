@@ -16,7 +16,7 @@ phw_add_slide(
   source = NULL,
   date = NULL,
   layout = "Title and Content",
-  master = "Office Theme",
+  master = "PHW",
   editable = TRUE,
   title_size = 28,
   caption_args = list(),
@@ -25,7 +25,7 @@ phw_add_slide(
 }
 \arguments{
 \item{template}{Path to a \code{.pptx} template, e.g. the PHW corporate
-template. \code{NULL} uses the officer default.}
+template. \code{NULL} uses the PHW template from \code{\link[=phw_reference_pptx]{phw_reference_pptx()}}.}
 
 \item{x}{An \code{rpptx} object from \code{phw_pptx()}.}
 
@@ -44,7 +44,10 @@ graphic).}
 \item{layout, master}{Slide layout and slide master names in the
 template. A slide master is the set of layouts a template provides;
 see them in PowerPoint under View > Slide Master, or with
-\code{officer::layout_summary(x)}.}
+\code{officer::layout_summary(x)}. The defaults suit the PHW template, which
+also has \code{"Title Slide"} (the title and \code{text} as a subtitle),
+\code{"Section Header"}, \code{"Two Content"}, \code{"Title Only"} and \code{"Blank"}. With
+your own template, give the names it uses.}
 
 \item{editable}{Add charts as editable vector graphics (needs rvg)?}
 
@@ -60,8 +63,8 @@ by screen readers. \code{NULL} adds none, except that a ggplot's own
 An officer \code{rpptx} object. Save it with \code{print(deck, target = "file.pptx")}.
 }
 \description{
-\code{phw_pptx()} starts a PowerPoint deck, from your organisation's template
-if you have one. \code{phw_add_slide()} adds a slide with a PHW-styled title
+\code{phw_pptx()} starts a PowerPoint deck, from the PHW template (16:9, Ubuntu
+text, navy titles) or from your own. \code{phw_add_slide()} adds a slide with a PHW-styled title
 and a chart, table or text, so a set of results becomes a deck in a few
 lines. Charts are added as editable vector graphics when the rvg package
 is installed, so colleagues can tweak them in PowerPoint.
