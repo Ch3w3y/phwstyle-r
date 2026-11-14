@@ -1,0 +1,18 @@
+pandoc: 3.8.3
+pkgdown: 2.2.1
+pkgdown_sha: ~
+articles:
+  articles/charts: charts.html
+  articles/colours: colours.html
+  articles/documents: documents.html
+  articles/exporting: exporting.html
+  articles/gallery: gallery.html
+  articles/interactive: interactive.html
+  articles/maps: maps.html
+  phwstyle: phwstyle.html
+  articles/setup: setup.html
+  articles/tables: tables.html
+last_built: 2026-11-14T16:35Z
+urls:
+  reference: https://ch3w3y.github.io/phwstyle-r/reference
+  article: https://ch3w3y.github.io/phwstyle-r/articles
