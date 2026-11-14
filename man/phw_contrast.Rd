@@ -7,7 +7,8 @@
 phw_contrast(x, y = "#FFFFFF")
 }
 \arguments{
-\item{x, y}{Colours (any form \code{\link[grDevices:col2rgb]{grDevices::col2rgb()}} accepts).}
+\item{x, y}{Colours (any form \code{\link[grDevices:col2rgb]{grDevices::col2rgb()}} accepts), or a
+palette name. A missing colour (\code{NA}) gives \code{NA}.}
 }
 \value{
 Contrast ratios, from 1 to 21. The WCAG AA level needs 4.5 for body

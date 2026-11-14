@@ -204,8 +204,15 @@ palette_type <- function(name) {
 phw_pal <- function(n = NULL, palette = phw_default_palette(), reverse = FALSE,
                     type = c("qualitative", "sequential")) {
   type <- rlang::arg_match(type)
+  if (!is.null(n) && !(is.numeric(n) && length(n) == 1 && !is.na(n) && n >= 0)) {
+    cli::cli_abort("{.arg n} must be one number, 0 or more.")
+  }
+  if (!rlang::is_bool(reverse)) cli::cli_abort("{.arg reverse} must be {.code TRUE} or {.code FALSE}.")
   if (is.function(palette)) {
     out <- palette(n %||% 1L)
+    if (!is.character(out) || anyNA(out) || !all(is_colour(out))) {
+      cli::cli_abort("The {.arg palette} function must return colours, such as {.val #285087}.")
+    }
   } else {
     palette <- palette_for(palette, n %||% 0L)
     pal <- palette_colours(palette)
@@ -237,7 +244,7 @@ palette_colours <- function(palette) {
     cli::cli_abort(c("Unknown palette {.val {palette}}.",
                      i = "Use one of {.val {names(phw_palettes)}}, or a vector of colours."))
   }
-  if (!is.character(palette) || !all(is_colour(palette))) {
+  if (!is.character(palette) || anyNA(palette) || !all(is_colour(palette))) {
     cli::cli_abort("{.arg palette} must be a palette name, a vector of colours or a function.")
   }
   unname(palette)
@@ -245,6 +252,21 @@ palette_colours <- function(palette) {
 
 is_colour <- function(x) {
   vapply(x, function(v) !inherits(try(grDevices::col2rgb(v), silent = TRUE), "try-error"), logical(1))
+}
+
+# Colours given to a colour tool: a palette name or a vector of colours.
+# With `na_ok`, NA passes through so the result can be NA in the same place.
+as_colours <- function(x, arg, na_ok = FALSE, call = rlang::caller_env()) {
+  if (is.character(x) && length(x) == 1 && x %in% names(phw_palettes)) return(unname(phw_palettes[[x]]))
+  if (!is.atomic(x) || is.null(x)) {
+    cli::cli_abort("{.arg {arg}} must be colours or a palette name, not {.obj_type_friendly {x}}.", call = call)
+  }
+  if (is.character(x) && length(x) == 1 && !is.na(x) && !is_colour(x)) {
+    cli::cli_abort(c("{.arg {arg}} is not a colour or a palette name: {.val {x}}.",
+                     i = "Palettes are {.val {names(phw_palettes)}}."), call = call)
+  }
+  check_colours(if (na_ok) x[!is.na(x)] else x, arg, call = call)
+  unname(x)
 }
 
 #' The default qualitative palette
@@ -333,6 +355,8 @@ phw_pal_fun <- function(palette = phw_default_palette(), reverse = FALSE) {
 show_phw_palettes <- function(palettes = names(phw_palettes),
                               cvd = c("none", "deutan", "protan", "tritan")) {
   cvd <- rlang::arg_match(cvd)
+  if (!length(palettes)) cli::cli_abort("{.arg palettes} must name at least one palette.")
+  palettes <- rlang::arg_match(palettes, names(phw_palettes), multiple = TRUE)
   df <- do.call(rbind, lapply(palettes, function(p) {
     cols <- unname(phw_palettes[[p]])
     if (cvd != "none") cols <- phw_cvd(cols, cvd)
@@ -365,21 +389,33 @@ luminance <- function(hex) {
 #' the standard most public sector websites and documents are checked
 #' against.
 #'
-#' @param x,y Colours (any form [grDevices::col2rgb()] accepts).
+#' @param x,y Colours (any form [grDevices::col2rgb()] accepts), or a
+#'   palette name. A missing colour (`NA`) gives `NA`.
 #' @return Contrast ratios, from 1 to 21. The WCAG AA level needs 4.5 for body
 #'   text and 3 for large text and chart marks.
 #' @examples
 #' phw_contrast(phw_colours["teal"], "white")
 #' @export
 phw_contrast <- function(x, y = "#FFFFFF") {
-  lx <- luminance(x); ly <- luminance(y)
+  x <- as_colours(x, "x", na_ok = TRUE)
+  y <- as_colours(y, "y", na_ok = TRUE)
+  lx <- luminance_na(x); ly <- luminance_na(y)
   (pmax(lx, ly) + 0.05) / (pmin(lx, ly) + 0.05)
+}
+
+# col2rgb() reads NA as transparent white, so keep NA as NA instead.
+luminance_na <- function(hex) {
+  out <- rep(NA_real_, length(hex))
+  ok <- !is.na(hex)
+  out[ok] <- luminance(hex[ok])
+  out
 }
 
 #' Choose readable text colour for a background
 #'
-#' @param bg Background colours.
-#' @return `"#FFFFFF"` or the PHW text colour, whichever contrasts more.
+#' @param bg Background colours, or a palette name.
+#' @return `"#FFFFFF"` or the PHW text colour, whichever contrasts more,
+#'   and `NA` where `bg` is missing.
 #' @examples
 #' phw_text_on(phw_col("navy", "light_teal", "gold_465"))
 #' @export
