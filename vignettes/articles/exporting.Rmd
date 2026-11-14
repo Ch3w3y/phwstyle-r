@@ -31,8 +31,9 @@ phw_write_xlsx(list(Grouped = tab, Raw = dat), "tables.xlsx",
 
 ## PowerPoint
 
-`phw_pptx()` starts a deck (pass your organisation's PowerPoint template
-to use its slide layouts), and `phw_add_slide()` adds a slide with a styled title and a
+`phw_pptx()` starts a 16:9 deck from the bundled PHW template, with Ubuntu
+text and navy titles. Pass your organisation's PowerPoint template to use
+its slide layouts instead. `phw_add_slide()` adds a slide with a styled title and a
 chart, table or bullet points. Charts are editable in PowerPoint when the
 rvg package is installed.
 
@@ -46,6 +47,20 @@ print(deck, target = "slides.pptx")
 ```
 
 ![Three PowerPoint slides](../reference/figures/powerpoint.webp)
+
+Give a chart or table `alt` text so screen readers can describe it, and
+use `caption_args` for any `phw_caption()` argument other than `source` and
+`date`. Without `alt`, a chart takes the text from `labs(alt = )`.
+`phw_reference_pptx()` writes the template to a file, to open in PowerPoint
+or to pass to another tool.
+
+```{r, eval = FALSE}
+deck <- phw_pptx() |>
+  phw_add_slide("Cases by group", plot = ggplot(dat, aes(group)) + geom_bar(),
+                alt = "Bar chart of cases in groups A, B and C.",
+                source = "Example data", caption_args = list(source_prefix = "Data: "))
+phw_reference_pptx("phw-template.pptx")
+```
 
 ## Word
 

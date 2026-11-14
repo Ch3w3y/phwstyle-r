@@ -39,6 +39,21 @@ ggplot(hb) +
   labs(title = "Rate by health board", caption = attr(hb, "attribution"))
 ```
 
+`phw_map()` does the join and the styling in one call. Give it your data,
+the column of area codes, the column to colour by and the boundary level.
+Numbers can be binned with `bins`, and a character column gives one colour
+per group. Areas with no row in your data are grey, and the boundary
+attribution is the caption unless you set your own with `labs()`.
+
+```{r}
+phw_map(hb, by = code, fill = rate, level = "health_board", bins = c(40, 50, 60, 70),
+        label = name) +
+  labs(fill = "Rate per\n100,000", title = "Rate by health board")
+```
+
+Add `facet_wrap()` for one map per period. `hb` here is the data frame from
+above, so `by` is its `code` column.
+
 GP clusters, LSOAs and the other levels work the same way. Use
 `detail = "super"` or `"ultra"` for smaller files, or `"full"` for coastline
 detail.
