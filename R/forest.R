@@ -9,9 +9,10 @@
 #' @param data A data frame with one row per unit.
 #' @param value,lower,upper Columns of the estimate and of the lower and
 #'   upper ends of its interval, unquoted as in dplyr. Strings work too.
-#' @param label Column of unit names.
+#'   Units with a missing estimate or interval are left out, with a message.
+#' @param label Column of unit names, one per row and none missing.
 #' @param target Optional reference value on the same scale as `value`,
-#'   drawn as a dashed line.
+#'   drawn as a dashed line. One number.
 #' @param labels Optional named character vector to rename the three
 #'   comparison levels. The names are the default text (`"Higher"`,
 #'   `"Similar"`, `"Lower"`) and the values are the replacements, e.g.
@@ -38,6 +39,21 @@ phw_forest <- function(data, value, lower, upper, label, target = NULL, labels =
   upper <- pick_col(rlang::enquo(upper), data, "upper")
   label <- pick_col(rlang::enquo(label), data, "label")
   data <- as.data.frame(data)
+  check_has_rows(data)
+  check_numeric_col(data, value, "value")
+  check_numeric_col(data, lower, "lower")
+  check_numeric_col(data, upper, "upper")
+  if (!is.null(target) && !(is.numeric(target) && length(target) == 1 && is.finite(target))) {
+    cli::cli_abort("{.arg target} must be one number.")
+  }
+  data <- drop_missing(data, c(value, lower, upper))
+  units <- data[[label]]
+  if (anyNA(units)) cli::cli_abort("Every unit needs a {.arg label}: {.field {label}} has a missing value.")
+  twice <- unique(units[duplicated(units)])
+  if (length(twice)) {
+    cli::cli_abort(c("Each unit needs its own row, but {.field {label}} repeats.",
+                     x = "{.val {as.character(twice)}} {?appears/appear} more than once."))
+  }
   if (any(data[[lower]] > data[[value]] | data[[value]] > data[[upper]], na.rm = TRUE)) {
     cli::cli_abort("Each {.arg value} must lie between its {.arg lower} and {.arg upper}.")
   }

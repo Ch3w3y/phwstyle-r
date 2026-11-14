@@ -38,3 +38,21 @@ test_that("phw_forest rejects intervals that do not contain the value", {
   bad$lo[2] <- 52
   expect_error(phw_forest(bad, est, lo, hi, area), "between")
 })
+
+test_that("phw_forest leaves out units with a missing estimate or interval", {
+  d <- units
+  d$lo[2] <- NA
+  expect_message(p <- phw_forest(d, est, lo, hi, label = area, target = 60), "Left out 1 row")
+  expect_equal(sort(p$data$area), c("A", "C", "D"))
+  expect_false(anyNA(p$data$compared))
+  expect_error(phw_forest(units[0, ], est, lo, hi, label = area), "no rows")
+  expect_error(phw_forest(units, est, lo, hi, label = area, target = NA), "one number")
+})
+
+test_that("phw_forest needs numeric columns, unique labels and one target", {
+  expect_error(phw_forest(transform(units, est = as.character(est)), est, lo, hi, label = area), "numeric column")
+  expect_error(phw_forest(transform(units, area = c("A", "A", "C", "D")), est, lo, hi, label = area),
+               "more than once")
+  expect_error(phw_forest(transform(units, area = c(NA, "B", "C", "D")), est, lo, hi, label = area), "missing")
+  expect_error(phw_forest(units, est, lo, hi, label = area, target = c(50, 60)), "one number")
+})

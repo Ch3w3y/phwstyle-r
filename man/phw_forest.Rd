@@ -10,12 +10,13 @@ phw_forest(data, value, lower, upper, label, target = NULL, labels = NULL, ...)
 \item{data}{A data frame with one row per unit.}
 
 \item{value, lower, upper}{Columns of the estimate and of the lower and
-upper ends of its interval, unquoted as in dplyr. Strings work too.}
+upper ends of its interval, unquoted as in dplyr. Strings work too.
+Units with a missing estimate or interval are left out, with a message.}
 
-\item{label}{Column of unit names.}
+\item{label}{Column of unit names, one per row and none missing.}
 
 \item{target}{Optional reference value on the same scale as \code{value},
-drawn as a dashed line.}
+drawn as a dashed line. One number.}
 
 \item{labels}{Optional named character vector to rename the three
 comparison levels. The names are the default text (\code{"Higher"},
