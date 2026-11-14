@@ -46,6 +46,7 @@ d <- tidyr::expand_grid(group = paste("Group", 1:4), period = 1:13) |>
 ```{r}
 #| label: fig-line
 #| fig-cap: "Figure caption describing the chart"
+#| fig-alt: "Line chart of the value over 13 periods for four groups. Every group rises."
 ggplot(d, aes(period, value, colour = group, shape = group)) +
   geom_line(linewidth = 0.9) +
   geom_point(size = 1.8) +
@@ -57,6 +58,7 @@ ggplot(d, aes(period, value, colour = group, shape = group)) +
 ```{r}
 #| label: fig-facet
 #| fig-cap: "Small multiples, one panel per group"
+#| fig-alt: "Four area charts, one for each group, each showing the value rising over 13 periods."
 #| fig-height: 5
 ggplot(d, aes(period, value)) +
   geom_area(fill = phw_col("light_teal"), alpha = 0.6) +
