@@ -128,3 +128,21 @@ test_that("phw_reference_pptx writes the template and stays small", {
   expect_true(file.exists(f))
   expect_lt(file.size(f), 100 * 1024)
 })
+
+test_that("phw_add_slide finds the master that has the layout", {
+  skip_if_not_installed("officer")
+  masters <- function(deck) officer::layout_summary(deck)$master
+  deck <- phw_add_slide(phw_pptx(), "Bundled", text = "a")
+  expect_equal(length(deck), 1)
+  expect_equal(unique(masters(deck)), "PHW")
+  own <- officer::read_pptx()
+  expect_equal(unique(masters(own)), "Office Theme")
+  own <- phw_add_slide(own, "Own template", text = "a")
+  expect_equal(length(own), 1)
+})
+
+test_that("phw_add_slide lists the layouts when the layout is unknown", {
+  skip_if_not_installed("officer")
+  expect_error(phw_add_slide(phw_pptx(), "x", layout = "Nope"), "Title and Content")
+  expect_error(phw_add_slide(officer::read_pptx(), "x", layout = "Nope"), "no slide layout called")
+})

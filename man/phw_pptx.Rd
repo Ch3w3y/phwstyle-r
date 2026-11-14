@@ -16,7 +16,7 @@ phw_add_slide(
   source = NULL,
   date = NULL,
   layout = "Title and Content",
-  master = "PHW",
+  master = NULL,
   editable = TRUE,
   title_size = 28,
   caption_args = list(),
@@ -44,10 +44,13 @@ graphic).}
 \item{layout, master}{Slide layout and slide master names in the
 template. A slide master is the set of layouts a template provides;
 see them in PowerPoint under View > Slide Master, or with
-\code{officer::layout_summary(x)}. The defaults suit the PHW template, which
-also has \code{"Title Slide"} (the title and \code{text} as a subtitle),
+\code{officer::layout_summary(x)}. The default layout suits the PHW template,
+which also has \code{"Title Slide"} (the title and \code{text} as a subtitle),
 \code{"Section Header"}, \code{"Two Content"}, \code{"Title Only"} and \code{"Blank"}. With
-your own template, give the names it uses.}
+your own template, give the layout names it uses. The default
+\code{master = NULL} uses the master in the deck that has the layout (the
+first one, if several do), so you only need \code{master} when two masters
+share a layout name.}
 
 \item{editable}{Add charts as editable vector graphics (needs rvg)?}
 

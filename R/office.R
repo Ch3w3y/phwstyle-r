@@ -231,10 +231,13 @@ phw_pptx <- function(template = NULL) {
 #' @param layout,master Slide layout and slide master names in the
 #'   template. A slide master is the set of layouts a template provides;
 #'   see them in PowerPoint under View > Slide Master, or with
-#'   `officer::layout_summary(x)`. The defaults suit the PHW template, which
-#'   also has `"Title Slide"` (the title and `text` as a subtitle),
+#'   `officer::layout_summary(x)`. The default layout suits the PHW template,
+#'   which also has `"Title Slide"` (the title and `text` as a subtitle),
 #'   `"Section Header"`, `"Two Content"`, `"Title Only"` and `"Blank"`. With
-#'   your own template, give the names it uses.
+#'   your own template, give the layout names it uses. The default
+#'   `master = NULL` uses the master in the deck that has the layout (the
+#'   first one, if several do), so you only need `master` when two masters
+#'   share a layout name.
 #' @param editable Add charts as editable vector graphics (needs rvg)?
 #' @param title_size Title font size.
 #' @param caption_args List of other [phw_caption()] arguments.
@@ -244,9 +247,19 @@ phw_pptx <- function(template = NULL) {
 #' @export
 phw_add_slide <- function(x, title = NULL, plot = NULL, table = NULL, text = NULL,
                           source = NULL, date = NULL, layout = "Title and Content",
-                          master = "PHW", editable = TRUE, title_size = 28,
+                          master = NULL, editable = TRUE, title_size = 28,
                           caption_args = list(), alt = NULL) {
   rlang::check_installed("officer")
+  if (is.null(master)) {
+    available <- officer::layout_summary(x)
+    master <- available$master[available$layout == layout][1]
+    if (is.na(master)) {
+      cli::cli_abort(c(
+        "This deck has no slide layout called {.val {layout}}.",
+        "i" = "Layouts available: {.val {unique(available$layout)}}."
+      ))
+    }
+  }
   x <- officer::add_slide(x, layout = layout, master = master)
   types <- officer::layout_properties(x, layout = layout, master = master)$type
   navy <- phw_colours[["navy"]]
