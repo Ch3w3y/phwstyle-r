@@ -131,3 +131,31 @@ test_that("grouped tables render with flextable and reactable", {
   expect_s3_class(phw_flextable(t2), "flextable")
   expect_s3_class(phw_reactable(t3), "htmlwidget")
 })
+
+test_that("phw_as_summary makes a hand-built table render like a built one", {
+  skip_if_not_installed("flextable")
+  skip_if_not_installed("reactable")
+  d <- data.frame(label = c("Age", "0-14", "65+", "All"), n = c(NA, 12, 30, 42),
+                  kind = c("variable", "level", "level", "total"))
+  tab <- phw_as_summary(d, row_type = kind, note = "Note.")
+  expect_s3_class(tab, "phw_summary")
+  expect_equal(names(tab), c("label", "n"))
+  expect_equal(attr(tab, "note"), "Note.")
+  ft <- phw_flextable(tab)
+  expect_true(all(unlist(ft$body$styles$text$bold$data[c(1, 4), ])))
+  expect_false(any(unlist(ft$body$styles$text$bold$data[c(2, 3), ])))
+  rt <- phw_reactable(phw_as_summary(d, kind))
+  rs <- rt$x$tag$attribs$rowStyle
+  expect_equal(rs[[1]]$fontWeight, 700)
+  expect_equal(rs[[4]]$fontWeight, 700)
+  expect_null(rs[[2]]$fontWeight)
+  expect_output(print(tab), "  0-14")
+  all_levels <- phw_as_summary(d[1:2])
+  expect_equal(attr(all_levels, "row_type"), rep("level", 4))
+  expect_equal(attr(phw_as_summary(d, "kind"), "row_type"), d$kind)
+})
+
+test_that("phw_as_summary names unknown row types", {
+  d <- data.frame(label = c("a", "b"), kind = c("level", "heading"))
+  expect_error(phw_as_summary(d, kind), "heading")
+})

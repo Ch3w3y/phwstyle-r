@@ -10,6 +10,51 @@ new_phw_summary <- function(df, row_type, spanner = NULL, note = NULL, first_col
             spanner = spanner, note = note, first_col = first_col)
 }
 
+#' Turn a table you built into a summary table
+#'
+#' Marks a data frame as a `phw_summary` so [phw_flextable()],
+#' [phw_gt()], [phw_reactable()], [phw_datatable()] and [phw_write_xlsx()]
+#' give it the same bold variable rows, indented levels and total rows as
+#' the tables phwstyle builds. Use it for a table of your own, made with
+#' dplyr or by hand.
+#'
+#' @param data A data frame whose first column holds the row labels.
+#' @param row_type Optional column saying what each row is, chosen as in
+#'   [dplyr::select()]. Each value is one of `"variable"` (a bold heading),
+#'   `"level"` (an indented row), `"subtotal"`, `"group"` or `"total"`. The
+#'   column is not kept in the result. `NULL` treats every row as a
+#'   `"level"`.
+#' @param note Optional footnote shown under the table.
+#' @return A `phw_summary` data frame.
+#' @examples
+#' tab <- data.frame(
+#'   label = c("Age group", "0-14", "15-64", "65+", "All ages"),
+#'   cases = c(NA, 12, 48, 30, 90),
+#'   kind = c("variable", "level", "level", "level", "total")
+#' )
+#' tab <- phw_as_summary(tab, row_type = kind, note = "Simulated counts.")
+#' tab
+#' if (requireNamespace("flextable", quietly = TRUE)) phw_flextable(tab)
+#' @export
+phw_as_summary <- function(data, row_type = NULL, note = NULL) {
+  row_type <- pick_col(rlang::enquo(row_type), data, "row_type", null_ok = TRUE)
+  data <- as.data.frame(data)
+  if (is.null(row_type)) {
+    types <- rep("level", nrow(data))
+  } else {
+    types <- as.character(data[[row_type]])
+    known <- c("variable", "level", "subtotal", "group", "total")
+    bad <- setdiff(unique(types), known)
+    if (length(bad)) {
+      cli::cli_abort(c(
+        "{.arg row_type} has {length(bad)} value{?s} that {?is/are} not a row type: {.val {bad}}.",
+        i = "Use {.or {.val {known}}}."))
+    }
+    data[[row_type]] <- NULL
+  }
+  new_phw_summary(data, types, note = note)
+}
+
 #' @export
 print.phw_summary <- function(x, ...) {
   y <- x
