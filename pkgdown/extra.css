@@ -1,0 +1,92 @@
+:root {
+  --phw-navy: #285087;
+  --phw-navy-dark: #1B3660;
+  --phw-gold: #CFAB7A;
+  --phw-gold-text: #8A6A3A;
+  --phw-ink: #212B32;
+  --phw-ink-soft: #4C6272;
+  --phw-paper: #FBFBF8;
+  --phw-mist: #F0F4F5;
+  --phw-rule: #D8DDE0;
+  --phw-focus: #FFEB3B;
+  --phw-band: linear-gradient(90deg, #325082 0%, #326791 25%, #2A8DAC 50%, #2BADC5 75%, #27B8CD 100%);
+}
+
+body { background: var(--phw-paper); color: var(--phw-ink); }
+
+/* Navbar: navy-dark with a gradient band and a gold marker on the active item */
+.navbar { position: relative; box-shadow: none; background-color: var(--phw-navy-dark) !important; }
+.navbar::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -4px; height: 4px;
+  background: var(--phw-band); pointer-events: none;
+}
+.navbar .navbar-brand, .navbar .nav-link, .navbar .navbar-text { color: #FFFFFF; }
+.navbar .nav-link:hover { color: #FFFFFF; text-decoration: underline; text-underline-offset: 6px; }
+.navbar .nav-item.active > .nav-link, .navbar .nav-link.active {
+  color: #FFFFFF; background: transparent; border-radius: 0; box-shadow: inset 0 -3px 0 var(--phw-gold);
+}
+.navbar .dropdown-menu { background: #FFFFFF; border: 1px solid var(--phw-rule); }
+.navbar .dropdown-item { color: var(--phw-ink); }
+.navbar .dropdown-item:hover, .navbar .dropdown-item:focus { background: var(--phw-mist); color: var(--phw-navy-dark); }
+.navbar .dropdown-item.active { background: var(--phw-navy); color: #FFFFFF; }
+.navbar .dropdown-divider { border-color: var(--phw-rule); }
+
+/* Headings */
+h1, h2, h3, h4, h5 { color: var(--phw-navy); font-weight: 700; }
+h1 { font-weight: 700; }
+main h2 { border-bottom: 2px solid var(--phw-rule); padding-bottom: .3em; margin-top: 2rem; }
+.page-header { border-bottom: 0; }
+.template-article .contents .subtitle, .template-article .contents .abstract { color: var(--phw-ink-soft); }
+.template-reference-topic .ref-section h2, .template-reference-index .contents h2 { border-bottom: 2px solid var(--phw-rule); }
+
+/* Links */
+a { color: var(--phw-navy); }
+a:hover { color: var(--phw-navy-dark); }
+
+/* Figures on white with a rule border */
+.contents img:not([src*="shields.io"]):not([src*="badge"]):not(.logo) {
+  background: #FFFFFF; border: 1px solid var(--phw-rule); border-radius: 4px; max-width: 100%; height: auto;
+}
+.contents .g-item img { border: 0; border-radius: 0; }
+.figure-caption, figcaption, .caption { color: var(--phw-ink-soft); }
+
+/* Code */
+pre, code { background: var(--phw-mist); }
+pre { border: 1px solid var(--phw-rule); border-radius: 4px; overflow-x: auto; }
+pre code { background: transparent; }
+code { color: var(--phw-navy-dark); }
+pre code, pre .sourceCode { color: var(--phw-ink); }
+
+/* Tables: navy header text and a 2px navy rule, like the package's HTML outputs */
+.table thead th, table thead th { color: var(--phw-navy); border-bottom: 2px solid var(--phw-navy); }
+.table { --bs-table-bg: transparent; }
+
+/* Keyboard focus, as in the package's own Bootstrap theme */
+a:focus-visible, .btn:focus-visible, .nav-link:focus-visible, input:focus-visible, select:focus-visible, button:focus-visible {
+  outline: 3px solid var(--phw-focus) !important; box-shadow: 0 4px 0 var(--phw-ink) !important;
+}
+
+/* Home page */
+.template-home .contents h1 { margin-top: 0; }
+.template-home aside h2 {
+  font-size: .85rem; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--phw-gold-text); border: 0; margin-top: 1.5rem; padding: 0;
+}
+.template-home aside { color: var(--phw-ink-soft); }
+.template-home .contents p:first-of-type { font-size: 1.1rem; }
+.template-home .contents table { background: #FFFFFF; }
+.template-home .contents td, .template-home .contents th { border-color: var(--phw-rule); }
+
+/* Reference index */
+.template-reference-index .contents dt a, .template-reference-index .contents td a { font-weight: 700; }
+.template-reference-index .contents .section-desc, .template-reference-index .contents .desc { color: var(--phw-ink-soft); }
+
+/* Footer */
+footer { background: var(--phw-mist); border-top: 3px solid var(--phw-navy); color: var(--phw-ink-soft);
+  margin-top: 3rem; padding: 1rem 0; }
+footer a { color: var(--phw-navy); }
+
+@media (max-width: 767px) {
+  .contents table { display: block; overflow-x: auto; }
+  main h2 { margin-top: 1.5rem; }
+}
