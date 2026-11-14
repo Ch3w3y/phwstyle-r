@@ -106,23 +106,42 @@ ggplot(change, aes(change, reorder(area, change), fill = change)) +
 ```
 
 Each scale has a `colour` version for points and lines, and a `color`
-spelling that is the same function. This figure uses all four with
-`scale_colour_*` and `scale_color_*`.
+spelling that is the same function. The top row of this figure uses the
+`colour` spellings and the bottom row uses `color`.
 
-```{r, fig.width = 10, fig.height = 6, fig.alt = "Four scatter plots of points on a grid. The first colours points by group, the second by a number, the third by number bands and the fourth by values above and below zero.", eval = requireNamespace("patchwork", quietly = TRUE)}
+```{r, fig.width = 12, fig.height = 6, fig.alt = "Six scatter plots in two rows of three, with points coloured by group, by number and by number bands.", eval = requireNamespace("patchwork", quietly = TRUE)}
 pts <- tibble(x = runif(60), y = runif(60), group = sample(c("A", "B", "C"), 60, TRUE),
               value = rnorm(60, 0, 10))
-base <- ggplot(pts, aes(x, y)) + labs(x = NULL, y = NULL)
+dots <- function(colour_aes, title) {
+  ggplot(pts, aes(x, y, colour = {{ colour_aes }})) +
+    geom_point(size = 2.5) + labs(title = title, x = NULL, y = NULL) +
+    theme_phw(legend = "right")
+}
 phw_arrange(
-  base + geom_point(aes(colour = group), size = 2.5) + scale_color_phw_d() + labs(title = "Groups"),
-  base + geom_point(aes(colour = value), size = 2.5) + scale_colour_phw_c() + labs(title = "Numbers") +
-    theme_phw(legend = "right"),
-  base + geom_point(aes(colour = value), size = 2.5) + scale_color_phw_b(n.breaks = 4) + labs(title = "Bands") +
-    theme_phw(legend = "right"),
-  base + geom_point(aes(colour = value), size = 2.5) + scale_colour_phw_div() + labs(title = "Above and below zero") +
-    theme_phw(legend = "right"),
-  ncol = 2, guides = "keep"
+  dots(group, "colour, groups") + scale_colour_phw_d(),
+  dots(value, "colour, numbers") + scale_colour_phw_c(),
+  dots(value, "colour, bands") + scale_colour_phw_b(n.breaks = 4),
+  dots(group, "color, groups") + scale_color_phw_d(),
+  dots(value, "color, numbers") + scale_color_phw_c(),
+  dots(value, "color, bands") + scale_color_phw_b(n.breaks = 4),
+  ncol = 3, guides = "keep"
 )
+```
+
+```{r, fig.alt = "Points coloured orange below zero and navy above zero, using the diverging colour scale."}
+ggplot(pts, aes(x, y, colour = value)) +
+  geom_point(size = 2.5) +
+  scale_colour_phw_div() +
+  labs(title = "Diverging colour scale", x = NULL, y = NULL) +
+  theme_phw(legend = "right")
+```
+
+```{r, fig.alt = "Points coloured orange below zero and navy above zero, using the American spelling of the diverging scale."}
+ggplot(pts, aes(x, y, colour = value)) +
+  geom_point(size = 2.5) +
+  scale_color_phw_div() +
+  labs(title = "Same scale, other spelling", x = NULL, y = NULL) +
+  theme_phw(legend = "right")
 ```
 
 ## A second measure on its own axis
