@@ -15,12 +15,15 @@ Work autonomously and never ask the user. You report and file issues. You change
 ## 1. Round bookkeeping
 
 ```sh
-git -C <project dir> fetch -q origin
-SHA=$(git -C <project dir> rev-parse origin/main)
-mkdir -p <project dir>/.noodle
+P=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")   # the main checkout
+git -C "$P" fetch -q origin
+SHA=$(git -C "$P" rev-parse origin/main)
+mkdir -p "$P/.noodle"
 ```
 
-Read the round count from `<project dir>/.noodle/sweep-rounds` (0 if missing) and add one. If this would be round 6 or more, do not sweep: write `.noodle/converged.json` as `{"sha": "<SHA>", "reason": "round cap", "rounds": <n-1>}`, yield `round cap reached`, and stop. Otherwise write the new count back.
+Every `.noodle/` path below means `$P/.noodle/`, never the `.noodle/` of the worktree this session runs in.
+
+Read the round count from `$P/.noodle/sweep-rounds` (0 if missing) and add one. If this would be round 6 or more, do not sweep: write `$P/.noodle/converged.json` as `{"sha": "<SHA>", "reason": "round cap", "rounds": <n-1>}`, yield `round cap reached`, and stop. Otherwise write the new count back.
 
 ## 2. What counts as a defect
 
@@ -58,6 +61,8 @@ Set `R_USER_CACHE_DIR` to a scratch folder for every probe. Never delete the use
 
 ## 5. File
 
+- The repository is public. Issues, PRs and comments must not contain local paths, machine names or personal details.
+
 Check each finding yourself before filing it, by running its repro. Group findings that share one root cause into one issue. For each issue:
 
 ```sh
@@ -68,8 +73,8 @@ The body gives the repro call, what happens, what should happen, file:line, and 
 
 ## 6. Converge or continue
 
-- **Filed nothing:** write `.noodle/converged.json` as `{"sha": "<SHA>", "reason": "no defects found", "rounds": <n>}`.
-- **Filed issues:** delete `.noodle/converged.json` if it exists.
+- **Filed nothing:** write `$P/.noodle/converged.json` as `{"sha": "<SHA>", "reason": "no defects found", "rounds": <n>}`.
+- **Filed issues:** delete `$P/.noodle/converged.json` if it exists.
 
 Remove your worktree, then yield:
 

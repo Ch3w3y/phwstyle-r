@@ -55,19 +55,19 @@ Changes reach `main` only through GitHub pull requests. Every backlog item (a Gi
 2. group 1: `verify-pr`. The prompt is `Verify the PR for issue #<id>.`
 3. group 2: `ship-pr`. The prompt is `Ship the PR for issue #<id>.`
 
-This replaces the generic "Item without a plan, small" shape above. For a complex item, the planning stage still comes first, and each plan phase then gets its own execute, verify-pr and ship-pr groups in sequence.
+This replaces every item shape in "Building orders" above, complex items included: never schedule the planning stage or `noodle worktree merge` here, because only pull requests may change `main`. A complex item gets the same three stages, and execute plans the work inside its own PR.
+
+Schedule at most ONE issue order at a time, the lowest issue number first, so every PR is cut from, reviewed against and merged into the latest `main`.
 
 Labels on the item (in `tags`):
 - `noodle-retry-1` or `noodle-retry-2`: the last attempt failed review or CI. Schedule the same three stages again. On execute, set `extra_prompt` to `Fix round: read the FAIL verdict on the open PR for branch noodle/issue-<id> and fix exactly those defects on the same branch.`
 - `noodle-blocked`: list the item in `action_needed`. Never schedule it.
 
-A ship-pr stage that yielded `needs verify` gets a new order with only `verify-pr`, then `ship-pr`.
-
 ### Sweeping and stopping
 
-- When the backlog has no open item without `noodle-blocked`, and no order is active, read `.noodle/converged.json`.
+- When the backlog has no open item without `noodle-blocked`, and no order is active, read `$P/.noodle/converged.json`, where `P=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")` is the main checkout (run `git -C "$P" fetch -q origin` first).
   - If it exists and its `sha` equals the current `origin/main` commit, the package has converged. Write `{"orders": []}` and nothing else.
-  - Otherwise schedule one standalone order with id `sweep-<n>` (n = 1 + the number in `.noodle/sweep-rounds`, or 1 if missing). It has a single `sweep` stage whose prompt is `Sweep round <n>.`
+  - Otherwise schedule one standalone order with id `sweep-<n>` (n = 1 + the number in `$P/.noodle/sweep-rounds`, or 1 if missing). It has a single `sweep` stage whose prompt is `Sweep round <n>.`
 - Never schedule a sweep while any issue order is active or any open, unblocked item remains.
 
 ## Priorities

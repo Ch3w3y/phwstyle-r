@@ -14,6 +14,12 @@ You did not write this change. Your verdict decides whether it lands. Work auton
 
 ## Find the PR
 
+`$P` below is the main checkout, wherever this session runs. Set it first:
+
+```sh
+P=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
+```
+
 The order ID is the GitHub issue number. The PR is the open one from branch `noodle/issue-<id>`:
 
 ```sh
@@ -37,6 +43,8 @@ Pin the review to the head SHA you read now. If the head changes while you revie
 4. Run the full test suite on both ggplot2 versions, and `R CMD check --as-cran --no-manual` on a clean `git archive` tarball of the head.
 
 Work in your own detached worktree under `~/.cache/phwstyle-dev/wt/` and remove it when done. Never edit, commit or push.
+
+- The repository is public. Issues, PRs and comments must not contain local paths, machine names or personal details.
 
 Block only on real defects: wrong behaviour, a broken install or check, a regression, a scope breach or a leak of private data. Do not block on style preferences.
 

@@ -22,18 +22,24 @@ Write down, in one or two sentences, what changes and what does not. That is the
 
 ## 2. Branch and worktree
 
+`$P` below is the main checkout, wherever this session runs. Set it first:
+
+```sh
+P=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
+```
+
 Changes reach `main` only through a GitHub pull request, so do not commit in the noodle worktree and never run `noodle worktree merge`. Work in a plain git worktree on the issue's branch:
 
 ```sh
 ID=<order id>                       # the GitHub issue number
 B=noodle/issue-$ID
 W=$HOME/.cache/phwstyle-dev/wt/issue-$ID
-git -C <project dir> fetch -q origin
-git -C <project dir> worktree add "$W" -B "$B" "origin/$B" 2>/dev/null \
-  || git -C <project dir> worktree add "$W" -b "$B" origin/main
+git -C $P fetch -q origin
+git -C $P worktree add "$W" -B "$B" "origin/$B" 2>/dev/null \
+  || git -C $P worktree add "$W" -b "$B" origin/main
 ```
 
-- **Retry:** if `gh pr list --head "$B" --state open` shows a PR, this is a fix round. Read its latest verdict comment (first line `FAIL`) and fix exactly the defects it names, on the same branch. Do not start over.
+- **Retry:** if `gh pr list --head "$B" --state open` shows a PR, this is a fix round. Read its latest verdict comment. If its first line is `FAIL` and its `Head:` is the PR's current head, fix exactly the defects it names, on the same branch. Otherwise (no verdict for this head, for example after a CI wait) change nothing, push nothing and yield `no fix needed`. Do not start over.
 - **Fresh:** otherwise the branch starts from `origin/main`.
 
 Use absolute paths or `git -C "$W"`. Do not `cd` into a worktree that may be removed.
@@ -97,7 +103,7 @@ The body opens with `## Why` restating the issue in one or two sentences, then w
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 ```
 
-Do not merge, approve or review the PR yourself: the verify and ship stages do that. Remove your git worktree when done (`git -C <project dir> worktree remove "$W"`).
+Do not merge, approve or review the PR yourself: the verify and ship stages do that. Remove your git worktree when done (`git -C $P worktree remove "$W"`).
 
 ## 7. Yield
 
@@ -109,7 +115,8 @@ Without this the stage only completes on a clean process exit, and interrupted w
 
 ## Scope discipline
 
+- The repository is public. Issues, PRs and comments must not contain local paths, machine names or personal details.
 - Change only what is in scope. No speculative features, defensive code for cases that cannot happen, or compatibility shims nobody asked for.
 - Note out-of-scope problems in your yield message; do not fix them here.
-- If the plan or prompt is wrong or incomplete, say so in the yield message instead of quietly doing something different. If the issue is not a real defect, or a fix would break the scope rules, comment on the issue saying why, open no PR, and yield.
+- If the plan or prompt is wrong or incomplete, say so in the yield message instead of quietly doing something different. If the issue is not a real defect, or a fix would break the scope rules, close it with `gh issue close <id> --reason "not planned" --comment "<why>"`, open no PR, and yield. Closing it takes it out of the backlog.
 - When finishing a plan phase, tick its `- [ ]` box in the plan file as part of the last commit.
