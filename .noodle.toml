@@ -1,4 +1,7 @@
-mode = "supervised"
+# Auto: the loop schedules and dispatches on its own. Changes reach main only
+# through GitHub pull requests (execute opens one, verify reviews it, ship
+# merges it), so the loop's own worktree merges are always empty.
+mode = "auto"
 
 [routing.defaults]
 provider = "claude"
@@ -6,6 +9,14 @@ model = "claude-opus-5-5"
 
 [skills]
 paths = [".agents/skills"]
+
+# One session at a time: each PR is cut from the latest main and merged
+# before the next starts, so PRs never conflict with each other.
+[concurrency]
+max_concurrency = 1
+
+[server]
+enabled = false
 
 [adapters.backlog.scripts]
 sync = "adapters/backlog-sync"

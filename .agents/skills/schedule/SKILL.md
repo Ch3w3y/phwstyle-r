@@ -47,6 +47,29 @@ The directory name must start with the item ID. That is the link: every backlog 
 
 **Follow-up stages:** if `task_types` contains more skills than `execute` (for example a review or reflect skill added later), read each one's `schedule` hint and append it as a stage where the hint says it belongs. Do not invent task types that are not registered.
 
+## This project's pipeline
+
+Changes reach `main` only through GitHub pull requests. Every backlog item (a GitHub issue labelled `noodle`) becomes one order with three stages, one per group:
+
+1. group 0: `execute`. The prompt is the issue title and body. The stage fixes the issue on branch `noodle/issue-<id>` and opens a PR.
+2. group 1: `verify-pr`. The prompt is `Verify the PR for issue #<id>.`
+3. group 2: `ship-pr`. The prompt is `Ship the PR for issue #<id>.`
+
+This replaces the generic "Item without a plan, small" shape above. For a complex item, the planning stage still comes first, and each plan phase then gets its own execute, verify-pr and ship-pr groups in sequence.
+
+Labels on the item (in `tags`):
+- `noodle-retry-1` or `noodle-retry-2`: the last attempt failed review or CI. Schedule the same three stages again. On execute, set `extra_prompt` to `Fix round: read the FAIL verdict on the open PR for branch noodle/issue-<id> and fix exactly those defects on the same branch.`
+- `noodle-blocked`: list the item in `action_needed`. Never schedule it.
+
+A ship-pr stage that yielded `needs verify` gets a new order with only `verify-pr`, then `ship-pr`.
+
+### Sweeping and stopping
+
+- When the backlog has no open item without `noodle-blocked`, and no order is active, read `.noodle/converged.json`.
+  - If it exists and its `sha` equals the current `origin/main` commit, the package has converged. Write `{"orders": []}` and nothing else.
+  - Otherwise schedule one standalone order with id `sweep-<n>` (n = 1 + the number in `.noodle/sweep-rounds`, or 1 if missing). It has a single `sweep` stage whose prompt is `Sweep round <n>.`
+- Never schedule a sweep while any issue order is active or any open, unblocked item remains.
+
 ## Priorities
 
 - Finish one plan before starting another. If the current plan is blocked, schedule nothing for it rather than spreading work across plans. Unrelated small items may still run.
