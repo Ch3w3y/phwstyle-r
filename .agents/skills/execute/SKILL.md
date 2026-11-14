@@ -45,7 +45,7 @@ fi
 ```
 
 - **Retry:** if `gh pr list --head "$B" --state open` shows a PR, this is a fix round. Read its latest verdict comment. If its first line is `FAIL` and its `Head:` is the PR's current head, fix exactly the defects it names, on the same branch. Otherwise (no verdict for this head, for example after a CI wait) change nothing, push nothing and yield `no fix needed`. Do not start over.
-- **Fresh:** otherwise the branch starts from `origin/main`.
+- **Fresh:** otherwise the branch starts from `origin/noodle/issue-<id>` if an earlier run pushed it (its commits are kept), or from `origin/main` if not. Open a new PR for it.
 
 Use absolute paths or `git -C "$W"`. Do not `cd` into a worktree that may be removed.
 

@@ -49,7 +49,7 @@ gh pr merge <n> --merge --match-head-commit <verified sha>
 gh pr view <n> --json state,mergeCommit
 ```
 
-Confirm `MERGED`. If the issue is still open, close it (`gh issue close <id> --comment "Fixed by #<n>."`). Then update the local checkout, which the loop reads skills from, only if it is on `main` with no local changes:
+Confirm `MERGED`. If the merge failed or the state is not `MERGED`, post a comment on the PR whose first line is `FAIL`, second line `Head: <sha>`, then the merge error, and go to step 4. Otherwise, if the issue is still open, close it (`gh issue close <id> --comment "Fixed by #<n>."`). Then update the local checkout, which the loop reads skills from, only if it is on `main` with no local changes:
 
 ```sh
 test "$(git -C "$P" branch --show-current)" = main && git -C "$P" diff --quiet HEAD \
@@ -65,7 +65,7 @@ If the fast-forward fails, say so in the yield message and change nothing else. 
 
 Count the issue's labels `noodle-retry-1` and `noodle-retry-2`.
 
-- Fewer than two: add the next one (`gh issue edit <id> --add-label noodle-retry-<k>`, creating the label first if needed) and comment on the issue: `Review or CI failed on PR #<n>; the next round fixes the findings on the same branch.`
+- Fewer than two: add the next one (`gh issue edit <id> --add-label noodle-retry-<k>`, creating the label first if needed) and comment on the issue: `Review, CI or merge failed on PR #<n>; the next round fixes the findings on the same branch.` When there is no PR (execute gave up), comment instead: `No pull request was opened; the next round tries again.`
 - Already two: add `noodle-blocked` and comment that the issue needs a person. Leave the PR open.
 
 Yield `not merged: <reason>`.
