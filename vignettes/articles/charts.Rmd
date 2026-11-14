@@ -109,8 +109,8 @@ periods, as a black line with its own legend entry. `average_label`
 changes the legend text.
 
 ```{r}
-phw_epicurve(cases, onset, interval = "day", average = 7) +
-  labs(title = "Cases by day of onset", x = "Date", y = "Cases")
+phw_epicurve(cases, onset, average = 4) +
+  labs(title = "Cases by week of onset", x = "Week beginning", y = "Cases")
 ```
 
 ```{r}
