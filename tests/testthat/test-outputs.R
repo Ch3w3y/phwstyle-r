@@ -308,3 +308,21 @@ test_that("phw_add_slide makes a tall table readable and keeps it inside the pla
   plain <- slide_xml(phw_add_slide(phw_pptx(), "Tall", table = grouped, table_fit = FALSE))
   expect_gt(sum(xml_numbers(plain, '<a:tr h="[0-9]+"')) / 914400, area_height)
 })
+
+test_that("phw_add_slide writes light text on navy layouts", {
+  skip_if_not_installed("officer")
+  deck <- phw_add_slide(phw_pptx(), "Part two", text = "What comes next", layout = "Section Header")
+  xml <- slide_xml(deck)
+  expect_match(xml, "What comes next")
+  expect_match(xml, sub("#", "", phw_colours[["grey_bg"]]))
+  expect_no_match(xml, sub("#", "", phw_colours[["text"]]))
+})
+
+test_that("a bad plot_scale fails before a slide is added", {
+  skip_if_not_installed("officer")
+  p <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) + ggplot2::geom_point()
+  deck <- phw_pptx()
+  n <- length(deck)
+  expect_error(phw_add_slide(deck, "Chart", plot = p, plot_scale = -1), "plot_scale")
+  expect_equal(length(deck), n)
+})

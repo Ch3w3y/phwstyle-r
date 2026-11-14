@@ -320,6 +320,8 @@ phw_add_slide <- function(x, title = NULL, plot = NULL, table = NULL, text = NUL
       ))
     }
   }
+  # Scale before adding the slide, so a bad plot_scale leaves the deck as it was.
+  if (inherits(plot, "ggplot")) plot <- scale_plot_text(plot, plot_scale)
   x <- officer::add_slide(x, layout = layout, master = master)
   types <- officer::layout_properties(x, layout = layout, master = master)$type
   on_navy <- "subTitle" %in% types || layout == "Section Header"
@@ -340,7 +342,6 @@ phw_add_slide <- function(x, title = NULL, plot = NULL, table = NULL, text = NUL
   area <- officer::layout_properties(x, layout = layout, master = master)
   area <- area[area$type == body_type(types), ][1, ]
   if (!is.null(plot)) {
-    if (inherits(plot, "ggplot")) plot <- scale_plot_text(plot, plot_scale)
     if (is.null(alt) && inherits(plot, "ggplot") && nzchar(ggplot2::get_alt_text(plot))) {
       alt <- ggplot2::get_alt_text(plot)
     }
@@ -365,7 +366,7 @@ phw_add_slide <- function(x, title = NULL, plot = NULL, table = NULL, text = NUL
     x <- officer::ph_with(x, ft, location = body)
     x <- set_slide_alt(x, alt)
   } else if (!is.null(text)) {
-    if ("subTitle" %in% types) {
+    if (on_navy) {
       props <- officer::fp_text(font.family = phw_font(), font.size = 22, color = phw_colours[["grey_bg"]])
       x <- officer::ph_with(x, do.call(officer::block_list, lapply(text, function(t) officer::fpar(officer::ftext(t, props)))), location = body)
     } else {
