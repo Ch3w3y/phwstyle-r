@@ -104,7 +104,7 @@ test_that("phw_funnel and phw_spc levels can be renamed and keep their colours",
   d <- data.frame(u = letters[1:30], n = round(runif(30, 100, 4000)))
   d$e <- rbinom(30, d$n, 0.2)
   d$e[1] <- d$n[1]
-  points <- function(p) ggplot2::get_layer_data(p, which(vapply(p$layers, function(l) inherits(l$geom, "GeomPoint"), logical(1)))[1])
+  points <- function(p) ggplot2::layer_data(p, which(vapply(p$layers, function(l) inherits(l$geom, "GeomPoint"), logical(1)))[1])
   def <- phw_funnel(d, e, n)
   p <- phw_funnel(d, e, n, labels = c("Within limits" = "Gerllaw'r terfynau"), size = 4)
   expect_true("Gerllaw'r terfynau" %in% levels(p$data$zone))

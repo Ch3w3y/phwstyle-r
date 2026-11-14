@@ -232,14 +232,17 @@ test_that("phw_add_slide enlarges chart text on the editable path", {
   skip_if_not_installed("officer")
   skip_if_not_installed("rvg")
   p <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg, colour = factor(cyl))) +
-    ggplot2::geom_point() + ggplot2::geom_text(ggplot2::aes(label = cyl)) + theme_phw()
+    ggplot2::geom_point() + theme_phw()
+  # Geom text follows plot_scale only from ggplot2 4.0, as the help page says.
+  if (ggplot2_v4()) p <- p + ggplot2::geom_text(ggplot2::aes(label = cyl))
   sizes <- function(...) xml_numbers(slide_xml(phw_add_slide(phw_pptx(), "Chart", plot = p, ...)), 'sz="[0-9]+"')
   small <- setdiff(sizes(plot_scale = 1), 2800) / 100
   large <- setdiff(sizes(), 2800) / 100
   expect_equal(max(small), 9.9)
   expect_gte(sort(large)[2], 14)
-  expect_equal(max(large), max(small) * 1.5)
-  expect_equal(min(large), min(small) * 1.5)
+  # Slide XML stores sizes in hundredths of a point.
+  expect_lt(abs(max(large) - max(small) * 1.5), 0.011)
+  expect_lt(abs(min(large) - min(small) * 1.5), 0.011)
 })
 
 test_that("phw_add_slide scales a plain ggplot and rejects a bad plot_scale", {

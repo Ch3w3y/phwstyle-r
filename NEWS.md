@@ -1,4 +1,4 @@
-# phwstyle (development version)
+# phwstyle 0.3.0
 
 ## New charts and maps
 

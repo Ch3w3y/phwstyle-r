@@ -18,7 +18,7 @@ test_that("a numeric fill gives a continuous scale and keeps the joined data", {
   expect_equal(p$data$rate, 1:4)
   expect_equal(p$data$name, areas$name)
   expect_s3_class(p$scales$get_scales("fill"), "ScaleContinuous")
-  expect_equal(ggplot2::get_labs(p)$fill, "rate")
+  expect_equal(plot_labs(p)$fill, "rate")
 })
 
 test_that("bins give a binned scale with those breaks", {
@@ -61,9 +61,9 @@ test_that("the boundary attribution is the caption and labs() replaces it", {
   areas <- tiny_areas()
   d <- data.frame(area = areas$code, rate = 1:4)
   p <- phw_map(d, by = area, fill = rate, level = areas)
-  expect_equal(ggplot2::get_labs(p)$caption, "Boundaries: test source")
+  expect_equal(plot_labs(p)$caption, "Boundaries: test source")
   p2 <- p + ggplot2::labs(caption = "Mine")
-  expect_equal(ggplot2::get_labs(p2)$caption, "Mine")
+  expect_equal(plot_labs(p2)$caption, "Mine")
 })
 
 test_that("labels are added at each area and level needs code and name", {
