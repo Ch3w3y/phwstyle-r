@@ -7,10 +7,11 @@
 phw_text_on(bg)
 }
 \arguments{
-\item{bg}{Background colours.}
+\item{bg}{Background colours, or a palette name.}
 }
 \value{
-\code{"#FFFFFF"} or the PHW text colour, whichever contrasts more.
+\code{"#FFFFFF"} or the PHW text colour, whichever contrasts more,
+and \code{NA} where \code{bg} is missing.
 }
 \description{
 Choose readable text colour for a background

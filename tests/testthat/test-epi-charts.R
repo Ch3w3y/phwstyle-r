@@ -134,3 +134,121 @@ test_that("phw_epicurve keeps its default date labels within the data", {
   expect_gt(length(b), 2)
   expect_true(all(b >= as.numeric(min(d$day)) & b <= as.numeric(max(d$day))))
 })
+
+test_that("phw_epicurve stops on dates written as text in another format", {
+  d <- data.frame(onset = c("01/02/2025", "03/02/2025"))
+  expect_error(phw_epicurve(d, onset), "must be a date")
+  iso <- phw_epicurve(data.frame(onset = c("2025-02-03", "2025-02-04")), onset)
+  expect_equal(iso$data$period, as.Date("2025-02-03"))
+})
+
+test_that("phw_epicurve leaves out rows with a missing count and says so", {
+  d <- data.frame(onset = as.Date(c("2025-01-06", "2025-01-07", "2025-01-13")), n = c(5, NA, 3))
+  expect_message(p <- phw_epicurve(d, onset, count = n), "Left out 1 row")
+  expect_equal(p$data$n, c(5, 3))
+})
+
+test_that("phw_epicurve checks its data, range, count and average at entry", {
+  d <- data.frame(onset = as.Date("2025-01-06") + 7 * 0:2, n = 1:3)
+  expect_error(phw_epicurve(d[0, ], onset), "no rows")
+  expect_error(phw_epicurve(transform(d, onset = as.Date(NA)), onset), "Every row")
+  expect_error(phw_epicurve(d, onset, range = as.Date(c(NA, "2025-02-01"))), "start first")
+  expect_error(phw_epicurve(d, onset, range = as.Date(c("2025-02-01", "2025-01-01"))), "start first")
+  expect_error(phw_epicurve(d, onset, range = as.Date("2025-01-01")), "two dates")
+  expect_error(phw_epicurve(transform(d, n = as.character(n)), onset, count = n), "numeric column")
+  expect_message(p <- phw_epicurve(d, onset, average = 50), "No average line")
+  expect_true(all(is.na(p$data$average)))
+  expect_length(p$layers, 1)
+})
+
+test_that("phw_epicurve says how many rows have no date or fall outside range", {
+  d <- data.frame(onset = as.Date("2025-01-06") + c(NA, NA, 0, 7, 70))
+  expect_message(phw_epicurve(d, onset), "Left out 2 rows with a missing value")
+  r <- as.Date(c("2025-01-06", "2025-01-31"))
+  expect_message(expect_message(p <- phw_epicurve(d, onset, range = r), "missing value"),
+                 "Left out 1 row dated outside")
+  expect_equal(sum(p$data$n), 2)
+})
+
+test_that("phw_epicurve drops empty groups unless keyed, and refuses negative counts", {
+  d <- data.frame(onset = as.Date("2025-01-06") + 0:1,
+                  g = factor(c("A", "B"), c("A", "B", "Unused")), n = c(2, 3))
+  expect_equal(levels(phw_epicurve(d, onset, group = g)$data$group), c("A", "B"))
+  withr::defer(phw_key_reset("epi_unused_test"))
+  expect_equal(levels(phw_epicurve(d, onset, group = g, key = "epi_unused_test")$data$group),
+               c("A", "B", "Unused"))
+  expect_error(phw_epicurve(transform(d, n = c(2, -1)), onset, count = n), "negative")
+})
+
+test_that("width in ... changes the bars of phw_epicurve and phw_pyramid", {
+  d <- data.frame(onset = as.Date("2025-01-06") + 7 * 0:2)
+  b <- ggplot2::layer_data(phw_epicurve(d, onset, width = 3))
+  expect_equal(unique(b$xmax - b$xmin), 3)
+  pop <- data.frame(age = c("0-39", "40+", "0-39", "40+"), sex = c("F", "F", "M", "M"), n = 1:4)
+  b <- ggplot2::layer_data(phw_pyramid(pop, age, sex, value = n, width = 0.4))
+  expect_equal(unique(round(b$ymax - b$ymin, 6)), 0.4)
+})
+
+pyr <- data.frame(age = rep(c("0-39", "40+"), 2), sex = rep(c("Female", "Male"), each = 2), n = c(10, 20, 30, 40))
+
+test_that("phw_pyramid leaves out rows with a missing value and keeps percentages", {
+  d <- rbind(pyr, data.frame(age = "40+", sex = "Male", n = NA))
+  expect_message(p <- phw_pyramid(d, age, sex, value = n, percent = TRUE), "Left out 1 row")
+  expect_equal(sum(abs(p$data$x)), 100)
+  d <- rbind(pyr, data.frame(age = NA, sex = "Male", n = 5), data.frame(age = "40+", sex = NA, n = 5))
+  expect_message(phw_pyramid(d, age, sex, value = n), "Left out 2 rows")
+})
+
+test_that("phw_pyramid stops on negative values", {
+  expect_error(phw_pyramid(transform(pyr, n = c(-50, 20, 30, 40)), age, sex, value = n), "negative")
+})
+
+test_that("phw_pyramid stops when left is not a sex value", {
+  expect_error(phw_pyramid(pyr, age, sex, value = n, left = "male"), "must be one of")
+  expect_true(all(phw_pyramid(pyr, age, sex, value = n, left = "Male")$data$x[3:4] < 0))
+})
+
+test_that("phw_pyramid checks data and compare at entry", {
+  expect_error(phw_pyramid(pyr[0, ], age, sex, value = n), "no rows")
+  expect_error(phw_pyramid(transform(pyr, n = as.character(n)), age, sex, value = n), "numeric column")
+  expect_error(phw_pyramid(pyr, age, sex, value = n, compare = pyr[c("age", "sex")]), "no n column")
+  expect_error(phw_pyramid(pyr, age, sex, value = n, compare = transform(pyr, sex = rep(c("F", "M"), each = 2))),
+               "same sex values")
+})
+
+fun <- data.frame(u = letters[1:6], n = c(500, 800, 1000, 1500, 2000, 3000), e = c(40, 90, 100, 160, 190, 330))
+
+test_that("phw_funnel leaves out unusable rows and stops when the target is 0", {
+  expect_message(p <- phw_funnel(transform(fun, e = c(NA, e[-1])), e, n), "Left out 1 row with a missing")
+  expect_equal(nrow(p$data), 5)
+  expect_message(p <- phw_funnel(transform(fun, n = c(0, n[-1])), e, n), "Left out 1 row where n is 0")
+  expect_equal(nrow(p$data), 5)
+  expect_error(phw_funnel(transform(fun, e = 0), e, n), "overall value is 0")
+  expect_error(phw_funnel(fun[0, ], e, n), "no rows")
+})
+
+test_that("phw_funnel checks limits, target and the columns", {
+  expect_error(phw_funnel(fun, e, n, limits = 0.95), "two confidence levels")
+  expect_error(phw_funnel(fun, e, n, limits = c(95, 99.8)), "two confidence levels")
+  expect_error(phw_funnel(fun, e, n, target = NA), "target")
+  expect_error(phw_funnel(fun, e, n, target = 150), "below 100")
+  expect_error(phw_funnel(fun, e, n, target = 0), "above 0")
+  expect_error(phw_funnel(transform(fun, e = as.character(e)), e, n), "numeric column")
+})
+
+test_that("phw_spc needs dates or numbers for x", {
+  d <- data.frame(m = c("Jan 2023", "Feb 2023", "Mar 2023"), v = 1:3)
+  expect_error(phw_spc(d, m, v), "dates, date-times or numbers")
+  expect_s3_class(phw_spc(transform(d, m = as.Date("2023-01-01") + 0:2), m, v), "ggplot")
+})
+
+test_that("phw_spc leaves out missing values and needs at least two points", {
+  d <- data.frame(t = 1:10, v = c(5, NA, 6, 5, Inf, 6, 5, 6, 5, 6))
+  expect_message(p <- phw_spc(d, t, v), "Left out 2 rows")
+  expect_equal(nrow(p$data), 8)
+  expect_no_warning(ggplot2::ggplot_build(p))
+  expect_error(phw_spc(d[1, ], t, v), "at least 2 points")
+  expect_error(phw_spc(d[0, ], t, v), "no rows")
+  expect_error(phw_spc(d, t, v, baseline = 1), "2 or more")
+  expect_error(phw_spc(transform(d, v = as.character(v)), t, v), "numeric column")
+})

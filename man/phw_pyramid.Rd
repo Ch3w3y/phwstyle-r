@@ -25,7 +25,8 @@ column.}
 work too). \code{age} should be a factor in age order (or
 will be sorted as text).}
 
-\item{value}{Optional column of counts or populations.}
+\item{value}{Optional column of counts or populations, 0 or more. Rows
+with a missing age, sex or value are left out, with a message.}
 
 \item{percent}{Show each bar as a percentage of the total, so
 populations of different sizes can be compared?}
@@ -33,8 +34,8 @@ populations of different sizes can be compared?}
 \item{left}{Which \code{sex} value goes on the left. Defaults to the first
 level.}
 
-\item{compare}{Optional data frame with the same columns, drawn as
-outlines.}
+\item{compare}{Optional data frame with the same columns and the same
+two \code{sex} values, drawn as outlines.}
 
 \item{palette}{Two colours, or a palette name.}
 

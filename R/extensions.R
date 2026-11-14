@@ -27,6 +27,11 @@
 #' phw_style_extensions()
 #' @export
 phw_style_extensions <- function(packages = NULL) {
+  if (!is.null(packages)) {
+    if (!is.character(packages)) cli::cli_abort("{.arg packages} must be package names.")
+    gone <- packages[!vapply(packages, requireNamespace, logical(1), quietly = TRUE)]
+    if (length(gone)) cli::cli_abort("{.arg packages} names {?a package that is/packages that are} not installed: {.pkg {gone}}.")
+  }
   packages <- setdiff(packages %||% loadedNamespaces(), c("ggplot2", "phwstyle"))
   changed <- character()
   for (p in packages) {

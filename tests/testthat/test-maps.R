@@ -97,3 +97,44 @@ test_that("each label takes white or dark text from its own area's fill", {
   gap <- phw_map(d, by = area, fill = rate, level = areas, label = rate)
   expect_equal(label_cols(gap), phw_text_on(fills(gap)))
 })
+
+test_that("rows whose code is missing or unknown are left out with one message", {
+  areas <- tiny_areas()
+  d <- data.frame(area = c("A1", "A2", "X9", NA), rate = 1:4)
+  expect_message(p <- phw_map(d, by = area, fill = rate, level = areas), "Left out 2 rows.*X9")
+  expect_equal(p$data$area, c("A1", "A2"))
+})
+
+test_that("a code drawn twice in one panel gives a message, but not when faceted", {
+  areas <- tiny_areas()
+  d <- data.frame(area = c("A1", "A1", "A2", "A2"), period = c(1, 2, 1, 2), rate = 1:4)
+  p <- phw_map(d, by = area, fill = rate, level = areas)
+  expect_message(ggplot2::ggplot_build(p), "A1.*more than one row")
+  expect_no_message(ggplot2::ggplot_build(p + ggplot2::facet_wrap(~period)))
+})
+
+test_that("phw_map handles missing, infinite and out-of-range fills", {
+  areas <- tiny_areas()
+  d <- data.frame(area = areas$code, rate = c(1, NA, 3, 4))
+  expect_no_warning(ggplot2::ggplot_build(phw_map(d, by = area, fill = rate, level = areas, label = rate)))
+  expect_error(phw_map(transform(d, rate = NA_real_), by = area, fill = rate, level = areas, bins = 2),
+               "Every value in rate is missing")
+  expect_message(phw_map(d, by = area, fill = rate, level = areas, bins = c(50, 60)), "inside the data")
+  expect_message(phw_map(transform(d, rate = c(1, Inf, 3, 4)), by = area, fill = rate, level = areas),
+                 "infinite")
+})
+
+test_that("a qualitative palette or a plain data frame level gives an error naming the fix", {
+  areas <- tiny_areas()
+  d <- data.frame(area = areas$code, rate = 1:4)
+  expect_error(phw_map(d, by = area, fill = rate, level = areas, palette = "main"), "sequential palette")
+  expect_error(phw_map(d, by = area, fill = rate, level = as.data.frame(areas)[c("code", "name")]),
+               "sf data frame")
+})
+
+test_that("phw_map says when bins or key do not apply to the fill", {
+  areas <- tiny_areas()
+  d <- data.frame(area = areas$code, rate = 1:4, band = c("a", "b", "a", "b"))
+  expect_message(phw_map(d, by = area, fill = band, level = areas, bins = 3), "bins")
+  expect_message(phw_map(d, by = area, fill = rate, level = areas, key = "k"), "key")
+})

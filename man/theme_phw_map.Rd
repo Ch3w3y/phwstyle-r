@@ -14,7 +14,8 @@ theme_phw_map(base_size = 11, base_family = phw_font(), legend = "right", ...)
 \item{legend}{Legend position: \code{"bottom"}, \code{"top"}, \code{"right"}, \code{"left"},
 \code{"inside"} or \code{"none"}, or a numeric \code{c(x, y)} inside the panel.}
 
-\item{...}{Passed to \code{\link[=theme_phw]{theme_phw()}}.}
+\item{...}{Passed to \code{\link[=theme_phw]{theme_phw()}}, except \code{grid}: a map has no
+gridlines.}
 }
 \value{
 A ggplot2 theme.

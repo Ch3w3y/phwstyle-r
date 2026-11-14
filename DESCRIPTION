@@ -1,6 +1,6 @@
 Package: phwstyle
 Title: Public Health Wales Corporate Styling for R Outputs
-Version: 0.3.0
+Version: 0.3.0.9000
 Authors@R: c(
     person("Daryn", "Sutton", role = c("aut", "cre"), email = "cheweych3w3y@gmail.com"),
     person("Canonical Ltd", role = "cph", comment = "Ubuntu font family, Ubuntu Font Licence 1.0")
@@ -28,7 +28,7 @@ Language: en-GB
 Roxygen: list(markdown = TRUE)
 Depends: R (>= 4.3)
 Imports:
-    cli,
+    cli (>= 3.6.0),
     ggplot2 (>= 3.5.0),
     grDevices,
     grid,

@@ -33,7 +33,8 @@ table.}
 
 \item{digits}{Decimal places for non-integer numbers.}
 
-\item{header_fill}{Header fill colour.}
+\item{header_fill}{Header fill colour: a colour, or a name from
+\link{phw_colours} such as \code{"navy"}.}
 
 \item{font}{Font name. Excel uses it if it is installed on the reader's
 computer, so Arial is the safe default.}
@@ -45,10 +46,12 @@ The path to the file, invisibly.
 }
 \description{
 Writes one or more data frames to an \code{.xlsx} file in the PHW style, one
-sheet each: a title row, a navy header, thousands separators, sensible
-column widths, frozen header row and a source note under the table.
-Summary tables from \code{\link[=phw_summary_table]{phw_summary_table()}}, \code{\link[=phw_group_table]{phw_group_table()}} and
-friends keep their bold group rows and indented levels.
+sheet each: a title row, a navy header, thousands separators, ISO dates,
+sensible column widths, frozen header row and a bold source line under
+the table. Summary tables from \code{\link[=phw_summary_table]{phw_summary_table()}}, \code{\link[=phw_group_table]{phw_group_table()}}
+and friends look as they do in the other renderers: the header spanning
+the group columns, shaded variable rows with navy labels, indented
+levels, italic subtotals and a navy rule above the total.
 }
 \examples{
 if (requireNamespace("openxlsx2", quietly = TRUE)) {

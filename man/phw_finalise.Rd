@@ -17,6 +17,7 @@ phw_finalise(
   rule_colour = phw_colours[["navy"]],
   rule = TRUE,
   margin = 4,
+  org = phw_org,
   ...
 )
 }
@@ -28,7 +29,8 @@ figure, or any grob or gtable (e.g. from \code{\link[gridExtra:arrangeGrob]{grid
 any caption already on the plot.}
 
 \item{logo}{Logo variant (see \code{\link[=phw_logo]{phw_logo()}}), a path to your own PNG, or
-\code{FALSE} for none.}
+\code{FALSE} for none. When no PHW logo is installed, \code{org} is written in its
+place.}
 
 \item{team}{Optional line under the source, e.g.
 \code{"Communicable Disease Surveillance Centre"}.}
@@ -45,6 +47,9 @@ side.}
 \item{rule}{Draw the rule above the footer?}
 
 \item{margin}{Space at each side, in mm.}
+
+\item{org}{Text shown on the logo side when no PHW logo is installed.
+Change it to show the name in another language.}
 
 \item{...}{Passed to \code{\link[=phw_caption]{phw_caption()}}, e.g. \code{source_prefix = "Data: "} or
 \code{note = "Provisional"}.}

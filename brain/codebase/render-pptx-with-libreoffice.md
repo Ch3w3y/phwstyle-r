@@ -10,4 +10,6 @@ This machine has no LibreOffice, Quarto or Chromium. To see what `phw_pptx()` / 
 
 LibreOffice stands in for PowerPoint; check a release deck in PowerPoint once.
 
+Word and Excel output: `phw-lo` has Impress only, so it cannot convert .docx or .xlsx. Build `phw-lo-writer` from `FROM phw-lo` + `USER root` + `apt-get install -y --no-install-recommends libreoffice-writer libreoffice-calc`, then run the same command on it.
+
 HTML widgets (reactable, DT, gt): `htmltools::save_html()` then `firefox --headless --screenshot out.png --window-size=900,600 file:///abs/path.html`.

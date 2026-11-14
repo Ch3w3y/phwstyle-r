@@ -48,8 +48,9 @@ passed to \code{\link[=phw_colour_key]{phw_colour_key()}}.}
 An htmlwidget (or a tag list when a caption or source is given).
 }
 \description{
-Calls \code{\link[reactable:reactable]{reactable::reactable()}} with the PHW theme, striping, compact rows
-and number formatting with thousands separators. It also attaches the
+Calls \code{\link[reactable:reactable]{reactable::reactable()}} with the PHW theme, compact rows and
+number formatting with thousands separators. Rows are not striped, as in
+the other PHW tables; pass \code{striped = TRUE} to stripe them. It also attaches the
 Ubuntu web font. You can add a title above and a source line below.
 }
 \examples{

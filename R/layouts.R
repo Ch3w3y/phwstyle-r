@@ -19,7 +19,8 @@
 #'   figure's source line.
 #' @param guides `"collect"` merges identical legends from all panels into
 #'   one, at `legend`; `"keep"` leaves each legend with its plot.
-#' @param legend Position of collected legends.
+#' @param legend Position of collected legends: `"bottom"`, `"top"`,
+#'   `"right"`, `"left"` or `"none"`.
 #' @param tag_levels Panel tags, e.g. `"A"` for A, B, C or `"1"`. `NULL` for
 #'   none.
 #' @param theme The theme used for the figure title and source line.
@@ -40,8 +41,17 @@ phw_arrange <- function(..., plots = NULL, ncol = NULL, nrow = NULL, widths = NU
                         tag_levels = NULL, theme = theme_phw()) {
   rlang::check_installed("patchwork", "to arrange plots")
   guides <- rlang::arg_match(guides)
+  legend <- rlang::arg_match(legend, c("bottom", "top", "right", "left", "none"))
   all <- c(list(...), plots)
   if (!length(all)) cli::cli_abort("Give at least one plot.")
+  bad <- which(!vapply(all, inherits, logical(1), what = c("ggplot", "grob")))
+  if (length(bad)) {
+    cli::cli_abort(c("Each plot must be a ggplot or a grob.",
+                     x = "Plot {bad[1]} is {.cls {class(all[[bad[1]]])[1]}}."))
+  }
+  if (!is.list(caption_args) || (length(caption_args) && !rlang::is_named(caption_args))) {
+    cli::cli_abort("{.arg caption_args} must be a named list, such as {.code list(source_prefix = \"Ffynhonnell: \")}.")
+  }
   out <- patchwork::wrap_plots(all, ncol = ncol, nrow = nrow, widths = widths,
                                heights = heights, design = design, guides = guides)
   ann_theme <- theme + ggplot2::theme(

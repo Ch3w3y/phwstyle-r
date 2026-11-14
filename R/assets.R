@@ -30,6 +30,7 @@ write_blank_png <- function(file) {
 #' # In officer:  officer::read_docx(phw_reference_docx())
 #' @export
 phw_reference_docx <- function(file = tempfile(fileext = ".docx")) {
+  check_out_file(file, "docx")
   src <- phw_file("rmarkdown", "resources", "phw-reference.docx")
   dir <- tempfile("phw-docx-")
   dir.create(dir)
@@ -56,8 +57,36 @@ phw_reference_docx <- function(file = tempfile(fileext = ".docx")) {
 #' file.exists(f)
 #' @export
 phw_reference_pptx <- function(file = tempfile(fileext = ".pptx")) {
-  file.copy(phw_file("rmarkdown", "resources", "phw-reference.pptx"), file, overwrite = TRUE)
+  check_out_file(file, "pptx")
+  if (!file.copy(phw_file("rmarkdown", "resources", "phw-reference.pptx"), file, overwrite = TRUE)) {
+    cli::cli_abort("Couldn't write {.file {file}}.")
+  }
   file
+}
+
+# An output file must go in a folder that exists, and with the extension its
+# format needs, so the write can't fail part way or make a file Office won't open.
+check_out_file <- function(file, ext = NULL, arg = rlang::caller_arg(file), call = rlang::caller_env()) {
+  check_one_string(file, arg = arg, call = call)
+  if (!dir.exists(dirname(file))) {
+    cli::cli_abort("{.arg {arg}}: folder not found: {.path {dirname(file)}}.", call = call)
+  }
+  if (!is.null(ext) && !identical(tolower(tools::file_ext(file)), ext)) {
+    cli::cli_abort("{.arg {arg}} must end in {.file .{ext}}, not {.file {basename(file)}}.", call = call)
+  }
+  invisible(file)
+}
+
+# Escapes the characters LaTeX treats as commands, so text such as a team
+# name is printed as written.
+latex_escape <- function(x) {
+  chars <- strsplit(x, "", fixed = TRUE)[[1]]
+  map <- c("\\" = "\\textbackslash{}", "&" = "\\&", "%" = "\\%", "$" = "\\$", "#" = "\\#",
+           "_" = "\\_", "{" = "\\{", "}" = "\\}", "~" = "\\textasciitilde{}",
+           "^" = "\\textasciicircum{}")
+  hit <- chars %in% names(map)
+  chars[hit] <- map[chars[hit]]
+  paste(chars, collapse = "")
 }
 
 zip_dir <- function(dir, file) {
@@ -74,7 +103,7 @@ zip_dir <- function(dir, file) {
 fill_latex_header <- function(paths, team = NULL, cover = TRUE) {
   tex <- readLines(phw_file("rmarkdown", "resources", "phw-header.tex"), warn = FALSE)
   org <- phw_org
-  if (!is.null(team)) org <- paste0(org, "\\\\[2pt]", team)
+  if (!is.null(team)) org <- paste0(org, "\\\\[2pt]", latex_escape(team))
   subs <- c(
     "%%FONTDIR%%" = paths$fontdir,
     "%%BAND%%" = paths$band,

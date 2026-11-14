@@ -75,6 +75,10 @@
 use_phw_quarto <- function(path = ".", template = c("report", "slides", "dashboard", "none"),
                            overwrite = FALSE) {
   template <- rlang::arg_match(template)
+  check_one_string(path)
+  if (file.exists(path) && !dir.exists(path)) {
+    cli::cli_abort("{.arg path} must be a folder, not the file {.file {path}}.")
+  }
   dest <- file.path(path, "_extensions", "phw")
   if (dir.exists(dest) && !overwrite) {
     cli::cli_inform("{.path {dest}} already exists. Use {.code overwrite = TRUE} to update it.")

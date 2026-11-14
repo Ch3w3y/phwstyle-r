@@ -249,3 +249,54 @@ test_that("phw_sec_axis works on log axes and mixed axes", {
   expect_error(phw_sec_axis(d$n, c(-1, 0), scale = "log"), "above zero")
   expect_error(phw_sec_axis("a", 1:3), "numeric")
 })
+
+test_that("scale_shape_phw and scale_linetype_phw stop clearly past eight groups", {
+  d <- data.frame(x = 1:9, y = 1:9, g = paste("G", 1:9))
+  p <- ggplot2::ggplot(d, ggplot2::aes(x, y, shape = g)) + ggplot2::geom_point() + scale_shape_phw()
+  expect_error(ggplot2::ggplot_build(p), "9 groups but only 8 shapes")
+  p <- ggplot2::ggplot(d, ggplot2::aes(x, y, linetype = g)) + ggplot2::geom_line() + scale_linetype_phw()
+  expect_error(ggplot2::ggplot_build(p), "9 groups but only 8 line types")
+})
+
+test_that("scale_shape_phw and scale_linetype_phw keep a missing group on the chart", {
+  d <- data.frame(x = c(1, 2, 1, 2), y = c(1, 1, 2, 2), g = c("A", "A", NA, NA))
+  p <- ggplot2::ggplot(d, ggplot2::aes(x, y, shape = g)) + ggplot2::geom_point() + scale_shape_phw()
+  expect_no_warning(b <- ggplot2::layer_data(p))
+  expect_equal(b$shape, c(16, 16, 4, 4))
+  p <- ggplot2::ggplot(d, ggplot2::aes(x, y, linetype = g, group = g)) + ggplot2::geom_line() + scale_linetype_phw()
+  expect_equal(unique(ggplot2::layer_data(p)$linetype), c("solid", "16"))
+})
+
+test_that("scale_*_phw_d checks palette and values when it is made", {
+  expect_error(scale_colour_phw_d(values = c("red", "blue")), "values.*named")
+  expect_error(scale_colour_phw_d(values = c(A = "notacolour")), "notacolour")
+  expect_error(scale_colour_phw_d(palette = "nope"), "Unknown palette")
+  # Verbose warnings leave cli's once-every-8-hours record untouched for test-keys.R.
+  withr::local_options(rlib_warning_verbosity = "verbose")
+  d <- data.frame(x = 1:80, y = 1, g = sprintf("G%02d", 1:80))
+  p <- ggplot2::ggplot(d, ggplot2::aes(x, y, colour = g)) + ggplot2::geom_point() + scale_colour_phw_d()
+  expect_error(suppressWarnings(ggplot2::ggplot_build(p)), "80 groups.*facets")
+})
+
+test_that("theme_phw_map stops on grid and lets legend_title through", {
+  expect_error(theme_phw_map(grid = "y"), "no gridlines")
+  expect_s3_class(theme_phw_map(legend_title = FALSE)$legend.title, "element_blank")
+})
+
+test_that("theme_phw checks a numeric legend and base_size", {
+  expect_error(theme_phw(legend = 0.5), "two numbers")
+  expect_error(theme_phw(legend = c(0.5, 2)), "two numbers")
+  expect_error(theme_phw(base_size = "11"), "base_size")
+  expect_equal(theme_phw(legend = c(0.9, 0.9))$legend.position.inside, c(0.9, 0.9))
+})
+
+test_that("reverse flips a function palette and keeps its order", {
+  d <- data.frame(x = 1:3, y = 1:3, g = c("A", "B", "C"))
+  fill_of <- function(...) {
+    p <- ggplot2::ggplot(d, ggplot2::aes(x, y, colour = g)) + ggplot2::geom_point() +
+      scale_colour_phw_d(palette = function(n) grDevices::hcl.colors(n), ...)
+    ggplot2::layer_data(p)$colour
+  }
+  expect_equal(toupper(fill_of()), toupper(grDevices::hcl.colors(3)))
+  expect_equal(toupper(fill_of(reverse = TRUE)), toupper(rev(grDevices::hcl.colors(3))))
+})

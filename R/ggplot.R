@@ -30,7 +30,8 @@
 #' @param legend_title Show the legend title? PHW reports usually don't.
 #' @param strip Facet strip style: `"light"` (grey band, navy text),
 #'   `"navy"` (navy band, white text) or `"plain"` (text only).
-#' @param axis_line Draw a mid-grey line along the bottom axis?
+#' @param axis_line Draw a mid-grey line along the bottom axis (the left
+#'   axis with `grid = "x"`)? It is not drawn with `grid = "none"`.
 #' @param axis_ticks Draw axis tick marks?
 #' @param grid_minor Draw minor gridlines too (on the same axes as `grid`)?
 #' @param title_colour,text_colour Colours for the title and other text.
@@ -73,7 +74,13 @@ theme_phw <- function(base_size = 11,
                       accessible = FALSE) {
   grid <- rlang::arg_match(grid)
   strip <- rlang::arg_match(strip)
+  if (!(is.numeric(base_size) && length(base_size) == 1 && isTRUE(base_size > 0))) {
+    cli::cli_abort("{.arg base_size} must be one number of points, such as {.code 11}.")
+  }
   inside <- is.numeric(legend)
+  if (inside && !(length(legend) == 2 && !anyNA(legend) && all(legend >= 0 & legend <= 1))) {
+    cli::cli_abort("A numeric {.arg legend} must be two numbers from 0 to 1, {.code c(x, y)} inside the panel.")
+  }
   if (!inside) {
     legend <- rlang::arg_match(legend, c("bottom", "top", "right", "left", "inside", "none"))
   }
@@ -202,7 +209,8 @@ phw_continuous_auto <- phw_palettes$blues[2:6]
 #' [scale_fill_phw_c()] or [scale_fill_phw_b()].
 #'
 #' @inheritParams theme_phw
-#' @param ... Passed to [theme_phw()].
+#' @param ... Passed to [theme_phw()], except `grid`: a map has no
+#'   gridlines.
 #' @return A ggplot2 theme.
 #' @examples
 #' library(ggplot2)
@@ -224,8 +232,15 @@ phw_continuous_auto <- phw_palettes$blues[2:6]
 #' }
 #' @export
 theme_phw_map <- function(base_size = 11, base_family = phw_font(), legend = "right", ...) {
-  theme_phw(base_size = base_size, base_family = base_family, grid = "none",
-            legend = legend, legend_title = TRUE, ...) +
+  extra <- list(...)
+  if ("grid" %in% names(extra)) {
+    cli::cli_abort(c("{.fn theme_phw_map} draws no gridlines, so it has no {.arg grid}.",
+                     i = "Use {.fn theme_phw} for a chart with gridlines."))
+  }
+  args <- list(base_size = base_size, base_family = base_family, grid = "none",
+               legend = legend, legend_title = TRUE)
+  args[names(extra)] <- extra
+  do.call(theme_phw, args) +
     ggplot2::theme(axis.text = ggplot2::element_blank(),
                    axis.title = ggplot2::element_blank(),
                    panel.grid = ggplot2::element_blank())
@@ -298,8 +313,23 @@ theme_phw_map <- function(base_size = 11, base_family = phw_font(), legend = "ri
 #' phw_key_reset("drive_example")
 NULL
 
-phw_discrete_scale <- function(aesthetics, palette, reverse, key, values, neutral, na.value, ...) {
-  if (reverse && !is.function(palette)) palette <- rev(palette_colours(palette))
+phw_discrete_scale <- function(aesthetics, palette, reverse, key, values, neutral, na.value, ...,
+                               call = rlang::caller_env()) {
+  if (is.function(palette)) {
+    if (reverse) {
+      f <- palette
+      palette <- function(n) rev(f(n))
+    }
+  } else {
+    pal <- palette_colours(palette)
+    if (reverse) palette <- rev(pal)
+  }
+  if (length(values)) {
+    if (!rlang::is_named(values)) {
+      cli::cli_abort("{.arg values} must be a named vector of colours, such as {.code c(Wales = \"#285087\")}.", call = call)
+    }
+    check_colours(values, "values", call = call)
+  }
   sc <- ggplot2::discrete_scale(aesthetics, palette = phw_discrete_auto, na.value = na.value, ...)
   ggplot2::ggproto(NULL, sc,
     phw_args = list(palette = palette, key = key, values = values, neutral = neutral),
@@ -307,8 +337,13 @@ phw_discrete_scale <- function(aesthetics, palette, reverse, key, values, neutra
       a <- self$phw_args
       lv <- as.character(limits)
       lv <- lv[!is.na(lv)]
-      cols <- phw_colour_key(lv, name = a$key, palette = a$palette, fixed = a$values,
-                             neutral = a$neutral)
+      cols <- rlang::try_fetch(
+        phw_colour_key(lv, name = a$key, palette = a$palette, fixed = a$values, neutral = a$neutral),
+        phwstyle_too_many_groups = function(e) {
+          cli::cli_abort(c("Can't give {length(lv)} groups a colour each.",
+                           i = "With this many groups, use facets or direct labels instead of colour."),
+                         parent = e, call = NULL)
+        })
       out <- unname(cols[as.character(x)])
       out[is.na(out)] <- self$na.value
       out
@@ -337,10 +372,12 @@ scale_fill_phw_d <- function(palette = phw_default_palette(), reverse = FALSE, k
 #' @export
 scale_color_phw_d <- scale_colour_phw_d
 
-seq_cols <- function(palette, reverse) {
+seq_cols <- function(palette, reverse, call = rlang::caller_env()) {
   if (is.character(palette) && length(palette) == 1 && palette %in% names(phw_palettes) &&
       palette_type(palette) == "qualitative") {
-    cli::cli_abort("{.val {palette}} is a qualitative palette. Use a {.code _d} scale.")
+    cli::cli_abort(c("{.val {palette}} is a qualitative palette, for groups.",
+                     i = "For numbers use a sequential palette such as {.val blues}, or {.val orange_navy} to diverge.",
+                     i = "For groups use a {.code _d} scale."), call = call)
   }
   cols <- palette_colours(palette)
   if (reverse) cols <- rev(cols)
@@ -566,7 +603,10 @@ set_geom_defaults <- function(geoms, new) {
 #' @param source,date Passed to [phw_caption()]. Leave both `NULL` to keep
 #'   any caption already on the plot.
 #' @param logo Logo variant (see [phw_logo()]), a path to your own PNG, or
-#'   `FALSE` for none.
+#'   `FALSE` for none. When no PHW logo is installed, `org` is written in its
+#'   place.
+#' @param org Text shown on the logo side when no PHW logo is installed.
+#'   Change it to show the name in another language.
 #' @param team Optional line under the source, e.g.
 #'   `"Communicable Disease Surveillance Centre"`.
 #' @param logo_height Logo height in cm.
@@ -599,9 +639,23 @@ phw_finalise <- function(plot, source = NULL, date = NULL, logo = "blue",
                          logo_position = c("left", "right"), text_size = 8.5,
                          text_colour = phw_colours[["text"]],
                          rule_colour = phw_colours[["navy"]], rule = TRUE,
-                         margin = 4, ...) {
+                         margin = 4, org = phw_org, ...) {
   logo_position <- rlang::arg_match(logo_position)
-  caption <- phw_caption(source, date, ...)
+  if (!isFALSE(logo)) {
+    if (!is.character(logo) || length(logo) != 1 || is.na(logo)) {
+      cli::cli_abort('{.arg logo} must be {.val blue}, {.val white}, {.val black}, the path to a PNG, or {.code FALSE}, not {.obj_type_friendly {logo}}.')
+    }
+    if (!file.exists(logo)) {
+      if (grepl("[/\\\\]|\\.[A-Za-z0-9]{2,4}$", logo)) {
+        cli::cli_abort("{.arg logo}: file not found: {.file {logo}}.")
+      }
+      logo <- rlang::arg_match(logo, names(logo_colours))
+    } else if (tolower(tools::file_ext(logo)) != "png") {
+      cli::cli_abort("{.arg logo} must be a PNG file, not {.file {logo}}.")
+    }
+  }
+  check_one_string(org)
+  caption <- caption_from(source, date, list(...), arg = "...")
   if (inherits(plot, "patchwork")) {
     if (is.null(caption)) caption <- plot$patches$annotation$caption
     plot <- plot + patchwork::plot_annotation(caption = NULL)
@@ -638,14 +692,16 @@ phw_finalise <- function(plot, source = NULL, date = NULL, logo = "blue",
       gp = grid::gpar(col = rule_colour, lwd = 1.5))))
   }
   if (!isFALSE(logo)) {
-    lg <- if (is.character(logo) && file.exists(logo)) {
-      rlang::check_installed("png", "to draw a logo")
-      grid::rasterGrob(png::readPNG(logo), height = grid::unit(logo_height, "cm"),
-                       x = if (left) m else grid::unit(1, "npc") - m,
-                       hjust = if (left) 0 else 1, interpolate = TRUE)
+    path <- if (file.exists(logo)) logo else phw_logo(logo, "png")
+    at <- if (left) m else grid::unit(1, "npc") - m
+    lg <- if (is.null(path)) {
+      grid::textGrob(org, x = at, hjust = if (left) 0 else 1,
+                     gp = grid::gpar(fontfamily = fam, fontface = "bold", fontsize = text_size * 1.4,
+                                     col = phw_colours[["navy"]]))
     } else {
-      logo_grob(logo, height = grid::unit(logo_height, "cm"),
-                x = if (left) m else grid::unit(1, "npc") - m, hjust = if (left) 0 else 1)
+      rlang::check_installed("png", "to draw a logo")
+      grid::rasterGrob(png::readPNG(path), height = grid::unit(logo_height, "cm"),
+                       x = at, hjust = if (left) 0 else 1, interpolate = TRUE)
     }
     kids <- c(kids, list(lg))
   }
@@ -693,6 +749,9 @@ print.phw_finalised <- function(x, ...) {
 #' @export
 phw_save <- function(plot = ggplot2::last_plot(), filename, width = 16, height = 10,
                      units = "cm", dpi = 300, bg = "white", device = NULL, ...) {
+  if (!inherits(plot, c("ggplot", "grob"))) {
+    cli::cli_abort("{.arg plot} must be a ggplot or a grob such as a {.fn phw_finalise} result, not {.obj_type_friendly {plot}}.")
+  }
   ext <- tolower(tools::file_ext(filename))
   device <- device %||% switch(ext,
     png = if (requireNamespace("ragg", quietly = TRUE)) ragg::agg_png else "png",

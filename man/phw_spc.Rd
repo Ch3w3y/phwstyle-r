@@ -20,8 +20,9 @@ phw_spc(
 \arguments{
 \item{data}{A data frame with one row per time point.}
 
-\item{x, y}{The time column (date or number) and the measure, unquoted as
-in dplyr (strings work too).}
+\item{x, y}{The time column (a date, date-time or number, not text) and
+the measure, unquoted as in dplyr (strings work too). Rows with a
+missing \code{x} or \code{y} are left out, with a message.}
 
 \item{type}{\code{"xmr"} (centre line at the mean, limits at 2.66 times the
 mean moving range) or \code{"run"} (median line, no limits).}
@@ -30,7 +31,7 @@ mean moving range) or \code{"run"} (median line, no limits).}
 \code{"decrease"}.}
 
 \item{baseline}{Number of points to calculate the centre line and limits
-from (e.g. the first 20). \code{NULL} uses all points.}
+from (e.g. the first 20), at least 2. \code{NULL} uses all points.}
 
 \item{shift, trend}{Run lengths that count as special causes.}
 

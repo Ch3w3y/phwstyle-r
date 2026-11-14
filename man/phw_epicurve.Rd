@@ -27,12 +27,16 @@ phw_epicurve(
 \item{data}{A data frame with one row per case, or with a count column.}
 
 \item{date}{The date column, unquoted as in dplyr (\code{onset}). A string
-(\code{"onset"}) works too.}
+(\code{"onset"}) works too. It holds dates, date-times or ISO text such as
+\code{"2025-01-31"}. Convert text in any other format with \code{\link[=as.Date]{as.Date()}}
+first. Rows with no date are left out, with a message.}
 
 \item{group}{Optional column to colour and stack by (e.g. age group or
-organism).}
+organism). Missing values are shown as \code{"Unknown"}. Factor levels with
+no cases are left out, unless \code{key} is given.}
 
-\item{count}{Optional column of counts (for aggregated data).}
+\item{count}{Optional column of counts (for aggregated data). Rows with
+a missing count are left out, with a message.}
 
 \item{interval}{\code{"day"}, \code{"week"}, \code{"month"}, \code{"quarter"} or \code{"year"}.}
 
@@ -49,13 +53,15 @@ Sunday.}
 \item{date_labels, date_breaks}{Passed to \code{\link[ggplot2:scale_x_date]{ggplot2::scale_x_date()}}.}
 
 \item{range}{Optional two dates for the start and end of the axis,
-e.g. to show a full year even when the first weeks have no cases.}
+e.g. to show a full year even when the first weeks have no cases.
+Rows dated outside it are left out, with a message.}
 
 \item{average}{Optional whole number of periods, \code{k}, for a rolling
 average line. It is the mean of the total count (all groups added
 together) over the latest \code{k} periods, drawn at the centre of each
 period's column. The first \code{k - 1} periods have no average and draw
-nothing.}
+nothing. With \code{k} or fewer periods there is no line, and a message
+says so.}
 
 \item{average_label}{Legend text for the average line. Defaults to, for
 example, \code{"7-day average"} or \code{"4-week average"}.}

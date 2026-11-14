@@ -23,12 +23,14 @@ phw_plotly(
 
 \item{...}{Extra arguments for \code{\link[plotly:layout]{plotly::layout()}}. They override the PHW
 defaults; lists are merged, so \code{title = list(text = "My title")} keeps
-the PHW title style.}
+the PHW title style. \code{annotations} are added after the caption.}
 
 \item{legend}{\code{"bottom"}, \code{"right"} or \code{"none"}.}
 
-\item{palette}{Colour order for traces that don't set their own colour: a
-palette name or a vector of colours.}
+\item{palette}{Colours for traces that don't set their own: a palette
+name, a vector of colours or a function of \code{n}, as in \code{\link[=phw_pal]{phw_pal()}}. A
+trace that maps \code{color} to groups without giving \code{colors} takes them
+from this palette too.}
 
 \item{font_size}{Base font size in px.}
 
@@ -48,8 +50,9 @@ which is converted with \code{\link[plotly:ggplotly]{plotly::ggplotly()}} first.
 \details{
 Any plotly chart type works: scatter and lines, bars, pies and
 donuts (given the PHW colours and white slice borders), box and violin plots, histograms,
-heatmaps and choropleth maps (which pick up the PHW sequential
-colour scale unless you set \code{colorscale}), and figures combined with
+heatmaps, contours and choropleth maps, and markers coloured by a number
+(which pick up the PHW sequential colour scale unless you set
+\code{colorscale} or \code{colors}), and figures combined with
 \code{\link[plotly:subplot]{plotly::subplot()}}. Use \code{\link[=phw_plotly_colorscale]{phw_plotly_colorscale()}} to set a PHW scale on
 a trace yourself.
 

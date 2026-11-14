@@ -29,6 +29,7 @@
 #' @export
 phw_leaflet <- function(data = NULL, tiles = "Esri.WorldGrayCanvas", view = "wales", ...) {
   rlang::check_installed("leaflet")
+  if (!is.null(view)) view <- rlang::arg_match(view, "wales")
   m <- leaflet::leaflet(data, ...)
   if (!is.null(tiles)) m <- leaflet::addProviderTiles(m, tiles)
   if (identical(view, "wales")) m <- leaflet::fitBounds(m, -5.4, 51.35, -2.65, 53.45)
@@ -72,24 +73,41 @@ phw_leaflet_polygons <- function(map, data, fill = NULL, palette = NULL, bins = 
                                  opacity = 0.8, weight = 1, colour = "#FFFFFF", key = NULL,
                                  polygon_args = list()) {
   rlang::check_installed(c("leaflet", "sf"))
+  rlang::check_required(data)
+  data <- check_leaflet_polygons(map, data, bins, polygon_args)
   fill <- pick_col(rlang::enquo(fill), data, "fill", null_ok = TRUE)
-  label <- pick_text(rlang::enquo(label), data)
-  popup <- pick_text(rlang::enquo(popup), data)
+  label <- leaflet_text(rlang::enquo(label), data, "label")
+  popup <- leaflet_text(rlang::enquo(popup), data, "popup")
   if (!is.na(sf::st_crs(data)) && !isTRUE(sf::st_is_longlat(data))) data <- sf::st_transform(data, 4326)
+  na_col <- phw_colours[["grey_light"]]
   pal_fun <- NULL
+  legend_values <- NULL
   fill_col <- phw_colours[["navy"]]
   if (!is.null(fill)) {
     v <- data[[fill]]
     if (is.numeric(v)) {
-      pal_fun <- phw_leaflet_palette(palette %||% "blues", domain = v,
-                                     type = if (is.null(bins)) "numeric" else "bin", bins = bins)
+      if (!is.null(key)) cli::cli_warn("{.arg key} is for a fill of groups, so it is not used with a numeric fill.")
+      ok <- is.finite(v)
+      if (!any(ok)) {
+        cli::cli_inform("{.field {fill}} has no values to colour by, so every area is drawn as missing.")
+        fill_col <- na_col
+      } else {
+        legend_values <- ifelse(ok, v, NA)
+        pal_fun <- phw_leaflet_palette(palette %||% "blues", domain = v[ok],
+                                       type = if (is.null(bins)) "numeric" else "bin", bins = bins,
+                                       na.color = na_col)
+        fill_col <- pal_fun(legend_values)
+      }
     } else {
-      levels <- if (is.factor(v)) levels(v) else unique(as.character(v))
+      if (!is.null(bins)) cli::cli_warn("{.arg bins} is for a numeric fill, so it is not used with groups.")
+      levels <- if (is.factor(v)) levels(v) else unique(as.character(v[!is.na(v)]))
       cols <- phw_colour_key(levels, name = key, palette = palette %||% phw_default_palette(),
                              save = !is.null(key))
-      pal_fun <- leaflet::colorFactor(unname(cols[levels]), levels = levels, ordered = TRUE)
+      pal_fun <- leaflet::colorFactor(unname(cols[levels]), levels = levels, ordered = TRUE,
+                                      na.color = na_col)
+      legend_values <- v
+      fill_col <- pal_fun(v)
     }
-    fill_col <- pal_fun(v)
   }
   args <- utils::modifyList(list(
     map = map, data = data, fillColor = fill_col, fillOpacity = opacity, color = colour, weight = weight,
@@ -99,10 +117,72 @@ phw_leaflet_polygons <- function(map, data, fill = NULL, palette = NULL, bins = 
   ), polygon_args)
   map <- do.call(leaflet::addPolygons, args)
   if (!is.null(pal_fun) && !is.null(legend_title)) {
-    map <- leaflet::addLegend(map, pal = pal_fun, values = data[[fill]], title = legend_title,
-                              opacity = opacity, position = "bottomright")
+    values <- unique(legend_values[!is.na(legend_values)])
+    map <- if (is.numeric(values) && length(values) == 1) {
+      # A gradient over a single value has no length, so show it as a swatch.
+      leaflet::addLegend(map, colors = pal_fun(values), labels = format(values),
+                         title = legend_title, opacity = opacity, position = "bottomright")
+    } else {
+      leaflet::addLegend(map, pal = pal_fun, values = legend_values, title = legend_title,
+                         opacity = opacity, position = "bottomright")
+    }
   }
   map
+}
+
+check_leaflet_polygons <- function(map, data, bins, polygon_args, call = rlang::caller_env()) {
+  if (!inherits(map, "leaflet")) {
+    cli::cli_abort("{.arg map} must be a leaflet map, such as {.code phw_leaflet()}, not {.obj_type_friendly {map}}.",
+                   call = call)
+  }
+  if (!inherits(data, "sf")) {
+    cli::cli_abort(c("{.arg data} must be an sf object of areas, not {.obj_type_friendly {data}}.",
+                     i = "Use {.fn phw_boundaries}, or convert with {.fn sf::st_as_sf}."), call = call)
+  }
+  check_has_rows(data, call = call)
+  if (!is.null(bins) && (!is.numeric(bins) || anyNA(bins) ||
+                         (length(bins) == 1 && bins < 2) || length(bins) == 0)) {
+    cli::cli_abort("{.arg bins} must be a number of bins (2 or more) or a vector of breaks.", call = call)
+  }
+  if (!is.list(polygon_args) || (length(polygon_args) && !rlang::is_named(polygon_args))) {
+    cli::cli_abort("{.arg polygon_args} must be a named list, e.g. {.code list(smoothFactor = 0.5)}.", call = call)
+  }
+  empty <- sf::st_is_empty(data)
+  if (all(empty)) cli::cli_abort("{.arg data} has no areas to draw: every geometry is empty.", call = call)
+  if (any(empty)) {
+    cli::cli_inform("Left out {sum(empty)} row{?s} of {.arg data} with an empty geometry.")
+    data <- data[!empty, ]
+  }
+  types <- unique(as.character(sf::st_geometry_type(data)))
+  bad <- setdiff(types, c("POLYGON", "MULTIPOLYGON"))
+  if (length(bad)) {
+    cli::cli_abort(c("{.arg data} must hold polygons, but has {.val {bad}} geometry.",
+                     i = "Use {.fn leaflet::addCircleMarkers} or {.fn leaflet::addPolylines} for other shapes."),
+                   call = call)
+  }
+  if (is.na(sf::st_crs(data))) {
+    bb <- sf::st_bbox(data)
+    if (any(abs(bb[c("xmin", "xmax")]) > 180) || any(abs(bb[c("ymin", "ymax")]) > 90)) {
+      cli::cli_abort(c("{.arg data} has no coordinate reference system, and its coordinates are not longitude and latitude.",
+                       i = "For British National Grid, set it with {.code sf::st_set_crs(data, 27700)}."),
+                     call = call)
+    }
+  }
+  data
+}
+
+# Hover and click text: a column or an expression of the columns, with one
+# value per row or one for every row.
+leaflet_text <- function(quo, data, arg, call = rlang::caller_env()) {
+  val <- tryCatch(pick_text(quo, data), error = function(e) {
+    cli::cli_abort("{.arg {arg}} must be a column of {.arg data} or an expression of its columns.",
+                   parent = e, call = call)
+  })
+  if (!is.null(val) && !length(val) %in% c(1, nrow(data))) {
+    cli::cli_abort("{.arg {arg}} must have one value, or one for each of the {nrow(data)} rows, not {length(val)}.",
+                   call = call)
+  }
+  val
 }
 
 #' @rdname phw_leaflet
@@ -116,6 +196,24 @@ phw_leaflet_palette <- function(palette = "blues", domain, type = c("numeric", "
                                 bins = 5, reverse = FALSE, na.color = phw_colours[["grey_light"]]) {
   rlang::check_installed("leaflet")
   type <- rlang::arg_match(type)
+  if (type != "factor") {
+    if (is.character(palette) && length(palette) == 1 && palette %in% names(phw_palettes) &&
+        palette_type(palette) == "qualitative") {
+      cli::cli_abort(c("{.val {palette}} is a palette for groups, not for numbers.",
+                       i = "Use a sequential palette such as {.val blues}, or {.code type = \"factor\"}."))
+    }
+    if (!is.numeric(domain)) cli::cli_abort("{.arg domain} must be numbers for {.code type = \"{type}\"}.")
+    domain <- domain[is.finite(domain)]
+    if (!length(domain)) cli::cli_abort("{.arg domain} has no values that are not missing.")
+  }
+  if (type == "quantile") {
+    n_q <- if (length(bins) == 1) bins else 5
+    breaks <- unique(stats::quantile(domain, probs = seq(0, 1, length.out = n_q + 1), names = FALSE))
+    if (length(breaks) < n_q + 1) {
+      cli::cli_abort(c("{.arg domain} has too few different values for {n_q} quantile groups.",
+                       i = "Use fewer {.arg bins}, or {.code type = \"bin\"}."))
+    }
+  }
   n <- if (type == "factor") length(unique(domain)) else 9
   cols <- phw_pal(n, palette = palette, reverse = reverse,
                   type = if (type == "factor") "qualitative" else "sequential")

@@ -43,7 +43,8 @@ lines for vertical bars and time series), \code{"x"} (for horizontal bars),
 \item{strip}{Facet strip style: \code{"light"} (grey band, navy text),
 \code{"navy"} (navy band, white text) or \code{"plain"} (text only).}
 
-\item{axis_line}{Draw a mid-grey line along the bottom axis?}
+\item{axis_line}{Draw a mid-grey line along the bottom axis (the left
+axis with \code{grid = "x"})? It is not drawn with \code{grid = "none"}.}
 
 \item{axis_ticks}{Draw axis tick marks?}
 

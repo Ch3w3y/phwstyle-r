@@ -22,6 +22,15 @@ floor_period <- function(x, interval, week_start = 1) {
     year = as.Date(format(x, "%Y-01-01")))
 }
 
+check_date_range <- function(range, call = rlang::caller_env()) {
+  if (length(range) != 2) cli::cli_abort("{.arg range} must be two dates, the start and end of the axis.", call = call)
+  out <- as_date_col(list(range = range), "range", call = call)
+  if (anyNA(out) || out[1] > out[2]) {
+    cli::cli_abort("{.arg range} must be two dates with the start first, not {.val {as.character(range)}}.", call = call)
+  }
+  out
+}
+
 period_step <- function(interval) {
   switch(interval, day = "day", week = "week", month = "month", quarter = "3 months", year = "year")
 }
@@ -34,10 +43,14 @@ period_step <- function(interval) {
 #'
 #' @param data A data frame with one row per case, or with a count column.
 #' @param date The date column, unquoted as in dplyr (`onset`). A string
-#'   (`"onset"`) works too.
+#'   (`"onset"`) works too. It holds dates, date-times or ISO text such as
+#'   `"2025-01-31"`. Convert text in any other format with [as.Date()]
+#'   first. Rows with no date are left out, with a message.
 #' @param group Optional column to colour and stack by (e.g. age group or
-#'   organism).
-#' @param count Optional column of counts (for aggregated data).
+#'   organism). Missing values are shown as `"Unknown"`. Factor levels with
+#'   no cases are left out, unless `key` is given.
+#' @param count Optional column of counts (for aggregated data). Rows with
+#'   a missing count are left out, with a message.
 #' @param interval `"day"`, `"week"`, `"month"`, `"quarter"` or `"year"`.
 #' @param week_start First day of the week, 1 = Monday (ISO weeks) to 7 =
 #'   Sunday.
@@ -48,11 +61,13 @@ period_step <- function(interval) {
 #' @param date_labels,date_breaks Passed to [ggplot2::scale_x_date()].
 #' @param range Optional two dates for the start and end of the axis,
 #'   e.g. to show a full year even when the first weeks have no cases.
+#'   Rows dated outside it are left out, with a message.
 #' @param average Optional whole number of periods, `k`, for a rolling
 #'   average line. It is the mean of the total count (all groups added
 #'   together) over the latest `k` periods, drawn at the centre of each
 #'   period's column. The first `k - 1` periods have no average and draw
-#'   nothing.
+#'   nothing. With `k` or fewer periods there is no line, and a message
+#'   says so.
 #' @param average_label Legend text for the average line. Defaults to, for
 #'   example, `"7-day average"` or `"4-week average"`.
 #' @param ... Passed to [ggplot2::geom_col()].
@@ -85,12 +100,30 @@ phw_epicurve <- function(data, date, group = NULL, count = NULL,
   group <- pick_col(rlang::enquo(group), data, "group", null_ok = TRUE)
   count <- pick_col(rlang::enquo(count), data, "count", null_ok = TRUE)
   data <- as.data.frame(data)
+  check_has_rows(data)
+  data[[date]] <- as_date_col(data, date, "date")
+  if (!is.null(count)) {
+    check_numeric_col(data, count, "count")
+    if (any(data[[count]] < 0, na.rm = TRUE)) cli::cli_abort("{.arg count} can't be negative.")
+  }
+  lims <- if (!is.null(range)) floor_period(check_date_range(range), interval, week_start)
+  data <- drop_missing(data, c(date, count))
   period <- floor_period(data[[date]], interval, week_start)
+  if (!is.null(range)) {
+    inside <- period >= lims[1] & period <= lims[2]
+    if (!any(inside)) cli::cli_abort("No dates in {.field {date}} fall inside {.arg range}.")
+    if (!all(inside)) {
+      cli::cli_inform("phw_epicurve(): Left out {sum(!inside)} row{?s} dated outside {.arg range}.")
+      data <- data[inside, , drop = FALSE]
+      period <- period[inside]
+    }
+  }
   w <- if (is.null(count)) rep(1, nrow(data)) else data[[count]]
   g <- if (is.null(group)) factor(rep("All", nrow(data))) else as_levels(data[[group]], "Unknown")
-  keep <- !is.na(period)
-  agg <- stats::aggregate(list(n = w[keep]), list(period = period[keep], group = g[keep]), sum)
-  lims <- if (is.null(range)) base::range(agg$period) else floor_period(as.Date(range), interval, week_start)
+  # A key keeps its groups in every chart, so only an unkeyed chart drops empty ones.
+  if (is.null(key)) g <- droplevels(g)
+  agg <- stats::aggregate(list(n = w), list(period = period, group = g), sum)
+  if (is.null(range)) lims <- base::range(agg$period)
   all_p <- seq(lims[1], lims[2], by = period_step(interval))
   full <- expand.grid(period = all_p, group = levels(g), stringsAsFactors = FALSE)
   full$group <- factor(full$group, levels(g))
@@ -98,19 +131,28 @@ phw_epicurve <- function(data, date, group = NULL, count = NULL,
   full$n[is.na(full$n)] <- 0
   if (!is.null(average)) {
     total <- tapply(full$n, full$period, sum)
-    roll <- as.numeric(stats::filter(as.numeric(total), rep(1 / average, average), sides = 1))
-    full$average <- roll[match(as.character(full$period), names(total))]
+    if (average >= length(total)) {
+      cli::cli_inform("phw_epicurve(): No average line, because {.code average = {average}} needs more than the {length(total)} period{?s} shown.")
+      full$average <- NA_real_
+    } else {
+      roll <- as.numeric(stats::filter(as.numeric(total), rep(1 / average, average), sides = 1))
+      full$average <- roll[match(as.character(full$period), names(total))]
+    }
   }
-  width <- switch(interval, day = 0.9, week = 6.3, month = 27, quarter = 82, year = 330)
+  col_args <- utils::modifyList(
+    list(width = switch(interval, day = 0.9, week = 6.3, month = 27, quarter = 82, year = 330), just = 0),
+    list(...))
+  width <- col_args$width
   p <- ggplot2::ggplot(full, ggplot2::aes(x = .data$period, y = .data$n))
   pos <- if (position == "stack") ggplot2::position_stack(reverse = TRUE) else ggplot2::position_dodge()
   if (is.null(group)) {
-    p <- p + ggplot2::geom_col(fill = fill, width = width, just = 0, ...)
+    p <- p + do.call(ggplot2::geom_col, c(list(fill = fill), col_args))
   } else {
-    p <- p + ggplot2::geom_col(ggplot2::aes(fill = .data$group), width = width, just = 0, position = pos, ...) +
+    p <- p + do.call(ggplot2::geom_col, c(list(ggplot2::aes(fill = .data$group)),
+                                          utils::modifyList(list(position = pos), col_args))) +
       scale_fill_phw_d(palette = palette %||% phw_default_palette(), key = key, name = NULL)
   }
-  if (!is.null(average)) {
+  if (!is.null(average) && !all(is.na(full$average))) {
     label <- average_label %||% paste0(average, "-", interval, " average")
     p <- p +
       ggplot2::geom_line(ggplot2::aes(x = .data$period + width / 2, y = .data$average, colour = label),
@@ -145,13 +187,14 @@ phw_epicurve <- function(data, date, group = NULL, count = NULL,
 #' @param age,sex The age and sex columns, unquoted as in dplyr (strings
 #'   work too). `age` should be a factor in age order (or
 #'   will be sorted as text).
-#' @param value Optional column of counts or populations.
+#' @param value Optional column of counts or populations, 0 or more. Rows
+#'   with a missing age, sex or value are left out, with a message.
 #' @param percent Show each bar as a percentage of the total, so
 #'   populations of different sizes can be compared?
 #' @param left Which `sex` value goes on the left. Defaults to the first
 #'   level.
-#' @param compare Optional data frame with the same columns, drawn as
-#'   outlines.
+#' @param compare Optional data frame with the same columns and the same
+#'   two `sex` values, drawn as outlines.
 #' @param palette Two colours, or a palette name.
 #' @param compare_colour Outline colour for `compare`.
 #' @param ... Passed to [ggplot2::geom_col()].
@@ -167,33 +210,57 @@ phw_pyramid <- function(data, age, sex, value = NULL, percent = FALSE, left = NU
   age <- pick_col(rlang::enquo(age), data, "age")
   sex <- pick_col(rlang::enquo(sex), data, "sex")
   value <- pick_col(rlang::enquo(value), data, "value", null_ok = TRUE)
-  prep <- function(d) {
+  call <- rlang::current_env()
+  prep <- function(d, arg) {
     d <- as.data.frame(d)
+    check_has_rows(d, arg, call = call)
+    if (!is.null(value)) {
+      check_numeric_col(d, value, if (arg == "data") "value" else arg, call = call)
+      if (any(d[[value]] < 0, na.rm = TRUE)) cli::cli_abort("{.arg {arg}} has a negative {.field {value}}.", call = call)
+    }
+    d <- drop_missing(d, c(age, sex, value), call = call)
     w <- if (is.null(value)) rep(1, nrow(d)) else d[[value]]
     a <- if (is.factor(d[[age]])) d[[age]] else factor(d[[age]], sort(unique(d[[age]])))
     out <- stats::aggregate(list(n = w), list(age = a, sex = as.character(d[[sex]])), sum)
     if (percent) out$n <- 100 * out$n / sum(out$n)
     out
   }
-  d <- prep(data)
-  sexes <- unique(c(left, if (is.factor(data[[sex]])) levels(data[[sex]]) else sort(unique(d$sex))))
+  d <- prep(data, "data")
+  sexes <- if (is.factor(data[[sex]])) levels(data[[sex]]) else sort(unique(d$sex))
   sexes <- sexes[sexes %in% d$sex]
   if (length(sexes) != 2) cli::cli_abort("{.arg sex} must have exactly two values, not {length(sexes)}.")
+  if (!is.null(left)) {
+    if (!(rlang::is_string(left) && left %in% sexes)) {
+      cli::cli_abort("{.arg left} must be one of the {.field {sex}} values: {.val {sexes}}.")
+    }
+    sexes <- unique(c(left, sexes))
+  }
   d$sex <- factor(d$sex, sexes)
   d$x <- ifelse(d$sex == sexes[1], -d$n, d$n)
+  if (!is.null(compare)) {
+    gone <- setdiff(c(age, sex, value), names(compare))
+    if (length(gone)) cli::cli_abort("{.arg compare} has no {.field {gone}} column{?s}, which {.arg data} has.")
+    cd <- prep(compare, "compare")
+    other <- setdiff(cd$sex, sexes)
+    if (length(other)) {
+      cli::cli_abort(c("{.arg compare} must use the same {.field {sex}} values as {.arg data}.",
+                       x = "{.arg compare} has {.val {other}}; {.arg data} has {.val {sexes}}."))
+    }
+  }
   cols <- if (is.null(palette)) unname(phw_colours[c("navy", "teal")]) else phw_pal(2, palette = palette)
   lab_fun <- function(x) {
     if (percent) paste0(format(abs(x), trim = TRUE), "%") else format(abs(x), big.mark = ",", trim = TRUE, scientific = FALSE)
   }
   lim <- max(abs(d$x))
+  bar_args <- utils::modifyList(list(width = 0.85), list(...))
   p <- ggplot2::ggplot(d, ggplot2::aes(x = .data$x, y = .data$age)) +
-    ggplot2::geom_col(ggplot2::aes(fill = .data$sex), width = 0.85, ...)
+    do.call(ggplot2::geom_col, c(list(ggplot2::aes(fill = .data$sex)), bar_args))
   if (!is.null(compare)) {
-    cd <- prep(compare)
     cd$sex <- factor(cd$sex, sexes)
     cd$x <- ifelse(cd$sex == sexes[1], -cd$n, cd$n)
     lim <- max(lim, abs(cd$x))
-    p <- p + ggplot2::geom_col(data = cd, fill = NA, colour = compare_colour, width = 0.85, linewidth = 0.5)
+    p <- p + ggplot2::geom_col(data = cd, fill = NA, colour = compare_colour, width = bar_args$width,
+                                 linewidth = 0.5)
   }
   p + ggplot2::geom_vline(xintercept = 0, colour = phw_colours[["text"]], linewidth = 0.4) +
     ggplot2::scale_fill_manual(values = cols, name = NULL) +
@@ -235,14 +302,17 @@ relabel_levels <- function(f, labels, call = rlang::caller_env()) {
 #'
 #' @param data A data frame with one row per unit (area, practice...).
 #' @param numerator,denominator Columns of events and of population (or
-#'   patients, tests...), unquoted as in dplyr. Strings work too.
+#'   patients, tests...), unquoted as in dplyr. Strings work too. Rows with
+#'   a missing value or a denominator of 0 are left out, with a message.
 #' @param label Optional column of unit names; units outside the outer
 #'   limits are labelled.
 #' @param type `"proportion"` (e.g. uptake) or `"rate"` (e.g. incidence).
 #' @param multiplier Scale for the y axis: 100 for a percentage, 1e5 for a
 #'   rate per 100,000.
 #' @param target The target value on the multiplied scale. Defaults to the
-#'   overall value (sum of numerators over sum of denominators).
+#'   overall value (sum of numerators over sum of denominators). It must be
+#'   above 0 (and below `multiplier` for a proportion), since otherwise the
+#'   limits have no width.
 #' @param limits Two confidence levels for the inner and outer limits.
 #' @param point_colour Colour of points within the limits.
 #' @param labels Optional named character vector that renames the zones in
@@ -270,9 +340,32 @@ phw_funnel <- function(data, numerator, denominator, label = NULL, type = c("pro
   denominator <- pick_col(rlang::enquo(denominator), data, "denominator")
   label <- pick_col(rlang::enquo(label), data, "label", null_ok = TRUE)
   data <- as.data.frame(data)
+  check_has_rows(data)
+  check_numeric_col(data, numerator, "numerator")
+  check_numeric_col(data, denominator, "denominator")
+  if (!(is.numeric(limits) && length(limits) == 2 && all(limits > 0 & limits < 1) && limits[1] < limits[2])) {
+    cli::cli_abort("{.arg limits} must be two confidence levels between 0 and 1, inner first, such as {.code c(0.95, 0.998)}.")
+  }
+  top <- if (type == "proportion") multiplier else Inf
+  if (!is.null(target) && !(is.numeric(target) && length(target) == 1 && is.finite(target) && target > 0 && target < top)) {
+    below <- if (type == "proportion") paste(" and below", multiplier) else ""
+    cli::cli_abort(c("{.arg target} must be one number above 0{below}.",
+                     i = "It is on the same scale as the chart, with {.code multiplier = {multiplier}}."))
+  }
+  data <- drop_missing(data, c(numerator, denominator))
+  zero <- data[[denominator]] == 0
+  if (all(zero)) cli::cli_abort("Every {.field {denominator}} is 0.")
+  if (any(zero)) {
+    cli::cli_inform("phw_funnel(): Left out {sum(zero)} row{?s} where {.field {denominator}} is 0.")
+    data <- data[!zero, , drop = FALSE]
+  }
   num <- data[[numerator]]
   den <- data[[denominator]]
   p0 <- if (is.null(target)) sum(num) / sum(den) else target / multiplier
+  if (!(p0 > 0 && p0 * multiplier < top)) {
+    cli::cli_abort(c("The overall value is {p0 * multiplier}, so the funnel has no limits to draw.",
+                     i = "Give a {.arg target} to compare the units against."))
+  }
   se <- function(n) if (type == "proportion") sqrt(p0 * (1 - p0) / n) else sqrt(p0 / n)
   z <- stats::qnorm(1 - (1 - sort(limits)) / 2)
   data$value <- multiplier * num / den
@@ -331,14 +424,15 @@ phw_funnel <- function(data, numerator, denominator, label = NULL, type = c("pro
 #' "Making Data Count" charts.
 #'
 #' @param data A data frame with one row per time point.
-#' @param x,y The time column (date or number) and the measure, unquoted as
-#'   in dplyr (strings work too).
+#' @param x,y The time column (a date, date-time or number, not text) and
+#'   the measure, unquoted as in dplyr (strings work too). Rows with a
+#'   missing `x` or `y` are left out, with a message.
 #' @param type `"xmr"` (centre line at the mean, limits at 2.66 times the
 #'   mean moving range) or `"run"` (median line, no limits).
 #' @param improvement Which direction is better: `"none"`, `"increase"` or
 #'   `"decrease"`.
 #' @param baseline Number of points to calculate the centre line and limits
-#'   from (e.g. the first 20). `NULL` uses all points.
+#'   from (e.g. the first 20), at least 2. `NULL` uses all points.
 #' @param shift,trend Run lengths that count as special causes.
 #' @param labels Optional named character vector that renames the signals
 #'   in the legend and in `$data`, e.g. `c("Common cause" = "Achos cyffredin")`.
@@ -359,6 +453,19 @@ phw_spc <- function(data, x, y, type = c("xmr", "run"), improvement = c("none", 
   x <- pick_col(rlang::enquo(x), data, "x")
   y <- pick_col(rlang::enquo(y), data, "y")
   data <- as.data.frame(data)
+  check_has_rows(data)
+  if (!(inherits(data[[x]], c("Date", "POSIXt")) || is.numeric(data[[x]]))) {
+    cli::cli_abort(c("{.arg x} must be dates, date-times or numbers.",
+                     x = "Column {.field {x}} is {.cls {class(data[[x]])[1]}}.",
+                     i = "Convert it first, for example with {.fn as.Date}."))
+  }
+  check_numeric_col(data, y, "y")
+  if (!is.null(baseline) &&
+      !(is.numeric(baseline) && length(baseline) == 1 && isTRUE(baseline >= 2) && baseline == round(baseline))) {
+    cli::cli_abort("{.arg baseline} must be a whole number of points, 2 or more.")
+  }
+  data <- drop_missing(data, c(x, y))
+  if (nrow(data) < 2) cli::cli_abort("An SPC chart needs at least 2 points, not {nrow(data)}.")
   data <- data[order(data[[x]]), , drop = FALSE]
   v <- data[[y]]
   n <- length(v)

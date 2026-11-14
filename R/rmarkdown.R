@@ -47,7 +47,12 @@
 #' text and thicker lines as well, call `use_phw_ggplot(accessible = TRUE)`
 #' in the setup chunk.
 #'
-#' @param ... Passed to the underlying rmarkdown format.
+#' @param ... Passed to the underlying rmarkdown format. Your own `css`,
+#'   `includes` and `pandoc_args` are added to the PHW ones, and other
+#'   arguments such as `toc_float`, `dev` or `fig_caption` replace the PHW
+#'   defaults. The arguments that make the PHW look (`theme` for HTML,
+#'   `reference_docx` for Word and `latex_engine` for PDF) can't be changed
+#'   here: use the plain rmarkdown format for your own.
 #' @param toc Include a table of contents?
 #' @param number_sections Number the headings (1, 1.1, ...) like PHW reports?
 #' @param fig_width,fig_height Default figure size in inches.
@@ -117,18 +122,18 @@ phw_html_document <- function(..., toc = TRUE, number_sections = FALSE,
                               fig_width = 7.5, fig_height = 4.5, style_plots = TRUE,
                               palette = NULL) {
   rlang::check_installed(c("rmarkdown", "bslib"))
+  check_true_false(style_plots)
+  dots <- list(...)
+  args <- format_args(list(toc = toc, toc_float = toc, number_sections = number_sections,
+                           fig_width = fig_width, fig_height = fig_height,
+                           dev = if (requireNamespace("ragg", quietly = TRUE)) "ragg_png" else "png"),
+                      dots, fixed = "theme", base = "html_document")
   band <- tempfile(fileext = ".html")
   writeLines(html_band(), band)
-  fmt <- rmarkdown::html_document(
-    ...,
-    theme = phw_bs_theme(),
-    toc = toc, toc_float = toc,
-    number_sections = number_sections,
-    fig_width = fig_width, fig_height = fig_height,
-    dev = if (requireNamespace("ragg", quietly = TRUE)) "ragg_png" else "png",
-    css = phw_file("css", "phw-html-document.css"),
-    includes = rmarkdown::includes(before_body = band)
-  )
+  args$theme <- phw_bs_theme()
+  args$css <- c(phw_file("css", "phw-html-document.css"), dots$css)
+  args$includes <- merge_includes(rmarkdown::includes(before_body = band), dots$includes)
+  fmt <- do.call(rmarkdown::html_document, args)
   add_setup(fmt, style_plots, palette)
 }
 
@@ -138,19 +143,35 @@ phw_word_document <- function(..., toc = FALSE, number_sections = FALSE,
                               fig_width = 6.3, fig_height = 3.9, style_plots = TRUE,
                               palette = NULL) {
   rlang::check_installed("rmarkdown")
-  fmt <- rmarkdown::word_document(
-    ...,
-    toc = toc,
-    number_sections = number_sections,
-    fig_width = fig_width, fig_height = fig_height,
-    fig_caption = TRUE,
-    reference_docx = phw_reference_docx()
-  )
+  check_true_false(style_plots)
+  args <- format_args(list(toc = toc, number_sections = number_sections,
+                           fig_width = fig_width, fig_height = fig_height, fig_caption = TRUE),
+                      list(...), fixed = "reference_docx", base = "word_document")
+  args$reference_docx <- phw_reference_docx()
+  fmt <- do.call(rmarkdown::word_document, args)
   if (requireNamespace("ragg", quietly = TRUE)) fmt$knitr$opts_chunk$dev <- "ragg_png"
   fmt$knitr$opts_chunk$dpi <- 300
   add_setup(fmt, style_plots, palette)
 }
 
+# The arguments for an rmarkdown format: the PHW defaults, replaced by any
+# the user gives in `...`, except the `fixed` ones that make the PHW look.
+# Arguments that add to the PHW ones (css, includes, pandoc_args) are merged
+# by the caller.
+format_args <- function(defaults, dots, fixed, base, call = rlang::caller_env()) {
+  clash <- intersect(names(dots), fixed)
+  if (length(clash)) {
+    cli::cli_abort(c("This format sets {.arg {clash}} itself, for the PHW look.",
+                     i = "To use your own, call {.fn rmarkdown::{base}} instead."), call = call)
+  }
+  c(defaults[setdiff(names(defaults), rlang::names2(dots))], dots)
+}
+
+merge_includes <- function(ours, theirs) {
+  rmarkdown::includes(in_header = c(ours$in_header, theirs$in_header),
+                      before_body = c(ours$before_body, theirs$before_body),
+                      after_body = c(ours$after_body, theirs$after_body))
+}
 
 #' @rdname phw_formats
 #' @param cover Draw the full-page gradient cover when the document has a
@@ -162,20 +183,20 @@ phw_pdf_document <- function(..., toc = FALSE, number_sections = TRUE,
                              fig_width = 6.3, fig_height = 3.9, cover = TRUE,
                              team = NULL, style_plots = TRUE, palette = NULL) {
   rlang::check_installed("rmarkdown")
+  check_true_false(style_plots)
+  check_true_false(cover)
+  dots <- list(...)
+  args <- format_args(list(toc = toc, number_sections = number_sections,
+                           fig_width = fig_width, fig_height = fig_height, fig_caption = TRUE),
+                      dots, fixed = "latex_engine", base = "pdf_document")
   header <- phw_latex_header(team = team, cover = cover)
-  fmt <- rmarkdown::pdf_document(
-    ...,
-    toc = toc,
-    number_sections = number_sections,
-    fig_width = fig_width, fig_height = fig_height,
-    fig_caption = TRUE,
-    latex_engine = "xelatex",
-    includes = rmarkdown::includes(in_header = header),
-    pandoc_args = c("--variable", "geometry:a4paper,top=3.2cm,bottom=2.6cm,left=2cm,right=2cm",
-                    "--variable", "documentclass:article",
-                    "--variable", "fontsize:11pt",
-                    "--variable", "colorlinks:true")
-  )
+  args$latex_engine <- "xelatex"
+  args$includes <- merge_includes(rmarkdown::includes(in_header = header), dots$includes)
+  args$pandoc_args <- c("--variable", "geometry:a4paper,top=3.2cm,bottom=2.6cm,left=2cm,right=2cm",
+                        "--variable", "documentclass:article",
+                        "--variable", "fontsize:11pt",
+                        "--variable", "colorlinks:true", dots$pandoc_args)
+  fmt <- do.call(rmarkdown::pdf_document, args)
   if (requireNamespace("ragg", quietly = TRUE)) fmt$knitr$opts_chunk$dev <- "ragg_png"
   fmt$knitr$opts_chunk$dpi <- 300
   add_setup(fmt, style_plots, palette)
@@ -188,7 +209,8 @@ phw_pdf_document <- function(..., toc = FALSE, number_sections = TRUE,
 #' LaTeX-based formats, e.g. `includes: in_header:` in bookdown.
 #'
 #' @param file Where to write the header.
-#' @param team Optional team line for the cover.
+#' @param team Optional team line for the cover. Characters that LaTeX
+#'   treats as commands, such as `&` and `%`, are printed as written.
 #' @param cover Keep the full-page cover?
 #' @return The file path.
 #' @examples
@@ -196,6 +218,9 @@ phw_pdf_document <- function(..., toc = FALSE, number_sections = TRUE,
 #' head(readLines(f))
 #' @export
 phw_latex_header <- function(file = tempfile(fileext = ".tex"), team = NULL, cover = TRUE) {
+  check_out_file(file)
+  check_one_string(team, allow_null = TRUE)
+  check_true_false(cover)
   slash <- function(p) gsub("\\", "/", normalizePath(p, winslash = "/"), fixed = TRUE)
   logo <- phw_logo("white", "png")
   paths <- list(

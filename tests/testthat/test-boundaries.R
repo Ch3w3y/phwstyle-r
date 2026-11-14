@@ -249,3 +249,26 @@ test_that("the fields of a saved file are found from their names", {
                c(code = "community", name = "community", name_cy = ""))
   expect_null(guess_boundary_fields(c("FID", "geometry")))
 })
+
+test_that("crs and level are checked before any download", {
+  skip_if_not_installed("sf")
+  skip_if_not_installed("jsonlite")
+  local_mocked_bindings(boundary_fetch = function(...) stop("should not download"))
+  for (crs in list(99999, "notacrs", NA, NULL)) {
+    expect_error(phw_boundaries("health_board", crs = crs), "`crs` must be a coordinate reference system")
+  }
+  expect_error(phw_boundaries(c("health_board", "local_authority")), "`level` must be one level")
+  expect_error(phw_boundary_levels(NA), "`detail` must be")
+  expect_error(phw_boundaries_cache(NA), "`clear` must be")
+})
+
+test_that("a failed download shows only the clean error, not the download warnings", {
+  skip_if_not_installed("sf")
+  skip_if_not_installed("jsonlite")
+  withr::local_options(phwstyle.boundary_dir = withr::local_tempdir(), phwstyle.boundary_update = FALSE)
+  local_mocked_bindings(download_ons = function(row, file) {
+    warning("URL status was 'Couldn't connect to server'")
+    stop("cannot open URL")
+  }, download_dmw = function(row, file) stop("cannot open URL"))
+  expect_no_warning(expect_error(phw_boundaries("health_board", quiet = TRUE), "Could not download"))
+})

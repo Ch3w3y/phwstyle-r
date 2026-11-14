@@ -22,10 +22,12 @@ linear_to_srgb <- function(v) ifelse(v <= 0.0031308, 12.92 * v, 1.055 * v^(1 / 2
 #' severity. About 1 in 12 men and 1 in 200 women have red-green colour
 #' blindness (deuteranopia or protanopia). Tritanopia is rare.
 #'
-#' @param colours Colours (any form [grDevices::col2rgb()] accepts).
+#' @param colours Colours (any form [grDevices::col2rgb()] accepts), or a
+#'   palette name. A missing colour (`NA`) stays `NA`.
 #' @param type `"deutan"` (green-blind, the most common), `"protan"`
 #'   (red-blind) or `"tritan"` (blue-blind).
-#' @return Hex colours as they would be seen.
+#' @return Hex colours as they would be seen, with `NA` where a colour is
+#'   missing.
 #' @references Machado, G. M., Oliveira, M. M. and Fernandes, L. A. F. (2009).
 #'   A physiologically-based model for simulation of color vision deficiency.
 #'   IEEE Transactions on Visualization and Computer Graphics, 15(6),
@@ -35,10 +37,14 @@ linear_to_srgb <- function(v) ifelse(v <= 0.0031308, 12.92 * v, 1.055 * v^(1 / 2
 #' @export
 phw_cvd <- function(colours, type = c("deutan", "protan", "tritan")) {
   type <- rlang::arg_match(type)
-  rgb <- srgb_to_linear(grDevices::col2rgb(colours) / 255)
+  colours <- as_colours(colours, "colours", na_ok = TRUE)
+  res <- rep(NA_character_, length(colours))
+  ok <- !is.na(colours)
+  rgb <- srgb_to_linear(grDevices::col2rgb(colours[ok]) / 255)
   out <- cvd_matrices[[type]] %*% rgb
   out <- pmin(pmax(linear_to_srgb(out), 0), 1)
-  grDevices::rgb(out[1, ], out[2, ], out[3, ])
+  res[ok] <- grDevices::rgb(out[1, ], out[2, ], out[3, ])
+  res
 }
 
 colour_distance <- function(colours) {
@@ -72,12 +78,10 @@ colour_distance <- function(colours) {
 #' @export
 phw_check_colours <- function(colours, background = "#FFFFFF", min_distance = 10,
                               min_contrast = 3) {
-  cols <- if (length(colours) == 1 && colours %in% names(phw_palettes)) {
-    unname(phw_palettes[[colours]])
-  } else {
-    unname(colours)
-  }
-  if (length(cols) < 2) cli::cli_abort("Give at least two colours.")
+  cols <- as_colours(colours, "colours")
+  background <- as_colours(background, "background")
+  if (length(background) != 1) cli::cli_abort("{.arg background} must be one colour.")
+  if (length(cols) < 2) cli::cli_abort("{.arg colours} must have at least two colours.")
   types <- c(normal = "none", deuteranopia = "deutan", protanopia = "protan", tritanopia = "tritan")
   rows <- lapply(names(types), function(nm) {
     seen <- if (types[[nm]] == "none") cols else phw_cvd(cols, types[[nm]])
@@ -116,7 +120,10 @@ phw_check_colours <- function(colours, background = "#FFFFFF", min_distance = 10
 #' @param ... Passed to [ggplot2::scale_shape_manual()] or
 #'   [ggplot2::scale_linetype_manual()].
 #' @param values Override the shapes or line types.
-#' @return A ggplot2 scale.
+#' @param na.value Shape or line type for a missing group, so it stays on
+#'   the chart.
+#' @return A ggplot2 scale. A chart with more groups than `values` stops
+#'   with an error when it is drawn.
 #' @examples
 #' library(ggplot2)
 #' ggplot(mpg, aes(displ, hwy, colour = drv, shape = drv)) +
@@ -124,12 +131,23 @@ phw_check_colours <- function(colours, background = "#FFFFFF", min_distance = 10
 #'   scale_shape_phw() +
 #'   theme_phw()
 #' @export
-scale_shape_phw <- function(..., values = c(16, 17, 15, 18, 1, 2, 0, 5)) {
-  ggplot2::scale_shape_manual(..., values = values)
+scale_shape_phw <- function(..., values = c(16, 17, 15, 18, 1, 2, 0, 5), na.value = 4) {
+  limit_groups(ggplot2::scale_shape_manual(..., values = values, na.value = na.value), values, "shapes")
 }
 
 #' @rdname scale_shape_phw
 #' @export
-scale_linetype_phw <- function(..., values = c("solid", "22", "42", "13", "1343", "73", "2262", "12223242")) {
-  ggplot2::scale_linetype_manual(..., values = values)
+scale_linetype_phw <- function(..., values = c("solid", "22", "42", "13", "1343", "73", "2262", "12223242"),
+                               na.value = "16") {
+  limit_groups(ggplot2::scale_linetype_manual(..., values = values, na.value = na.value), values, "line types")
+}
+
+limit_groups <- function(scale, values, what) {
+  ggplot2::ggproto(NULL, scale, palette = function(n) {
+    if (n > length(values)) {
+      cli::cli_abort(c("There are {n} groups but only {length(values)} {what}.",
+                       i = "Use facets or direct labels to tell this many groups apart."), call = NULL)
+    }
+    values
+  })
 }
