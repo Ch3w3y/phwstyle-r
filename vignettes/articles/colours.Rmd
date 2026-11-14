@@ -18,14 +18,17 @@ use_phw_ggplot()
 set.seed(1)
 ```
 
+This page shows how phwstyle chooses colours and how to check them. All
+data on it is made up.
+
 ## The palettes
 
 `show_phw_palettes()` draws every palette with its colours. Give a name
-to the `palette` argument of any phwstyle function, e.g.
+to the `palette` argument of any phwstyle function, for example
 `scale_fill_phw_d(palette = "strategy")` or
 `phw_flextable_heat(palette = "greens")`.
 
-```{r, fig.width = 11, fig.height = 5.5}
+```{r, fig.width = 11, fig.height = 5.5, fig.alt = "Every PHW palette drawn as a row of coloured swatches, each labelled with its name."}
 show_phw_palettes()
 ```
 
@@ -41,13 +44,33 @@ show_phw_palettes()
 | `orange_navy` | Orange through pale grey to navy | Numbers above and below a midpoint, such as change from last year |
 
 `phw_pal()` returns the colours, and `phw_colours` holds every brand
-colour by name. `phw_col()` picks colours by name.
+colour by name. `phw_col()` picks colours by name. `phw_default_palette()`
+returns the palette that charts, tables and widgets use when you don't name
+one.
 
 ```{r}
 phw_pal()            # navy, teal, orange, pink
 phw_pal(6)           # more than four groups carry on into "extended"
 phw_pal(5, "greens") # sequential palettes give any number of colours
 phw_col("navy", "teal")
+phw_default_palette()
+```
+
+`phw_pal_fun()` returns a function that takes a number and returns that
+many colours. Use it where another package asks for a palette function, or
+for `colours` in a ggplot2 gradient scale.
+
+```{r, fig.height = 3, fig.alt = "A grid of tiles shaded from pale to dark green, using colours from a palette function."}
+greens <- phw_pal_fun("greens")
+greens(5)
+
+tidyr::expand_grid(x = 1:8, y = 1:3) |>
+  mutate(value = x + y) |>
+  ggplot(aes(x, y, fill = value)) +
+  geom_tile(colour = "white") +
+  scale_fill_gradientn(colours = greens(9)) +
+  labs(title = "A gradient from phw_pal_fun()", x = NULL, y = NULL) +
+  theme_phw(grid = "none", legend = "right")
 ```
 
 Every `palette` argument also takes your own vector of colours, e.g.
@@ -60,12 +83,13 @@ groups use `main`. More than four carry on into `extended`, so a chart
 with six groups starts with the same colours as a chart with four, and
 charts in the same report match.
 
-```{r}
+```{r, fig.alt = "Six weekly lines of cases, coloured navy, teal, orange, pink, black and green."}
 weekly <- tidyr::expand_grid(week = 1:12, group = paste("Group", 1:6)) |>
   mutate(cases = round(20 + 3 * week + 8 * as.integer(factor(group)) + rnorm(n(), 0, 4)))
 
 ggplot(weekly, aes(week, cases, colour = group)) +
   geom_line(linewidth = 1) +
+  scale_x_continuous(breaks = seq(2, 12, 2)) +
   labs(title = "Six groups: the four main colours, then black and green",
        x = "Week", y = "Cases")
 ```
@@ -75,10 +99,9 @@ colour alone well before that. With many groups, use facets, label the
 lines directly, or pick out one group with `palette = "highlight"`.
 
 Groups called "Other", "Unknown", "Not known" and similar are drawn in
-grey, so they don't compete with real groups, when you add a PHW scale
-such as `scale_fill_phw_d()` or use a colour key. (Only those know the
-group names: a plot left on the default colours gives "Unknown" an
-ordinary colour.)
+grey, so they don't compete with real groups. This happens when you add a
+PHW scale such as `scale_fill_phw_d()` or use a colour key. A plot left on
+the default ggplot2 colours gives "Unknown" an ordinary colour.
 
 ### Colours with a fixed meaning
 
@@ -86,7 +109,7 @@ When a colour should always mean the same thing, pin it with `values`. For
 example, to colour by strategic priority, match your groups to the names
 in the `strategy` palette:
 
-```{r}
+```{r, fig.alt = "Horizontal bars of projects for four strategic priorities, each in its own strategy colour."}
 phw_palettes$strategy
 
 priorities <- tibble(
@@ -117,6 +140,14 @@ phw_colour_key(ages, "age_group")
 phw_colour_key(c("Under 1", ages, "Unknown"), "age_group")
 ```
 
+`phw_key()` returns one stored key and `phw_keys()` lists every key in the
+session as a data frame:
+
+```{r}
+phw_key("age_group")
+phw_keys()
+```
+
 Use the same key name everywhere the groups appear:
 
 | Where | How |
@@ -136,12 +167,30 @@ phw_key_file("phw-colours.csv")
 ```
 
 The file is plain text (`key,level,colour`) that you can edit by hand
-and keep with the project. `phw_key_set()` pins colours by hand,
-`phw_key_recolour()` moves a whole key to another palette on purpose, and
-`phw_key_reset()` forgets a key.
+and keep with the project.
 
-```{r, include = FALSE}
+`phw_key_set()` pins the colour of one or more groups by hand. Give it
+named colours:
+
+```{r}
+phw_key_set("age_group", c("65+" = unname(phw_col("orange"))))
+phw_key("age_group")
+```
+
+`phw_key_recolour()` moves a whole key to another palette, keeping the group
+order. Do this on purpose, because every report that uses the key changes
+colour with it.
+
+```{r}
+phw_key_recolour("age_group", "accessible")
+phw_key("age_group")
+```
+
+`phw_key_reset()` forgets a key, or every key if you give no name.
+
+```{r}
 phw_key_reset("age_group")
+nrow(phw_keys())
 ```
 
 ## Colour-blind safe colours
@@ -167,13 +216,22 @@ these places:
 
 If more than one is set, the option wins, then the environment variable,
 then the YAML header. `?phw_default_palette` has the details, and
-[Reports and documents](documents.html#default-and-accessible-colours)
-shows how to render one document both ways.
+[Reports, slides and dashboards](documents.html#default-and-accessible-colours)
+shows how to render one document both ways. `phw_default_palette()` shows
+which palette is in force:
 
 ```{r}
+phw_default_palette()
+old <- options(phwstyle.palette = "accessible")
+phw_default_palette()
+options(old)
+```
+
+```{r, fig.alt = "Six weekly lines of cases in the accessible palette."}
 ggplot(weekly, aes(week, cases, colour = group)) +
   geom_line(linewidth = 1) +
   scale_colour_phw_d(palette = "accessible") +
+  scale_x_continuous(breaks = seq(2, 12, 2)) +
   labs(title = "The same chart in the accessible palette", x = "Week", y = "Cases")
 ```
 
@@ -193,16 +251,30 @@ switch doesn't change sizes. Use either or both.
 
 Colour should never be the only way to tell groups apart, and printed
 reports are often black and white. Add shapes or line types with
-`scale_shape_phw()` and `scale_linetype_phw()`:
+`scale_shape_phw()` and `scale_linetype_phw()`.
 
-```{r}
+```{r, fig.alt = "Four weekly lines of cases, each with its own colour and point shape."}
 weekly |>
   filter(group %in% paste("Group", 1:4)) |>
   ggplot(aes(week, cases, colour = group, shape = group)) +
   geom_line() +
   geom_point(size = 2.2) +
   scale_shape_phw() +
+  scale_x_continuous(breaks = seq(2, 12, 2)) +
   labs(title = "Colour and shape", x = "Week", y = "Cases")
+```
+
+Line types suit a chart where one line is observed and another is
+projected, because readers can tell them apart without colour.
+
+```{r, fig.alt = "A navy solid line of observed cases that ends at week 10, and a navy dashed line of projected cases that continues from it."}
+trend <- tibble(week = 1:16, cases = round(30 + 4 * week + rnorm(16, 0, 3))) |>
+  mutate(status = if_else(week <= 10, "Observed", "Projected"))
+trend <- bind_rows(trend, filter(trend, week == 10) |> mutate(status = "Projected"))
+ggplot(trend, aes(week, cases, linetype = status)) +
+  geom_line(colour = phw_col("navy"), linewidth = 1) +
+  scale_linetype_phw() +
+  labs(title = "Observed and projected cases", x = "Week", y = "Cases")
 ```
 
 In tables, `phw_flextable_heat(palette = "rag")` puts a shape before each
@@ -211,7 +283,7 @@ red, amber or green value (a down triangle, a square, an up triangle), and
 
 ## Checking colours
 
-`phw_check_colours()` tests any set of colours: for normal vision and each
+`phw_check_colours()` tests any set of colours. For normal vision and each
 type of colour blindness it finds the two colours that are hardest to tell
 apart, and it checks each colour's contrast against the background.
 Distances under about 10 are hard to tell apart in a legend. Contrast
@@ -222,10 +294,31 @@ chart marks and 4.5:1 for text.
 phw_check_colours(c("#285087", "#D50B5C", "#338276"))
 ```
 
-`phw_cvd()` shows colours as a colour-blind reader would see them, and
+`phw_cvd()` returns colours as a colour-blind reader would see them, for
+`"deutan"`, `"protan"` or `"tritan"`. Compare a set of colours with its
+simulated version:
+
+```{r}
+orig <- c(phw_col("navy"), phw_col("teal"), phw_col("orange"), phw_col("pink"))
+phw_cvd(orig, "deutan")
+```
+
+```{r, fig.height = 2.5, fig.alt = "Two rows of four swatches. The top row shows the main palette and the bottom row shows how a green-blind reader sees it."}
+swatches <- tibble(
+  colour = c(orig, phw_cvd(orig, "deutan")),
+  view = factor(rep(c("As drawn", "Deutan"), each = 4), levels = c("Deutan", "As drawn")),
+  x = rep(1:4, 2)
+)
+ggplot(swatches, aes(x, view, fill = colour)) +
+  geom_tile(colour = "white", linewidth = 1.5) +
+  scale_fill_identity() +
+  labs(x = NULL, y = NULL) +
+  theme_phw(grid = "none")
+```
+
 `show_phw_palettes()` takes the same option:
 
-```{r, fig.width = 11, fig.height = 3}
+```{r, fig.width = 11, fig.height = 3, fig.alt = "Five palettes drawn as swatches, simulated for a green-blind reader."}
 show_phw_palettes(c("main", "extended", "accessible", "rag", "rag_accessible"), cvd = "deutan")
 ```
 
@@ -240,3 +333,7 @@ phw_text_on(phw_col("navy", "light_teal"))
 Three of the `extended` colours (gold, mint and bright green) have less
 than 3:1 contrast on white. They suit filled bars and areas better than
 thin lines or small points.
+
+For the same colours in charts, see [Charts](charts.html). For the
+colours in documents, see
+[Reports, slides and dashboards](documents.html#default-and-accessible-colours).

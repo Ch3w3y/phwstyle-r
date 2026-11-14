@@ -11,11 +11,12 @@ Description: Applies the visual identity of Public Health Wales, as used by
     and colour-blind safe palettes, colour keys that keep groups the same
     colour across reports, the Ubuntu typeface and an optional logo
     download; a 'ggplot2' theme, scales and public health charts (epidemic
-    curves, population pyramids, funnel plots and statistical process
-    control charts); summary, epidemiology and nested group tables rendered
-    with 'flextable', 'gt', 'reactable' or Excel; themes for 'gtsummary',
-    'plotly', 'DT', 'leaflet' and 'shiny'; boundaries for Welsh geographies;
-    'PowerPoint' slides; R Markdown output formats (HTML, Word, PDF) and a
+    curves, population pyramids, funnel plots, forest plots and statistical
+    process control charts); summary, epidemiology and nested group tables
+    rendered with 'flextable', 'gt', 'reactable' or Excel; themes for
+    'gtsummary', 'plotly', 'DT', 'leaflet' and 'shiny'; boundaries for Welsh
+    geographies and choropleth maps; 'PowerPoint' slides and a 'PowerPoint'
+    template; R Markdown output formats (HTML, Word, PDF) and a
     Quarto extension (HTML, Word, 'Typst' PDF, 'revealjs' slides and
     dashboards).
 URL: https://ch3w3y.github.io/phwstyle-r/, https://github.com/Ch3w3y/phwstyle-r

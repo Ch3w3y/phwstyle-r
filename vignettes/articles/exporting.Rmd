@@ -1,19 +1,31 @@
 ---
-title: "Excel, PowerPoint, Word and interactive tables"
+title: "Excel, PowerPoint and Word"
+description: >
+  Write styled Excel workbooks, build 16:9 PowerPoint decks from the PHW
+  template, and save tables to Word.
 ---
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", message = FALSE, warning = FALSE)
 ```
 
+This page shows how to turn the tables and charts you already have into an
+Excel workbook, a PowerPoint deck and a Word file. For interactive tables,
+see [Interactive charts, tables and apps](interactive.html). The data below is
+made up.
+
 ```{r}
 library(phwstyle)
 library(dplyr)
+library(ggplot2)
+use_phw_ggplot()
 set.seed(1)
 dat <- tibble(group = sample(c("Group A", "Group B", "Group C"), 300, replace = TRUE),
               type = sample(c("Type 1", "Type 2", "Type 3"), 300, replace = TRUE),
               year = sample(2024:2025, 300, replace = TRUE))
 tab <- phw_group_table(dat, c(group, type), year)
+bars <- ggplot(dat, aes(group, fill = type)) + geom_bar() +
+  scale_fill_phw_d() + labs(x = NULL, y = "Cases", fill = NULL)
 ```
 
 ## Excel
@@ -31,36 +43,88 @@ phw_write_xlsx(list(Grouped = tab, Raw = dat), "tables.xlsx",
 
 ## PowerPoint
 
-`phw_pptx()` starts a 16:9 deck from the bundled PHW template, with Ubuntu
-text and navy titles. Pass your organisation's PowerPoint template to use
-its slide layouts instead. `phw_add_slide()` adds a slide with a styled title and a
-chart, table or bullet points. Charts are editable in PowerPoint when the
-rvg package is installed.
+`phw_pptx()` starts a deck from the PHW template. It is 16:9, with Ubuntu
+text, navy titles and a navy bar across the top of each content slide.
+`phw_add_slide()` adds one slide at a time, and each slide holds a title and
+one chart, one table or one set of bullet points. Add `source` and `date` for the
+caption at the bottom. Save the deck with `print()`.
 
 ```{r, eval = FALSE}
-library(ggplot2)
 deck <- phw_pptx() |>
-  phw_add_slide("Key messages", text = c("First message", "Second message")) |>
+  phw_add_slide("Weekly summary", text = "Team name, example data",
+                layout = "Title Slide") |>
+  phw_add_slide("Key messages",
+                text = c("First message", "Second message", "Third message")) |>
+  phw_add_slide("Cases by group and type", plot = bars,
+                source = "Example data", date = "2025-06-30") |>
   phw_add_slide("Grouped table", table = tab, source = "Example data") |>
-  phw_add_slide("A chart", plot = ggplot(dat, aes(group)) + geom_bar(), source = "Example data")
+  phw_add_slide("Next steps", layout = "Section Header")
 print(deck, target = "slides.pptx")
 ```
 
-![Three PowerPoint slides](../reference/figures/powerpoint.webp)
+![Slides from the PHW template: a title slide, bullet points and a chart](../reference/figures/powerpoint.webp)
 
-Give a chart or table `alt` text so screen readers can describe it, and
-use `caption_args` for any `phw_caption()` argument other than `source` and
-`date`. Without `alt`, a chart takes the text from `labs(alt = )`.
-`phw_reference_pptx()` writes the template to a file, to open in PowerPoint
-or to pass to another tool.
+### Layouts
+
+`layout` picks a slide layout from the template. The default is
+`"Title and Content"`. The PHW template also has these:
+
+- `"Title Slide"` shows the title on a navy background, with `text` as the
+  subtitle.
+- `"Section Header"` shows the title on navy, for the start of a section.
+- `"Title Only"` and `"Blank"` leave room for your own content.
+- `"Two Content"` has two body areas, and `phw_add_slide()` fills the first.
+
+### Charts and tables
+
+Each argument below has a default that suits most slides. Change one only
+when a slide needs it.
+
+- `plot_scale` enlarges the text of a chart on the slide, as a multiple of its
+  size. The default `1.5` brings axis and legend text to about 14 points, and
+  `1` leaves the chart as it is.
+- `table_fit` enlarges a table built here from a data frame or summary table, by up
+  to 1.6 times for the text, so it reads on a slide. `FALSE` keeps the size
+  `phw_flextable()` gives it. A flextable you pass in is never resized.
+- `editable` adds a chart as an editable vector graphic when the rvg package is
+  installed, so colleagues can change it in PowerPoint. `editable = FALSE` adds
+  a picture instead.
+- `alt` gives a chart or table alternative text for screen readers. Without it,
+  a ggplot uses the text from `labs(alt = )`.
+- `caption_args` takes a list of `phw_caption()` arguments other than `source`
+  and `date`, such as `source_prefix`.
 
 ```{r, eval = FALSE}
 deck <- phw_pptx() |>
-  phw_add_slide("Cases by group", plot = ggplot(dat, aes(group)) + geom_bar(),
-                alt = "Bar chart of cases in groups A, B and C.",
-                source = "Example data", caption_args = list(source_prefix = "Data: "))
-phw_reference_pptx("phw-template.pptx")
+  phw_add_slide("Cases by group and type", plot = bars,
+                alt = "Stacked bars of cases in groups A, B and C, split by type.",
+                source = "Example data", caption_args = list(source_prefix = "Data: "),
+                plot_scale = 1.5, editable = FALSE)
 ```
+
+`title_size` sets the title size, which is 28 points by default. The title and
+section slides set their own size, so `title_size` applies there only when you give
+it.
+
+### Your own template
+
+Pass a PowerPoint file to `phw_pptx()` to use its layouts instead. Name the
+layouts it has in `layout`, and `master` too, if two slide masters share a layout
+name. `officer::layout_summary()` lists them.
+
+The template names Ubuntu without embedding it, so PowerPoint shows it only on computers that have the font. See [Installation and setup](setup.html#fonts).
+
+`phw_reference_pptx()` writes the PHW template to a file. Open it in
+PowerPoint to see the layouts or to start your own template from it.
+
+```{r, eval = FALSE}
+phw_reference_pptx("phw-template.pptx")
+deck <- phw_pptx("phw-template.pptx")
+officer::layout_summary(deck)
+```
+
+The gallery shows [slides](gallery.html#presenting) and
+[Office files](gallery.html#office).
 
 ## Word
 
@@ -70,13 +134,7 @@ Any `phw_flextable()` can be saved to Word, several to one file:
 flextable::save_as_docx(`Table 1` = phw_flextable(tab), path = "tables.docx")
 ```
 
-For whole reports, use `output: phwstyle::phw_word_document` in R Markdown
-or `format: phw-docx` in Quarto: see [Reports and documents](documents.html).
-
-## Interactive tables
-
-`phw_datatable()` gives a searchable, sortable, paged table for long lists.
-
-```{r, eval = requireNamespace("DT", quietly = TRUE)}
-phw_datatable(dat, caption = "Grouped table", source = "Example data", filter = "top")
-```
+See [Tables](tables.html#render-the-same-table-anywhere) for the other table
+renderers. For whole reports, use `output: phwstyle::phw_word_document` in R Markdown
+or `format: phw-docx` in Quarto, as
+[Reports, slides and dashboards](documents.html) explains.

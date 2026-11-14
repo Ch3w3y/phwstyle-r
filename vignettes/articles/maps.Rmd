@@ -13,51 +13,130 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", message = FALSE, warning 
 library(phwstyle)
 library(ggplot2)
 library(dplyr)
+library(tibble)
 ```
 
-## Boundaries for every level
+All data on this page is made up. The boundaries are real, and they download
+the first time you use a level.
 
-`phw_boundaries()` downloads boundaries from the Office for National
-Statistics (ONS) Open Geography Portal or DataMapWales, keeps them only for Wales, and caches them so later calls
-work offline. The list of releases is kept up to date in the package.
+## Draw a map with `phw_map()`
+
+`phw_map()` joins your data to Welsh boundaries and draws a styled map in one
+call. Give it your data, the column of area codes (`by`), the column to colour
+by (`fill`) and the boundary level. Areas with no row in your data are grey.
+The boundary attribution becomes the caption unless you set your own with
+`labs()`.
+
+```{r}
+codes <- phw_boundaries("health_board")
+hb <- tibble(code = codes$code, rate = round(runif(nrow(codes), 20, 80), 1))
+```
+
+### Continuous fills
+
+A numeric `fill` gets a continuous scale in the `"blues"` palette. Change it
+with `palette`.
+
+```{r, fig.alt = "A map of the health boards of Wales, shaded from light to dark blue by a made-up rate."}
+phw_map(hb, by = code, fill = rate, level = "health_board") +
+  labs(fill = "Rate per\n100,000", title = "Rate by health board")
+```
+
+### Binned fills
+
+Give `bins` a set of breaks, or a single number of bins, to colour by band.
+The legend also shows the lowest and highest values, rounded out to tidy
+numbers, so both ends of your data are covered.
+
+```{r, fig.alt = "The same health board map with the rate in four bands, and a legend whose first and last bands run from the lowest to the highest value."}
+phw_map(hb, by = code, fill = rate, level = "health_board", bins = c(40, 50, 60, 70)) +
+  labs(fill = "Rate per\n100,000", title = "Rate by health board")
+```
+
+### Groups, with a colour key
+
+A text or factor column gives one colour per group. Give `key` the name of a
+colour key and each group keeps its colour in every map, chart and table that
+uses it. See [colour keys](colours.html#colours-that-stay-with-their-groups).
+
+```{r, fig.alt = "A map of the health boards of Wales with each board coloured by one of three made-up groups."}
+hb$band <- rep_len(c("Group A", "Group B", "Group C"), nrow(hb))
+phw_map(hb, by = code, fill = band, level = "health_board", key = "map_groups") +
+  labs(fill = NULL, title = "Health boards by group")
+```
+
+### Labels
+
+`label` prints text on each area. Give it a column, or an expression built
+from the columns of your data and the boundary `name`. When ggrepel is
+installed, labels on small areas are moved apart so they stay readable.
+
+```{r, fig.alt = "A map of the local authorities of Wales shaded by a made-up rate, with each area labelled by its name and rate."}
+la_codes <- phw_boundaries("local_authority")
+la <- tibble(code = la_codes$code, rate = round(runif(nrow(la_codes), 20, 80), 1))
+phw_map(la, by = code, fill = rate, level = "local_authority",
+        label = paste(name, rate), bins = c(40, 50, 60, 70)) +
+  labs(fill = "Rate", title = "Rate by local authority")
+```
+
+### One map per period
+
+`phw_map()` takes one row per area and period. Add `facet_wrap()` to draw one
+map for each period, on the same scale.
+
+```{r, fig.width = 8, fig.height = 4.5, fig.alt = "Two maps of the health boards of Wales side by side, one for 2024 and one for 2025, shaded on the same blue scale by a made-up rate."}
+hb_years <- tidyr::expand_grid(code = codes$code, year = c(2024, 2025)) |>
+  mutate(rate = round(runif(n(), 20, 80), 1))
+phw_map(hb_years, by = code, fill = rate, level = "health_board", bins = c(40, 50, 60, 70)) +
+  facet_wrap(vars(year)) +
+  labs(fill = "Rate", title = "Rate by health board")
+```
+
+### Level of detail
+
+`detail` sets how finely the outlines are drawn. The default `"generalised"`
+suits most maps. `"super"` and `"ultra"` give smaller files, and `"full"` is
+clipped to the coastline.
+
+```{r, fig.alt = "A map of the local authorities of Wales drawn with ultra detail, so the outlines are smooth and simple."}
+phw_map(la, by = code, fill = rate, level = "local_authority", detail = "ultra") +
+  labs(fill = "Rate", title = "ultra")
+```
+
+```{r, fig.alt = "The same local authority map with full detail, so the outlines follow the coastline closely."}
+phw_map(la, by = code, fill = rate, level = "local_authority", detail = "full") +
+  labs(fill = "Rate", title = "full")
+```
+
+## Build your own map
+
+`phw_boundaries()` returns an `sf` data frame with `code`, `name`, `name_cy`
+(where the source has Welsh names) and the geometry. Join your own data on
+`code`, then draw it with `geom_sf()`. `scale_fill_phw_b()` gives a binned
+scale and `theme_phw_map()` removes the axes and grid.
+
+```{r, fig.alt = "A map of the health boards of Wales shaded in blue bands by a made-up rate, drawn with geom_sf."}
+hb_sf <- phw_boundaries("health_board") |>
+  left_join(hb, by = "code")
+
+ggplot(hb_sf) +
+  geom_sf(aes(fill = rate), colour = "white", linewidth = 0.3) +
+  scale_fill_phw_b(name = "Rate per\n100,000") +
+  theme_phw_map() +
+  labs(title = "Rate by health board",
+       caption = paste(strwrap(attr(hb_sf, "attribution"), 60), collapse = "\n"))
+```
+
+## Levels
+
+`phw_boundary_levels()` lists every level and the release used for it. GP
+clusters, LSOAs and the other levels work like the examples above.
 
 ```{r, eval = TRUE}
 phw_boundary_levels()
 ```
 
-Each result is an `sf` data frame with `code`, `name`, `name_cy` (where the
-source has Welsh names) and the geometry. Join your own data on `code`.
-
-```{r}
-hb <- phw_boundaries("health_board") |>
-  mutate(rate = round(runif(n(), 20, 80), 1))
-
-ggplot(hb) +
-  geom_sf(aes(fill = rate), colour = "white", linewidth = 0.3) +
-  scale_fill_phw_b(name = "Rate per\n100,000") +
-  theme_phw_map() +
-  labs(title = "Rate by health board", caption = attr(hb, "attribution"))
-```
-
-`phw_map()` does the join and the styling in one call. Give it your data,
-the column of area codes, the column to colour by and the boundary level.
-Numbers can be binned with `bins`, and a character column gives one colour
-per group. Areas with no row in your data are grey, and the boundary
-attribution is the caption unless you set your own with `labs()`.
-
-```{r}
-phw_map(hb, by = code, fill = rate, level = "health_board", bins = c(40, 50, 60, 70)) +
-  labs(fill = "Rate per\n100,000", title = "Rate by health board")
-```
-
-Add `facet_wrap()` for one map per period. `hb` here is the data frame from
-above, so `by` is its `code` column.
-
-GP clusters, LSOAs and the other levels work the same way. Use
-`detail = "super"` or `"ultra"` for smaller files, or `"full"` for coastline
-detail.
-
-```{r}
+```{r, fig.alt = "A map of the GP clusters of Wales in one light teal colour."}
 gp <- phw_boundaries("gp_cluster")
 ggplot(gp) +
   geom_sf(fill = phw_colours[["light_teal"]], colour = "white", linewidth = 0.2) +
@@ -67,11 +146,32 @@ ggplot(gp) +
 
 ## Interactive maps
 
+`phw_leaflet()` starts a leaflet map on Wales, with a light grey base map.
+`phw_leaflet_polygons()` adds your areas. It takes the same `fill`, `bins` and
+`key` as `phw_map()`, plus `label` and `popup` for what appears on hover and
+click. Ask for longitude and latitude with `crs = 4326`.
+
 ```{r, eval = online && requireNamespace("leaflet", quietly = TRUE)}
+hb_ll <- phw_boundaries("health_board", crs = 4326) |>
+  left_join(hb, by = "code")
 phw_leaflet() |>
-  phw_leaflet_polygons(phw_boundaries("health_board", crs = 4326) |> mutate(rate = hb$rate),
-                       fill = rate, bins = 4, label = name, legend_title = "Rate")
+  phw_leaflet_polygons(hb_ll, fill = rate, bins = 4, label = name, legend_title = "Rate")
 ```
+
+`phw_leaflet_palette()` makes the colour function that
+`phw_leaflet_polygons()` uses. Use it when you add layers with leaflet itself
+and want the same colours.
+
+```{r, eval = online && requireNamespace("leaflet", quietly = TRUE)}
+pal <- phw_leaflet_palette("blues", domain = hb_ll$rate, type = "bin", bins = 4)
+phw_leaflet() |>
+  leaflet::addPolygons(data = hb_ll, fillColor = ~pal(rate), fillOpacity = 0.8,
+                       weight = 1, color = "#FFFFFF", label = ~name) |>
+  leaflet::addLegend(pal = pal, values = hb_ll$rate, title = "Rate")
+```
+
+For more interactive output, see [the interactive article](interactive.html).
+For finished examples, see the [gallery](gallery.html#maps).
 
 ## Keeping boundaries up to date
 

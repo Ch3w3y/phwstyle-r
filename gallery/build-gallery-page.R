@@ -11,33 +11,34 @@
 #   pkgs   packages used, besides phwstyle
 #   fns    phwstyle functions used; each links to its reference page
 #   args   optional: arguments worth noticing, shown as code
+#   alt    optional: image alt text, defaults to the title
 
 types <- list(
   chart = list(label = "Static chart",
-               where = "RStudio Plots pane; saved as PNG, SVG or PDF; works in every report format"),
+               where = "RStudio Plots pane, saved as PNG, SVG or PDF, and in every report format"),
   map = list(label = "Static map",
-             where = "RStudio Plots pane; saved as PNG, SVG or PDF; works in every report format"),
+             where = "RStudio Plots pane, saved as PNG, SVG or PDF, and in every report format"),
   table = list(label = "Report table",
-               where = "RStudio Viewer; Word, PowerPoint, HTML and PDF reports"),
+               where = "RStudio Viewer, and in Word, PowerPoint, HTML and PDF reports"),
   widget = list(label = "Interactive (HTML)",
                 where = "RStudio Viewer pane, a web browser, HTML reports, Quarto dashboards and Shiny. Not Word or PDF"),
   document = list(label = "Document template",
                   where = "Rendered from an .Rmd or .qmd file"),
   office = list(label = "Office file",
-                where = "Written straight to .xlsx or .pptx; open in Excel or PowerPoint")
+                where = "Written straight to .xlsx or .pptx files, which open in Excel or PowerPoint")
 )
 
-item <- function(file, title, desc, type, pkgs = "ggplot2", fns = character(), args = NULL) {
-  list(file = file, title = title, desc = desc, type = type, pkgs = pkgs, fns = fns, args = args)
+item <- function(file, title, desc, type, pkgs = "ggplot2", fns = character(), args = NULL, alt = title) {
+  list(file = file, title = title, desc = desc, type = type, pkgs = pkgs, fns = fns, args = args, alt = alt)
 }
 
 sections <- list(
   list(id = "charts", title = "Everyday charts",
-       intro = "Standard ggplot2 charts. Call `use_phw_ggplot()` once at the top of a script and every chart after it gets the PHW theme, font and colours; the scale functions pick colours from PHW palettes.",
+       intro = "Standard ggplot2 charts. Call `use_phw_ggplot()` once at the top of a script and every chart after it gets the PHW theme, font and colours. The scale functions pick colours from PHW palettes.",
        items = list(
          item("01-line", "Lines with shapes", "Several groups over time. Shapes give a second cue for readers who can't tell the colours apart, and the colour key keeps each group's colour the same in every chart.", "chart",
               fns = c("use_phw_ggplot", "scale_colour_phw_d", "scale_shape_phw"), args = 'key = "gallery_groups"'),
-         item("03-bar-horizontal", "Horizontal bars with labels", "Ranked values for named areas. Horizontal bars leave room for long names; only vertical gridlines are drawn.", "chart",
+         item("03-bar-horizontal", "Horizontal bars with labels", "Ranked values for named areas. Horizontal bars leave room for long names, and only vertical gridlines are drawn.", "chart",
               fns = c("theme_phw", "phw_col"), args = 'theme_phw(grid = "x")'),
          item("04-facet-grid-dodged", "Grouped columns in a grid", "Two series side by side, split into panels with `facet_grid()`, with a dashed target line and navy panel strips.", "chart",
               fns = c("theme_phw", "phw_percent"), args = 'theme_phw(strip = "navy")'),
@@ -46,7 +47,7 @@ sections <- list(
          item("27-stacked-area", "Stacked area", "Counts by group over time. Uses the same colour key as the line chart, so Group 1 is the same colour in both.", "chart",
               fns = c("scale_fill_phw_d"), args = 'key = "gallery_groups"'),
          item("28-bar-line", "Bars with a rolling average", "Daily counts as bars with a 7-day average line on top, each with its own legend entry.", "chart",
-              fns = c("phw_col")),
+              fns = "phw_epicurve", args = "average = 7"),
          item("26-scatter", "Scatter with a continuous colour", "Two measures against each other, with a fitted line and a third measure as colour.", "chart",
               fns = c("scale_colour_phw_c")),
          item("02-facet-wrap", "Small multiples", "One small panel per area with `facet_wrap()`. The theme styles the panel strips.", "chart",
@@ -59,12 +60,12 @@ sections <- list(
               fns = c("scale_colour_phw_d", "theme_phw"))
        )),
   list(id = "uncertainty", title = "Uncertainty and distributions",
-       intro = "Confidence intervals and the spread of values. `phw_poisson_ci()` gives exact limits for counts and rates.",
+       intro = "Intervals you have already calculated, and the spread of values.",
        items = list(
-         item("24-ribbon", "Rate with a confidence band", "A monthly rate per 100,000 with its 95% interval as a shaded band.", "chart",
-              fns = c("phw_poisson_ci", "phw_col")),
-         item("25-forest", "Rates by area with intervals", "A forest-style chart: each area's rate and interval against the overall rate, coloured by whether it is higher, similar or lower.", "chart",
-              fns = c("phw_poisson_ci", "phw_col", "theme_phw")),
+         item("24-ribbon", "Rate with a confidence band", "A monthly rate per 100,000 with limits you supply drawn as a shaded band, using `geom_ribbon()`.", "chart",
+              fns = "phw_col"),
+         item("25-forest", "Rates by area with intervals", "A forest plot of estimates and intervals you have already calculated: each area's rate and interval against a target line, coloured by whether it is higher, similar or lower.", "chart",
+              fns = "phw_forest", args = "target = overall"),
          item("08-boxplot-highlight", "Highlight one group", "Box plots with one group picked out and the rest in grey.", "chart",
               fns = c("scale_fill_phw_d"), args = 'palette = "highlight"'),
          item("29-histogram", "Histograms by group", "The distribution of a measure in each group, one panel per group.", "chart",
@@ -117,12 +118,14 @@ sections <- list(
               fns = c("phw_colour_key", "scale_fill_phw_d"), args = 'key = "my_groups"')
        )),
   list(id = "maps", title = "Maps",
-       intro = "Boundaries for every level of Welsh geography are downloaded on first use and cached. Static maps use ggplot2 and sf; interactive maps use leaflet.",
+       intro = "Boundaries for every level of Welsh geography are downloaded on first use and cached. Static maps use ggplot2 and sf, and interactive maps use leaflet.",
        items = list(
-         item("06-map", "Choropleth", "Local authorities filled by a binned value.", "map",
-              pkgs = c("ggplot2", "sf"), fns = c("theme_phw_map", "scale_fill_phw_b")),
-         item("32-map-facets", "One map per year", "Small-multiple maps with `facet_wrap()` on an sf data frame, sharing one legend.", "map",
-              pkgs = c("ggplot2", "sf"), fns = c("theme_phw_map", "scale_fill_phw_b")),
+         item("06-map", "Choropleth", "Local authorities filled by a binned value, joined to the boundaries by area code.", "map",
+              pkgs = c("ggplot2", "sf"), fns = "phw_map", args = "by = code, fill = value, level = la, bins = c(1, 2, 3, 5)"),
+         item("34-map-labels", "Choropleth with values printed", "The same kind of map with each area's value printed on it. With ggrepel installed, labels that would overlap on small areas are moved apart.", "map",
+              pkgs = c("ggplot2", "sf"), fns = "phw_map", args = "label = rate"),
+         item("32-map-facets", "One map per year", "Small-multiple maps with `facet_wrap()`, sharing one legend. The data has one row per area and year.", "map",
+              pkgs = c("ggplot2", "sf"), fns = "phw_map", args = "bins = c(2, 4, 6, 8)"),
          item("33-map-points", "Areas with points on top", "Seven health boards coloured by name from the twelve-colour `extended` palette, with sites drawn as points with a white halo so they show on any fill.", "map",
               pkgs = c("ggplot2", "sf"), fns = c("phw_boundaries", "theme_phw_map", "scale_fill_phw_d", "scale_shape_phw")),
          item("06-boundaries", "Every level of geography", "Health boards, GP clusters, Senedd constituencies and MSOAs, all from one function.", "map",
@@ -133,17 +136,19 @@ sections <- list(
               pkgs = c("leaflet", "sf"), fns = c("phw_leaflet", "phw_leaflet_polygons", "phw_leaflet_palette"), args = 'palette = "accessible"')
        )),
   list(id = "tables", title = "Tables for reports",
-       intro = "flextable and gt tables for Word, PowerPoint, HTML and PDF. The summary functions turn a raw data frame into a finished table; `phw_flextable()` and `phw_gt()` style it.",
+       intro = "flextable and gt tables for Word, PowerPoint, HTML and PDF. The summary functions turn a raw data frame into a finished table, and `phw_flextable()` and `phw_gt()` style it.",
        items = list(
          item("table-nested", "Nested row and column groups", "Groups within groups in both rows and columns, built from a raw line list, with group and table totals.", "table",
               pkgs = "flextable", fns = c("phw_group_table", "phw_flextable"), args = "rows = c(category, subgroup), cols = c(year, half)"),
          item("table-nested-columns", "Groups in columns, totals below", "Group and subgroup in separate columns, a total below each group and percentages of the parent group.", "table",
               pkgs = "flextable", fns = c("phw_group_table", "phw_flextable"), args = 'layout = "columns", percent = "parent"'),
-         item("table-summary", "Characteristics by group", "A \"Table 1\" of counts, percentages and medians by outcome, straight from a line list.", "table",
+         item("table-summary", "Characteristics by group", "Rows of variables, with counts and percentages for each level and medians for numbers, in one column per outcome group.", "table",
               pkgs = "flextable", fns = c("phw_summary_table", "phw_flextable")),
-         item("table-rates", "Rates with confidence intervals", "Crude rates per 100,000 with exact intervals by demographic and risk group.", "table",
+         item("table-as-summary", "Your own table, styled as a summary", "A table made with dplyr or by hand, marked with `phw_as_summary()` so it gets bold variable rows, indented levels and total rows like the tables above.", "table",
+              pkgs = "flextable", fns = c("phw_as_summary", "phw_flextable"), args = "row_type = kind"),
+         item("table-rates", "Rates with confidence intervals", "Rows of demographic and risk groups, with counts, a rate per 100,000 and a confidence interval for each.", "table",
               pkgs = "flextable", fns = c("phw_rate_table", "phw_flextable")),
-         item("table-risk", "Attack rates and relative risks", "An outbreak table: attack rates for exposed and unexposed, relative risk and p-value.", "table",
+         item("table-risk", "Attack rates and relative risks", "Rows of exposures, with the share of people ill among those exposed and not exposed, the relative risk and a p-value.", "table",
               pkgs = "flextable", fns = c("phw_risk_table", "phw_flextable")),
          item("table-crosstab", "Cross-tabulation with heat colours", "Counts by two variables with totals, shaded by value.", "table",
               pkgs = "flextable", fns = c("phw_crosstab", "phw_flextable_heat")),
@@ -162,9 +167,9 @@ sections <- list(
          item("table-light", "Style: light", "Thin grey lines between every row.", "table",
               pkgs = "flextable", fns = "phw_flextable", args = 'style = "light"'),
          item("gt-table", "gt", "The nested group table from above, rendered with gt instead of flextable.", "table",
-              pkgs = "gt", fns = c("phw_gt", "phw_group_table")),
+              pkgs = "gt", fns = c("phw_gt", "phw_group_table"), alt = "Nested group table rendered with gt"),
          item("gtsummary", "gtsummary", "A gtsummary table with the PHW theme switched on for the session.", "table",
-              pkgs = c("gtsummary", "gt"), fns = "use_phw_gtsummary")
+              pkgs = c("gtsummary", "gt"), fns = "use_phw_gtsummary", alt = "Summary table made with gtsummary and the PHW theme")
        )),
   list(id = "interactive", title = "Interactive tables and charts",
        intro = "HTML widgets: sortable and searchable tables, and charts you can hover over and zoom. They show in the RStudio Viewer pane and in HTML outputs such as Quarto HTML reports, dashboards and Shiny apps. They can't go in Word or PDF.",
@@ -189,7 +194,7 @@ sections <- list(
               pkgs = "plotly", fns = c("phw_plotly", "phw_colour_key"))
        )),
   list(id = "documents", title = "Reports and documents",
-       intro = "Templates for R Markdown and Quarto. Add the Quarto templates to a project with `use_phw_quarto()`; R Markdown formats are under File > New File > R Markdown > From Template.",
+       intro = "Templates for R Markdown and Quarto. Add the Quarto templates to a project with `use_phw_quarto()`. You find the R Markdown formats under File > New File > R Markdown > From Template.",
        items = list(
          item("quarto-typst-1", "PDF report cover (Quarto, Typst)", "A PDF report through Typst, which needs no LaTeX installation. Cover page with title, team and date.", "document",
               pkgs = "quarto", fns = "use_phw_quarto", args = "format: phw-typst"),
@@ -211,7 +216,7 @@ sections <- list(
               pkgs = "rmarkdown", fns = "phw_pdf_document", args = "output: phwstyle::phw_pdf_document")
        )),
   list(id = "presenting", title = "Slides, dashboards and apps",
-       intro = "Outputs for presenting and sharing live. Slides and dashboards are Quarto formats; the Shiny theme works in any Shiny app.",
+       intro = "Outputs for presenting and sharing live. Slides and dashboards are Quarto formats, and the Shiny theme works in any Shiny app.",
        items = list(
          item("slides-1", "Title slide (Quarto, reveal.js)", "HTML slides that open in a browser, with a title slide.", "document",
               pkgs = "quarto", fns = "use_phw_quarto", args = "format: phw-revealjs"),
@@ -227,8 +232,8 @@ sections <- list(
   list(id = "office", title = "Office files",
        intro = "Tables and charts written to .xlsx and .pptx.",
        items = list(
-         item("powerpoint", "PowerPoint slides", "Slides with a title, text, a chart (editable in PowerPoint with rvg) and a table.", "office",
-              pkgs = c("officer", "rvg"), fns = c("phw_pptx", "phw_add_slide")),
+         item("powerpoint", "PowerPoint slides", "A 16:9 deck with a text slide, a chart (editable in PowerPoint with rvg) and a table. Charts are enlarged and tables fill the content area by default.", "office",
+              pkgs = c("officer", "rvg"), fns = c("phw_pptx", "phw_add_slide"), args = "plot_scale = 1.5, table_fit = TRUE"),
          item("excel", "Excel workbook", "One sheet per table, with a title, source, styled header and frozen panes.", "office",
               pkgs = "openxlsx2", fns = "phw_write_xlsx")
        ))
@@ -269,7 +274,7 @@ figure <- function(it) {
   paste0(
     sprintf('<figure class="g-item" data-type="%s" id="%s">', it$type, it$file),
     sprintf('<a class="g-img" href="../reference/figures/%s.webp"><img src="../reference/figures/%s.webp" alt="%s" loading="lazy"></a>',
-            it$file, it$file, esc(it$title)),
+            it$file, it$file, esc(it$alt)),
     '<figcaption>',
     sprintf('<span class="badge t-%s">%s</span>', it$type, t$label),
     sprintf('<h4>%s</h4>', esc(it$title)),
@@ -283,36 +288,36 @@ figure <- function(it) {
 
 css <- '
 <style>
-.g-intro{color:#4C6272;margin:4px 0 14px}
+.g-intro{color:var(--phw-ink-soft, #4C6272);margin:4px 0 14px}
 .g-intro dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;margin:8px 0 0}
 .g-intro dt{font-weight:500}.g-intro dd{margin:0}
 .g-nav{padding:10px 0;margin-bottom:8px;display:flex;flex-wrap:wrap;gap:6px}
-.g-nav a{font-size:.85rem;text-decoration:none;padding:3px 10px;border:1px solid #D8DDE0;border-radius:999px;color:#285087;white-space:nowrap}
-.g-nav a:hover{background:#285087;color:#fff;border-color:#285087}
+.g-nav a{font-size:.85rem;text-decoration:none;padding:3px 10px;border:1px solid var(--phw-rule, #D8DDE0);border-radius:999px;color:var(--phw-navy, #285087);white-space:nowrap}
+.g-nav a:hover{background:var(--phw-navy, #285087);color:#fff;border-color:var(--phw-navy, #285087)}
 .g-nav a .n{font-weight:700;margin-right:4px}
 .g-filter{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 6px;font-size:.85rem}
-.g-filter button{border:1px solid #285087;background:#fff;color:#285087;border-radius:2px;padding:3px 10px;font-size:.85rem}
-.g-filter button[aria-pressed="true"]{background:#285087;color:#fff}
+.g-filter button{border:1px solid var(--phw-navy, #285087);background:#fff;color:var(--phw-navy, #285087);border-radius:2px;padding:3px 10px;font-size:.85rem}
+.g-filter button[aria-pressed="true"]{background:var(--phw-navy, #285087);color:#fff}
 .g-section{margin-top:36px;scroll-margin-top:110px}
-.g-section > .g-head{display:flex;align-items:baseline;gap:12px;border-bottom:3px solid #285087;padding-bottom:6px;margin-bottom:6px}
-.g-head .num{background:#285087;color:#fff;font-weight:700;min-width:2.1em;text-align:center;padding:2px 8px;border-radius:2px}
+.g-section > .g-head{display:flex;align-items:baseline;gap:12px;border-bottom:3px solid var(--phw-navy, #285087);padding-bottom:6px;margin-bottom:6px}
+.g-head .num{background:var(--phw-navy, #285087);color:#fff;font-weight:700;min-width:2.1em;text-align:center;padding:2px 8px;border-radius:2px}
 .g-head h2{margin:0;border:0;font-size:1.5rem}
-.g-head .count{margin-left:auto;color:#4C6272;font-size:.85rem}
-.g-section > p.lead-in{color:#4C6272;margin:6px 0 14px;font-size:.95rem}
+.g-head .count{margin-left:auto;color:var(--phw-ink-soft, #4C6272);font-size:.85rem}
+.g-section > p.lead-in{color:var(--phw-ink-soft, #4C6272);margin:6px 0 14px;font-size:.95rem}
 .g-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px}
-.g-item{margin:0;border:1px solid #D8DDE0;border-radius:4px;background:#fff;display:flex;flex-direction:column;overflow:hidden}
-.g-img{display:block;background:#fff;border-bottom:1px solid #D8DDE0;aspect-ratio:16/10;overflow:hidden}
+.g-item{margin:0;border:1px solid var(--phw-rule, #D8DDE0);border-radius:4px;background:#fff;display:flex;flex-direction:column;overflow:hidden}
+.g-img{display:block;background:#fff;border-bottom:1px solid var(--phw-rule, #D8DDE0);aspect-ratio:16/10;overflow:hidden}
 .g-img img{width:100%;height:100%;object-fit:contain;object-position:top center;display:block}
-.g-item figcaption{padding:10px 12px 12px;font-size:.85rem;color:#212B32}
-.g-item h4{font-size:1rem;margin:6px 0 4px;color:#285087}
+.g-item figcaption{padding:10px 12px 12px;font-size:.85rem;color:var(--phw-ink, #212B32)}
+.g-item h4{font-size:1rem;margin:6px 0 4px;color:var(--phw-navy, #285087)}
 .g-item p{margin:0 0 8px}
 .g-item .g-row{display:block;margin:3px 0;line-height:1.5}
-.g-item .k{display:inline-block;min-width:6.5em;color:#4C6272;font-size:.78rem;text-transform:uppercase;letter-spacing:.03em}
+.g-item .k{display:inline-block;min-width:6.5em;color:var(--phw-ink-soft, #4C6272);font-size:.78rem;text-transform:uppercase;letter-spacing:.03em}
 .g-item code{font-size:.8rem}
-.g-item .pkg{display:inline-block;background:#F0F4F5;border-radius:2px;padding:0 6px;margin-right:3px;text-decoration:none;color:#212B32}
-.g-item .where{color:#4C6272}
+.g-item .pkg{display:inline-block;background:var(--phw-mist, #F0F4F5);border-radius:2px;padding:0 6px;margin-right:3px;text-decoration:none;color:var(--phw-ink, #212B32)}
+.g-item .where{color:var(--phw-ink-soft, #4C6272)}
 .badge{display:inline-block;font-size:.72rem;font-weight:500;padding:2px 8px;border-radius:2px;color:#fff}
-.t-chart{background:#285087}.t-map{background:#338276}.t-table{background:#4C6272}
+.t-chart{background:var(--phw-navy, #285087)}.t-map{background:#338276}.t-table{background:var(--phw-ink-soft, #4C6272)}
 .t-widget{background:#D50B5C}.t-document{background:#24A2B5}.t-office{background:#D97F00}
 .g-top{font-size:.8rem;display:inline-block;margin-top:10px}
 @media (max-width:600px){.g-grid{grid-template-columns:1fr}.g-intro dl{grid-template-columns:1fr}.g-intro dd{margin-bottom:6px}}

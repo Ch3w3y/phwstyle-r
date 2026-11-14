@@ -1,21 +1,24 @@
 ---
-title: "Tables from raw data"
+title: "Tables"
 ---
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", message = FALSE, warning = FALSE)
 ```
 
-Most report tables start as a raw data frame: one row per case, test or
-event. phwstyle's table builders do the grouping, totals and
-percentages for you, and return a data frame that remembers its layout. You
-then render that one object with whichever table package suits the output:
+This page shows how to build a table, style it and render it for the output
+you need. phwstyle's table builders count, group and total your records. Each
+one returns a data frame that remembers its layout, so you can render the
+same object in Word, HTML, Excel or a Shiny app. You can also style a table
+you built yourself, with dplyr or by hand.
+
+All data on this page is made up.
 
 | Output | Function |
 |---|---|
 | Word, PDF, PowerPoint | `phw_flextable()` |
 | HTML, Quarto | `phw_gt()` |
-| Interactive HTML, Shiny | `phw_reactable()` |
+| Interactive HTML, Shiny | `phw_reactable()` and `phw_datatable()` |
 | Excel | `phw_write_xlsx()` |
 
 ```{r}
@@ -31,13 +34,149 @@ dat <- tibble(
   days = rpois(400, 3)
 )
 col_labels <- list(group = "Group", type = "Type", year = "Year", quarter = "Quarter")
+
+cases <- tibble(
+  age_group = sample(c("0-14", "15-44", "45-64", "65+"), 300, replace = TRUE),
+  sex = sample(c("Female", "Male"), 300, replace = TRUE),
+  setting = sample(c("Setting 1", "Setting 2", "Setting 3"), 300, replace = TRUE),
+  days = rpois(300, 4),
+  outcome = sample(c("Outcome X", "Outcome Y"), 300, replace = TRUE, prob = c(0.8, 0.2))
+)
 ```
 
-## Nested groups: `phw_group_table()`
+## Summary tables
 
-Give the row groups outermost first. Each group row (Group A, B, C)
-shows the total for its group, the groups inside are indented, and the main
-groups are shaded and separated with space.
+### Characteristics by group
+
+`phw_summary_table()` describes each variable in one table. Categories show a
+count and a percentage, and numbers show a median and interquartile range.
+Give `by` to split the columns by a group.
+
+```{r}
+phw_summary_table(cases, by = outcome,
+                  labels = list(age_group = "Age group", sex = "Sex", setting = "Setting",
+                                days = "Days to recovery")) |>
+  phw_flextable(caption = "Characteristics by outcome")
+```
+
+### A table you built yourself
+
+`phw_as_summary()` styles a table made elsewhere. Every row of a plain data
+frame looks the same to a renderer. Mark it as a summary table and the
+renderers show bold variable rows, indented levels and a bold total row.
+
+Name the column that says what each row is with `row_type`. Its values are
+`"variable"`, `"level"`, `"subtotal"`, `"group"` and `"total"`. The column is
+not kept in the result. Add a footnote with `note`.
+
+This example builds a table with dplyr. Each block is a heading row followed
+by its levels, and a total row closes the table.
+
+```{r}
+block <- function(data, var, heading) {
+  counts <- data |> count(level = .data[[var]], name = "cases")
+  bind_rows(
+    tibble(Characteristic = heading, Cases = NA, Percent = NA, kind = "variable"),
+    counts |> transmute(Characteristic = level, Cases = cases,
+                        Percent = round(100 * cases / sum(cases), 1), kind = "level")
+  )
+}
+
+mine <- bind_rows(
+  block(cases, "age_group", "Age group"),
+  block(cases, "sex", "Sex"),
+  tibble(Characteristic = "All cases", Cases = nrow(cases), Percent = 100, kind = "total")
+) |>
+  phw_as_summary(row_type = kind, note = "Example data. Percentages are of all cases.")
+```
+
+Printed, the table is still a data frame. The `kind` column has gone, and
+the row layout travels with the table.
+
+```{r}
+mine
+```
+
+The same object works in every renderer.
+
+```{r}
+phw_flextable(mine, caption = "Cases by age group and sex")
+```
+
+```{r, eval = requireNamespace("gt", quietly = TRUE)}
+phw_gt(mine, caption = "Cases by age group and sex")
+```
+
+```{r}
+phw_reactable(mine, caption = "Cases by age group and sex")
+```
+
+`phw_datatable()` and `phw_write_xlsx()` read the same layout. See
+[the Excel section](exporting.html#excel) to save it as a workbook.
+
+### Cross-tabulations
+
+`phw_crosstab()` counts by two variables and adds totals. Set `percent` to
+`"row"`, `"column"` or `"total"` to show percentages as well.
+`phw_flextable_heat()` then colours the counts.
+
+```{r}
+phw_crosstab(cases, setting, age_group) |>
+  phw_flextable() |>
+  phw_flextable_heat(j = 2:5)
+```
+
+### Rates
+
+`phw_rate_table()` takes aggregated counts and populations. It divides cases
+by population, multiplies by `per` (100,000 by default) and gives confidence
+limits for each rate. The limits come from the Poisson distribution, using the
+exact (Garwood) method. Each variable in `groups` becomes its own section, and
+`total` adds an overall row. See `?phw_rate_table` for the details.
+
+```{r}
+agg <- tidyr::expand_grid(sex = c("Female", "Male"), age_group = c("0-14", "15-44", "45-64", "65+")) |>
+  mutate(cases = rpois(n(), c(10, 25, 35, 50)),
+         population = round(runif(n(), 60, 140)) * 1000)
+phw_rate_table(agg, c(age_group, sex), cases, population,
+               labels = list(age_group = "Age group", sex = "Sex")) |>
+  phw_flextable(caption = "Rate per 100,000 by age group and sex")
+```
+
+Use `phw_poisson_ci()` when you only need the limits for a vector of counts,
+for example to draw your own intervals. It returns a data frame with `lower`
+and `upper`, for the same calculation that `phw_rate_table()` uses. Change
+`conf_level` to change the level.
+
+```{r}
+phw_poisson_ci(c(0, 5, 40))
+phw_poisson_ci(c(0, 5, 40), conf_level = 0.99)
+```
+
+### Risks by exposure
+
+`phw_risk_table()` takes one row per person. For each level of each
+exposure, it gives the number of people, the number of cases and the attack
+rate, which is cases divided by people. It compares each level with the
+reference level, giving a relative risk with a confidence interval and a
+p-value from Fisher's exact test. Set `p_value = FALSE` to leave the p-value
+out. See `?phw_risk_table` for the details.
+
+```{r}
+ob <- tibble(exposure_a = sample(c("Yes", "No"), 120, replace = TRUE),
+             exposure_b = sample(c("Yes", "No"), 120, replace = TRUE)) |>
+  mutate(ill = rbinom(n(), 1, if_else(exposure_a == "Yes", 0.6, 0.15)))
+phw_risk_table(ob, c(exposure_a, exposure_b), ill,
+               labels = list(exposure_a = "Exposure A", exposure_b = "Exposure B")) |>
+  phw_flextable(caption = "Attack rate and relative risk by exposure")
+```
+
+## Nested groups
+
+`phw_group_table()` nests row groups inside each other. Give the row groups
+outermost first. Each group row (Group A, B, C) shows the total for its group,
+the groups inside are indented, and the main groups are shaded and separated
+with space.
 
 ```{r}
 tab <- phw_group_table(dat, rows = c(group, type), cols = year, labels = col_labels)
@@ -62,7 +201,7 @@ phw_group_table(dat, c(group, type), labels = col_labels,
 
 `layout = "columns"` gives each level its own column, so the inner groups
 shift to the right. `percent = "parent"` shows each row as a share of the
-group above it; `"column"` and `"row"` are also available.
+group above it. `"column"` and `"row"` are also available.
 
 ```{r}
 phw_group_table(dat, c(group, type), labels = col_labels, layout = "columns",
@@ -83,7 +222,7 @@ phw_gt(nested, caption = "Counts by quarter")
 
 ### Other statistics
 
-By default rows are counted. Give `value` and `fun` for anything else; group
+By default rows are counted. Give `value` and `fun` for anything else. Group
 and total rows are calculated from their records, not by adding up rows.
 
 ```{r}
@@ -92,88 +231,132 @@ phw_group_table(dat, c(group, type), year, value = days,
   phw_flextable(caption = "Mean days")
 ```
 
-### Interactive
+## Render the same table anywhere
+
+### flextable
+
+`phw_flextable()` builds a flextable from a data frame or any table above. It
+adds the caption, the number formats and the source line. `style` chooses the
+look. The default is `"booktabs"`, with horizontal rules only.
 
 ```{r}
-phw_reactable(nested, caption = "Counts by quarter")
+small <- tibble(Area = paste("Area", LETTERS[1:4]), Cases = c(120, 85, 64, 19),
+                Rate = c(48.2, 39.5, 27.1, 12.9))
+phw_flextable(small, caption = "booktabs", style = "booktabs")
 ```
 
-## Summary and epidemiology tables
+`"header"` gives a navy header band with white text.
 
 ```{r}
-cases <- tibble(
-  age_group = sample(c("0-14", "15-44", "45-64", "65+"), 300, replace = TRUE),
-  sex = sample(c("Female", "Male"), 300, replace = TRUE),
-  setting = sample(c("Setting 1", "Setting 2", "Setting 3"), 300, replace = TRUE),
-  days = rpois(300, 4),
-  outcome = sample(c("Outcome X", "Outcome Y"), 300, replace = TRUE, prob = c(0.8, 0.2))
-)
+phw_flextable(small, caption = "header", style = "header")
 ```
 
-`phw_summary_table()` gives the "Table 1" of a report: n (%) for
-categories and median (IQR) for numbers, split by a group.
+`"zebra"` adds grey banding to alternate rows.
 
 ```{r}
-phw_summary_table(cases, by = outcome,
-                  labels = list(age_group = "Age group", sex = "Sex", setting = "Setting",
-                                days = "Days to recovery")) |>
-  phw_flextable(caption = "Characteristics by outcome")
+phw_flextable(small, caption = "zebra", style = "zebra")
 ```
 
-For a table you built yourself, a dplyr summary say, every row looks the
-same to the renderers. `phw_as_summary()` marks it as a summary table, and then the bold variable
-rows, indented levels and total rows appear in `phw_flextable()`,
-`phw_gt()`, `phw_reactable()`, `phw_datatable()` and `phw_write_xlsx()`.
-Name the column that says what each row is with `row_type`. Its values are
-`"variable"`, `"level"`, `"subtotal"`, `"group"` and `"total"`.
+`"light"` gives a light-teal header band with dark text.
 
 ```{r}
-by_age <- cases |> count(age_group, name = "cases")
-mine <- tibble(
-  label = c("Age group", by_age$age_group, "All ages"),
-  cases = c(NA, by_age$cases, sum(by_age$cases)),
-  kind = c("variable", rep("level", nrow(by_age)), "total")
-) |>
-  phw_as_summary(row_type = kind, note = "Example data.")
-phw_flextable(mine, caption = "Cases by age group")
+phw_flextable(small, caption = "light", style = "light")
 ```
 
-```{r, eval = requireNamespace("DT", quietly = TRUE)}
-phw_datatable(mine)
-```
-
-`phw_crosstab()` cross-tabulates two variables with totals and optional
-percentages, and `phw_flextable_heat()` colours the counts.
+Other arguments, such as `bold_first_col`, `total_row` and `accent`, go to
+`phw_flextable_theme()`.
 
 ```{r}
-phw_crosstab(cases, setting, age_group) |>
-  phw_flextable() |>
-  phw_flextable_heat(j = 2:5)
+phw_flextable(small, style = "header", bold_first_col = TRUE, accent = phw_colours[["teal"]])
 ```
 
-`phw_rate_table()` gives rates with exact Poisson confidence intervals for
-several breakdowns at once, from aggregated counts and populations.
+### Heat, bars and group colours
+
+`phw_flextable_heat()` fills the cells of the columns you choose with a
+sequential palette. It picks white or dark text for each cell. Choose columns
+the way you do in dplyr, and use `palette` and `domain` to change the colours
+and the range they span.
 
 ```{r}
-agg <- tidyr::expand_grid(sex = c("Female", "Male"), age_group = c("0-14", "15-44", "45-64", "65+")) |>
-  mutate(cases = rpois(n(), c(10, 25, 35, 50)),
-         population = round(runif(n(), 60, 140)) * 1000)
-phw_rate_table(agg, c(age_group, sex), cases, population,
-               labels = list(age_group = "Age group", sex = "Sex")) |>
-  phw_flextable()
+phw_flextable(small) |>
+  phw_flextable_heat(j = c(Cases, Rate), palette = "blues")
 ```
 
-`phw_risk_table()` gives attack rates and relative risks by exposure.
+With `palette = "rag"`, the cells are red, amber or green and a shape comes
+before each value, so the meaning survives black-and-white print. Give two
+cut points in `breaks`, and set `higher_is_better = FALSE` when a low value is
+good. `"rag_accessible"` uses navy in place of green.
 
 ```{r}
-ob <- tibble(exposure_a = sample(c("Yes", "No"), 120, replace = TRUE),
-             exposure_b = sample(c("Yes", "No"), 120, replace = TRUE)) |>
-  mutate(ill = rbinom(n(), 1, if_else(exposure_a == "Yes", 0.6, 0.15)))
-phw_risk_table(ob, c(exposure_a, exposure_b), ill, labels = list(exposure_a = "Exposure A", exposure_b = "Exposure B")) |>
-  phw_flextable()
+phw_flextable(small) |>
+  phw_flextable_heat(j = Rate, palette = "rag", breaks = c(20, 40))
 ```
 
-## gtsummary
+`phw_flextable_bars()` draws a small bar before each value, scaled to the
+largest value in the column.
+
+```{r}
+phw_flextable(small) |>
+  phw_flextable_bars(Cases)
+```
+
+`phw_flextable_groups()` colours cells by the group they contain, using the
+colours of your charts. Give a colour key with `key` and the group keeps its
+colour across tables and charts (see
+[colour keys](colours.html#colours-that-stay-with-their-groups)). Set
+`what = "text"` to colour the text, and `rows = TRUE` to colour the whole row.
+
+```{r}
+by_group <- tibble(Group = c("Group A", "Group B", "Group C", "Unknown"),
+                   Cases = c(120, 85, 64, 9))
+phw_flextable(by_group) |>
+  phw_flextable_groups(Group)
+```
+
+```{r}
+phw_flextable(by_group) |>
+  phw_flextable_groups(Group, what = "text", rows = TRUE)
+```
+
+### A flextable you made yourself
+
+`phw_flextable_theme()` styles a flextable you built with the flextable
+package. It takes the same `style` choices.
+
+```{r}
+flextable::flextable(head(small, 3)) |>
+  phw_flextable_theme(style = "zebra")
+```
+
+`use_phw_flextable()` sets the defaults for every new flextable in your
+session, so put it in a setup chunk. It returns your earlier defaults, so you
+can put them back.
+
+```{r}
+old <- use_phw_flextable()
+flextable::flextable(head(small, 3))
+do.call(flextable::set_flextable_defaults, old)
+```
+
+### gt
+
+`phw_gt()` builds a gt table with the same caption, number formats and source
+line. It understands summary tables and group tables.
+
+```{r, eval = requireNamespace("gt", quietly = TRUE)}
+phw_gt(small, caption = "Cases by area", source = "Example data")
+```
+
+`phw_gt_theme()` styles a gt table you built yourself. Set `stripe = TRUE` to
+shade alternate rows.
+
+```{r, eval = requireNamespace("gt", quietly = TRUE)}
+gt::gt(small) |>
+  gt::tab_header(title = "Cases by area") |>
+  phw_gt_theme(stripe = TRUE)
+```
+
+### gtsummary
 
 `use_phw_gtsummary()` sets a theme, so every gtsummary table is styled when
 printed with gt or converted with `as_flex_table()`.
@@ -188,3 +371,12 @@ cases |>
 ```{r, include = FALSE, eval = requireNamespace("gtsummary", quietly = TRUE)}
 gtsummary::reset_gtsummary_theme()
 ```
+
+### Interactive tables and Excel
+
+`phw_reactable()` and `phw_datatable()` make tables you can sort and search.
+See [reactable](interactive.html#reactable). `phw_write_xlsx()` saves any of
+these tables as a workbook. See [Excel](exporting.html#excel).
+
+For finished examples of every table, see the
+[gallery](gallery.html#tables).
