@@ -15,7 +15,7 @@
 #' `fluidPage(theme = phw_bs_theme())`, or as the `theme` of
 #' [phw_html_document()].
 #'
-#' @param version Bootstrap version.
+#' @param version Bootstrap version: 5 or 4.
 #' @param ... Extra variables passed to [bslib::bs_theme()]. They override
 #'   the PHW values, e.g. `primary = "#24A2B5"` or `"navbar-bg" = "#1B3660"`.
 #' @return A bslib theme.
@@ -33,6 +33,10 @@
 #' @export
 phw_bs_theme <- function(version = 5, ...) {
   rlang::check_installed("bslib")
+  if (!is.numeric(version) && !is.character(version)) {
+    cli::cli_abort("{.arg version} must be 5 or 4, not {.obj_type_friendly {version}}.")
+  }
+  version <- as.integer(rlang::arg_match0(as.character(version), c("5", "4"), arg_nm = "version"))
   col <- phw_colours
   fam <- c("Ubuntu", "Arial", "sans-serif")
   args <- list(
@@ -85,6 +89,8 @@ phw_scss_rules <- function() {
 #' @export
 phw_header <- function(title = NULL, subtitle = NULL, href = "https://phw.nhs.wales/",
                        logo = TRUE, org = phw_org) {
+  check_header_text(title, "title")
+  check_header_text(subtitle, "subtitle")
   uri <- if (isTRUE(logo)) logo_data_uri("white") else NULL
   brand <- if (is.null(uri)) {
     htmltools::span(class = "phw-header-name", org)
@@ -160,7 +166,17 @@ phw_page_navbar <- function(..., title = NULL, subtitle = NULL, footer = NULL,
   defaults <- c(defaults, navbar)
   for (nm in names(defaults)) if (!nm %in% names(args)) args[nm] <- list(defaults[[nm]])
   page <- do.call(bslib::page_navbar, args)
-  prepend_header(page, do.call(phw_header, c(list(title, subtitle), header_args)))
+  if (!is.list(header_args)) cli::cli_abort("{.arg header_args} must be a list of {.fn phw_header} arguments.")
+  header <- utils::modifyList(list(title = title, subtitle = subtitle), header_args)
+  prepend_header(page, do.call(phw_header, header))
+}
+
+# One line of text (or HTML tags) for the header band.
+check_header_text <- function(x, arg, call = rlang::caller_env()) {
+  if (is.null(x) || inherits(x, c("shiny.tag", "shiny.tag.list", "html"))) return(invisible())
+  if (!rlang::is_string(x)) {
+    cli::cli_abort("{.arg {arg}} must be one line of text, not {.obj_type_friendly {x}}.", call = call)
+  }
 }
 
 prepend_header <- function(page, header) {
