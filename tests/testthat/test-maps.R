@@ -29,6 +29,7 @@ test_that("bins give a binned scale with those breaks", {
   expect_s3_class(sc, "ScaleBinned")
   expect_equal(sc$breaks, c(10, 20, 30))
   expect_length(unique(fills(p)), 4)
+  expect_equal(ggplot2::get_guide_data(p, "fill")$.label, c("5", "10", "20", "30", "35"))
 })
 
 test_that("text fills use the group palette and keep factor levels", {

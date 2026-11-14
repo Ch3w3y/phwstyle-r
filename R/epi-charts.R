@@ -119,7 +119,15 @@ phw_epicurve <- function(data, date, group = NULL, count = NULL,
   }
   xargs <- list(expand = ggplot2::expansion(mult = c(0.01, 0.02)))
   if (!is.null(date_labels)) xargs$date_labels <- date_labels
-  if (!is.null(date_breaks)) xargs$date_breaks <- date_breaks
+  if (!is.null(date_breaks)) {
+    xargs$date_breaks <- date_breaks
+  } else {
+    # The default breaks can land in the axis padding past the last bar, where the label is cut off.
+    xargs$breaks <- function(x) {
+      b <- scales::breaks_pretty()(x)
+      b[b >= lims[1] & b <= lims[2]]
+    }
+  }
   p + do.call(ggplot2::scale_x_date, xargs) +
     ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0, 0.05))) +
     ggplot2::labs(x = NULL, y = "Count") +

@@ -126,3 +126,11 @@ test_that("phw_funnel and phw_spc levels can be renamed and keep their colours",
   expect_error(phw_spc(t, t, v, labels = c(Bad = "x")), "Bad")
   expect_error(phw_spc(t, t, v, labels = c("Common cause" = "Same", "Concern" = "Same")), "same text")
 })
+
+test_that("phw_epicurve keeps its default date labels within the data", {
+  d <- data.frame(day = seq(as.Date("2025-03-01"), by = "day", length.out = 60), n = 1)
+  p <- phw_epicurve(d, day, count = n, interval = "day")
+  b <- stats::na.omit(ggplot2::ggplot_build(p)$layout$panel_params[[1]]$x$get_breaks())
+  expect_gt(length(b), 2)
+  expect_true(all(b >= as.numeric(min(d$day)) & b <= as.numeric(max(d$day))))
+})

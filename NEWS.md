@@ -8,10 +8,12 @@
 * `phw_map()` joins your data to Welsh boundaries by area code and returns a
   styled choropleth for Word and PDF. Fills can be continuous, binned or
   by group, areas with no data are grey, and the boundary attribution is the
-  default caption. It works with `facet_wrap()`.
+  default caption. It works with `facet_wrap()`. Area labels are moved
+  apart when ggrepel is installed.
 * `phw_epicurve()` gains `average` and `average_label`, which draw a
   trailing average of the total count as a black line with its own legend
-  entry. `$data` gains an `average` column.
+  entry. `$data` gains an `average` column. Its default date labels now
+  stay within the data, so the last label is no longer cut off.
 * `phw_funnel()` and `phw_spc()` gain `labels`, a named vector that renames
   zones or signals, and pass `...` to their points.
 

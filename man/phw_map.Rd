@@ -32,7 +32,8 @@ binned scale; text and factors get distinct colours.}
 that you have already loaded.}
 
 \item{bins}{Breaks for numeric \code{fill}, or a single number of bins.
-\code{NULL} gives a continuous scale.}
+\code{NULL} gives a continuous scale. The legend also shows the lowest and
+highest values, rounded out to tidy numbers.}
 
 \item{palette}{Palette name or colours, as in \code{\link[=phw_pal]{phw_pal()}}. Defaults to
 \code{"blues"} for numbers and the default palette for groups.}
@@ -42,7 +43,8 @@ that you have already loaded.}
 
 \item{label}{Text to print on each area: a column of \code{data}, unquoted, or
 an expression built from its columns such as \code{paste(name, rate)}. The
-columns of \code{data} and the boundary \code{name} are available.}
+columns of \code{data} and the boundary \code{name} are available. With ggrepel
+installed, labels that would overlap on small areas are moved apart.}
 
 \item{detail}{Level of detail for \code{\link[=phw_boundaries]{phw_boundaries()}}.}
 

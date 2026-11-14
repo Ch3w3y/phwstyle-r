@@ -15,14 +15,16 @@
 #'   `"local_authority"`, or an sf data frame with `code` and `name` columns
 #'   that you have already loaded.
 #' @param bins Breaks for numeric `fill`, or a single number of bins.
-#'   `NULL` gives a continuous scale.
+#'   `NULL` gives a continuous scale. The legend also shows the lowest and
+#'   highest values, rounded out to tidy numbers.
 #' @param palette Palette name or colours, as in [phw_pal()]. Defaults to
 #'   `"blues"` for numbers and the default palette for groups.
 #' @param key Name of a colour key, so groups keep their colours (see
 #'   [phw_colour_key()]).
 #' @param label Text to print on each area: a column of `data`, unquoted, or
 #'   an expression built from its columns such as `paste(name, rate)`. The
-#'   columns of `data` and the boundary `name` are available.
+#'   columns of `data` and the boundary `name` are available. With ggrepel
+#'   installed, labels that would overlap on small areas are moved apart.
 #' @param detail Level of detail for [phw_boundaries()].
 #' @param ... Passed to [ggplot2::geom_sf()], for example `colour` or
 #'   `linewidth` for the outlines.
@@ -86,12 +88,23 @@ phw_map <- function(data, by, fill, level, bins = NULL, palette = NULL, key = NU
     pts <- sf::st_point_on_surface(sf::st_geometry(joined))
     pts <- sf::st_sf(joined[setdiff(names(joined), attr(joined, "sf_column"))], geometry = pts)
     pts$.label <- text
-    # The text layer maps fill only so after_scale() can read it; ggplot2 warns that it is unknown.
-    p <- p + withCallingHandlers(ggplot2::geom_sf_text(
-      ggplot2::aes(label = .data$.label, fill = .data[[fill]],
-                   colour = ggplot2::after_scale(phw_text_on(.data$fill))),
-      data = pts, size = 2.8, family = phw_font(), inherit.aes = FALSE, show.legend = FALSE),
-      warning = function(w) if (grepl("unknown aesthetic", conditionMessage(w), ignore.case = TRUE)) invokeRestart("muffleWarning"))
+    if (requireNamespace("ggrepel", quietly = TRUE)) {
+      # Boxes in the area's own fill keep a label readable after ggrepel moves it off a small area.
+      p <- p + ggrepel::geom_label_repel(
+        ggplot2::aes(geometry = .data$geometry, label = .data$.label, fill = .data[[fill]],
+                     colour = ggplot2::after_scale(phw_text_on(.data$fill))),
+        data = pts, stat = "sf_coordinates", size = 2.8, family = phw_font(),
+        label.padding = grid::unit(0.12, "lines"), label.r = grid::unit(0.08, "lines"), box.padding = 0.1,
+        point.size = NA, min.segment.length = 0, segment.colour = phw_colours[["text_secondary"]],
+        seed = 1, inherit.aes = FALSE, show.legend = FALSE)
+    } else {
+      # The text layer maps fill only so after_scale() can read it; ggplot2 warns that it is unknown.
+      p <- p + withCallingHandlers(ggplot2::geom_sf_text(
+        ggplot2::aes(label = .data$.label, fill = .data[[fill]],
+                     colour = ggplot2::after_scale(phw_text_on(.data$fill))),
+        data = pts, size = 2.8, family = phw_font(), inherit.aes = FALSE, show.legend = FALSE),
+        warning = function(w) if (grepl("unknown aesthetic", conditionMessage(w), ignore.case = TRUE)) invokeRestart("muffleWarning"))
+    }
   }
   p
 }
@@ -114,8 +127,9 @@ map_fill_scale <- function(v, bins, palette, key) {
   if (is.numeric(v)) {
     palette <- palette %||% "blues"
     if (is.null(bins)) return(scale_fill_phw_c(palette))
-    if (length(bins) == 1) return(scale_fill_phw_b(palette, n.breaks = bins))
-    return(scale_fill_phw_b(palette, breaks = bins))
+    lims <- range(pretty(range(v, na.rm = TRUE)))
+    if (length(bins) == 1) return(scale_fill_phw_b(palette, n.breaks = bins, limits = lims, show.limits = TRUE))
+    return(scale_fill_phw_b(palette, breaks = bins, limits = lims, show.limits = TRUE))
   }
   scale_fill_phw_d(palette %||% phw_default_palette(), key = key)
 }
