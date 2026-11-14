@@ -159,3 +159,44 @@ test_that("phw_as_summary names unknown row types", {
   d <- data.frame(label = c("a", "b"), kind = c("level", "heading"))
   expect_error(phw_as_summary(d, kind), "heading")
 })
+
+test_that("phw_summary_table leaves out rows with a missing group when missing = NULL", {
+  ll <- data.frame(age = c("0-14", "15-44", NA), sex = c("F", "M", "F"))
+  expect_message(tab <- phw_summary_table(ll, by = age, missing = NULL), "Left out 1 row")
+  expect_equal(names(tab)[-1], c("0-14 (n = 1)", "15-44 (n = 1)", "Total (n = 2)"))
+  expect_equal(tab[[2]][2], "1 (100.0%)")
+})
+
+test_that("phw_summary_table leaves a statistic blank when it can't be worked out", {
+  d <- data.frame(x = c(1, NA, NA), g = c("a", "b", "b"))
+  tab <- phw_summary_table(d, by = g, missing = NULL)
+  expect_equal(tab[[3]][1], "")
+  tab <- phw_summary_table(d, by = g, numeric = "mean_sd", missing = NULL)
+  expect_equal(tab[[2]][1], "1.0 (-)")
+})
+
+test_that("phw_group_table and phw_crosstab leave out rows with a missing value", {
+  gd <- data.frame(g = c("A", "A", "B"), t = c("1", "2", "1"), v = c(5, NA, 2))
+  expect_message(tab <- phw_group_table(gd, c(g, t), value = v), "Left out 1 row")
+  expect_equal(tab$v[tab[[1]] == "Total"], 7)
+  ct <- data.frame(r = c("x", "y"), k = c("p", "q"), n = c(1, NA))
+  expect_message(tab <- phw_crosstab(ct, r, k, count = n), "Left out 1 row")
+  expect_equal(tab$Total[tab$r == "Total"], 1)
+  expect_error(phw_crosstab(transform(ct, n = "1"), r, k, count = n), "must be a numeric column")
+})
+
+test_that("labels can be a named character vector", {
+  ll <- data.frame(age = c("0-14", "15-44"), sex = c("F", "M"))
+  expect_equal(phw_summary_table(ll, labels = c(sex = "Sex"))[[1]][4], "Sex")
+  expect_equal(attr(phw_crosstab(ll, age, sex, labels = c(sex = "Sex")), "spanner"), "Sex")
+  expect_match(names(phw_group_table(ll, c(age, sex), labels = c(age = "Age")))[1], "^Age")
+  expect_error(phw_summary_table(ll, labels = "Sex"), "must give a name")
+})
+
+test_that("the legacy rate and risk tables stop clearly with no rows to use", {
+  rd <- data.frame(a = "x", cases = 1, pop = 10)
+  expect_error(phw_rate_table(rd[0, ], a, cases, pop), "has no rows")
+  rk <- data.frame(e = c("Yes", "No"), y = c(1, 0))
+  expect_error(phw_risk_table(rk[0, ], e, y), "has no rows")
+  expect_error(phw_risk_table(transform(rk, e = NA), e, y), "no rows with both")
+})

@@ -54,6 +54,7 @@ phw_flextable_theme <- function(x, style = c("booktabs", "header", "light", "zeb
   ft <- flextable::fontsize(ft, size = font_size, part = "all")
   ft <- flextable::color(ft, color = col[["text"]], part = "all")
   ft <- flextable::border_remove(ft)
+  ft <- flextable::bg(ft, bg = "transparent", part = "all")
   ft <- flextable::bold(ft, part = "header")
   ft <- flextable::valign(ft, valign = "center", part = "all")
   if (!is.null(padding)) {
@@ -92,7 +93,7 @@ phw_flextable_theme <- function(x, style = c("booktabs", "header", "light", "zeb
   if (bold_first_col) ft <- flextable::bold(ft, j = 1, part = "body")
   if (total_row && nb > 0) {
     ft <- flextable::bold(ft, i = nb, part = "body")
-    ft <- flextable::hline(ft, i = nb - 1, border = navy, part = "body")
+    if (nb > 1) ft <- flextable::hline(ft, i = nb - 1, border = navy, part = "body")
   }
 
   if (!is.null(header_bg)) ft <- flextable::bg(ft, bg = header_bg, part = "header")
@@ -155,9 +156,11 @@ phw_flextable <- function(data, caption = NULL, number = NULL, source = NULL,
                           col_labels = NULL, autofit = TRUE, number_prefix = "Table",
                           caption_args = list(), flextable_args = list(), ...) {
   rlang::check_installed(c("flextable", "officer"))
+  check_unique_names(data)
   ft <- do.call(flextable::flextable, c(list(as.data.frame(data)), flextable_args))
-  is_int <- vapply(data, function(v) is.numeric(v) && all(v == round(v), na.rm = TRUE), logical(1))
-  is_dbl <- vapply(data, is.numeric, logical(1)) & !is_int
+  shown <- names(data) %in% ft$col_keys
+  is_int <- vapply(data, function(v) is.numeric(v) && all(v == round(v), na.rm = TRUE), logical(1)) & shown
+  is_dbl <- vapply(data, is.numeric, logical(1)) & shown & !is_int
   if (any(is_int)) ft <- flextable::colformat_double(ft, j = names(data)[is_int], digits = 0, big.mark = ",", na_str = "")
   if (any(is_dbl)) ft <- flextable::colformat_double(ft, j = names(data)[is_dbl], digits = digits, big.mark = ",", na_str = "")
   if (!is.null(col_labels)) ft <- do.call(flextable::set_header_labels, c(list(ft), col_labels))
@@ -179,11 +182,10 @@ phw_flextable <- function(data, caption = NULL, number = NULL, source = NULL,
   if (!is.null(cap)) {
     ft <- flextable::add_footer_lines(ft, values = cap)
     k <- flextable::nrow_part(ft, "footer")
-    ft <- flextable::bold(ft, i = k, part = "footer")
+    ft <- flextable::style(ft, i = k, part = "footer",
+                           pr_t = officer::fp_text(bold = TRUE, italic = FALSE, font.size = 8.5,
+                                                   font.family = phw_font(), color = phw_colours[["text"]]))
     ft <- flextable::align(ft, i = k, align = "right", part = "footer")
-    ft <- flextable::fontsize(ft, i = k, size = 8.5, part = "footer")
-    ft <- flextable::font(ft, i = k, fontname = phw_font(), part = "footer")
-    ft <- flextable::color(ft, i = k, color = phw_colours[["text"]], part = "footer")
   }
   if (autofit) ft <- flextable::autofit(ft)
   ft
@@ -210,7 +212,7 @@ phw_flextable <- function(data, caption = NULL, number = NULL, source = NULL,
 #' @export
 use_phw_flextable <- function(style = "booktabs", font_size = 10, ...) {
   rlang::check_installed(c("flextable", "officer"))
-  force(style)
+  style <- rlang::arg_match(style, c("booktabs", "header", "light", "zebra"))
   theme_args <- list(...)
   old <- flextable::set_flextable_defaults(
     font.family = phw_font(), font.size = font_size,
@@ -264,12 +266,15 @@ use_phw_flextable <- function(style = "booktabs", font_size = 10, ...) {
 phw_flextable_heat <- function(x, j, palette = "teals", domain = NULL, breaks = NULL,
                                higher_is_better = TRUE, symbols = TRUE) {
   rlang::check_installed("flextable")
+  check_flextable(x)
   data <- x$body$dataset
   j <- pick_cols(rlang::enquo(j), data, "j")
+  j <- value_cols(data, j, "j")
+  if (!length(j)) return(x)
   vals <- unlist(data[j])
   rag <- identical(palette, "rag") || identical(palette, "rag_accessible")
   if (rag) {
-    if (length(breaks) != 2) cli::cli_abort("For {.val {palette}} give two {.arg breaks}.")
+    check_breaks(breaks)
     rag_status <- function(v) {
       st <- ifelse(v < breaks[1], "low", ifelse(v < breaks[2], "mid", "high"))
       if (higher_is_better) c(low = "red", mid = "amber", high = "green")[st]
@@ -331,6 +336,7 @@ phw_flextable_groups <- function(x, j, key = NULL, palette = phw_default_palette
                                  values = NULL, what = c("background", "text"), rows = FALSE) {
   rlang::check_installed("flextable")
   what <- rlang::arg_match(what)
+  check_flextable(x)
   data <- x$body$dataset
   j <- pick_col(rlang::enquo(j), data, "j")
   groups <- data[[j]]
@@ -349,52 +355,27 @@ phw_flextable_groups <- function(x, j, key = NULL, palette = phw_default_palette
 }
 
 style_summary_ft <- function(ft, x) {
-  types <- attr(x, "row_type")
-  depth <- attr(x, "depth") %||% as.integer(types == "level")
+  r <- summary_rows(x)
   nl <- attr(x, "label_cols") %||% 1L
-  indent <- attr(x, "indent") %||% TRUE
   nc <- ncol(x)
   navy <- officer::fp_border(color = phw_colours[["navy"]], width = 1)
   grey <- officer::fp_border(color = phw_colours[["grey_mid"]], width = 0.75)
-  var_rows <- which(types == "variable")
-  tot_rows <- which(types == "total")
-  sub_rows <- which(types == "subtotal")
   lab_j <- seq_len(nl)
   ft <- flextable::align(ft, j = lab_j, align = "left", part = "all")
-  if (length(var_rows)) {
-    ft <- flextable::bold(ft, i = var_rows, part = "body")
-    top <- var_rows[depth[var_rows] == 0]
-    if (length(top)) {
-      ft <- flextable::color(ft, i = top, j = lab_j, color = phw_colours[["navy"]], part = "body")
-      if (isTRUE(attr(x, "highlight"))) {
-        ft <- flextable::bg(ft, i = top, bg = phw_colours[["grey_bg"]], part = "body")
-      }
-    }
+  if (any(r$bold)) ft <- flextable::bold(ft, i = which(r$bold), part = "body")
+  if (any(r$navy)) ft <- flextable::color(ft, i = which(r$navy), j = lab_j, color = phw_colours[["navy"]], part = "body")
+  if (any(r$shade)) ft <- flextable::bg(ft, i = which(r$shade), bg = phw_colours[["grey_bg"]], part = "body")
+  if (any(r$italic)) ft <- flextable::italic(ft, i = which(r$italic), j = lab_j, part = "body")
+  for (d in setdiff(unique(r$indent), 0)) {
+    ft <- flextable::padding(ft, i = which(r$indent == d), j = 1, padding.left = 4 + 12 * d, part = "body")
   }
-  if (indent) {
-    for (d in setdiff(unique(depth), 0)) {
-      ft <- flextable::padding(ft, i = which(depth == d), j = 1, padding.left = 4 + 12 * d, part = "body")
-    }
-  }
-  if (length(sub_rows)) {
-    ft <- flextable::bold(ft, i = sub_rows, part = "body")
-    ft <- flextable::italic(ft, i = sub_rows, j = lab_j, part = "body")
-  }
-  if (length(tot_rows)) {
-    ft <- flextable::bold(ft, i = tot_rows, part = "body")
-    above <- tot_rows[tot_rows > 1] - 1
-    if (length(above)) ft <- flextable::hline(ft, i = above, border = navy, part = "body")
-    if (1 %in% tot_rows && nrow(x) > 1) ft <- flextable::hline(ft, i = 1, border = navy, part = "body")
-  }
-  starts <- attr(x, "group_start") %||% integer()
-  sep <- attr(x, "separate") %||% "none"
-  if (length(starts)) {
-    if (sep %in% c("space", "both")) ft <- flextable::padding(ft, i = starts, padding.top = 10, part = "body")
-    if (sep %in% c("line", "both")) {
-      above <- setdiff(starts - 1, tot_rows - 1)
-      if (length(above)) ft <- flextable::hline(ft, i = above, border = grey, part = "body")
-    }
-  }
+  tot <- which(r$rule)
+  above <- tot[tot > 1] - 1
+  if (length(above)) ft <- flextable::hline(ft, i = above, border = navy, part = "body")
+  if (1 %in% tot && nrow(x) > 1) ft <- flextable::hline(ft, i = 1, border = navy, part = "body")
+  if (any(r$space)) ft <- flextable::padding(ft, i = which(r$space), padding.top = 10, part = "body")
+  line <- setdiff(which(r$line) - 1, 0)
+  if (length(line)) ft <- flextable::hline(ft, i = line, border = grey, part = "body")
   # Numbers and statistics right-aligned, whatever their type.
   if (nc > nl) ft <- flextable::align(ft, j = seq(nl + 1, nc), align = "right", part = "all")
   ch <- attr(x, "col_header")
@@ -454,8 +435,11 @@ style_summary_ft <- function(ft, x) {
 phw_flextable_bars <- function(x, j, colour = phw_colours[["light_teal"]], width = 0.9,
                                height = 0.1, digits = 0) {
   rlang::check_installed("flextable")
+  check_flextable(x)
   data <- x$body$dataset
   j <- pick_cols(rlang::enquo(j), data, "j")
+  j <- value_cols(data, j, "j")
+  for (col in j) check_bar_values(data[[col]], col, "j")
   for (col in j) {
     v <- data[[col]]
     mx <- max(v, na.rm = TRUE)

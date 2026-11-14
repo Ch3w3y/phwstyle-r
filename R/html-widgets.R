@@ -1,8 +1,9 @@
 #' PHW theme for reactable
 #'
-#' A [reactable::reactableTheme()] that uses the PHW font and colours: a navy
-#' header rule, light grey striping and hover, and the yellow keyboard focus
-#' outline used on phw.nhs.wales.
+#' A [reactable::reactableTheme()] that uses the PHW font and colours: navy
+#' header rules and a navy rule closing the table, navy column group
+#' headings, light grey hover (and striping, if you turn it on), and the
+#' yellow keyboard focus outline used on phw.nhs.wales.
 #'
 #' @param font_size Base font size in px.
 #' @param header Header style: `"booktabs"` (navy text and rules), `"navy"`
@@ -31,6 +32,10 @@ phw_reactable_theme <- function(font_size = 14, header = c("booktabs", "navy", "
                 borderBottom = paste("2px solid", col[["navy"]])),
     light = list(color = col[["text"]], background = col[["light_teal"]], fontWeight = 700,
                  borderBottom = paste("1px solid", col[["grey_border"]])))
+  group_style <- switch(header,
+    booktabs = list(color = col[["navy"]], fontWeight = 700),
+    navy = list(color = "#FFFFFF", background = col[["navy"]], fontWeight = 700),
+    light = list(color = col[["text"]], background = col[["light_teal"]], fontWeight = 700))
   args <- list(
     color = col[["text"]],
     backgroundColor = "#FFFFFF",
@@ -40,6 +45,8 @@ phw_reactable_theme <- function(font_size = 14, header = c("booktabs", "navy", "
     cellPadding = "6px 10px",
     style = list(fontFamily = paste0(phw_font(), ", Arial, sans-serif"),
                  fontSize = paste0(font_size, "px")),
+    tableStyle = list(borderBottom = paste("2px solid", col[["navy"]])),
+    groupHeaderStyle = c(group_style, list(fontSize = paste0(font_size, "px"))),
     headerStyle = c(header_style, list(fontSize = paste0(font_size, "px"),
                                        "&:hover[aria-sort]" = list(background = col[["grey_bg"]], color = col[["navy"]]),
                                        "&[aria-sort='ascending'], &[aria-sort='descending']" = list(background = col[["grey_bg"]], color = col[["navy"]]))),
@@ -59,8 +66,9 @@ phw_reactable_theme <- function(font_size = 14, header = c("booktabs", "navy", "
 
 #' Make a PHW-styled reactable
 #'
-#' Calls [reactable::reactable()] with the PHW theme, striping, compact rows
-#' and number formatting with thousands separators. It also attaches the
+#' Calls [reactable::reactable()] with the PHW theme, compact rows and
+#' number formatting with thousands separators. Rows are not striped, as in
+#' the other PHW tables; pass `striped = TRUE` to stripe them. It also attaches the
 #' Ubuntu web font. You can add a title above and a source line below.
 #'
 #' @param data A data frame, or a summary table from [phw_summary_table()],
@@ -105,9 +113,11 @@ phw_reactable <- function(data, ..., caption = NULL, source = NULL, date = NULL,
                           caption_args = list(), digits = 1, group_col = NULL, key = NULL,
                           palette = phw_default_palette()) {
   rlang::check_installed("reactable")
+  check_unique_names(data)
   group_col <- pick_col(rlang::enquo(group_col), data, "group_col", null_ok = TRUE)
   args <- list(...)
-  defaults <- list(striped = TRUE, highlight = TRUE, compact = TRUE,
+  note <- NULL
+  defaults <- list(striped = FALSE, highlight = TRUE, compact = TRUE,
                    theme = phw_reactable_theme(header = header, accent = accent),
                    defaultColDef = reactable::colDef(
                      format = reactable::colFormat(separators = TRUE),
@@ -115,7 +125,7 @@ phw_reactable <- function(data, ..., caption = NULL, source = NULL, date = NULL,
   if (inherits(data, "phw_summary")) {
     sm <- summary_reactable_args(data)
     for (nm in names(sm)) if (is.null(args[[nm]])) args[[nm]] <- sm[[nm]]
-    if (!is.null(attr(data, "note"))) caption_args$note <- caption_args$note %||% attr(data, "note")
+    note <- attr(data, "note")
     data <- as.data.frame(unclass(data)[names(data)], check.names = FALSE)
   }
   for (nm in names(defaults)) if (is.null(args[[nm]])) args[[nm]] <- defaults[[nm]]
@@ -133,7 +143,7 @@ phw_reactable <- function(data, ..., caption = NULL, source = NULL, date = NULL,
   }
   tbl <- do.call(reactable::reactable, c(list(data), args))
   tbl <- htmltools::attachDependencies(tbl, phw_font_dependency(), append = TRUE)
-  wrap_widget(tbl, caption, caption_from(source, date, caption_args))
+  wrap_widget(tbl, caption, caption_from(source, date, caption_args), note)
 }
 
 with_number_formats <- function(columns, data, digits) {
@@ -151,8 +161,10 @@ with_number_formats <- function(columns, data, digits) {
   columns
 }
 
-wrap_widget <- function(widget, caption, cap) {
-  if (is.null(caption) && is.null(cap)) return(widget)
+# The title above, then the table, a summary table's note on the statistics
+# and the bold source line, as phw_flextable() and phw_gt() lay them out.
+wrap_widget <- function(widget, caption, cap, note = NULL) {
+  if (is.null(caption) && is.null(cap) && is.null(note)) return(widget)
   htmltools::browsable(htmltools::tagList(
     phw_font_dependency(),
     htmltools::div(
@@ -162,6 +174,8 @@ wrap_widget <- function(widget, caption, cap) {
         caption, style = sprintf("font-weight:700;color:%s;font-size:1.05em;margin:0 0 6px 0;",
                                  phw_colours[["navy"]])),
       widget,
+      if (!is.null(note)) htmltools::div(
+        note, style = sprintf("font-size:0.8em;color:%s;margin-top:6px;", phw_colours[["text_secondary"]])),
       if (!is.null(cap)) htmltools::div(
         htmltools::HTML(gsub("\n", "<br>", htmltools::htmlEscape(cap))),
         style = sprintf("font-weight:700;text-align:right;font-size:0.8em;color:%s;margin-top:6px;",
@@ -313,13 +327,8 @@ ggplotly_phw <- function(p) {
 }
 
 summary_reactable_args <- function(x) {
-  types <- attr(x, "row_type")
-  depth <- attr(x, "depth") %||% as.integer(types == "level")
+  rows <- summary_rows(x)
   nl <- attr(x, "label_cols") %||% 1L
-  indent <- attr(x, "indent") %||% TRUE
-  highlight <- attr(x, "highlight") %||% TRUE
-  starts <- attr(x, "group_start") %||% integer()
-  sep <- attr(x, "separate") %||% "none"
   col <- phw_colours
   nms <- names(x)
   cols <- list()
@@ -328,9 +337,9 @@ summary_reactable_args <- function(x) {
       minWidth = if (nl == 1) 160 else 110,
       style = function(value, index) {
         st <- list()
-        if (indent && depth[index] > 0) st$paddingLeft <- paste0(8 + 14 * depth[index], "px")
-        if (types[index] == "variable" && depth[index] == 0) st$color <- col[["navy"]]
-        if (types[index] == "subtotal") st$fontStyle <- "italic"
+        if (rows$indent[index] > 0) st$paddingLeft <- paste0(8 + 14 * rows$indent[index], "px")
+        if (rows$navy[index]) st$color <- col[["navy"]]
+        if (rows$italic[index]) st$fontStyle <- "italic"
         st
       })
   }
@@ -345,13 +354,13 @@ summary_reactable_args <- function(x) {
   groups <- NULL
   if (!is.null(ch) && nrow(ch) > 1) {
     key <- apply(ch[-nrow(ch), , drop = FALSE], 2, paste, collapse = " \u00b7 ")
-    r <- rle(key)
-    ends <- cumsum(r$lengths)
+    run <- rle(key)
+    ends <- cumsum(run$lengths)
     groups <- lapply(seq_along(ends), function(g) {
-      idx <- (ends[g] - r$lengths[g] + 1):ends[g]
+      idx <- (ends[g] - run$lengths[g] + 1):ends[g]
       # A grand total column has the same label at every level: show it once.
       same <- all(ch[, idx] == ch[nrow(ch), idx[1]])
-      reactable::colGroup(name = if (same) "" else r$values[g], columns = data_cols[idx])
+      reactable::colGroup(name = if (same) "" else run$values[g], columns = data_cols[idx])
     })
   } else if (!is.null(sp)) {
     groups <- list(reactable::colGroup(name = sp, columns = data_cols))
@@ -362,13 +371,11 @@ summary_reactable_args <- function(x) {
     sortable = FALSE, pagination = FALSE, striped = FALSE,
     rowStyle = function(index) {
       st <- list()
-      if (types[index] %in% c("variable", "subtotal", "total")) st$fontWeight <- 700
-      if (types[index] == "total") st$borderTop <- paste("2px solid", col[["navy"]])
-      if (types[index] == "variable" && depth[index] == 0 && highlight) st$background <- col[["grey_bg"]]
-      if (index %in% starts && types[index] != "total") {
-        if (sep %in% c("line", "both")) st$borderTop <- paste("1px solid", col[["grey_mid"]])
-        if (sep %in% c("space", "both")) st$marginTop <- "10px"
-      }
+      if (rows$bold[index]) st$fontWeight <- 700
+      if (rows$rule[index]) st$borderTop <- paste("2px solid", col[["navy"]])
+      if (rows$shade[index]) st$background <- col[["grey_bg"]]
+      if (rows$line[index]) st$borderTop <- paste("1px solid", col[["grey_mid"]])
+      if (rows$space[index]) st$marginTop <- "10px"
       st
     }
   )
@@ -417,6 +424,8 @@ NULL
 phw_col_bar <- function(data, column, colour = phw_colours[["light_teal"]], digits = 0, ...) {
   rlang::check_installed("reactable")
   column <- pick_col(rlang::enquo(column), data, "column")
+  if (!length(value_cols(data, column, "column"))) return(reactable::colDef(align = "right", ...))
+  check_bar_values(data[[column]], column, "column")
   mx <- max(data[[column]], na.rm = TRUE)
   reactable::colDef(
     align = "left",
@@ -437,10 +446,12 @@ phw_col_bar <- function(data, column, colour = phw_colours[["light_teal"]], digi
 phw_col_heat <- function(data, column, palette = "teals", domain = NULL, digits = 1, ...) {
   rlang::check_installed("reactable")
   column <- pick_col(rlang::enquo(column), data, "column")
+  fmt <- reactable::colFormat(separators = TRUE, digits = digits)
+  if (!length(value_cols(data, column, "column"))) return(reactable::colDef(format = fmt, ...))
   domain <- domain %||% range(data[[column]], na.rm = TRUE)
   fill <- scales::col_numeric(seq_cols(palette, FALSE), domain = domain, na.color = "transparent")
   reactable::colDef(
-    format = reactable::colFormat(separators = TRUE, digits = digits),
+    format = fmt,
     style = function(value) {
       if (is.na(value)) return(NULL)
       bg <- fill(value)
@@ -453,6 +464,9 @@ phw_col_heat <- function(data, column, palette = "teals", domain = NULL, digits 
 phw_col_rag <- function(breaks, higher_is_better = TRUE, rag_palette = "rag_accessible",
                         digits = 1, ...) {
   rlang::check_installed("reactable")
+  if (missing(breaks)) breaks <- NULL
+  check_breaks(breaks)
+  rag_palette <- rlang::arg_match(rag_palette, c("rag_accessible", "rag"))
   pal <- phw_palettes[[rag_palette]]
   shapes <- c(red = "\u25BC", amber = "\u25A0", green = "\u25B2")
   status <- function(v) {
