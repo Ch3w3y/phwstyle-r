@@ -283,6 +283,18 @@ phw_pptx <- function(template = NULL) {
 #'   first one, if several do), so you only need `master` when two masters
 #'   share a layout name.
 #' @param editable Add charts as editable vector graphics (needs rvg)?
+#' @param plot_scale How much to enlarge a chart's text on the slide, as a
+#'   multiple of the size the chart already uses. The default `1.5` brings
+#'   axis and legend text to about 14 points, which reads from the back of a
+#'   room. `1` leaves the chart as it is. It scales the text and legend keys
+#'   that follow the plot's base size, as [theme_phw()] and the ggplot2
+#'   themes do, and the size of text drawn by `geom_text()` with ggplot2 4.0.0
+#'   or later. Text you gave an exact size in your own `theme()` keeps it.
+#' @param table_fit Enlarge a table built here from a data frame or summary
+#'   table so it fills the width of the slide's content area? The text grows
+#'   with it, by up to 1.6 times, and a narrow table is widened by at most
+#'   another 80%. `FALSE` keeps the table at the size [phw_flextable()] gives
+#'   it. A flextable you pass in is never resized.
 #' @param title_size Title font size. On a layout with a dark background (the
 #'   title slide and section header) the template sets the size and colour, and
 #'   this applies only when you give it.
@@ -294,7 +306,8 @@ phw_pptx <- function(template = NULL) {
 phw_add_slide <- function(x, title = NULL, plot = NULL, table = NULL, text = NULL,
                           source = NULL, date = NULL, layout = "Title and Content",
                           master = NULL, editable = TRUE, title_size = 28,
-                          caption_args = list(), alt = NULL) {
+                          caption_args = list(), alt = NULL,
+                          plot_scale = 1.5, table_fit = TRUE) {
   rlang::check_installed("officer")
   if (is.null(master)) {
     available <- officer::layout_summary(x)
@@ -322,8 +335,11 @@ phw_add_slide <- function(x, title = NULL, plot = NULL, table = NULL, text = NUL
     tp <- officer::fpar(officer::ftext(title, title_props))
     x <- officer::ph_with(x, tp, location = officer::ph_location_type(if ("ctrTitle" %in% types) "ctrTitle" else "title"))
   }
-  body <- officer::ph_location_type(if ("subTitle" %in% types) "subTitle" else "body")
+  body <- officer::ph_location_type(body_type(types))
+  area <- officer::layout_properties(x, layout = layout, master = master)
+  area <- area[area$type == body_type(types), ][1, ]
   if (!is.null(plot)) {
+    if (inherits(plot, "ggplot")) plot <- scale_plot_text(plot, plot_scale)
     if (is.null(alt) && inherits(plot, "ggplot") && nzchar(ggplot2::get_alt_text(plot))) {
       alt <- ggplot2::get_alt_text(plot)
     }
@@ -339,7 +355,12 @@ phw_add_slide <- function(x, title = NULL, plot = NULL, table = NULL, text = NUL
       x <- set_slide_alt(x, alt)
     }
   } else if (!is.null(table)) {
-    ft <- if (inherits(table, "flextable")) table else phw_flextable(table)
+    ft <- if (inherits(table, "flextable")) {
+      table
+    } else {
+      built <- phw_flextable(table)
+      if (isTRUE(table_fit)) fit_table_to_area(built, area$cx, area$cy) else built
+    }
     x <- officer::ph_with(x, ft, location = body)
     x <- set_slide_alt(x, alt)
   } else if (!is.null(text)) {
@@ -362,6 +383,48 @@ phw_add_slide <- function(x, title = NULL, plot = NULL, table = NULL, text = NUL
                                                           width = size$width - 1.2, height = 0.4))
   }
   x
+}
+
+body_type <- function(types) if ("subTitle" %in% types) "subTitle" else "body"
+
+scale_plot_text <- function(plot, scale) {
+  if (!is.numeric(scale) || length(scale) != 1 || is.na(scale) || scale <= 0) {
+    cli::cli_abort("{.arg plot_scale} must be a single positive number, not {.val {scale}}.")
+  }
+  if (scale == 1) return(plot)
+  current <- ggplot2::theme_get() + plot$theme
+  plot <- plot + ggplot2::theme(
+    text = ggplot2::element_text(size = ggplot2::calc_element("text", current)$size * scale),
+    legend.key.size = ggplot2::calc_element("legend.key.size", current) * scale
+  )
+  if (ggplot2_v4()) {
+    # element_geom() reads points but calc_element() returns millimetres
+    fontsize <- ggplot2::calc_element("geom", current)$fontsize
+    if (!is.null(fontsize)) {
+      plot <- plot + ggplot2::theme(geom = ggplot2::element_geom(fontsize = fontsize * scale * ggplot2::.pt))
+    }
+  }
+  plot
+}
+
+# Grows a table's text, up to max_grow times, so it fills the area, then
+# widens its columns a little. It never shrinks the text.
+fit_table_to_area <- function(ft, width, height, max_grow = 1.6, max_pad = 1.8) {
+  dims <- flextable::flextable_dim(ft)
+  grow <- min(width / dims$widths, height / dims$heights, max_grow)
+  if (grow > 1) {
+    for (part in c("header", "body", "footer")) {
+      if (flextable::nrow_part(ft, part) == 0) next
+      sizes <- ft[[part]]$styles$text$font.size$data
+      for (i in seq_len(nrow(sizes))) {
+        ft <- flextable::fontsize(ft, i = i, size = max(sizes[i, ]) * grow, part = part)
+      }
+    }
+    ft <- flextable::autofit(ft)
+  }
+  widths <- ft$body$colwidths
+  pad <- min(width / sum(widths), max_pad)
+  flextable::width(ft, j = seq_along(widths), width = widths * pad)
 }
 
 # officer's ph_with() takes alt text only for ggplot images, so editable

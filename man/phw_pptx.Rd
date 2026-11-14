@@ -20,7 +20,9 @@ phw_add_slide(
   editable = TRUE,
   title_size = 28,
   caption_args = list(),
-  alt = NULL
+  alt = NULL,
+  plot_scale = 1.5,
+  table_fit = TRUE
 )
 }
 \arguments{
@@ -63,6 +65,20 @@ this applies only when you give it.}
 \item{alt}{Alternative text for the chart or table on the slide, read out
 by screen readers. \code{NULL} adds none, except that a ggplot's own
 \code{labs(alt = )} text is used when there is one.}
+
+\item{plot_scale}{How much to enlarge a chart's text on the slide, as a
+multiple of the size the chart already uses. The default \code{1.5} brings
+axis and legend text to about 14 points, which reads from the back of a
+room. \code{1} leaves the chart as it is. It scales the text and legend keys
+that follow the plot's base size, as \code{\link[=theme_phw]{theme_phw()}} and the ggplot2
+themes do, and the size of text drawn by \code{geom_text()} with ggplot2 4.0.0
+or later. Text you gave an exact size in your own \code{theme()} keeps it.}
+
+\item{table_fit}{Enlarge a table built here from a data frame or summary
+table so it fills the width of the slide's content area? The text grows
+with it, by up to 1.6 times, and a narrow table is widened by at most
+another 80\%. \code{FALSE} keeps the table at the size \code{\link[=phw_flextable]{phw_flextable()}} gives
+it. A flextable you pass in is never resized.}
 }
 \value{
 An officer \code{rpptx} object. Save it with \code{print(deck, target = "file.pptx")}.

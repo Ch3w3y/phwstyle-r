@@ -215,3 +215,73 @@ test_that("phw_add_slide uses a ggplot's own alt text on the editable path too",
   xml <- paste(readLines(file.path(dir, "ppt", "slides", "slide1.xml"), warn = FALSE), collapse = "")
   expect_match(xml, 'descr="Heavier cars use more fuel"', fixed = TRUE)
 })
+
+slide_xml <- function(deck, i = 1) {
+  f <- withr::local_tempfile(fileext = ".pptx")
+  print(deck, target = f)
+  dir <- withr::local_tempdir()
+  utils::unzip(f, exdir = dir)
+  paste(readLines(file.path(dir, "ppt", "slides", paste0("slide", i, ".xml")), warn = FALSE), collapse = "")
+}
+
+xml_numbers <- function(xml, pattern) {
+  as.numeric(gsub("\\D", "", regmatches(xml, gregexpr(pattern, xml))[[1]]))
+}
+
+test_that("phw_add_slide enlarges chart text on the editable path", {
+  skip_if_not_installed("officer")
+  skip_if_not_installed("rvg")
+  p <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg, colour = factor(cyl))) +
+    ggplot2::geom_point() + ggplot2::geom_text(ggplot2::aes(label = cyl)) + theme_phw()
+  sizes <- function(...) xml_numbers(slide_xml(phw_add_slide(phw_pptx(), "Chart", plot = p, ...)), 'sz="[0-9]+"')
+  small <- setdiff(sizes(plot_scale = 1), 2800) / 100
+  large <- setdiff(sizes(), 2800) / 100
+  expect_equal(max(small), 9.9)
+  expect_gte(sort(large)[2], 14)
+  expect_equal(max(large), max(small) * 1.5)
+  expect_equal(min(large), min(small) * 1.5)
+})
+
+test_that("phw_add_slide scales a plain ggplot and rejects a bad plot_scale", {
+  skip_if_not_installed("officer")
+  p <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) + ggplot2::geom_point()
+  scaled <- scale_plot_text(p, 1.5)
+  th <- ggplot2::theme_get() + scaled$theme
+  expect_equal(ggplot2::calc_element("axis.text.x", th)$size, 0.8 * 11 * 1.5)
+  expect_identical(scale_plot_text(p, 1), p)
+  expect_error(phw_add_slide(phw_pptx(), "x", plot = p, plot_scale = 0), "plot_scale")
+})
+
+test_that("phw_add_slide scales the picture path the same way", {
+  skip_if_not_installed("officer")
+  p <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) + ggplot2::geom_point() + theme_phw()
+  deck <- phw_add_slide(phw_pptx(), "Chart", plot = p, editable = FALSE)
+  expect_length(deck, 1)
+  th <- ggplot2::theme_get() + scale_plot_text(p, 1.5)$theme
+  expect_gte(ggplot2::calc_element("axis.text.x", th)$size, 14)
+})
+
+test_that("phw_add_slide fills the content area with a table", {
+  skip_if_not_installed("officer")
+  skip_if_not_installed("flextable")
+  area <- 12.133
+  widths <- function(table, ...) {
+    xml <- slide_xml(phw_add_slide(phw_pptx(), "Table", table = table, ...))
+    list(width = sum(xml_numbers(xml, '<a:gridCol w="[0-9]+"')) / 914400,
+         size = max(setdiff(xml_numbers(xml, 'sz="[0-9]+"'), 2800)) / 100)
+  }
+  tab <- phw_summary_table(data.frame(age = rep(c("0-15", "16-64", "65+"), 2),
+                                      sex = rep(c("Female", "Male"), each = 3)), by = sex)
+  fitted <- widths(tab)
+  plain <- widths(tab, table_fit = FALSE)
+  expect_gt(fitted$width, 0.8 * area)
+  expect_lte(fitted$width, area)
+  expect_gt(fitted$size, plain$size)
+  expect_lte(fitted$size, 16)
+  expect_equal(plain$size, 10)
+  narrow <- widths(data.frame(a = 1:3, b = 4:6))
+  expect_lt(narrow$width, 0.3 * area)
+  expect_lte(widths(head(mtcars, 25))$width, area)
+  own <- flextable::flextable(head(mtcars[, 1:3]))
+  expect_equal(widths(own)$width, widths(own, table_fit = FALSE)$width)
+})
