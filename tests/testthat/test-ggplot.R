@@ -289,3 +289,14 @@ test_that("theme_phw checks a numeric legend and base_size", {
   expect_error(theme_phw(base_size = "11"), "base_size")
   expect_equal(theme_phw(legend = c(0.9, 0.9))$legend.position.inside, c(0.9, 0.9))
 })
+
+test_that("reverse flips a function palette and keeps its order", {
+  d <- data.frame(x = 1:3, y = 1:3, g = c("A", "B", "C"))
+  fill_of <- function(...) {
+    p <- ggplot2::ggplot(d, ggplot2::aes(x, y, colour = g)) + ggplot2::geom_point() +
+      scale_colour_phw_d(palette = function(n) grDevices::hcl.colors(n), ...)
+    ggplot2::layer_data(p)$colour
+  }
+  expect_equal(toupper(fill_of()), toupper(grDevices::hcl.colors(3)))
+  expect_equal(toupper(fill_of(reverse = TRUE)), toupper(rev(grDevices::hcl.colors(3))))
+})

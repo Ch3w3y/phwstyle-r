@@ -147,7 +147,7 @@ next_colour <- function(used, palette, neutral_colour) {
       return(free[1])
     }
   }
-  cli::cli_abort("Too many groups for a colour key.")
+  cli::cli_abort("Too many groups for a colour key.", class = "phwstyle_too_many_groups")
 }
 
 #' Manage colour keys

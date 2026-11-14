@@ -315,7 +315,12 @@ NULL
 
 phw_discrete_scale <- function(aesthetics, palette, reverse, key, values, neutral, na.value, ...,
                                call = rlang::caller_env()) {
-  if (!is.function(palette)) {
+  if (is.function(palette)) {
+    if (reverse) {
+      f <- palette
+      palette <- function(n) rev(f(n))
+    }
+  } else {
     pal <- palette_colours(palette)
     if (reverse) palette <- rev(pal)
   }
@@ -334,7 +339,7 @@ phw_discrete_scale <- function(aesthetics, palette, reverse, key, values, neutra
       lv <- lv[!is.na(lv)]
       cols <- rlang::try_fetch(
         phw_colour_key(lv, name = a$key, palette = a$palette, fixed = a$values, neutral = a$neutral),
-        error = function(e) {
+        phwstyle_too_many_groups = function(e) {
           cli::cli_abort(c("Can't give {length(lv)} groups a colour each.",
                            i = "With this many groups, use facets or direct labels instead of colour."),
                          parent = e, call = NULL)
