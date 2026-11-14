@@ -21,6 +21,9 @@ set once for a document, what is added to one chart, and how your own
 changes take priority), then walks through each output type. The script
 \code{examples/phwstyle-demo.R} in the source repository runs them all from
 one raw data frame.
+\item The website, \url{https://ch3w3y.github.io/phwstyle-r/}, has a guide for
+charts, colours, tables, maps, documents and exports, and a gallery of
+every kind of output.
 }
 }
 
@@ -35,9 +38,11 @@ health charts: \code{\link[=phw_epicurve]{phw_epicurve()}}, \code{\link[=phw_pyr
 
 \section{Colours and accessibility}{
 
-\link{phw_colours}, \code{\link[=phw_pal]{phw_pal()}}, \code{\link[=phw_colour_key]{phw_colour_key()}} (colours that stay with
-their groups across reports), \code{\link[=phw_check_colours]{phw_check_colours()}}, \code{\link[=phw_cvd]{phw_cvd()}} and the
-\code{accessible} and \code{rag_accessible} palettes.
+\link{phw_colours}, \code{\link[=phw_pal]{phw_pal()}} and the palettes in \link{phw_palettes} (including
+\code{strategy} for the Long-Term Strategy priorities and \code{greens}),
+\code{\link[=phw_colour_key]{phw_colour_key()}} (colours that stay with their groups across reports),
+\code{\link[=phw_default_palette]{phw_default_palette()}} (switching everything to the colour-blind safe
+\code{accessible} palette), \code{\link[=phw_check_colours]{phw_check_colours()}} and \code{\link[=phw_cvd]{phw_cvd()}}.
 }
 
 \section{Tables}{
@@ -80,6 +85,7 @@ document's YAML header do the same; see \code{\link[=phw_default_palette]{phw_de
 \seealso{
 Useful links:
 \itemize{
+  \item \url{https://ch3w3y.github.io/phwstyle-r/}
   \item \url{https://github.com/Ch3w3y/phwstyle-r}
   \item Report bugs at \url{https://github.com/Ch3w3y/phwstyle-r/issues}
 }

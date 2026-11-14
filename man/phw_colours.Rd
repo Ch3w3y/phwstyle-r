@@ -10,7 +10,8 @@ A named character vector of hex colours.
 phw_colours
 }
 \description{
-A named character vector of every colour in the PHW / CDSC identity.
+A named character vector of every colour in the PHW identity, as used by
+its Communicable Disease Surveillance Centre (CDSC).
 Each colour and its role is listed in
 \code{system.file("brand", "palette.csv", package = "phwstyle")}.
 }

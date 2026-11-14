@@ -15,3 +15,6 @@ phw_text_on(bg)
 \description{
 Choose readable text colour for a background
 }
+\examples{
+phw_text_on(phw_col("navy", "light_teal", "gold_465"))
+}

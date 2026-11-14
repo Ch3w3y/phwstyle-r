@@ -111,3 +111,28 @@ See \code{\link[=phw_default_palette]{phw_default_palette()}} for the other ways
 text and thicker lines as well, call \code{use_phw_ggplot(accessible = TRUE)}
 in the setup chunk.
 }
+\examples{
+# Use a format in the YAML header of an .Rmd file:
+#
+#   output: phwstyle::phw_word_document
+#
+# or give it to rmarkdown::render(). Making the format object is quick:
+if (requireNamespace("rmarkdown", quietly = TRUE)) {
+  fmt <- phw_word_document(toc = TRUE)
+}
+\donttest{
+# Render one document twice: default colours, then accessible colours
+if (requireNamespace("rmarkdown", quietly = TRUE) && rmarkdown::pandoc_available() &&
+    interactive()) {
+  rmd <- file.path(tempdir(), "report.Rmd")
+  writeLines(c("---", "title: Example report", "---", "",
+               "```{r, echo = FALSE}",
+               "library(ggplot2)",
+               "ggplot(mpg, aes(class, fill = drv)) + geom_bar()",
+               "```"), rmd)
+  rmarkdown::render(rmd, phw_word_document(), output_file = "report.docx")
+  rmarkdown::render(rmd, phw_word_document(palette = "accessible"),
+                    output_file = "report-accessible.docx")
+}
+}
+}

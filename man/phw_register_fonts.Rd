@@ -18,3 +18,7 @@ Called automatically when the package loads. It registers Ubuntu with
 The base \code{pdf()} device and LaTeX can't see registered fonts. For those,
 run \code{\link[=phw_install_fonts]{phw_install_fonts()}} once.
 }
+\examples{
+# Runs when phwstyle loads; call it again only if fonts were reset.
+phw_register_fonts()
+}

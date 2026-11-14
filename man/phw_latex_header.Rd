@@ -21,3 +21,7 @@ Fills in the font, logo and image paths in the bundled LaTeX header.
 \code{\link[=phw_pdf_document]{phw_pdf_document()}} calls this for you. Use it directly to brand other
 LaTeX-based formats, e.g. \verb{includes: in_header:} in bookdown.
 }
+\examples{
+f <- phw_latex_header(team = "Team name")
+head(readLines(f))
+}

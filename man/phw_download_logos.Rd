@@ -26,3 +26,9 @@ this once per computer. It isn't needed if you set
 The logo is a trade mark of Public Health Wales. Use it only in line with
 PHW's brand guidance.
 }
+\examples{
+\donttest{
+# Run once per computer. It asks before downloading anything.
+if (interactive()) phw_download_logos()
+}
+}

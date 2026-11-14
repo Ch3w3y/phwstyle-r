@@ -2,7 +2,7 @@
 % Please edit documentation in R/colours.R
 \name{phw_contrast}
 \alias{phw_contrast}
-\title{WCAG contrast ratio between two colours}
+\title{Contrast ratio between two colours}
 \usage{
 phw_contrast(x, y = "#FFFFFF")
 }
@@ -10,11 +10,13 @@ phw_contrast(x, y = "#FFFFFF")
 \item{x, y}{Colours (any form \code{\link[grDevices:col2rgb]{grDevices::col2rgb()}} accepts).}
 }
 \value{
-Contrast ratios, from 1 to 21. WCAG AA needs 4.5 for body text and
-3 for large text and chart marks.
+Contrast ratios, from 1 to 21. The WCAG AA level needs 4.5 for body
+text and 3 for large text and chart marks.
 }
 \description{
-WCAG contrast ratio between two colours
+The contrast ratio from the Web Content Accessibility Guidelines (WCAG),
+the standard most public sector websites and documents are checked
+against.
 }
 \examples{
 phw_contrast(phw_colours["teal"], "white")

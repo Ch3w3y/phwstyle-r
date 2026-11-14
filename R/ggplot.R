@@ -1,7 +1,7 @@
 #' PHW theme for ggplot2
 #'
-#' A clean theme that follows how Public Health Wales and CDSC reports draw
-#' charts:
+#' A clean theme that follows how Public Health Wales reports, including
+#' those of its Communicable Disease Surveillance Centre (CDSC), draw charts:
 #'
 #' * a white background with light gridlines on the value axis only
 #' * the legend at the bottom with no title
@@ -204,6 +204,24 @@ phw_continuous_auto <- phw_palettes$blues[2:6]
 #' @inheritParams theme_phw
 #' @param ... Passed to [theme_phw()].
 #' @return A ggplot2 theme.
+#' @examples
+#' library(ggplot2)
+#' # Any filled grid works the same way as a map
+#' ggplot(faithfuld, aes(waiting, eruptions, fill = density)) +
+#'   geom_raster() +
+#'   scale_fill_phw_c() +
+#'   theme_phw_map()
+#' \donttest{
+#' # Health boards, downloaded the first time and cached after that
+#' if (requireNamespace("sf", quietly = TRUE) && interactive()) {
+#'   hb <- phw_boundaries("health_board")
+#'   hb$rate <- runif(nrow(hb), 20, 80)
+#'   ggplot(hb) +
+#'     geom_sf(aes(fill = rate), colour = "white") +
+#'     scale_fill_phw_b(name = "Rate per\n100,000") +
+#'     theme_phw_map()
+#' }
+#' }
 #' @export
 theme_phw_map <- function(base_size = 11, base_family = phw_font(), legend = "right", ...) {
   theme_phw(base_size = base_size, base_family = base_family, grid = "none",
@@ -561,6 +579,20 @@ set_geom_defaults <- function(geoms, new) {
 #' @param ... Passed to [phw_caption()], e.g. `source_prefix = "Data: "` or
 #'   `note = "Provisional"`.
 #' @return A gtable that prints like a plot. Save it with [phw_save()].
+#' @examples
+#' library(ggplot2)
+#' p <- ggplot(mtcars, aes(wt, mpg)) +
+#'   geom_point() +
+#'   labs(title = "Weight and fuel economy", x = "Weight (1,000 lbs)",
+#'        y = "Miles per gallon")
+#'
+#' # Source and date under the chart, with the logo if you have one
+#' # (see phw_download_logos()); otherwise the organisation name is shown.
+#' fp <- phw_finalise(p, source = "mtcars", date = as.Date("2025-06-30"))
+#' phw_save(fp, tempfile(fileext = ".png"))
+#'
+#' # A team line, and no logo
+#' fp <- phw_finalise(p, source = "mtcars", team = "Team name", logo = FALSE)
 #' @export
 phw_finalise <- function(plot, source = NULL, date = NULL, logo = "blue",
                          team = NULL, logo_height = 1.1,
@@ -648,6 +680,16 @@ print.phw_finalised <- function(x, ...) {
 #' @param device Override the graphics device that the extension picks.
 #' @param ... Passed to [ggplot2::ggsave()].
 #' @return The file name, invisibly.
+#' @examples
+#' library(ggplot2)
+#' p <- ggplot(mtcars, aes(wt, mpg)) +
+#'   geom_point() +
+#'   theme_phw()
+#' f <- phw_save(p, tempfile(fileext = ".png"))
+#' file.exists(f)
+#'
+#' # Wider, for a slide
+#' phw_save(p, tempfile(fileext = ".png"), width = 25, height = 12)
 #' @export
 phw_save <- function(plot = ggplot2::last_plot(), filename, width = 16, height = 10,
                      units = "cm", dpi = 300, bg = "white", device = NULL, ...) {

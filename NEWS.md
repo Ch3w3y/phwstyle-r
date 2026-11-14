@@ -89,6 +89,29 @@
   palette that means spare colours from the other PHW palettes and a
   warning, instead of blended in-between colours.
 
+## Boundaries
+
+* `phw_boundaries("msoa")` and `phw_boundaries("lsoa")` work again. The ONS
+  Open Geography Portal stopped publishing the layers they used, so both now
+  come from DataMapWales (Welsh Government), with the super generalised ONS
+  boundaries as the alternative. MSOAs from DataMapWales have no Welsh
+  names, so `name_cy` is missing for them.
+* Where a geography is published by more than one source,
+  `phw_boundaries()` tries the others if the first cannot be reached, and
+  warns which boundaries it returned.
+* An area that a source holds as several rows, such as an LSOA with
+  islands, is returned as one row.
+* `phw_boundaries()` keeps working when a publisher replaces or withdraws a
+  layer after phwstyle was installed. If none of the layers it lists can be
+  downloaded, it fetches the current list of layers from the phwstyle
+  repository and tries those, and failing that returns boundaries saved from
+  an earlier release, with a warning in both cases. Set
+  `options(phwstyle.boundary_update = FALSE)` to stop it fetching the list.
+* The list of layers is now checked every week instead of every month. A
+  layer is listed only once a test download works, and a new ONS release is
+  used once its generalised boundaries are published, so the default level
+  of detail is never lost while a release is part way out.
+
 ## Fixes for older versions of other packages
 
 * `use_phw_ggplot()`, and so every `phw_*_document()` R Markdown format, no

@@ -35,3 +35,15 @@ Colours cells by the group they contain, using the same colours as your
 charts. With a \code{key}, each group keeps its colour across tables, charts
 and reports (see \code{\link[=phw_colour_key]{phw_colour_key()}}).
 }
+\examples{
+if (requireNamespace("flextable", quietly = TRUE)) {
+  df <- data.frame(Group = c("Group A", "Group B", "Group C", "Unknown"),
+                   Cases = c(120, 85, 64, 9))
+  phw_flextable(df) |>
+    phw_flextable_groups(Group)
+
+  # Colour the text instead, across the whole row
+  phw_flextable(df) |>
+    phw_flextable_groups(Group, what = "text", rows = TRUE)
+}
+}

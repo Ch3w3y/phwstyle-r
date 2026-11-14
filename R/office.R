@@ -228,7 +228,10 @@ phw_pptx <- function(template = NULL) {
 #'   [phw_flextable()]).
 #' @param text Character vector of bullet points.
 #' @param source,date Passed to [phw_caption()] and shown at the bottom.
-#' @param layout,master Slide layout and master names in the template.
+#' @param layout,master Slide layout and slide master names in the
+#'   template. A slide master is the set of layouts a template provides;
+#'   see them in PowerPoint under View > Slide Master, or with
+#'   `officer::layout_summary(x)`.
 #' @param editable Add charts as editable vector graphics (needs rvg)?
 #' @param title_size Title font size.
 #' @export

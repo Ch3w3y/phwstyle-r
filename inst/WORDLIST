@@ -45,6 +45,7 @@ LSOAs
 lubridate
 Machado
 MSOAs
+mR
 navbar
 Navbars
 nhs
@@ -66,6 +67,7 @@ ragg
 reactable
 revealjs
 rmarkdown
+RStudio
 Rtools
 rvg
 SPC

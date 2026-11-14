@@ -59,3 +59,18 @@ alone, such as slides, social media, briefings or images sent by email.
 Charts inside a branded report don't need it, because the report already
 carries the logo.
 }
+\examples{
+library(ggplot2)
+p <- ggplot(mtcars, aes(wt, mpg)) +
+  geom_point() +
+  labs(title = "Weight and fuel economy", x = "Weight (1,000 lbs)",
+       y = "Miles per gallon")
+
+# Source and date under the chart, with the logo if you have one
+# (see phw_download_logos()); otherwise the organisation name is shown.
+fp <- phw_finalise(p, source = "mtcars", date = as.Date("2025-06-30"))
+phw_save(fp, tempfile(fileext = ".png"))
+
+# A team line, and no logo
+fp <- phw_finalise(p, source = "mtcars", team = "Team name", logo = FALSE)
+}

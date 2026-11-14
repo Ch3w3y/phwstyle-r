@@ -64,6 +64,12 @@
 #'   `"dashboard"`, or `"none"`.
 #' @param overwrite Replace an existing extension or template?
 #' @return The extension path, invisibly.
+#' @examples
+#' project <- file.path(tempdir(), "phw-quarto-example")
+#' use_phw_quarto(project, template = "report")
+#' list.files(project)
+#' # Then render report.qmd with Quarto, e.g. the Render button in RStudio.
+#' unlink(project, recursive = TRUE)
 #' @export
 use_phw_quarto <- function(path = ".", template = c("report", "slides", "dashboard", "none"),
                            overwrite = FALSE) {

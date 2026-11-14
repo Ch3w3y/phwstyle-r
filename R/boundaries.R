@@ -1,7 +1,7 @@
 #' Boundaries of Welsh areas for maps
 #'
-#' Downloads boundaries for one level of geography in Wales, from the ONS
-#' Open Geography Portal or DataMapWales, and returns them as an `sf` data
+#' Downloads boundaries for one level of geography in Wales, from the Office
+#' for National Statistics (ONS) Open Geography Portal or DataMapWales, and returns them as an `sf` data
 #' frame ready for [ggplot2::geom_sf()], with [theme_phw_map()]. Each
 #' download is saved in your user cache folder, so later calls work offline.
 #'
@@ -36,6 +36,20 @@
 #'   newer release of a level is downloaded, cached files from older releases
 #'   of that level are deleted, so the cache stays small. Clear it all with
 #'   `phw_boundaries_cache(clear = TRUE)`.
+#'
+#' Where a geography is published by more than one source, the others are
+#' tried in turn if the first cannot be reached, and a warning says which
+#' boundaries you were given. MSOAs and LSOAs come from DataMapWales, with
+#' the super generalised ONS boundaries as the alternative.
+#'
+#' Publishers sometimes replace or withdraw a layer after a version of
+#' phwstyle is released. If none of the layers listed in your version can be
+#' downloaded, the function fetches the current list from the phwstyle
+#' repository on GitHub (a small text file, checked every week) and tries the
+#' layers in it, so an older installation keeps working. Set
+#' `options(phwstyle.boundary_update = FALSE)` to stop it looking. If that
+#' fails too and boundaries for the level were saved from an earlier
+#' release, those are returned with a warning.
 #' @seealso [phw_boundary_levels()], [phw_boundaries_cache()]
 #' @examples
 #' phw_boundary_levels()
@@ -57,42 +71,49 @@ phw_boundaries <- function(level, detail = c("generalised", "super", "ultra", "f
   rlang::check_installed(c("sf", "jsonlite"), reason = "to download boundaries.")
   reg <- boundary_registry()
   level <- rlang::arg_match(level, unique(reg$level))
-  row <- pick_boundary(reg[reg$level == level, , drop = FALSE], detail)
-
-  file <- file.path(phw_boundaries_cache(), sprintf("%s_%s.geojson", level,
-                                                    gsub("[^A-Za-z0-9]+", "_", row$layer)))
-  simplify <- row$source == "datamapwales" && detail != "full"
-  if (refresh || !file.exists(file)) {
-    if (!quiet) cli::cli_inform("Downloading {row$label} ({row$layer}) ...")
-    # Download to a temporary file first, so a failed download never
-    # replaces a good cached copy.
-    tmp <- tempfile(fileext = ".geojson")
-    # Large layers can take more than R's default 60 seconds.
-    op <- options(timeout = max(600, getOption("timeout")))
-    on.exit(options(op), add = TRUE)
-    ok <- tryCatch({
-      if (row$source == "ons") download_ons(row, tmp) else download_dmw(row, tmp)
-      TRUE
-    }, error = function(e) e)
-    if (!isTRUE(ok)) {
-      host <- if (row$source == "ons") "the ONS Open Geography Portal" else "DataMapWales"
-      if (file.exists(file)) {
-        cli::cli_warn(c("Could not download {row$label} from {host}, so the cached copy is used.",
-                        "i" = conditionMessage(ok)))
-      } else {
-        cli::cli_abort(c("Could not download {row$label} from {host}.",
-                         "i" = "Check your internet connection, or try again later.",
-                         "i" = "If it keeps failing, the layer may have been replaced: update phwstyle.",
-                         "x" = conditionMessage(ok)), call = NULL)
-      }
-    } else if (cache) {
-      dir.create(dirname(file), recursive = TRUE, showWarnings = FALSE)
-      file.copy(tmp, file, overwrite = TRUE)
-      remove_outdated(level, reg, file)
-    } else {
-      file <- tmp
+  # The layer to use, followed by the others for this level. They are tried
+  # in turn, so one source being down does not stop the download.
+  rows <- boundary_candidates(reg[reg$level == level, , drop = FALSE], detail)
+  # Large layers can take more than R's default 60 seconds.
+  op <- options(timeout = max(600, getOption("timeout")))
+  on.exit(options(op), add = TRUE)
+  got <- boundary_fetch(rows, level, reg, refresh, cache, quiet)
+  if (is.null(got$row)) {
+    # None of the layers listed in this copy of phwstyle could be downloaded.
+    # They may have been replaced since it was installed, so look for the
+    # current list and try the layers that are new in it.
+    newer <- boundary_list_update(cache)
+    extra <- if (!is.null(newer)) boundary_candidates(newer[newer$level == level, , drop = FALSE], detail)
+    extra <- extra[!extra$layer %in% rows$layer, , drop = FALSE]
+    if (length(extra) && nrow(extra)) {
+      again <- boundary_fetch(extra, level, newer, refresh, cache, quiet)
+      got <- list(row = again$row, file = again$file, problems = c(got$problems, again$problems),
+                  how = "updated")
     }
   }
+  # Last, boundaries saved from an older release are better than none.
+  if (is.null(got$row)) got <- boundary_saved_earlier(level, rows, reg, got$problems)
+  row <- got$row
+  file <- got$file
+  if (is.null(row)) {
+    hosts <- unique(vapply(seq_len(nrow(rows)), function(k) boundary_host(rows[k, ]), ""))
+    cli::cli_abort(c("Could not download {rows$label[1]} from {.or {hosts}}.",
+                     "i" = "Check your internet connection, or try again later.",
+                     "i" = "If it keeps failing, the layer may have been replaced: update phwstyle.",
+                     stats::setNames(got$problems, rep("x", length(got$problems)))), call = NULL)
+  }
+  if (got$how == "updated") {
+    cli::cli_warn(c("The boundary layers listed in this version of phwstyle could not be downloaded.",
+                    "i" = "Used {.val {row$layer}} from the current list of sources instead.",
+                    "i" = "Update phwstyle when you can."))
+  } else if (got$how == "saved") {
+    cli::cli_warn(c("Could not download {rows$label[1]}.",
+                    "i" = "Using boundaries saved earlier ({.file {basename(file)}}), which may be an older release."))
+  } else if (!identical(row$layer, rows$layer[1]) && length(got$problems)) {
+    cli::cli_warn(c("Could not download {rows$label[1]} from {boundary_host(rows[1, ])}.",
+                    "i" = "Using the {row$detail} boundaries from {boundary_host(row)} instead."))
+  }
+  simplify <- row$source == "datamapwales" && detail != "full"
   x <- sf::read_sf(file, quiet = TRUE)
   # DataMapWales layers come in British National Grid.
   if (row$source == "datamapwales" && (is.na(sf::st_crs(x)) || max(abs(sf::st_bbox(x))) > 1000)) {
@@ -103,6 +124,7 @@ phw_boundaries <- function(level, detail = c("generalised", "super", "ultra", "f
   out <- x[, unname(keep)]
   names(out)[seq_along(keep)] <- names(keep)
   sf::st_geometry(out) <- "geometry"
+  if (anyDuplicated(out$code)) out <- combine_parts(out)
   out <- sf::st_transform(out, crs)
   if (simplify) {
     tol <- c(generalised = 20, super = 200, ultra = 500)[[detail]]
@@ -152,11 +174,89 @@ phw_boundaries_cache <- function(clear = FALSE) {
   dir <- getOption("phwstyle.boundary_dir", file.path(tools::R_user_dir("phwstyle", which = "cache"), "boundaries"))
   if (clear) {
     files <- list.files(dir, pattern = "\\.geojson$", full.names = TRUE)
-    unlink(files)
+    unlink(c(files, boundary_list_file()))
     cli::cli_inform("Removed {length(files)} cached boundary file{?s}.")
     return(invisible(dir))
   }
   dir
+}
+
+boundary_cache_file <- function(level, layer) {
+  file.path(phw_boundaries_cache(), sprintf("%s_%s.geojson", level, gsub("[^A-Za-z0-9]+", "_", layer)))
+}
+
+# Get the first of `rows` that is cached or can be downloaded. Returns the
+# row used and its file, or a NULL row and the reasons each download failed.
+boundary_fetch <- function(rows, level, reg, refresh, cache, quiet) {
+  problems <- character()
+  for (i in seq_len(nrow(rows))) {
+    r <- rows[i, ]
+    f <- boundary_cache_file(level, r$layer)
+    if (!refresh && file.exists(f)) return(list(row = r, file = f, problems = problems, how = "listed"))
+    if (!quiet) cli::cli_inform("Downloading {r$label} ({r$layer}) ...")
+    # Download to a temporary file first, so a failed download never
+    # replaces a good cached copy.
+    tmp <- tempfile(fileext = ".geojson")
+    ok <- tryCatch({
+      if (r$source == "ons") download_ons(r, tmp) else download_dmw(r, tmp)
+      TRUE
+    }, error = function(e) e)
+    if (isTRUE(ok)) {
+      if (cache) {
+        dir.create(dirname(f), recursive = TRUE, showWarnings = FALSE)
+        file.copy(tmp, f, overwrite = TRUE)
+        remove_outdated(level, reg, f)
+        tmp <- f
+      }
+      return(list(row = r, file = tmp, problems = problems, how = "listed"))
+    }
+    problems <- c(problems, sprintf("%s: %s", boundary_host(r), conditionMessage(ok)))
+    if (file.exists(f)) {
+      cli::cli_warn(c("Could not download {r$label} from {boundary_host(r)}, so the cached copy is used.",
+                      "i" = conditionMessage(ok)))
+      return(list(row = r, file = f, problems = problems, how = "listed"))
+    }
+  }
+  list(row = NULL, file = NULL, problems = problems, how = "listed")
+}
+
+# The newest cached file for a level from a layer that is no longer listed
+# (an older release). The list no longer says which fields it has, so they
+# are worked out from their names.
+boundary_saved_earlier <- function(level, rows, reg, problems) {
+  none <- list(row = NULL, file = NULL, problems = problems, how = "saved")
+  files <- list.files(phw_boundaries_cache(), pattern = sprintf("^%s_.*\\.geojson$", level), full.names = TRUE)
+  files <- files[order(file.mtime(files), decreasing = TRUE)]
+  for (f in files) {
+    fields <- tryCatch(guess_boundary_fields(names(sf::read_sf(f, quiet = TRUE))), error = function(e) NULL)
+    if (is.null(fields)) next
+    layer <- sub(sprintf("^%s_", level), "", tools::file_path_sans_ext(basename(f)))
+    source <- if (startsWith(layer, "geonode_")) "datamapwales" else "ons"
+    row <- rows[1, ]
+    like <- reg[reg$source == source, , drop = FALSE]
+    row$source <- source
+    row$layer <- layer
+    row$detail <- "full"
+    row$code_field <- fields[["code"]]
+    row$name_field <- fields[["name"]]
+    row$name_cy_field <- fields[["name_cy"]]
+    if (nrow(like)) row$attribution <- like$attribution[1]
+    return(list(row = row, file = f, problems = problems, how = "saved"))
+  }
+  none
+}
+
+guess_boundary_fields <- function(x) {
+  first <- function(pattern) {
+    hit <- grep(pattern, x, value = TRUE, ignore.case = TRUE)
+    if (length(hit)) hit[1] else ""
+  }
+  code <- first("^(code|.*[0-9]{2}cd)$")
+  name <- first("^(name_en|name|community|.*[0-9]{2}nm)$")
+  if (!nzchar(code)) code <- name
+  if (!nzchar(name)) name <- code
+  if (!nzchar(code)) return(NULL)
+  c(code = code, name = name, name_cy = first("^(name_cy|enw_cy|enw|.*[0-9]{2}nmw)$"))
 }
 
 # Keep the cache small: once a level is downloaded, delete cached files for
@@ -169,18 +269,90 @@ remove_outdated <- function(level, reg, keep) {
   invisible(old)
 }
 
+# The list of layers: the one in the package, or a newer one that
+# phw_boundaries() fetched after this copy of phwstyle was installed.
 boundary_registry <- function() {
-  utils::read.csv(system.file("extdata", "boundaries.csv", package = "phwstyle"),
-                  stringsAsFactors = FALSE, na.strings = character(), encoding = "UTF-8")
+  packaged <- system.file("extdata", "boundaries.csv", package = "phwstyle")
+  saved <- boundary_list_file()
+  if (file.exists(saved) && isTRUE(file.mtime(saved) > file.mtime(packaged))) {
+    x <- tryCatch(read_boundary_list(saved), error = function(e) NULL)
+    if (valid_boundary_list(x)) return(x)
+  }
+  read_boundary_list(packaged)
 }
 
-pick_boundary <- function(rows, detail) {
+read_boundary_list <- function(file) {
+  utils::read.csv(file, stringsAsFactors = FALSE, na.strings = character(), encoding = "UTF-8")
+}
+
+boundary_list_file <- function() file.path(phw_boundaries_cache(), "boundaries.csv")
+
+# A fetched list is used only if it has the columns this version reads and
+# nothing but layer and field names in them, as they go into web addresses.
+valid_boundary_list <- function(x) {
+  need <- c("level", "label", "detail", "source", "layer", "code_field", "name_field",
+            "name_cy_field", "filter", "release", "attribution")
+  plain <- function(v, pattern) all(grepl(pattern, v))
+  is.data.frame(x) && nrow(x) > 0 && all(need %in% names(x)) &&
+    all(x$source %in% c("ons", "datamapwales")) &&
+    all(x$detail %in% c("full", "generalised", "super", "ultra")) &&
+    plain(x$level, "^[a-z_]+$") && plain(x$layer, "^[A-Za-z0-9_:]+$") &&
+    plain(x$code_field, "^[A-Za-z0-9_]+$") && plain(x$name_field, "^[A-Za-z0-9_]+$") &&
+    plain(x$name_cy_field, "^[A-Za-z0-9_]*$") && plain(x$filter, "^[A-Z0-9]*$")
+}
+
+# The current list of layers, from the phwstyle repository. It is checked
+# every week, so it knows about layers that were replaced after a version of
+# phwstyle was released. Returns NULL if it cannot be fetched or is not valid.
+boundary_list_update <- function(cache = TRUE) {
+  if (!isTRUE(getOption("phwstyle.boundary_update", TRUE))) return(NULL)
+  url <- getOption("phwstyle.boundary_list_url",
+                   "https://raw.githubusercontent.com/Ch3w3y/phwstyle-r/main/inst/extdata/boundaries.csv")
+  tmp <- tempfile(fileext = ".csv")
+  x <- tryCatch({
+    download_boundary_list(url, tmp)
+    read_boundary_list(tmp)
+  }, error = function(e) NULL)
+  if (!valid_boundary_list(x)) return(NULL)
+  if (cache) {
+    saved <- boundary_list_file()
+    dir.create(dirname(saved), recursive = TRUE, showWarnings = FALSE)
+    file.copy(tmp, saved, overwrite = TRUE)
+  }
+  x
+}
+
+download_boundary_list <- function(url, file) {
+  suppressWarnings(utils::download.file(url, file, quiet = TRUE, mode = "wb"))
+}
+
+# The layers for one level, best match for the requested detail first. A
+# DataMapWales layer is full detail and is simplified to any other, so it
+# serves every request. Ties keep the order of the registry.
+boundary_candidates <- function(rows, detail) {
   order_pref <- list(
     generalised = c("generalised", "super", "full", "ultra"),
     super = c("super", "generalised", "ultra", "full"),
     ultra = c("ultra", "super", "generalised", "full"),
     full = c("full", "generalised", "super", "ultra"))[[detail]]
-  rows[order(match(rows$detail, order_pref)), , drop = FALSE][1, ]
+  rank <- match(rows$detail, order_pref)
+  rank[rows$source == "datamapwales"] <- 1L
+  rows[order(rank), , drop = FALSE]
+}
+
+pick_boundary <- function(rows, detail) boundary_candidates(rows, detail)[1, ]
+
+boundary_host <- function(row) {
+  if (row$source == "ons") "the ONS Open Geography Portal" else "DataMapWales"
+}
+
+# Some layers hold an area that has islands as several rows, one per part.
+# Make each area one row.
+combine_parts <- function(x) {
+  parts <- split(sf::st_geometry(x), x$code)
+  out <- x[match(names(parts), x$code), ]
+  sf::st_geometry(out) <- do.call(c, lapply(parts, sf::st_combine))
+  out
 }
 
 ons_query_url <- function(row, offset, n) {

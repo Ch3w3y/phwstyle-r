@@ -23,8 +23,8 @@ follows phw.nhs.wales:
 \itemize{
 \item navy is \code{primary}
 \item the website green is \code{success}
-\item \code{danger}, \code{warning} and \code{info} use the accessible RAG red, amber and
-teal
+\item \code{danger}, \code{warning} and \code{info} use the red and amber of the \code{rag}
+palette (red, amber, green status colours) and teal
 \item links are the website blue, with magenta on hover
 }
 
@@ -33,4 +33,16 @@ Navbars are navy, and focus outlines are the NHS yellow.
 Use it in \code{bslib::page_navbar(theme = phw_bs_theme())},
 \code{fluidPage(theme = phw_bs_theme())}, or as the \code{theme} of
 \code{\link[=phw_html_document]{phw_html_document()}}.
+}
+\examples{
+if (requireNamespace("bslib", quietly = TRUE)) {
+  theme <- phw_bs_theme()
+  # Teal as the main colour instead of navy
+  theme_teal <- phw_bs_theme(primary = "#24A2B5")
+}
+if (requireNamespace("bslib", quietly = TRUE) && requireNamespace("shiny", quietly = TRUE) &&
+    interactive()) {
+  ui <- bslib::page_fluid(theme = phw_bs_theme(), shiny::h2("A styled page"))
+  shiny::shinyApp(ui, function(input, output) {})
+}
 }

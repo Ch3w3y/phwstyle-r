@@ -27,3 +27,7 @@ On a managed NHS Wales laptop where you can't install fonts, skip this.
 The package will still use Ubuntu through 'ragg' and in HTML, and it falls
 back to Arial elsewhere.
 }
+\examples{
+# Run once per computer. It asks before copying anything.
+if (interactive()) phw_install_fonts()
+}

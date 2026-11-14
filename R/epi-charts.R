@@ -253,8 +253,10 @@ phw_funnel <- function(data, numerator, denominator, label = NULL, type = c("pro
 
 #' Statistical process control (SPC) chart
 #'
-#' An XmR (individuals) chart or a run chart for a measure over time, as
-#' used for quality improvement. Points that show special cause variation
+#' An XmR chart or a run chart for a measure over time, as used for
+#' quality improvement. An XmR chart plots individual values (X) with
+#' limits worked out from the moving range (mR), the change from one point
+#' to the next. Points that show special cause variation
 #' are coloured: outside the process limits, a shift of `shift` or more
 #' points on one side of the centre line, or a trend of `trend` or more
 #' points going the same way. With `improvement`, special causes in the

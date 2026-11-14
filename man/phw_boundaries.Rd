@@ -42,8 +42,8 @@ source has one, \code{name_cy} (Welsh name), plus the geometry. Attributes
 \code{attr(x, "attribution")} in your caption.
 }
 \description{
-Downloads boundaries for one level of geography in Wales, from the ONS
-Open Geography Portal or DataMapWales, and returns them as an \code{sf} data
+Downloads boundaries for one level of geography in Wales, from the Office
+for National Statistics (ONS) Open Geography Portal or DataMapWales, and returns them as an \code{sf} data
 frame ready for \code{\link[ggplot2:geom_sf]{ggplot2::geom_sf()}}, with \code{\link[=theme_phw_map]{theme_phw_map()}}. Each
 download is saved in your user cache folder, so later calls work offline.
 }
@@ -60,6 +60,20 @@ cached copy, the function stops with an informative error. When a
 newer release of a level is downloaded, cached files from older releases
 of that level are deleted, so the cache stays small. Clear it all with
 \code{phw_boundaries_cache(clear = TRUE)}.
+
+Where a geography is published by more than one source, the others are
+tried in turn if the first cannot be reached, and a warning says which
+boundaries you were given. MSOAs and LSOAs come from DataMapWales, with
+the super generalised ONS boundaries as the alternative.
+
+Publishers sometimes replace or withdraw a layer after a version of
+phwstyle is released. If none of the layers listed in your version can be
+downloaded, the function fetches the current list from the phwstyle
+repository on GitHub (a small text file, checked every week) and tries the
+layers in it, so an older installation keeps working. Set
+\code{options(phwstyle.boundary_update = FALSE)} to stop it looking. If that
+fails too and boundaries for the level were saved from an earlier
+release, those are returned with a warning.
 }
 \examples{
 phw_boundary_levels()

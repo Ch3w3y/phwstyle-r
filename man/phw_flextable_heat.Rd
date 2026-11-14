@@ -47,3 +47,18 @@ For \code{palette = "rag"}, colour alone doesn't work for colour-blind
 readers or in black-and-white print, so \code{symbols = TRUE} (the default)
 adds a shape before each value as well.
 }
+\examples{
+if (requireNamespace("flextable", quietly = TRUE)) {
+  rates <- data.frame(Area = paste("Area", LETTERS[1:4]),
+                      `2024` = c(3.2, 1.5, 3.8, 2.3), `2025` = c(4.4, 0.7, 4.2, 0.2),
+                      check.names = FALSE)
+  phw_flextable(rates) |>
+    phw_flextable_heat(j = 2:3)
+
+  # Red, amber and green, with a shape in each cell as a second cue
+  uptake <- data.frame(Area = paste("Area", LETTERS[1:4]),
+                       Uptake = c(0.96, 0.93, 0.91, 0.95))
+  phw_flextable(uptake, digits = 2) |>
+    phw_flextable_heat(Uptake, palette = "rag_accessible", breaks = c(0.92, 0.95))
+}
+}

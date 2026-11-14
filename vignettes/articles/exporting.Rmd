@@ -31,8 +31,8 @@ phw_write_xlsx(list(Grouped = tab, Raw = dat), "tables.xlsx",
 
 ## PowerPoint
 
-`phw_pptx()` starts a deck (pass your corporate template to use its
-masters), and `phw_add_slide()` adds a slide with a styled title and a
+`phw_pptx()` starts a deck (pass your organisation's PowerPoint template
+to use its slide layouts), and `phw_add_slide()` adds a slide with a styled title and a
 chart, table or bullet points. Charts are editable in PowerPoint when the
 rvg package is installed.
 
@@ -56,7 +56,7 @@ flextable::save_as_docx(`Table 1` = phw_flextable(tab), path = "tables.docx")
 ```
 
 For whole reports, use `output: phwstyle::phw_word_document` in R Markdown
-or `format: phw-docx` in Quarto.
+or `format: phw-docx` in Quarto: see [Reports and documents](documents.html).
 
 ## Interactive tables
 

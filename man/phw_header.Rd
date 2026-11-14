@@ -32,3 +32,6 @@ The navy-to-cyan gradient band with the white PHW logo, as used across
 the top of PHW reports. Use it as the first element of a Shiny UI, or in
 any htmltools page.
 }
+\examples{
+phw_header("Weekly surveillance", subtitle = "Team name")
+}

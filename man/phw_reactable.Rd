@@ -47,3 +47,23 @@ Calls \code{\link[reactable:reactable]{reactable::reactable()}} with the PHW the
 and number formatting with thousands separators. It also attaches the
 Ubuntu web font. You can add a title above and a source line below.
 }
+\examples{
+if (requireNamespace("reactable", quietly = TRUE)) {
+  df <- data.frame(area = paste("Area", LETTERS[1:5]),
+                   group = c("Group A", "Group B", "Group A", "Group C", "Group B"),
+                   cases = c(1203, 845, 642, 190, 231))
+  tbl <- phw_reactable(df, caption = "Cases by area", source = "Example data",
+                       searchable = TRUE)
+
+  # Colour the group column with the same colours as your charts
+  tbl2 <- phw_reactable(df, group_col = group)
+
+  # A summary table keeps its bold headings and indents
+  ll <- data.frame(sex = rep(c("Female", "Male"), 10),
+                   outcome = rep(c("Outcome X", "Outcome Y"), each = 10))
+  tbl3 <- phw_reactable(phw_summary_table(ll, by = outcome))
+
+  # Printing shows the table in the Viewer or a browser.
+  if (interactive()) print(tbl)
+}
+}

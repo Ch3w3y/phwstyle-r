@@ -19,3 +19,9 @@ band (with the logo when one is available) and a "Page x of y" footer.
 Use it with any tool that takes a Word template. Examples are
 \code{officer::read_docx(phw_reference_docx())} or \verb{reference-doc:} in Quarto.
 }
+\examples{
+f <- phw_reference_docx()
+file.exists(f)
+# In Quarto:   format: docx: reference-doc: path/to/that/file.docx
+# In officer:  officer::read_docx(phw_reference_docx())
+}

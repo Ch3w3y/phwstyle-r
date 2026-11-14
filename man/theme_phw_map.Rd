@@ -24,3 +24,22 @@ A ggplot2 theme.
 Use it for choropleth maps of health boards or local authorities, with
 \code{\link[=scale_fill_phw_c]{scale_fill_phw_c()}} or \code{\link[=scale_fill_phw_b]{scale_fill_phw_b()}}.
 }
+\examples{
+library(ggplot2)
+# Any filled grid works the same way as a map
+ggplot(faithfuld, aes(waiting, eruptions, fill = density)) +
+  geom_raster() +
+  scale_fill_phw_c() +
+  theme_phw_map()
+\donttest{
+# Health boards, downloaded the first time and cached after that
+if (requireNamespace("sf", quietly = TRUE) && interactive()) {
+  hb <- phw_boundaries("health_board")
+  hb$rate <- runif(nrow(hb), 20, 80)
+  ggplot(hb) +
+    geom_sf(aes(fill = rate), colour = "white") +
+    scale_fill_phw_b(name = "Rate per\n100,000") +
+    theme_phw_map()
+}
+}
+}

@@ -17,3 +17,6 @@ A file path.
 \description{
 The graphics are drawn by phwstyle itself and contain no logo.
 }
+\examples{
+phw_graphic("band")
+}

@@ -30,3 +30,10 @@ A \code{\link[reactable:reactableTheme]{reactable::reactableTheme()}} that uses 
 header rule, light grey striping and hover, and the yellow keyboard focus
 outline used on phw.nhs.wales.
 }
+\examples{
+if (requireNamespace("reactable", quietly = TRUE)) {
+  tbl <- reactable::reactable(head(mtcars),
+                              theme = phw_reactable_theme(header = "navy"))
+  if (interactive()) print(tbl)
+}
+}

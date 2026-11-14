@@ -25,37 +25,34 @@ in a Word report, an HTML page, a slide deck and a dashboard.
 phwstyle needs R 4.3 or later and ggplot2 3.5 or later. The Quarto formats
 need Quarto 1.5 or later.
 
-phwstyle has been submitted to CRAN but is not on CRAN yet. Until it is,
-install it from GitHub.
-
-**From CRAN** (once it is accepted):
+phwstyle is not on CRAN yet. Install it from GitHub:
 
 ```r
-install.packages("phwstyle", dependencies = TRUE)
+install.packages("remotes")
+remotes::install_github("Ch3w3y/phwstyle-r", dependencies = TRUE)
 ```
 
-**Faster binaries from Posit Package Manager (P3M).** Pre-built packages
-for Windows and macOS, so nothing compiles. On Linux use the URL for your
-distribution from the [P3M setup page](https://packagemanager.posit.co/client/#/repos/cran/setup).
+`dependencies = TRUE` also installs the optional packages for every output
+type (flextable, reactable, plotly, bslib, ragg...).
+
+**Faster installs.** Posit Package Manager (P3M) has
+ready-built copies of the packages phwstyle uses, so nothing needs
+compiling. Point R at it before installing; on Linux, use the address for
+your distribution from the [P3M setup page](https://packagemanager.posit.co/client/#/repos/cran/setup).
 
 ```r
-install.packages("phwstyle", dependencies = TRUE,
-                 repos = "https://packagemanager.posit.co/cran/latest")
+options(repos = c(CRAN = "https://packagemanager.posit.co/cran/latest"))
+remotes::install_github("Ch3w3y/phwstyle-r", dependencies = TRUE)
 ```
 
 **With [uvr](https://nbafrank.github.io/uvr/)**, in a uvr project:
 
 ```sh
-uvr add phwstyle                 # from CRAN, once accepted
-uvr add Ch3w3y/phwstyle-r@main   # development version from GitHub
+uvr add Ch3w3y/phwstyle-r@main
 ```
 
-**Development version from GitHub:**
-
-```r
-# install.packages("remotes")
-remotes::install_github("Ch3w3y/phwstyle-r", dependencies = TRUE)
-```
+Once phwstyle is on CRAN, `install.packages("phwstyle", dependencies = TRUE)`
+will work too.
 
 **If the install fails on a managed computer.** The last line of the error
 names a file in your Temp folder (`installation of package
@@ -84,7 +81,7 @@ further up:
 * **`'configure' exists but is not executable`** (Linux servers). The
   packages phwstyle depends on compile from source by default, and the
   temporary folder does not allow programs to run. Install the dependencies
-  from the P3M repository above, which avoids compiling, or give R a
+  from Posit Package Manager (above), which avoids compiling, or give R a
   temporary folder you control by adding `TMPDIR=/home/your.name/tmp` to
   `.Renviron` (create the folder first).
 
@@ -100,14 +97,12 @@ further up:
     repos = NULL, type = "source")
   ```
 
-A program-blocking policy on its own is not a problem: phwstyle installs
-from GitHub when programs and scripts in the Temp folder are blocked, on
-R 4.3 and on the current R, and from an account whose name has an accented
-letter.
+A policy that only blocks programs in the Temp folder doesn't stop
+phwstyle installing, and neither does an accented letter in your user name.
 
-`dependencies = TRUE` also installs the optional packages for every output
-type (flextable, reactable, plotly, bslib, ragg...). Then run the setup
-check once:
+### Check your setup
+
+Run the setup check once after installing:
 
 ```r
 phwstyle::phw_setup_check()
@@ -147,7 +142,7 @@ format: phw-typst
 The R Markdown formats style charts and flextables for you. In Quarto, call
 `use_phw_ggplot()` (and `use_phw_flextable()`) in the setup chunk.
 
-### Which function do I need?
+### Set the style once
 
 Set the style once, then write plain ggplot2:
 
@@ -161,20 +156,20 @@ Set the style once, then write plain ggplot2:
   `+ theme()`, or `fill =` in a geom. The house style is a starting point
   you can adjust.
 
-The [getting started guide](https://ch3w3y.github.io/phwstyle-r/articles/phwstyle.html#how-the-pieces-fit-together)
-has a table of what each function switches on, and what you still need to
-add after setup.
+The [getting started guide](https://ch3w3y.github.io/phwstyle-r/articles/phwstyle.html)
+has a table of [which function you need](https://ch3w3y.github.io/phwstyle-r/articles/phwstyle.html#which-function-do-i-need)
+for each task, and of [what each one switches on](https://ch3w3y.github.io/phwstyle-r/articles/phwstyle.html#how-the-pieces-fit-together).
 
 ## What it covers
 
 | Output | Functions |
 |---|---|
-| ggplot2 | `theme_phw()`, `scale_colour_phw_d()` and friends, `scale_shape_phw()`, `use_phw_ggplot()`, `phw_finalise()`, `phw_save()` |
+| ggplot2 | `use_phw_ggplot()`, `theme_phw()`, `scale_colour_phw_d()` and friends, `scale_shape_phw()`, `phw_sec_axis()` (a second axis), `phw_finalise()`, `phw_save()` |
 | Public health charts | `phw_epicurve()`, `phw_pyramid()`, `phw_funnel()`, `phw_spc()` |
 | ggplot2 extensions | `phw_style_extensions()` restyles geoms from ggalluvial, ggsankey, ggridges, ggrepel, treemapify, ggtext and others |
 | Multi-plot figures | `phw_arrange()` (patchwork), `phw_title_grob()` (gridExtra, cowplot) |
 | Maps | `phw_boundaries()` downloads and caches boundaries for every Welsh level (health boards, GP clusters, local authorities, Senedd and UK Parliament constituencies, wards, communities, MSOAs, LSOAs, output areas, fire and police areas), `theme_phw_map()` |
-| Colours | `phw_pal()`, `phw_colour_key()`, `phw_check_colours()`, `phw_cvd()` |
+| Colours | `phw_pal()` and the palettes `main`, `extended`, `accessible`, `strategy`, `blues`, `greens` and more; `phw_colour_key()`, `phw_default_palette()` (the accessible switch), `phw_check_colours()`, `phw_cvd()` |
 | Summary tables | `phw_summary_table()`, `phw_crosstab()`, `phw_rate_table()`, `phw_risk_table()`, `phw_group_table()` (nested row and column groups) |
 | flextable | `phw_flextable()`, `phw_flextable_theme()`, `phw_flextable_heat()`, `phw_flextable_bars()`, `phw_flextable_groups()` |
 | gt and gtsummary | `phw_gt()`, `phw_gt_theme()`, `use_phw_gtsummary()` |
@@ -186,12 +181,13 @@ add after setup.
 | Shiny and bslib | `phw_bs_theme()`, `phw_page_navbar()`, `phw_header()` |
 | R Markdown | `phw_html_document`, `phw_word_document`, `phw_pdf_document` |
 | Quarto | `use_phw_quarto()`, then `phw-html`, `phw-docx`, `phw-typst`, `phw-pdf`, `phw-revealjs`, `phw-dashboard` |
+| Captions, dates and numbers | `phw_caption()`, `phw_date()`, `phw_number()`, `phw_percent()` |
 
 Functions that take columns take them as dplyr does: unquoted, as in
 `phw_epicurve(cases, onset, group = organism)`, and they work in a pipe.
-Strings work too. Most functions pass extra arguments through to the function they wrap (the
-`...` on each help page), so defaults can be overridden, and every `palette` argument also accepts your
-own colours.
+Strings work too. Most functions pass extra arguments through to the
+function they wrap (the `...` on each help page), so defaults can be
+overridden, and every `palette` argument also accepts your own colours.
 
 ## Gallery
 
@@ -199,8 +195,9 @@ All examples use made-up data. The images are produced by
 [`gallery/build-gallery.R`](https://github.com/Ch3w3y/phwstyle-r/blob/main/gallery/build-gallery.R), and
 [`examples/phwstyle-demo.R`](https://github.com/Ch3w3y/phwstyle-r/blob/main/examples/phwstyle-demo.R) is a commented
 script that builds every output type from one raw data frame, ready to
-copy into your own reports. Full documentation for every function is in the
-package help (`?phwstyle`) and the vignettes.
+copy into your own reports. The [gallery page](https://ch3w3y.github.io/phwstyle-r/articles/gallery.html)
+names the functions behind every example, and every function has a help
+page (`?phwstyle` is the place to start).
 
 ### Charts
 
@@ -265,31 +262,17 @@ phw_check_colours(c("#D50B5C", "#338276")) # test any colours
 
 The `accessible` palette stays distinct for all common types of colour
 blindness. It is a switch, not the default: turn it on once and every
-chart, table and widget uses it, whatever the number of groups. The same
-document can then be rendered both ways.
+chart, table and widget uses it, whatever the number of groups.
 
 ```r
-# A script or a setup chunk
-use_phw_ggplot(palette = "accessible")     # or options(phwstyle.palette = "accessible")
-
-# R Markdown: the same document, twice
-word <- "phwstyle::phw_word_document"
-rmarkdown::render("report.Rmd", word, output_file = "report.docx")
-rmarkdown::render("report.Rmd", word, output_file = "report-accessible.docx",
-                  output_options = list(palette = "accessible"))
+use_phw_ggplot(palette = "accessible")   # a script or setup chunk
 ```
 
-```r
-# Quarto: the same document, twice (this works on Windows too)
-system2("quarto", c("render", "report.qmd", "--to", "phw-docx"))
-Sys.setenv(PHWSTYLE_PALETTE = "accessible")
-system2("quarto", c("render", "report.qmd", "--to", "phw-docx", "-o", "report-accessible.docx"))
-Sys.unsetenv("PHWSTYLE_PALETTE")
-```
-
-To switch a document for good, put `palette: accessible` under an R Markdown
-format, or `phw-palette: accessible` in the YAML header of a Quarto
-document. See `?phw_default_palette`.
+In a document, add `phw-palette: accessible` to the YAML header, or set the
+palette when you render to make a default and an accessible version of the
+same report. The [Colours and accessibility](https://ch3w3y.github.io/phwstyle-r/articles/colours.html)
+and [Reports and documents](https://ch3w3y.github.io/phwstyle-r/articles/documents.html#default-and-accessible-colours)
+guides show every way to switch.
 
 ### Tables
 
@@ -358,14 +341,15 @@ flextable (Word, PDF, HTML) or reactable (interactive HTML).
 
 Outputs are designed to be read by the public:
 
-* Text colours meet the WCAG AA contrast standard on white. The four `main`
+* Text colours meet the AA contrast level of the Web Content Accessibility
+  Guidelines (WCAG) on white. The four `main`
   chart colours and every `accessible` colour meet the 3:1 contrast rule
   for graphics. Three of the later `extended` colours (gold, mint and
   bright green) do not, so they suit filled bars better than thin lines.
-* The `accessible` and `rag_accessible` palettes stay distinct for colour-blind
-  readers, and shape, line type and symbol scales give a second cue besides
-  colour. The accessible palette is switched on with `palette = "accessible"`
-  (see above); it is not used by default.
+* The `accessible` and `rag_accessible` (red, amber, green status)
+  palettes stay distinct for colour-blind readers, and shape, line type and
+  symbol scales give a second cue besides colour. The accessible palette is
+  used only when you switch it on (see above).
 * `use_phw_ggplot(accessible = TRUE)` or `theme_phw(accessible = TRUE)` uses
   larger text and thicker lines. This is separate from the palette: use
   either or both.
@@ -374,9 +358,10 @@ Outputs are designed to be read by the public:
 ## Fonts
 
 The Ubuntu typeface is bundled and registered automatically for ragg,
-svglite and Office outputs, with Arial as a fallback. For LaTeX PDFs, base
-graphics devices and Word on your own computer, run `phw_install_fonts()`
-once.
+svglite and Office outputs, with Arial as a fallback. HTML outputs and the
+phwstyle PDF formats carry the font with them. For Word on your own
+computer, base R graphics devices such as `pdf()`, and LaTeX documents
+outside the phwstyle formats, run `phw_install_fonts()` once.
 
 ## Logos
 

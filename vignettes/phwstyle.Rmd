@@ -8,26 +8,195 @@ vignette: >
 ---
 
 ```{r, include = FALSE}
-# The examples use dplyr and flextable, which are optional packages. Without
-# them the code is shown but not run.
-have_pkgs <- requireNamespace("dplyr", quietly = TRUE) && requireNamespace("flextable", quietly = TRUE)
+# The examples use dplyr, tidyr, lubridate and flextable, which are optional
+# packages. Without them the code is shown but not run.
+have_pkgs <- all(vapply(c("dplyr", "tidyr", "lubridate", "flextable"), requireNamespace, logical(1), quietly = TRUE))
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4.2,
                       eval = have_pkgs,
                       dev = if (requireNamespace("ragg", quietly = TRUE)) "ragg_png" else "png")
+site <- "https://ch3w3y.github.io/phwstyle-r/"
 ```
 
 ```{r, echo = FALSE, results = "asis", eval = !have_pkgs}
-cat("*The examples on this page need the dplyr and flextable packages, which are not installed here, so their output is not shown.*\n")
+cat("*The examples on this page need the dplyr, tidyr, lubridate and flextable packages, which are not all installed here, so their output is not shown.*\n")
 ```
 
-phwstyle applies the Public Health Wales (PHW) and CDSC house style to R
-outputs. You write your analysis as usual, then add one function to brand it.
+phwstyle applies the Public Health Wales (PHW) house style, as used by its
+Communicable Disease Surveillance Centre (CDSC), to R outputs. You write
+your analysis as usual, then add one function to style it. It is not an
+official PHW product.
 
-```{r}
+## Quick start
+
+Load phwstyle and call `use_phw_ggplot()` once. Every chart after that is
+in the PHW style, with no extra code on each plot.
+
+```{r, message = FALSE}
 library(phwstyle)
 library(ggplot2)
 library(dplyr)
+library(tidyr)
+library(lubridate)
+
+use_phw_ggplot()
 ```
+
+## A worked example: one line list, five outputs
+
+A surveillance summary usually needs the same handful of outputs: an
+epidemic curve, rates over time, an age and sex breakdown, a table of
+characteristics and a table of rates. Starting from one line list and a
+table of populations, each of these takes a few lines, and they come out in
+one style. The data here are made up.
+
+```{r}
+set.seed(2025)
+n <- 600
+pick <- function(values, prob) sample(values, n, replace = TRUE, prob = prob)
+
+cases <- tibble(
+  age      = floor(rbeta(n, 0.7, 0.7) * 90),
+  onset    = as.Date("2025-01-06") + round(rgamma(n, 5, 0.12)) + if_else(age >= 65, 14, 0),
+  organism = pick(c("Type 1", "Type 2", "Type 3"), c(0.5, 0.35, 0.15)),
+  sex      = pick(c("Female", "Male"), c(0.5, 0.5)),
+  area     = pick(paste("Area", LETTERS[1:5]), c(0.3, 0.25, 0.2, 0.15, 0.1)),
+  outcome  = pick(c("Outcome X", "Outcome Y"), c(0.85, 0.15))
+) |>
+  mutate(
+    age_group = case_when(age < 15 ~ "0-14", age < 45 ~ "15-44", age < 65 ~ "45-64", TRUE ~ "65+"),
+    age_band  = cut(age, c(seq(0, 80, 10), Inf), right = FALSE,
+                    labels = c("0-9", "10-19", "20-29", "30-39", "40-49", "50-59", "60-69", "70-79", "80+"))
+  )
+
+population <- tibble(age_group  = c("0-14", "15-44", "45-64", "65+"),
+                     population = c(52000, 118000, 81000, 64000))
+```
+
+### Three charts in one figure
+
+`phw_epicurve()` and `phw_pyramid()` are ready-made public health charts.
+The chart of weekly rates is ordinary dplyr and ggplot2, and
+`phw_arrange()` puts the three together under one title and source line.
+
+Each chart colours a different thing, so each has its own colours. The
+organisms take the default palette. Age groups have an order, so they get
+shades of one colour. In the pyramid the side already tells the sexes
+apart, so two quiet colours are enough.
+
+```{r, fig.width = 10, fig.height = 7.5, out.width = "100%", eval = have_pkgs && requireNamespace("patchwork", quietly = TRUE)}
+curve <- phw_epicurve(cases, onset, group = organism) +
+  labs(title = "Cases by week of onset", x = "Week beginning", y = "Cases")
+
+weekly_rates <- cases |>
+  count(week = floor_date(onset, "week", week_start = 1), age_group, name = "cases") |>
+  complete(week, age_group, fill = list(cases = 0)) |>
+  left_join(population, by = "age_group") |>
+  mutate(rate = 100000 * cases / population)
+
+rates_over_time <- ggplot(weekly_rates, aes(week, rate, colour = age_group)) +
+  geom_line(linewidth = 0.9) +
+  scale_colour_phw_d(palette = tail(phw_palettes$greens, 4)) +
+  labs(title = "Weekly rate per 100,000 by age group", x = "Week beginning", y = "Cases per 100,000")
+
+pyramid <- phw_pyramid(cases, age_band, sex, percent = TRUE,
+                       palette = phw_col("gold_465", "text_secondary")) +
+  labs(title = "Cases by age and sex", x = "Percentage of cases")
+
+figure <- phw_arrange(curve, rates_over_time, pyramid, design = "AA\nBC", guides = "keep",
+                      title = "Summary of cases, January to May 2025",
+                      source = "Example data", date = as.Date("2025-05-31"))
+figure
+```
+
+When two charts show the same groups, give both the same colour key, for
+example `scale_fill_phw_d(key = "organism")`, and each group keeps its
+colour in every chart. See the
+[Colours](`r site`articles/colours.html#colours-that-stay-with-their-groups)
+article.
+
+### A table of characteristics
+
+`phw_summary_table()` counts each characteristic and works out the
+percentages and the total column. `phw_flextable()` renders the result for
+Word, PDF or HTML.
+
+```{r}
+characteristics <- cases |>
+  phw_summary_table(vars = c(age_group, sex, area), by = outcome,
+                    labels = list(age_group = "Age group", sex = "Sex", area = "Area",
+                                  outcome = "Outcome"))
+
+phw_flextable(characteristics, caption = "Characteristics of cases by outcome",
+              source = "Example data")
+```
+
+### Rates with confidence intervals
+
+`phw_rate_table()` takes counts and populations and returns rates per
+100,000 with exact confidence intervals.
+
+```{r}
+rates <- cases |>
+  count(age_group, name = "cases") |>
+  left_join(population, by = "age_group") |>
+  phw_rate_table(age_group, cases, population, labels = list(age_group = "Age group"))
+
+phw_flextable(rates, caption = "Cases per 100,000 population by age group",
+              source = "Example data")
+```
+
+Apart from the colours chosen for age group and sex in the figure, none of
+this code sets a colour, a font, a border or a number format. Columns
+are given as in dplyr: unquoted names, `c(a, b)` for several, or helpers
+such as `starts_with()`. Strings work too.
+
+### The same results in any output
+
+The figure and the two tables are ordinary objects, so the same ones go
+into a report, a workbook or a slide:
+
+```{r, eval = FALSE}
+# Excel: one sheet per table, with the same headings and number formats
+phw_write_xlsx(list(Characteristics = characteristics, Rates = rates), "tables.xlsx")
+
+# PowerPoint: one slide with the figure
+phw_pptx() |>
+  phw_add_slide("Summary of cases", plot = figure, source = "Example data") |>
+  print(target = "summary.pptx")
+```
+
+For a whole report, name a phwstyle format in the YAML header of an R
+Markdown document, and every chart and table in it is styled:
+
+```yaml
+output: phwstyle::phw_word_document
+```
+
+For Quarto, run `use_phw_quarto()` once in the project and use
+`format: phw-docx` (or `phw-html`, `phw-typst` and others), then call
+`use_phw_ggplot()` in the setup chunk.
+
+## Which function do I need?
+
+| I want to | Use | More in |
+|---|---|---|
+| Style every chart in a script | `use_phw_ggplot()` | [Charts](`r site`articles/charts.html) |
+| Change the style of one chart | `theme_phw()`, `scale_fill_phw_d()` and the other PHW scales | [Charts](`r site`articles/charts.html) |
+| Draw an epidemic curve, population pyramid, funnel plot or SPC chart | `phw_epicurve()`, `phw_pyramid()`, `phw_funnel()`, `phw_spc()` | [Charts](`r site`articles/charts.html#public-health-charts) |
+| Put a second measure on its own axis | `phw_sec_axis()` | [Charts](`r site`articles/charts.html#a-second-measure-on-its-own-axis) |
+| Keep each group the same colour in every chart | `scale_fill_phw_d(key = "name")`, `phw_colour_key()` | [Colours](`r site`articles/colours.html#colours-that-stay-with-their-groups) |
+| Use colour-blind safe colours everywhere | `use_phw_ggplot(palette = "accessible")` | [Colours](`r site`articles/colours.html#colour-blind-safe-colours) |
+| Make a table of counts, rates or characteristics from raw data | `phw_group_table()`, `phw_summary_table()`, `phw_crosstab()`, `phw_rate_table()`, `phw_risk_table()` | [Tables](`r site`articles/tables.html) |
+| Render a table for Word or PDF | `phw_flextable()` | [Tables](`r site`articles/tables.html) |
+| Make an interactive table or chart | `phw_reactable()`, `phw_datatable()`, `phw_plotly()` | [Exporting](`r site`articles/exporting.html#interactive-tables) |
+| Draw a map of Welsh areas | `phw_boundaries()`, `theme_phw_map()`, `phw_leaflet()` | [Maps](`r site`articles/maps.html) |
+| Write a whole report, slides or a dashboard | `phw_word_document()` and friends, `use_phw_quarto()` | [Documents](`r site`articles/documents.html) |
+| Save a chart to send on its own | `phw_finalise()`, `phw_save()` | [Charts](`r site`articles/charts.html#finishing-and-saving) |
+| Write tables to Excel, or slides to PowerPoint | `phw_write_xlsx()`, `phw_pptx()` | [Exporting](`r site`articles/exporting.html) |
+| Check what is installed | `phw_setup_check()` | |
+
+The [gallery](`r site`articles/gallery.html) shows every kind of output
+with the functions behind it.
 
 ## How the pieces fit together
 
@@ -84,22 +253,10 @@ widgets, so use these each time (`phw_plotly(p)`, not
 
 In a plain script with no setup, nothing is covered: add `+ theme_phw()`
 and a PHW scale to each plot, or call `use_phw_ggplot()` at the top and
-skip both.
-
-```{r}
-old <- use_phw_ggplot()
-
-# Themed and coloured, with nothing added to the plot:
-ggplot(mpg, aes(class, fill = drv)) +
-  geom_bar() +
-  labs(title = "After use_phw_ggplot(), plain ggplot2 is enough", x = NULL, y = "Cars")
-```
-
-All of this is the same on ggplot2 3.5 and 4.0. One thing differs without
-setup: from ggplot2 4.0, `+ theme_phw()` on its own also gives groups the
-PHW palette, because themes can carry colours. With ggplot2 3.5 it styles
-the text, gridlines and legend only. `use_phw_ggplot()` does the full job
-on both.
+skip both. `use_phw_ggplot()` gives the same result on ggplot2 3.5 and
+4.0. Without it, `+ theme_phw()` alone also gives groups the PHW palette
+on ggplot2 4.0 (themes there can carry colours), but on ggplot2 3.5 it
+styles only the text, gridlines and legend.
 
 ### Your changes win
 
@@ -135,13 +292,10 @@ Two things follow from the same rule:
   present". To change their colours, use their `palette` and `key`
   arguments instead.
 
-```{r, include = FALSE}
-theme_set(old)
-```
-
 ## Colours
 
-`phw_colours` holds every brand colour. `phw_pal()` returns palettes:
+`phw_pal()` returns colours from the PHW palettes, and
+`show_phw_palettes()` draws them all:
 
 ```{r}
 phw_pal()                 # navy, teal, orange, pink: the default chart colours
@@ -149,74 +303,21 @@ phw_pal(6)                # more than four groups carry on into "extended"
 phw_pal(5, "blues")       # sequential, for maps and heat tables
 ```
 
-Every chart, table and widget draws groups from this one palette, however
-many groups it has. A chart with six groups starts with the same four
-colours as a chart with four, so charts in the same report match.
-
-```{r, fig.height = 3}
+```{r, fig.width = 10, fig.height = 5}
 show_phw_palettes()
 ```
 
-Every function that takes a `palette` also accepts your own vector of
-colours, e.g. `scale_colour_phw_d(palette = c("#285087", "#FF5D0C"))`.
+Up to four groups use `main`. More carry on into `extended`, so a chart
+with six groups starts with the same four colours as a chart with four.
+`strategy` has the colours of the six priorities in the PHW Long-Term
+Strategy, for work reported by priority; `blues`, `teals`, `greens` and
+`gradient` are for numbers, and `orange_navy` for values either side of a
+midpoint. Every `palette` argument also accepts your own vector of
+colours.
 
-## Colour-blind readers
+### Colours that stay with their groups
 
-About 1 in 12 men can't tell some reds and greens apart. The `accessible`
-palette stays distinct for all three common types of colour blindness. It
-is never used unless you ask for it. Switch it on once and it applies to
-every chart, table and widget, for any number of groups:
-
-```{r, eval = FALSE}
-use_phw_ggplot(palette = "accessible")  # or options(phwstyle.palette = "accessible")
-```
-
-In a document, set it where you choose the format, and render the same
-document both ways:
-
-```{r, eval = FALSE}
-# R Markdown
-word <- "phwstyle::phw_word_document"
-rmarkdown::render("report.Rmd", word, output_file = "report.docx")
-rmarkdown::render("report.Rmd", word, output_file = "report-accessible.docx",
-                  output_options = list(palette = "accessible"))
-```
-
-```{r, eval = FALSE}
-# Quarto (this works on Windows too)
-system2("quarto", c("render", "report.qmd", "--to", "phw-docx"))
-Sys.setenv(PHWSTYLE_PALETTE = "accessible")
-system2("quarto", c("render", "report.qmd", "--to", "phw-docx", "-o", "report-accessible.docx"))
-Sys.unsetenv("PHWSTYLE_PALETTE")
-```
-
-Or fix it in the YAML header: `palette: accessible` under an R Markdown
-format, or `phw-palette: accessible` at the top level of a Quarto document.
-`?phw_default_palette` lists every way to switch and which one wins.
-
-Check any set of colours, and see them as a colour-blind reader would:
-
-```{r}
-phw_check_colours("accessible")
-```
-
-```{r, fig.height = 3}
-show_phw_palettes(c("main", "accessible", "rag", "rag_accessible"), cvd = "deutan")
-```
-
-Colour should never be the only cue. Add `scale_shape_phw()` or
-`scale_linetype_phw()` to charts. `phw_flextable_heat(palette = "rag")` adds
-shapes to RAG cells, and `"rag_accessible"` uses navy for "good" instead of
-green.
-
-Larger text and thicker lines are a separate setting:
-`use_phw_ggplot(accessible = TRUE)` for every plot, or
-`theme_phw(accessible = TRUE)` for one. It doesn't change the colours, and
-the palette switch doesn't change the sizes, so use either or both.
-
-## Colours that stay with their groups
-
-If colours follow the order of the groups, adding a new group (say a new age
+If colours follow the order of the groups, adding a group (say a new age
 band) shifts every colour after it. A colour key fixes each group's colour
 instead. New groups get the next free colour, and existing ones never move.
 
@@ -226,78 +327,89 @@ phw_colour_key(ages, "age_vignette")
 phw_colour_key(c("Under 1", ages, "Unknown"), "age_vignette")
 ```
 
-Use the key in a chart with `scale_colour_phw_d(key = "age_vignette")`, in
-tables with `phw_flextable_groups()` or `phw_reactable(group_col = )`, and in
-plotly with `colors = phw_colour_key(...)`. To keep keys across sessions and
-reports, save them to a file in your project:
-
-```{r, eval = FALSE}
-phw_key_file("phw-colours.csv")
-```
-
-Keys store the colours themselves, so changing palette later only affects new
-groups. `phw_key_recolour()` moves a whole key to a new palette on purpose.
-The accessible palette is the exception: when it is switched on, each key
-keeps a second set of colours (stored as `name@accessible`), so both
-versions of a report stay consistent from one run to the next.
+Use the key with `scale_colour_phw_d(key = "age_vignette")`, and the same
+`key` in `phw_flextable_groups()`, `phw_reactable()` and
+`phw_leaflet_polygons()`. To keep keys across sessions and reports, save
+them to a file in your project with `phw_key_file("phw-colours.csv")`.
 
 ```{r, include = FALSE}
 phw_key_reset("age_vignette")
 ```
 
-## ggplot2
+### Colour-blind readers
 
-Call `use_phw_ggplot()` once to style every plot in the session, or add
-`theme_phw()` and a PHW scale to one plot, as here. The source line goes in
-the caption, the way PHW reports show it.
+The `accessible` palette stays distinct for all three common types of
+colour blindness. It is not used unless you switch it on, and then every
+chart, table and widget uses it, for any number of groups:
 
-```{r}
-ggplot(mpg, aes(displ, hwy, colour = drv)) +
-  geom_point() +
-  facet_wrap(~year) +
-  labs(title = "Engine size and fuel economy",
-       x = "Engine size (litres)", y = "Miles per gallon",
-       caption = phw_caption("ggplot2::mpg")) +
-  theme_phw() +
-  scale_colour_phw_d()
+```{r, eval = FALSE}
+use_phw_ggplot(palette = "accessible")  # or options(phwstyle.palette = "accessible")
 ```
 
-Use `theme_phw(grid = "x")` for horizontal bars and `theme_phw_map()` for
-maps. `phw_finalise()` adds the logo and source footer to a chart that will
-be shared on its own, and `phw_save()` saves it at report size.
+In a document, add `phw-palette: accessible` to the YAML header, or set the
+palette when you render to make a default and an accessible version of the
+same document (see `?phw_default_palette`, and the
+[Reports and documents](`r site`articles/documents.html#default-and-accessible-colours)
+guide).
 
-## Extension packages and multi-plot figures
+`accessible = TRUE` in `use_phw_ggplot()` or `theme_phw()` is a different
+setting: it makes text larger and lines thicker, and leaves colours alone.
+
+Colour should never be the only cue: add `scale_shape_phw()` or
+`scale_linetype_phw()` to charts. To check any set of colours, and see them
+as a colour-blind reader would:
+
+```{r}
+phw_check_colours("main")
+```
+
+```{r, fig.height = 3}
+show_phw_palettes(c("main", "accessible", "rag", "rag_accessible"), cvd = "deutan")
+```
+
+The [Colours and accessibility](`r site`articles/colours.html) guide covers
+all of this in more detail.
+
+## Charts
+
+Add `phw_caption()` as the caption to show the source line the way PHW
+reports do. Use `theme_phw(grid = "x")` for horizontal bars and
+`theme_phw_map()` for maps.
+
+```{r}
+ggplot(mpg, aes(displ, hwy, colour = drv, shape = drv)) +
+  geom_point() +
+  facet_wrap(~year) +
+  scale_shape_phw() +
+  labs(title = "Engine size and fuel economy",
+       x = "Engine size (litres)", y = "Miles per gallon",
+       caption = phw_caption("ggplot2::mpg"))
+```
+
+The ready-made public health charts return ordinary ggplots, so you can
+add titles and layers as usual:
+
+```{r}
+units <- tibble(unit = paste("Unit", 1:30), eligible = round(runif(30, 300, 6000))) |>
+  mutate(events = rbinom(n(), eligible, c(rep(0.72, 28), 0.6, 0.82)))
+
+phw_funnel(units, events, eligible, label = unit) +
+  labs(title = "Proportion by unit", x = "Eligible population", y = "Proportion (%)")
+```
 
 Charts from ggplot2 extensions (ggalluvial, ggsankey, ggridges, ggrepel,
-treemapify, ggtext and others) take the PHW colour scales and colour keys like
-any other chart. `use_phw_ggplot()` also restyles their own defaults (fonts,
-text colours, grey fills and black outlines) through `phw_style_extensions()`.
-Load those packages before calling it.
-
-To put several charts in one figure, use `phw_arrange()` (built on patchwork)
-for one PHW title and source line across all panels. For gridExtra or cowplot,
-`phw_title_grob()` gives a matching title. `phw_finalise()` adds the logo footer
-to any of these.
+treemapify, ggtext and others) take the PHW scales like any other chart,
+and `use_phw_ggplot()` restyles their own defaults. Load those packages
+before calling it. `phw_arrange()` puts several charts in one figure with
+one title and source line. `phw_finalise()` adds the logo and source
+footer to a chart that will be shared on its own, and `phw_save()` saves it
+at report size.
 
 ## Tables
 
-```{r}
-tbl <- tibble(Area = paste("Area", LETTERS[1:3]),
-              Count = c(12L, 28L, 1L), Value = c(2.0, 5.5, 0.7))
-phw_flextable(tbl, caption = "Table caption", source = "Example data",
-              bold_first_col = TRUE)
-```
-
-`phw_reactable()` and `phw_plotly()` do the same for interactive tables and
-charts. `phw_plotly()` works with any plotly chart type, including bars,
-donuts, heatmaps (with `phw_plotly_colorscale()`), box plots and
-`subplot()` figures.
-
-### Summary and epidemiology tables
-
 Five builders make the tables PHW reports use most. Each returns a data
-frame that renders properly with both `phw_flextable()` and
-`phw_reactable()`:
+frame that renders with `phw_flextable()` (Word, PDF, HTML), `phw_gt()`,
+`phw_reactable()` (interactive) and `phw_write_xlsx()` (Excel):
 
 - `phw_summary_table()`: characteristics (age group, sex, risk factors...)
   as n (%) or median (IQR), optionally split by a group with a total column.
@@ -307,29 +419,14 @@ frame that renders properly with both `phw_flextable()` and
   intervals, for several demographic or risk variables at once.
 - `phw_risk_table()`: attack rates and relative risks by exposure, as used
   in outbreak investigations.
-- `phw_group_table()`: counts (or any statistic) from a raw data frame with
-  nested row groups, such as group then type, and optional nested column
-  groups, such as year then quarter. Each group row can show its group's
-  total; you can add a table total and totals of the inner groups across
-  all groups, and choose an indented or column layout.
+- `phw_group_table()`: counts (or any statistic) with nested row and column
+  groups, group totals and a table total.
 
 ```{r}
-set.seed(1)
-dat <- tibble(
-  group = sample(c("Group A", "Group B", "Group C"), 300, replace = TRUE),
-  type = sample(c("Type 1", "Type 2", "Type 3"), 300, replace = TRUE),
-  year = sample(2023:2024, 300, replace = TRUE))
-phw_flextable(phw_group_table(dat, rows = c(group, type), cols = year,
-                              labels = list(group = "Group", type = "Type", year = "Year")))
-```
-
-```{r}
-ll <- tibble(
-  age_group = sample(c("0-14", "15-44", "45-64", "65+"), 200, replace = TRUE),
-  sex = sample(c("Female", "Male"), 200, replace = TRUE),
-  outcome = sample(c("Outcome X", "Outcome Y"), 200, replace = TRUE))
-phw_flextable(phw_summary_table(ll, by = outcome,
-                                labels = list(age_group = "Age group", sex = "Sex")))
+cases |>
+  phw_group_table(rows = c(area, organism), cols = sex,
+                  labels = list(area = "Area", organism = "Organism", sex = "Sex")) |>
+  phw_flextable(caption = "Cases by area, organism and sex", source = "Example data")
 ```
 
 For extra column formats, use `phw_flextable_heat()` and
@@ -342,43 +439,32 @@ For extra column formats, use `phw_flextable_heat()` and
 keeps a copy in your cache folder, so later calls work offline.
 `phw_boundary_levels()` lists the levels: country, health boards, local
 authorities, GP clusters, Senedd and UK Parliament constituencies, electoral
-wards, communities, MSOAs, LSOAs, output areas, and fire and police areas.
+wards, communities, middle and lower layer super output areas (MSOAs and
+LSOAs), output areas, and fire and police areas.
 
 ```{r, eval = FALSE}
 hb <- phw_boundaries("health_board")
 ggplot(hb) +
   geom_sf(aes(fill = name), colour = "white") +
-  scale_fill_phw_d() +
   theme_phw_map() +
   labs(caption = attr(hb, "attribution"))
 ```
 
-Join your data on the `code` column (ONS codes such as W11000028), or on
-`name`. The list of releases is updated when ONS or the Welsh Government
-publish new boundaries.
+Join your data on the `code` column, which holds the official area codes
+from the Office for National Statistics (ONS), such as W11000028, or on
+`name`.
 
 ## More outputs
 
-- Public health charts: `phw_epicurve()`, `phw_pyramid()`, `phw_funnel()`
-  and `phw_spc()` return ordinary ggplots.
 - gt and gtsummary: `phw_gt()` renders any data frame or summary table, and
   `use_phw_gtsummary()` styles every gtsummary table.
-- Interactive: `phw_datatable()` for searchable tables, and `phw_leaflet()`
-  with `phw_leaflet_polygons()` for maps.
+- Interactive: `phw_reactable()` and `phw_datatable()` for tables,
+  `phw_plotly()` for any plotly chart or ggplot, and `phw_leaflet()` with
+  `phw_leaflet_polygons()` for maps.
 - Exports: `phw_write_xlsx()` for Excel, and `phw_pptx()` with
   `phw_add_slide()` for PowerPoint.
-
-The documentation website has a guide for each, and a gallery naming the
-functions behind every example.
-
-## Documents
-
-- R Markdown: `output: phwstyle::phw_html_document`, `phw_word_document`
-  or `phw_pdf_document`. Charts and flextables inside are styled for you.
-- Quarto: run `use_phw_quarto()` in your project, then use `format: phw-html`,
-  `phw-docx`, `phw-typst`, `phw-pdf`, `phw-revealjs` or `phw-dashboard`, and
-  call `use_phw_ggplot()` in the setup chunk.
-- Shiny: `phw_page_navbar()` or `theme = phw_bs_theme()`.
+- Shiny: `phw_page_navbar()`, or `theme = phw_bs_theme()` in any bslib or
+  Shiny page.
 
 ## Wording
 
@@ -398,7 +484,7 @@ on each help page), so you can override a default: `theme_phw(plot.title = eleme
 
 ## Logos
 
-The PHW logo is a trade mark. `phw_logo()` finds it in your
-`phwstyle.logo_dir` folder, or in a copy saved by `phw_download_logos()`.
-It is not included in the package. Without a logo, outputs are still branded, just
-without the logo.
+The PHW logo is a trade mark and is not included in the package.
+`phw_logo()` finds it in your `phwstyle.logo_dir` folder, or in a copy
+saved by `phw_download_logos()`. Without a logo, outputs are still styled,
+and show the organisation name instead.

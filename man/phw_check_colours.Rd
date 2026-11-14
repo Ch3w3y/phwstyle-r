@@ -31,8 +31,10 @@ that are hardest to tell apart. It also checks each colour's contrast
 against the background.
 }
 \details{
-A distance (CIELAB delta E) under about 10 is hard to tell apart in a
-legend. WCAG 2.2 asks for 3:1 contrast for chart marks and 4.5:1 for text.
+Distances are delta E in CIELAB, a colour space built so that equal
+distances look about equally different; under about 10 is hard to tell
+apart in a legend. The Web Content Accessibility Guidelines (WCAG 2.2)
+ask for 3:1 contrast for chart marks and 4.5:1 for text.
 }
 \examples{
 phw_check_colours("main")

@@ -31,22 +31,24 @@ website.
 chosen in the same hues to stay distinct from the other nine.
 }
 
-Every pair of the twelve stays apart for colour-blind readers (CIELAB
-distance of at least 15 under deuteranopia and protanopia). Gold, mint
+Every pair of the twelve stays apart for colour-blind readers: the
+colour difference (delta E in CIELAB, a scale where about 10 or more
+is easy to tell apart) is at least 15 under simulated deuteranopia and
+protanopia, the two red-green types. Gold, mint
 and bright green are below 3:1 contrast on white, so they suit filled
 shapes better than thin lines. Twelve lines on one chart are still hard
 to read: use facets or direct labels where you can.
 \item \code{accessible} (qualitative, 8): chosen so every pair stays distinct under
-simulated deuteranopia, protanopia and tritanopia (minimum CIELAB
-distance of about 20), and every colour has at least 3:1 contrast on
+simulated deuteranopia, protanopia and tritanopia (minimum colour
+difference, delta E, of about 20), and every colour has at least 3:1 contrast on
 white. It starts with navy, teal and orange, so short series still look
 like PHW. It is never used unless you ask for it: see
 \code{\link[=phw_default_palette]{phw_default_palette()}} for how to switch a whole script or document
 to it.
 \item \code{highlight} (qualitative, 2): navy for the focus series, light grey for
 everything else.
-\item \code{rag} (qualitative, 3): red / amber / green that keeps 3:1 contrast on
-white. These were chosen for phwstyle, not taken from a PHW source.
+\item \code{rag} (qualitative, 3): red / amber / green (RAG) status colours that
+keep 3:1 contrast on white. These were chosen for phwstyle, not taken from a PHW source.
 \item \code{rag_accessible} (qualitative, 3): like \code{rag}, but "good" is navy
 instead of green, because red and green look alike to many colour-blind
 readers.
@@ -69,4 +71,10 @@ then grey. \code{strategy} has its own shades in the same order: blue, mint,
 orange, pink. The exceptions are the palettes where colour carries a
 fixed meaning (\code{rag}, \code{rag_accessible}), and the sequential and diverging
 palettes, which run from light to dark.
+}
+\examples{
+names(phw_palettes)
+phw_palettes$main
+phw_palettes$strategy
+show_phw_palettes(c("main", "extended", "accessible"))
 }

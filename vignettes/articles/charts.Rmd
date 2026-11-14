@@ -34,6 +34,8 @@ what is covered and what you still need to add.
 A colour key fixes each level's colour. Use the same `key` in every chart
 (and in `phw_reactable()`, `phw_leaflet_polygons()` or
 `phw_flextable_groups()`) and "Setting 2" is always the same colour.
+[Colours and accessibility](colours.html) covers keys, palettes and
+colour-blind readers in more detail.
 
 ```{r}
 ggplot(cases, aes(age_group, fill = setting)) +
@@ -44,6 +46,10 @@ ggplot(cases, aes(age_group, fill = setting)) +
 ```
 
 ## Shapes and line types as a second cue
+
+Shapes help readers who can't tell the colours apart, and charts printed
+in black and white. Here the chart also uses the colour-blind safe
+palette, for this chart only.
 
 ```{r}
 weekly <- cases |>
