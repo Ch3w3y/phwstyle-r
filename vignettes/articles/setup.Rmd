@@ -64,7 +64,7 @@ the version in the address to the latest release.
 install.packages(c("cli", "ggplot2", "gtable", "htmltools", "rlang",
                    "scales", "systemfonts", "tidyselect", "zip"))
 install.packages(
-  "https://github.com/Ch3w3y/phwstyle-r/releases/download/v0.2.0/phwstyle_0.2.0.tar.gz",
+  "https://github.com/Ch3w3y/phwstyle-r/releases/download/v0.3.0/phwstyle_0.3.0.tar.gz",
   repos = NULL, type = "source")
 ```
 
@@ -74,7 +74,7 @@ will work too.
 ## If the install fails on a managed computer
 
 The last line of the error names a file in your Temp folder, such as
-`installation of package 'C:/Users/.../Temp/.../phwstyle_0.2.0.tar.gz' had
+`installation of package 'C:/Users/.../Temp/.../phwstyle_0.3.0.tar.gz' had
 non-zero exit status`. That is only where R unpacked the download. The cause is
 a few lines further up. Find it in this list.
 
