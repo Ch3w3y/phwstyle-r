@@ -55,6 +55,28 @@ phw_as_summary <- function(data, row_type = NULL, note = NULL) {
   new_phw_summary(data, types, note = note)
 }
 
+# How each row of a summary table is drawn, worked out once so that every
+# renderer bolds, shades, rules and indents the same rows. `rule` is a navy
+# rule above a total row; `line` and `space` separate the outermost groups.
+summary_rows <- function(x) {
+  types <- attr(x, "row_type")
+  depth <- attr(x, "depth") %||% as.integer(types == "level")
+  sep <- attr(x, "separate") %||% "none"
+  start <- seq_along(types) %in% (attr(x, "group_start") %||% integer()) & types != "total"
+  heading <- types == "variable" & depth == 0
+  data.frame(
+    type = types,
+    bold = types %in% c("variable", "subtotal", "total"),
+    italic = types == "subtotal",
+    navy = heading,
+    shade = heading & isTRUE(attr(x, "highlight") %||% TRUE),
+    rule = types == "total",
+    line = start & sep %in% c("line", "both"),
+    space = start & sep %in% c("space", "both"),
+    indent = if (isTRUE(attr(x, "indent") %||% TRUE)) depth else 0L
+  )
+}
+
 #' @export
 print.phw_summary <- function(x, ...) {
   y <- x
@@ -80,10 +102,20 @@ fmt_pct <- function(n, d, digits) {
 }
 
 var_label <- function(data, v, labels) {
-  if (!is.null(labels[[v]])) return(labels[[v]])
+  if (v %in% names(labels)) return(labels[[v]])
   l <- attr(data[[v]], "label")
   if (is.character(l) && length(l) == 1) return(l)
   v
+}
+
+check_labels <- function(labels, call = rlang::caller_env()) {
+  if (!length(labels)) return(list())
+  named <- !is.null(names(labels)) && all(nzchar(names(labels)))
+  if (!(is.list(labels) || is.character(labels)) || !named) {
+    cli::cli_abort(c("{.arg labels} must give a name for each column, such as {.code list(age_group = \"Age group\")}."),
+                   call = call)
+  }
+  as.list(labels)
 }
 
 as_levels <- function(x, missing) {
@@ -146,7 +178,9 @@ phw_summary_table <- function(data, vars = NULL, by = NULL, labels = list(),
   numeric <- rlang::arg_match(numeric)
   vars <- pick_cols(rlang::enquo(vars), data, "vars", null_ok = TRUE)
   by <- pick_col(rlang::enquo(by), data, "by", null_ok = TRUE)
+  labels <- check_labels(labels)
   data <- as.data.frame(data)
+  if (!is.null(by) && is.null(missing)) data <- drop_missing(data, by)
   vars <- vars %||% setdiff(names(data), by)
   groups <- if (is.null(by)) list(All = rep(TRUE, nrow(data))) else {
     g <- as_levels(data[[by]], missing)
@@ -167,11 +201,13 @@ phw_summary_table <- function(data, vars = NULL, by = NULL, labels = list(),
     if (is.numeric(x) && !is.factor(x)) {
       stat <- vapply(groups, function(i) {
         xi <- x[i]
+        if (all(is.na(xi))) return("")
         if (numeric == "median_iqr") {
           q <- stats::quantile(xi, c(.5, .25, .75), na.rm = TRUE, names = FALSE)
           sprintf("%s (%s to %s)", fmt_num(q[1], digits), fmt_num(q[2], digits), fmt_num(q[3], digits))
         } else {
-          sprintf("%s (%s)", fmt_num(mean(xi, na.rm = TRUE), digits), fmt_num(stats::sd(xi, na.rm = TRUE), digits))
+          s <- stats::sd(xi, na.rm = TRUE)
+          sprintf("%s (%s)", fmt_num(mean(xi, na.rm = TRUE), digits), if (is.na(s)) "-" else fmt_num(s, digits))
         }
       }, "")
       rows[[length(rows) + 1]] <- c(lab, stat); types <- c(types, "stat")
@@ -235,7 +271,12 @@ phw_crosstab <- function(data, rows, cols, count = NULL,
   rows <- pick_col(rlang::enquo(rows), data, "rows")
   cols <- pick_col(rlang::enquo(cols), data, "cols")
   count <- pick_col(rlang::enquo(count), data, "count", null_ok = TRUE)
+  labels <- check_labels(labels)
   data <- as.data.frame(data)
+  if (!is.null(count)) {
+    check_numeric_col(data, count, "count")
+    data <- drop_missing(data, count)
+  }
   r <- as_levels(data[[rows]], missing)
   k <- as_levels(data[[cols]], missing)
   w <- if (is.null(count)) rep(1, nrow(data)) else data[[count]]
@@ -303,6 +344,7 @@ phw_rate_table <- function(data, groups, cases, population, per = 1e5, conf_leve
   groups <- pick_cols(rlang::enquo(groups), data, "groups")
   cases <- pick_col(rlang::enquo(cases), data, "cases")
   population <- pick_col(rlang::enquo(population), data, "population")
+  check_has_rows(data)
   data <- as.data.frame(data)
   rate_label <- rate_label %||% paste("Rate per", fmt_n(per))
   ci_label <- sprintf("%s%% CI", 100 * conf_level)
@@ -374,6 +416,7 @@ phw_risk_table <- function(data, exposures, outcome, labels = list(), conf_level
                            digits = 1, p_value = TRUE) {
   exposures <- pick_cols(rlang::enquo(exposures), data, "exposures")
   outcome <- pick_col(rlang::enquo(outcome), data, "outcome")
+  check_has_rows(data)
   data <- as.data.frame(data)
   y <- data[[outcome]]
   y <- if (is.logical(y)) y else if (is.numeric(y)) y == 1 else tolower(as.character(y)) %in% c("yes", "y", "true", "1", "case")
@@ -387,6 +430,9 @@ phw_risk_table <- function(data, exposures, outcome, labels = list(), conf_level
     }
     keep <- !is.na(f) & !is.na(y)
     f <- droplevels(f[keep]); yy <- y[keep]
+    if (!nlevels(f)) {
+      cli::cli_abort("{.arg exposures}: column {.field {e}} has no rows with both the exposure and the outcome recorded.")
+    }
     n <- as.numeric(table(f)); c <- as.numeric(tapply(yy, f, sum))
     ar <- c / n
     ref <- 1

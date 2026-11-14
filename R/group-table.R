@@ -108,10 +108,14 @@ phw_group_table <- function(data, rows, cols = NULL, value = NULL, fun = sum,
   rows <- pick_cols(rlang::enquo(rows), data, "rows")
   cols <- pick_cols(rlang::enquo(cols), data, "cols", null_ok = TRUE)
   value <- pick_col(rlang::enquo(value), data, "value", null_ok = TRUE)
+  labels <- check_labels(labels)
   data <- as.data.frame(data)
   if (!length(rows)) cli::cli_abort("{.arg rows} needs at least one column.")
+  if (!is.null(value)) {
+    check_numeric_col(data, value, "value")
+    data <- drop_missing(data, value)
+  }
   x <- if (is.null(value)) rep(1, nrow(data)) else data[[value]]
-  if (!is.numeric(x)) cli::cli_abort("{.arg value} must be a numeric column.")
 
   # Missing grouping values: relabel, or drop the records.
   grp <- lapply(c(rows, cols), function(v) as_levels(data[[v]], missing))
