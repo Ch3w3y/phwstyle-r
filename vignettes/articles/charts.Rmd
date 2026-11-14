@@ -105,7 +105,25 @@ ggplot(change, aes(change, reorder(area, change), fill = change)) +
   theme_phw(grid = "x")
 ```
 
-Each scale also has a `scale_color_*` spelling that is the same function.
+Each scale has a `colour` version for points and lines, and a `color`
+spelling that is the same function. This figure uses all four with
+`scale_colour_*` and `scale_color_*`.
+
+```{r, fig.width = 10, fig.height = 6, fig.alt = "Four scatter plots of points on a grid. The first colours points by group, the second by a number, the third by number bands and the fourth by values above and below zero.", eval = requireNamespace("patchwork", quietly = TRUE)}
+pts <- tibble(x = runif(60), y = runif(60), group = sample(c("A", "B", "C"), 60, TRUE),
+              value = rnorm(60, 0, 10))
+base <- ggplot(pts, aes(x, y)) + labs(x = NULL, y = NULL)
+phw_arrange(
+  base + geom_point(aes(colour = group), size = 2.5) + scale_color_phw_d() + labs(title = "Groups"),
+  base + geom_point(aes(colour = value), size = 2.5) + scale_colour_phw_c() + labs(title = "Numbers") +
+    theme_phw(legend = "right"),
+  base + geom_point(aes(colour = value), size = 2.5) + scale_color_phw_b(n.breaks = 4) + labs(title = "Bands") +
+    theme_phw(legend = "right"),
+  base + geom_point(aes(colour = value), size = 2.5) + scale_colour_phw_div() + labs(title = "Above and below zero") +
+    theme_phw(legend = "right"),
+  ncol = 2, guides = "keep"
+)
+```
 
 ## A second measure on its own axis
 
