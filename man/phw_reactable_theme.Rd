@@ -26,9 +26,10 @@ the PHW defaults.}
 A reactable theme.
 }
 \description{
-A \code{\link[reactable:reactableTheme]{reactable::reactableTheme()}} that uses the PHW font and colours: a navy
-header rule, light grey striping and hover, and the yellow keyboard focus
-outline used on phw.nhs.wales.
+A \code{\link[reactable:reactableTheme]{reactable::reactableTheme()}} that uses the PHW font and colours: navy
+header rules and a navy rule closing the table, navy column group
+headings, light grey hover (and striping, if you turn it on), and the
+yellow keyboard focus outline used on phw.nhs.wales.
 }
 \examples{
 if (requireNamespace("reactable", quietly = TRUE)) {
