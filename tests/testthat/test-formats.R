@@ -303,3 +303,57 @@ test_that("phw_setup_check reports every item", {
   expect_true(any(grepl("Ubuntu", res$item)))
   expect_true(all(nzchar(res$fix[!res$ok])))
 })
+
+test_that("format arguments in ... are merged with the PHW ones or refused", {
+  skip_if_not_installed("rmarkdown")
+  expect_error(phw_word_document(reference_docx = "mine.docx"), "sets `reference_docx` itself")
+  expect_error(phw_html_document(theme = "cerulean"), "sets `theme` itself")
+  expect_error(phw_pdf_document(latex_engine = "pdflatex"), "sets `latex_engine` itself")
+  expect_equal(phw_html_document(dev = "svg")$knitr$opts_chunk$dev, "svg")
+  pdf <- phw_pdf_document(includes = rmarkdown::includes(in_header = "mine.tex"),
+                          pandoc_args = c("--variable", "linestretch:1.2"))
+  expect_equal(sum(pdf$pandoc$args == "--include-in-header"), 2)
+  expect_true("mine.tex" %in% pdf$pandoc$args)
+  expect_true(all(c("fontsize:11pt", "linestretch:1.2") %in% pdf$pandoc$args))
+})
+
+test_that("an HTML document keeps the PHW style and adds your css and includes", {
+  skip_if_not_installed("rmarkdown")
+  skip_if_not(rmarkdown::pandoc_available())
+  local_ggplot_state()
+  dir <- withr::local_tempdir()
+  writeLines(c("---", "title: T", "---", "", "Hello"), file.path(dir, "t.Rmd"))
+  writeLines(".my-css-marker {color: red}", file.path(dir, "mine.css"))
+  writeLines("<p>MY-FOOTER</p>", file.path(dir, "foot.html"))
+  out <- rmarkdown::render(file.path(dir, "t.Rmd"),
+                           phw_html_document(css = file.path(dir, "mine.css"), toc_float = FALSE,
+                                             includes = rmarkdown::includes(after_body = file.path(dir, "foot.html"))),
+                           quiet = TRUE)
+  html <- paste(readLines(out, warn = FALSE), collapse = "\n")
+  expect_match(html, "my-css-marker", fixed = TRUE)
+  expect_match(html, "MY-FOOTER", fixed = TRUE)
+  expect_match(html, "phw-band", fixed = TRUE)
+})
+
+test_that("style_plots must be TRUE or FALSE", {
+  skip_if_not_installed("rmarkdown")
+  expect_error(phw_word_document(style_plots = "yes"), "`style_plots` must be `TRUE` or `FALSE`")
+})
+
+test_that("the LaTeX header prints a team name with LaTeX characters as written", {
+  tex <- readLines(phw_latex_header(team = "R&D 50% #1 a_b"))
+  expect_true(any(grepl("R\\&D 50\\% \\#1 a\\_b", tex, fixed = TRUE)))
+})
+
+test_that("template writers check the folder and the extension", {
+  expect_error(phw_latex_header(file.path("no-such-folder", "h.tex")), "folder not found")
+  expect_error(phw_reference_docx(file.path("no-such-folder", "r.docx")), "folder not found")
+  expect_error(phw_reference_pptx(file.path("no-such-folder", "t.pptx")), "folder not found")
+  expect_error(phw_reference_pptx(withr::local_tempfile(fileext = ".docx")), "must end in")
+})
+
+test_that("use_phw_quarto needs a folder", {
+  f <- withr::local_tempfile()
+  writeLines("x", f)
+  expect_error(use_phw_quarto(f), "must be a folder")
+})

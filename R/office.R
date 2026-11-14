@@ -340,6 +340,9 @@ style_summary_xlsx <- function(wb, sheet, s, head_row, nl, nc, add_font, colour)
 #' lines. Charts are added as editable vector graphics when the rvg package
 #' is installed, so colleagues can tweak them in PowerPoint.
 #'
+#' Every argument is checked before the slide is added, so a call that
+#' stops leaves the deck as it was.
+#'
 #' @param template Path to a `.pptx` template, e.g. the PHW corporate
 #'   template. `NULL` uses the PHW template from [phw_reference_pptx()].
 #' @return An officer `rpptx` object. Save it with `print(deck, target =
@@ -352,34 +355,52 @@ style_summary_xlsx <- function(wb, sheet, s, head_row, nl, nc, add_font, colour)
 #'   if (requireNamespace("ggplot2", quietly = TRUE)) {
 #'     p <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) + ggplot2::geom_point()
 #'     deck <- phw_add_slide(deck, "A chart", plot = p, source = "mtcars", editable = FALSE)
+#'     deck <- phw_add_slide(deck, "A chart and its data", plot = p,
+#'                           table = head(mtcars[, c("wt", "mpg")]),
+#'                           layout = "Two Content", editable = FALSE)
 #'   }
 #'   print(deck, target = tempfile(fileext = ".pptx"))
 #' }
 #' @export
 phw_pptx <- function(template = NULL) {
   rlang::check_installed("officer")
+  check_one_string(template, allow_null = TRUE)
+  if (!is.null(template) && !file.exists(template)) {
+    cli::cli_abort("{.arg template}: file not found: {.file {template}}.")
+  }
   officer::read_pptx(template %||% phw_file("rmarkdown", "resources", "phw-reference.pptx"))
 }
 
 #' @rdname phw_pptx
 #' @param x An `rpptx` object from `phw_pptx()`.
-#' @param title Slide title.
-#' @param plot A ggplot (or anything [officer::ph_with()] accepts as a
-#'   graphic).
+#' @param title Slide title, a single string.
+#' @param plot A ggplot, or a grob or gtable such as a [phw_finalise()]
+#'   result. A grob goes on the slide as a picture.
 #' @param table A data frame, flextable or summary table (rendered with
-#'   [phw_flextable()]).
+#'   [phw_flextable()]). It must have at least one row.
 #' @param text Character vector of bullet points.
 #' @param source,date Passed to [phw_caption()] and shown at the bottom.
 #' @param layout,master Slide layout and slide master names in the
 #'   template. A slide master is the set of layouts a template provides;
 #'   see them in PowerPoint under View > Slide Master, or with
-#'   `officer::layout_summary(x)`. The default layout suits the PHW template,
-#'   which also has `"Title Slide"` (the title and `text` as a subtitle),
-#'   `"Section Header"`, `"Two Content"`, `"Title Only"` and `"Blank"`. With
-#'   your own template, give the layout names it uses. The default
-#'   `master = NULL` uses the master in the deck that has the layout (the
-#'   first one, if several do), so you only need `master` when two masters
-#'   share a layout name.
+#'   `officer::layout_summary(x)`. The default `master = NULL` uses the
+#'   master in the deck that has the layout (the first one, if several do),
+#'   so you only need `master` when two masters share a layout name.
+#'
+#'   Give one of `plot`, `table` or `text` for each content area. The PHW
+#'   template has these layouts:
+#'
+#'   * `"Title and Content"` (the default): one chart, table or text.
+#'   * `"Two Content"`: two side by side. With one, it goes on the left.
+#'     With two, the first of `plot`, `table` and `text` goes on the left.
+#'   * `"Title Only"`: one chart, table or text in the space below the
+#'     title.
+#'   * `"Blank"`: one chart, table or text filling the slide. It has no
+#'     title.
+#'   * `"Title Slide"` and `"Section Header"`: a title and `text` on navy.
+#'     They have no room for a chart or table.
+#'
+#'   With your own template, give the layout names it uses.
 #' @param editable Add charts as editable vector graphics (needs rvg)?
 #' @param plot_scale How much to enlarge a chart's text on the slide, as a
 #'   multiple of the size the chart already uses. The default `1.5` brings
@@ -388,19 +409,23 @@ phw_pptx <- function(template = NULL) {
 #'   that follow the plot's base size, as [theme_phw()] and the ggplot2
 #'   themes do, and the size of text drawn by `geom_text()` with ggplot2 4.0.0
 #'   or later. Text you gave an exact size in your own `theme()` keeps it.
+#'   A grob keeps the sizes it was drawn with.
 #' @param table_fit Enlarge a table built here from a data frame or summary
 #'   table so it fills the width of the slide's content area? The text grows
 #'   with it, by up to 1.6 times, and a narrow table is widened by at most
 #'   another 80% (more for a table with more columns). A tall table tightens
 #'   its row spacing so the text can grow. `FALSE` keeps the table at the size [phw_flextable()] gives
-#'   it. A flextable you pass in is never resized.
+#'   it. A flextable you pass in is never resized. The text never shrinks,
+#'   so a table with too many rows for the slide gives a warning that says
+#'   how many fit.
 #' @param title_size Title font size. On a layout with a dark background (the
 #'   title slide and section header) the template sets the size and colour, and
 #'   this applies only when you give it.
 #' @param caption_args List of other [phw_caption()] arguments.
 #' @param alt Alternative text for the chart or table on the slide, read out
 #'   by screen readers. `NULL` adds none, except that a ggplot's own
-#'   `labs(alt = )` text is used when there is one.
+#'   `labs(alt = )` text is used when there is one. On a slide with two
+#'   contents, it goes on the first.
 #' @export
 phw_add_slide <- function(x, title = NULL, plot = NULL, table = NULL, text = NULL,
                           source = NULL, date = NULL, layout = "Title and Content",
@@ -408,8 +433,24 @@ phw_add_slide <- function(x, title = NULL, plot = NULL, table = NULL, text = NUL
                           caption_args = list(), alt = NULL,
                           plot_scale = 1.5, table_fit = TRUE) {
   rlang::check_installed("officer")
+  if (!inherits(x, "rpptx")) {
+    cli::cli_abort("{.arg x} must be a deck from {.fn phw_pptx}, not {.obj_type_friendly {x}}.")
+  }
+  check_one_string(title, allow_null = TRUE)
+  check_one_string(alt, allow_null = TRUE)
+  check_one_string(layout)
+  check_one_string(master, allow_null = TRUE)
+  check_true_false(editable)
+  check_true_false(table_fit)
+  if (!is.numeric(plot_scale) || length(plot_scale) != 1 || is.na(plot_scale) || plot_scale <= 0) {
+    cli::cli_abort("{.arg plot_scale} must be a single positive number, not {.val {plot_scale}}.")
+  }
+  if (!is.numeric(title_size) || length(title_size) != 1 || is.na(title_size) || title_size <= 0) {
+    cli::cli_abort("{.arg title_size} must be a single positive number, not {.val {title_size}}.")
+  }
+  contents <- slide_contents(plot, table, text)
+  available <- officer::layout_summary(x)
   if (is.null(master)) {
-    available <- officer::layout_summary(x)
     master <- available$master[available$layout == layout][1]
     if (is.na(master)) {
       cli::cli_abort(c(
@@ -417,80 +458,182 @@ phw_add_slide <- function(x, title = NULL, plot = NULL, table = NULL, text = NUL
         "i" = "Layouts available: {.val {unique(available$layout)}}."
       ))
     }
+  } else if (!any(available$layout == layout & available$master == master)) {
+    cli::cli_abort(c(
+      "This deck has no slide layout called {.val {layout}} in a master called {.val {master}}.",
+      "i" = "Masters with that layout: {.val {unique(available$master[available$layout == layout])}}."
+    ))
   }
-  # Scale before adding the slide, so a bad plot_scale leaves the deck as it was.
-  if (inherits(plot, "ggplot")) plot <- scale_plot_text(plot, plot_scale)
-  x <- officer::add_slide(x, layout = layout, master = master)
-  types <- officer::layout_properties(x, layout = layout, master = master)$type
-  on_navy <- "subTitle" %in% types || layout == "Section Header"
-  if (!is.null(title)) {
-    # Cover layouts have a dark background and set their own title colour and size,
-    # so the run leaves both to the placeholder. A fixed navy would vanish there.
-    title_props <- if (on_navy) {
-      officer::fp_text_lite(font.family = phw_font(), bold = TRUE,
-                            font.size = if (missing(title_size)) NA else title_size)
-    } else {
-      officer::fp_text(font.family = phw_font(), font.size = title_size, bold = TRUE,
-                       color = phw_colours[["navy"]])
-    }
-    tp <- officer::fpar(officer::ftext(title, title_props))
-    x <- officer::ph_with(x, tp, location = officer::ph_location_type(if ("ctrTitle" %in% types) "ctrTitle" else "title"))
+  props <- officer::layout_properties(x, layout = layout, master = master)
+  on_navy <- "subTitle" %in% props$type || layout == "Section Header"
+  title_type <- intersect(c("ctrTitle", "title"), props$type)[1]
+  if (!is.null(title) && is.na(title_type)) {
+    cli::cli_abort(c("The {.val {layout}} layout has no title.",
+                     i = 'Use {.code layout = "Title Only"} for a title above the content, or leave out {.arg title}.'))
   }
-  body <- officer::ph_location_type(body_type(types))
-  area <- officer::layout_properties(x, layout = layout, master = master)
-  area <- area[area$type == body_type(types), ][1, ]
-  if (!is.null(plot)) {
-    if (is.null(alt) && inherits(plot, "ggplot") && nzchar(ggplot2::get_alt_text(plot))) {
-      alt <- ggplot2::get_alt_text(plot)
-    }
-    value <- if (editable && inherits(plot, "ggplot") && requireNamespace("rvg", quietly = TRUE)) {
-      rvg::dml(ggobj = plot, fonts = list(sans = phw_font()))
-    } else {
-      plot
-    }
-    if (!is.null(alt) && inherits(value, "ggplot")) {
-      x <- officer::ph_with(x, value, location = body, alt_text = alt)
-    } else {
-      x <- officer::ph_with(x, value, location = body)
-      x <- set_slide_alt(x, alt)
-    }
-  } else if (!is.null(table)) {
-    ft <- if (inherits(table, "flextable")) {
-      table
-    } else {
-      built <- phw_flextable(table)
-      if (isTRUE(table_fit)) fit_table_to_area(built, area$cx, area$cy) else built
-    }
-    x <- officer::ph_with(x, ft, location = body)
-    x <- set_slide_alt(x, alt)
-  } else if (!is.null(text)) {
-    if (on_navy) {
-      props <- officer::fp_text(font.family = phw_font(), font.size = 22, color = phw_colours[["grey_bg"]])
-      x <- officer::ph_with(x, do.call(officer::block_list, lapply(text, function(t) officer::fpar(officer::ftext(t, props)))), location = body)
-    } else {
-      props <- officer::fp_text(font.family = phw_font(), font.size = 20, color = phw_colours[["text"]])
-      x <- officer::ph_with(x, officer::unordered_list(str_list = text, level_list = rep(1L, length(text)), style = props), location = body)
-    }
-  }
+  areas <- slide_areas(props, officer::slide_size(x), layout, on_navy, names(contents))
   cap <- caption_from(source, date, caption_args)
-  if (!is.null(cap)) {
-    size <- officer::slide_size(x)
-    fp <- officer::fp_text(font.family = phw_font(), font.size = 10, bold = TRUE,
-                           color = phw_colours[[if (on_navy) "white" else "text"]])
-    x <- officer::ph_with(x, officer::fpar(officer::ftext(gsub("\n", " | ", cap), fp),
-                                           fp_p = officer::fp_par(text.align = "right")),
-                          location = officer::ph_location(left = 0.6, top = size$height - 0.6,
-                                                          width = size$width - 1.2, height = 0.4))
+  if (is.null(alt) && inherits(plot, "ggplot") && nzchar(ggplot2::get_alt_text(plot))) {
+    alt <- ggplot2::get_alt_text(plot)
   }
-  x
+  values <- Map(slide_value, contents, names(contents), areas,
+                MoreArgs = list(editable = editable, plot_scale = plot_scale,
+                                table_fit = table_fit, on_navy = on_navy))
+
+  x <- officer::add_slide(x, layout = layout, master = master)
+  index <- x$cursor
+  tryCatch({
+    if (!is.null(title)) {
+      # Cover layouts have a dark background and set their own title colour and size,
+      # so the run leaves both to the placeholder. A fixed navy would vanish there.
+      title_props <- if (on_navy) {
+        officer::fp_text_lite(font.family = phw_font(), bold = TRUE,
+                              font.size = if (missing(title_size)) NA else title_size)
+      } else {
+        officer::fp_text(font.family = phw_font(), font.size = title_size, bold = TRUE,
+                         color = phw_colours[["navy"]])
+      }
+      x <- officer::ph_with(x, officer::fpar(officer::ftext(title, title_props)),
+                            location = officer::ph_location_type(title_type))
+    }
+    for (i in seq_along(values)) {
+      shape_alt <- if (i == 1) alt
+      if (!is.null(shape_alt) && inherits(values[[i]], "ggplot")) {
+        x <- officer::ph_with(x, values[[i]], location = areas[[i]]$location, alt_text = shape_alt)
+      } else {
+        x <- officer::ph_with(x, values[[i]], location = areas[[i]]$location)
+        if (names(values)[i] == "text" && isTRUE(areas[[i]]$free)) x <- set_slide_bullets(x)
+        x <- set_slide_alt(x, shape_alt)
+      }
+    }
+    if (!is.null(cap)) {
+      size <- officer::slide_size(x)
+      fp <- officer::fp_text(font.family = phw_font(), font.size = 10, bold = TRUE,
+                             color = phw_colours[[if (on_navy) "white" else "text"]])
+      x <- officer::ph_with(x, officer::fpar(officer::ftext(gsub("\n", " | ", cap), fp),
+                                             fp_p = officer::fp_par(text.align = "right")),
+                            location = officer::ph_location(left = 0.6, top = size$height - 0.6,
+                                                            width = size$width - 1.2, height = 0.4))
+    }
+    x
+  }, error = function(e) {
+    # The deck changes in place, so a failure part way would leave a half-built slide.
+    officer::remove_slide(x, index = index)
+    stop(e)
+  })
 }
 
 body_type <- function(types) if ("subTitle" %in% types) "subTitle" else "body"
 
-scale_plot_text <- function(plot, scale) {
-  if (!is.numeric(scale) || length(scale) != 1 || is.na(scale) || scale <= 0) {
-    cli::cli_abort("{.arg plot_scale} must be a single positive number, not {.val {scale}}.")
+# The given contents in the order they fill a slide's areas: plot, table, text.
+slide_contents <- function(plot, table, text, call = rlang::caller_env()) {
+  if (!is.null(plot) && !inherits(plot, c("ggplot", "grob"))) {
+    cli::cli_abort("{.arg plot} must be a ggplot, or a grob such as a {.fn phw_finalise} result, not {.obj_type_friendly {plot}}.",
+                   call = call)
   }
+  if (inherits(table, "flextable")) {
+    if (!flextable::nrow_part(table, "body")) cli::cli_abort("{.arg table} has no rows.", call = call)
+  } else if (is.data.frame(table)) {
+    if (!ncol(table)) cli::cli_abort("{.arg table} has no columns.", call = call)
+    check_has_rows(table, "table", call = call)
+  } else if (!is.null(table)) {
+    cli::cli_abort("{.arg table} must be a data frame, a summary table or a flextable, not {.obj_type_friendly {table}}.",
+                   call = call)
+  }
+  if (!is.null(text) && (!is.character(text) || !length(text) || anyNA(text))) {
+    cli::cli_abort("{.arg text} must be a character vector with no missing values, not {.obj_type_friendly {text}}.",
+                   call = call)
+  }
+  Filter(Negate(is.null), list(plot = plot, table = table, text = text))
+}
+
+# Where content goes on a layout with no content placeholder: below the
+# title (Title Only), or the whole slide inside the margins (Blank). The
+# bottom margin leaves room for the source line. In inches.
+slide_margins <- c(side = 0.6, top = 0.4, bottom = 0.95, gap = 0.25)
+
+# One area per content: its officer location and its size in inches.
+slide_areas <- function(props, size, layout, on_navy, kinds, call = rlang::caller_env()) {
+  if (!length(kinds)) return(list())
+  if (on_navy && any(kinds %in% c("plot", "table"))) {
+    cli::cli_abort(c("The {.val {layout}} layout has room only for {.arg text}.",
+                     i = 'Use {.code layout = "Title and Content"} for a chart or table.'), call = call)
+  }
+  bodies <- props[props$type == body_type(props$type), , drop = FALSE]
+  bodies <- bodies[order(bodies$offx, bodies$offy), , drop = FALSE]
+  n <- max(nrow(bodies), 1)
+  if (length(kinds) > n) {
+    room <- if (n == 1) "one content area" else paste(n, "content areas")
+    cli::cli_abort(c("The {.val {layout}} layout has {room}, but you gave {.arg {kinds}}.",
+                     i = if (n == 1) 'Give one of them, or use {.code layout = "Two Content"} for two side by side.'),
+                   call = call)
+  }
+  if (nrow(bodies)) {
+    return(lapply(seq_along(kinds), function(i) {
+      list(location = officer::ph_location_id(bodies$id[i]), width = bodies$cx[i], height = bodies$cy[i])
+    }))
+  }
+  m <- slide_margins
+  title <- props[props$type %in% c("ctrTitle", "title"), , drop = FALSE]
+  if (nrow(title)) {
+    left <- title$offx[1]
+    width <- title$cx[1]
+    top <- title$offy[1] + title$cy[1] + m[["gap"]]
+  } else {
+    left <- m[["side"]]
+    width <- size$width - 2 * m[["side"]]
+    top <- m[["top"]]
+  }
+  height <- size$height - m[["bottom"]] - top
+  list(list(location = officer::ph_location(left = left, top = top, width = width, height = height),
+            width = width, height = height, free = TRUE))
+}
+
+# The officer value for one content, sized for its area.
+slide_value <- function(value, kind, area, editable, plot_scale, table_fit, on_navy) {
+  if (kind == "plot") {
+    if (!inherits(value, "ggplot")) {
+      file <- tempfile(fileext = ".png")
+      phw_save(value, file, width = area$width, height = area$height, units = "in", dpi = 200)
+      return(officer::external_img(file, width = area$width, height = area$height))
+    }
+    value <- scale_plot_text(value, plot_scale)
+    if (editable && requireNamespace("rvg", quietly = TRUE)) {
+      return(rvg::dml(ggobj = value, fonts = list(sans = phw_font())))
+    }
+    return(value)
+  }
+  if (kind == "table") {
+    ft <- if (inherits(value, "flextable")) {
+      value
+    } else {
+      built <- phw_flextable(value)
+      if (table_fit) fit_table_to_area(built, area$width, area$height) else built
+    }
+    n <- flextable::nrow_part(ft, "body")
+    fits <- table_rows_that_fit(ft, area$height)
+    if (fits < n) {
+      cli::cli_warn(c("Only {fits} of the table's {n} rows fit in the slide's content area, so the table runs past it.",
+                      i = "Split the table over more slides, or show fewer rows."))
+    }
+    return(ft)
+  }
+  if (on_navy) {
+    props <- officer::fp_text(font.family = phw_font(), font.size = 22, color = phw_colours[["grey_bg"]])
+    return(do.call(officer::block_list, lapply(value, function(t) officer::fpar(officer::ftext(t, props)))))
+  }
+  props <- officer::fp_text(font.family = phw_font(), font.size = 20, color = phw_colours[["text"]])
+  officer::unordered_list(str_list = value, level_list = rep(1L, length(value)), style = props)
+}
+
+# Slides treat row heights as minimums, so the set heights tell how far down
+# the table reaches.
+table_rows_that_fit <- function(ft, height) {
+  fixed <- sum(ft$header$rowheights, ft$footer$rowheights)
+  sum(fixed + cumsum(ft$body$rowheights) <= height + 0.001)
+}
+
+scale_plot_text <- function(plot, scale) {
   if (scale == 1) return(plot)
   current <- ggplot2::theme_get() + plot$theme
   plot <- plot + ggplot2::theme(
@@ -542,11 +685,12 @@ fit_table_to_area <- function(ft, width, height, max_grow = 1.6, max_pad = 1.8,
       }
     }
     ft <- flextable::autofit(ft)
-    if (tall) {
-      for (k in seq_along(parts)) {
-        ft <- flextable::height(ft, i = seq_along(sizes[[k]]), part = parts[k], unit = "in",
-                                height = (sizes[[k]] * grow * line_height + pads[[k]]) / 72)
-      }
+  }
+  if (tall) {
+    grow <- max(grow, 1)
+    for (k in seq_along(parts)) {
+      ft <- flextable::height(ft, i = seq_along(sizes[[k]]), part = parts[k], unit = "in",
+                              height = (sizes[[k]] * grow * line_height + pads[[k]]) / 72)
     }
   }
   widths <- ft$body$colwidths
@@ -556,7 +700,7 @@ fit_table_to_area <- function(ft, width, height, max_grow = 1.6, max_pad = 1.8,
 }
 
 # officer's ph_with() takes alt text only for ggplot images, so editable
-# charts and tables get it written onto the shape just added.
+# charts, pictures and tables get it written onto the shape just added.
 set_slide_alt <- function(x, alt) {
   if (is.null(alt)) return(x)
   rlang::check_installed("xml2")
@@ -564,5 +708,21 @@ set_slide_alt <- function(x, alt) {
   shapes <- xml2::xml_find_all(doc, "//p:spTree/*[p:nvSpPr or p:nvGrpSpPr or p:nvGraphicFramePr or p:nvPicPr]")
   last <- shapes[[length(shapes)]]
   xml2::xml_set_attr(xml2::xml_find_first(last, "*[1]/p:cNvPr"), "descr", alt)
+  x
+}
+
+# A text box outside a placeholder doesn't inherit the master's bullets, so
+# the paragraphs of the shape just added get the template's first-level ones.
+set_slide_bullets <- function(x) {
+  rlang::check_installed("xml2")
+  doc <- x$slide$get_slide(x$cursor)$get()
+  shapes <- xml2::xml_find_all(doc, "//p:spTree/p:sp")
+  for (p in xml2::xml_find_all(shapes[[length(shapes)]], ".//a:p")) {
+    ppr <- xml2::xml_find_first(p, "a:pPr")
+    if (inherits(ppr, "xml_missing")) ppr <- xml2::xml_add_child(p, "a:pPr", .where = 0)
+    xml2::xml_set_attrs(ppr, c(xml2::xml_attrs(ppr), marL = "342900", indent = "-342900"))
+    xml2::xml_add_child(ppr, "a:buFont", typeface = "Arial", .where = 0)
+    xml2::xml_add_child(ppr, "a:buChar", char = "\u2022", .where = 1)
+  }
   x
 }

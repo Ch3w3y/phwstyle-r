@@ -15,7 +15,9 @@ phw_caption(
 )
 }
 \arguments{
-\item{source}{Data source, e.g. \code{"Example system, 2024"}. Can be \code{NULL}.}
+\item{source}{Data source, e.g. \code{"Example system, 2024"}. \code{NULL}, \code{NA} or
+\code{""} leaves the source line out, and the same goes for \code{date} and
+\code{note}.}
 
 \item{date}{Optional extraction date. Adds "Data correct as of ...". A
 Date is formatted with \code{date_format}; a string is used as it is.}

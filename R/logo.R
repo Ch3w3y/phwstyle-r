@@ -37,7 +37,9 @@ phw_logo <- function(variant = c("blue", "white", "black"), format = c("png", "s
   variant <- rlang::arg_match(variant)
   format <- rlang::arg_match(format)
   file <- sprintf("phw-logo-%s.%s", variant, format)
-  dirs <- c(getOption("phwstyle.logo_dir"),
+  own <- getOption("phwstyle.logo_dir")
+  if (!is.null(own)) check_logo_dir(own)
+  dirs <- c(own,
             system.file("logos", package = "phwstyle"),
             logo_cache_dir())
   for (d in dirs) {
@@ -47,6 +49,18 @@ phw_logo <- function(variant = c("blue", "white", "black"), format = c("png", "s
 }
 
 logo_cache_dir <- function() tools::R_user_dir("phwstyle", which = "cache")
+
+# Warns once per folder when options(phwstyle.logo_dir) points at a folder
+# with no logo file named as phw_logo() expects, so the option isn't
+# ignored without a word.
+check_logo_dir <- function(dir) {
+  found <- dir.exists(dir) && any(grepl("^phw-logo-(blue|white|black)\\.(png|svg)$", list.files(dir)))
+  if (found) return(invisible(TRUE))
+  cli::cli_warn(c("{.code options(phwstyle.logo_dir)} is set, but {.path {dir}} has no PHW logo file.",
+                  i = "Logo files must be named like {.file phw-logo-blue.png} or {.file phw-logo-white.svg}."),
+                .frequency = "once", .frequency_id = paste0("phwstyle_logo_dir_", dir))
+  invisible(FALSE)
+}
 
 #' Does phwstyle have a PHW logo to use?
 #' @return `TRUE` or `FALSE`.
@@ -91,6 +105,11 @@ phw_download_logos <- function(ask = interactive(), url = logo_url) {
     cli::cli_warn("Couldn't download the logo from {.url {url}}.")
     return(invisible(NULL))
   }
+  if (!is_svg_file(tmp)) {
+    cli::cli_warn(c("The file at {.url {url}} is not an SVG image, so no logo was saved.",
+                    i = "Check the address, or whether a proxy or login page answered instead."))
+    return(invisible(NULL))
+  }
   svg <- readLines(tmp, warn = FALSE)
   for (v in names(logo_colours)) {
     out <- gsub("rgb(255%,255%,255%)", logo_colours[[v]], svg, fixed = TRUE)
@@ -108,6 +127,15 @@ phw_download_logos <- function(ask = interactive(), url = logo_url) {
   invisible(dest)
 }
 
+# TRUE when the file's root element is <svg>, after any XML declaration,
+# comments or doctype. An HTML page that holds an inline <svg> is not one.
+is_svg_file <- function(path) {
+  bytes <- readBin(path, "raw", n = 4096)
+  text <- rawToChar(bytes[bytes != as.raw(0)])
+  prolog <- "(?s)^(\\xef\\xbb\\xbf)?\\s*(<\\?xml.*?\\?>\\s*)?(<!--.*?-->\\s*|<!DOCTYPE[^>]*>\\s*)*<svg[\\s>]"
+  grepl(prolog, text, perl = TRUE, useBytes = TRUE)
+}
+
 #' Path to a PHW brand graphic
 #'
 #' The graphics are drawn by phwstyle itself and contain no logo.
@@ -123,14 +151,6 @@ phw_graphic <- function(name = c("band", "cover", "cover_wide")) {
   name <- rlang::arg_match(name)
   file <- switch(name, band = "band.png", cover = "cover-a4.jpg", cover_wide = "cover-wide.jpg")
   phw_file("graphics", file)
-}
-
-logo_grob <- function(variant = "blue", height = grid::unit(1, "npc"), x = 0, hjust = 0) {
-  path <- phw_logo(variant, "png")
-  if (is.null(path)) return(grid::nullGrob())
-  rlang::check_installed("png", "to draw the PHW logo on plots")
-  img <- png::readPNG(path)
-  grid::rasterGrob(img, x = x, hjust = hjust, height = height, interpolate = TRUE)
 }
 
 # The gradient band with the white logo composited on the left, as a PNG.

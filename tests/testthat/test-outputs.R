@@ -281,7 +281,8 @@ test_that("phw_add_slide fills the content area with a table", {
   expect_equal(plain$size, 10)
   narrow <- widths(data.frame(a = 1:3, b = 4:6))
   expect_lt(narrow$width, 0.3 * area)
-  expect_lte(widths(head(mtcars, 25))$width, area + 0.001)
+  expect_warning(long <- widths(head(mtcars, 25)), "23 of the table's 25 rows")
+  expect_lte(long$width, area + 0.001)
   own <- flextable::flextable(head(mtcars[, 1:3]))
   expect_equal(widths(own)$width, widths(own, table_fit = FALSE)$width)
 })
@@ -302,7 +303,8 @@ test_that("phw_add_slide makes a tall table readable and keeps it inside the pla
   expect_gte(min(sizes), 12)
   expect_gte(sum(xml_numbers(xml, '<a:gridCol w="[0-9]+"')) / 914400, 0.7 * area_width)
   expect_lte(sum(xml_numbers(xml, '<a:tr h="[0-9]+"')) / 914400, area_height + 0.001)
-  plain <- slide_xml(phw_add_slide(phw_pptx(), "Tall", table = grouped, table_fit = FALSE))
+  expect_warning(plain <- slide_xml(phw_add_slide(phw_pptx(), "Tall", table = grouped, table_fit = FALSE)),
+                 "rows fit in the slide's content area")
   expect_gt(sum(xml_numbers(plain, '<a:tr h="[0-9]+"')) / 914400, area_height)
 })
 

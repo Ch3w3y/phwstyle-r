@@ -603,7 +603,10 @@ set_geom_defaults <- function(geoms, new) {
 #' @param source,date Passed to [phw_caption()]. Leave both `NULL` to keep
 #'   any caption already on the plot.
 #' @param logo Logo variant (see [phw_logo()]), a path to your own PNG, or
-#'   `FALSE` for none.
+#'   `FALSE` for none. When no PHW logo is installed, `org` is written in its
+#'   place.
+#' @param org Text shown on the logo side when no PHW logo is installed.
+#'   Change it to show the name in another language.
 #' @param team Optional line under the source, e.g.
 #'   `"Communicable Disease Surveillance Centre"`.
 #' @param logo_height Logo height in cm.
@@ -636,9 +639,23 @@ phw_finalise <- function(plot, source = NULL, date = NULL, logo = "blue",
                          logo_position = c("left", "right"), text_size = 8.5,
                          text_colour = phw_colours[["text"]],
                          rule_colour = phw_colours[["navy"]], rule = TRUE,
-                         margin = 4, ...) {
+                         margin = 4, org = phw_org, ...) {
   logo_position <- rlang::arg_match(logo_position)
-  caption <- phw_caption(source, date, ...)
+  if (!isFALSE(logo)) {
+    if (!is.character(logo) || length(logo) != 1 || is.na(logo)) {
+      cli::cli_abort('{.arg logo} must be {.val blue}, {.val white}, {.val black}, the path to a PNG, or {.code FALSE}, not {.obj_type_friendly {logo}}.')
+    }
+    if (!file.exists(logo)) {
+      if (grepl("[/\\\\]|\\.[A-Za-z0-9]{2,4}$", logo)) {
+        cli::cli_abort("{.arg logo}: file not found: {.file {logo}}.")
+      }
+      logo <- rlang::arg_match(logo, names(logo_colours))
+    } else if (tolower(tools::file_ext(logo)) != "png") {
+      cli::cli_abort("{.arg logo} must be a PNG file, not {.file {logo}}.")
+    }
+  }
+  check_one_string(org)
+  caption <- caption_from(source, date, list(...), arg = "...")
   if (inherits(plot, "patchwork")) {
     if (is.null(caption)) caption <- plot$patches$annotation$caption
     plot <- plot + patchwork::plot_annotation(caption = NULL)
@@ -675,14 +692,16 @@ phw_finalise <- function(plot, source = NULL, date = NULL, logo = "blue",
       gp = grid::gpar(col = rule_colour, lwd = 1.5))))
   }
   if (!isFALSE(logo)) {
-    lg <- if (is.character(logo) && file.exists(logo)) {
-      rlang::check_installed("png", "to draw a logo")
-      grid::rasterGrob(png::readPNG(logo), height = grid::unit(logo_height, "cm"),
-                       x = if (left) m else grid::unit(1, "npc") - m,
-                       hjust = if (left) 0 else 1, interpolate = TRUE)
+    path <- if (file.exists(logo)) logo else phw_logo(logo, "png")
+    at <- if (left) m else grid::unit(1, "npc") - m
+    lg <- if (is.null(path)) {
+      grid::textGrob(org, x = at, hjust = if (left) 0 else 1,
+                     gp = grid::gpar(fontfamily = fam, fontface = "bold", fontsize = text_size * 1.4,
+                                     col = phw_colours[["navy"]]))
     } else {
-      logo_grob(logo, height = grid::unit(logo_height, "cm"),
-                x = if (left) m else grid::unit(1, "npc") - m, hjust = if (left) 0 else 1)
+      rlang::check_installed("png", "to draw a logo")
+      grid::rasterGrob(png::readPNG(path), height = grid::unit(logo_height, "cm"),
+                       x = at, hjust = if (left) 0 else 1, interpolate = TRUE)
     }
     kids <- c(kids, list(lg))
   }
@@ -730,6 +749,9 @@ print.phw_finalised <- function(x, ...) {
 #' @export
 phw_save <- function(plot = ggplot2::last_plot(), filename, width = 16, height = 10,
                      units = "cm", dpi = 300, bg = "white", device = NULL, ...) {
+  if (!inherits(plot, c("ggplot", "grob"))) {
+    cli::cli_abort("{.arg plot} must be a ggplot or a grob such as a {.fn phw_finalise} result, not {.obj_type_friendly {plot}}.")
+  }
   ext <- tolower(tools::file_ext(filename))
   device <- device %||% switch(ext,
     png = if (requireNamespace("ragg", quietly = TRUE)) ragg::agg_png else "png",
