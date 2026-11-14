@@ -120,6 +120,28 @@ phw_summary_table(cases, by = outcome,
   phw_flextable(caption = "Characteristics by outcome")
 ```
 
+For a table you built yourself, a dplyr summary say, every row looks the
+same to the renderers. `phw_as_summary()` marks it as a summary table, and then the bold variable
+rows, indented levels and total rows appear in `phw_flextable()`,
+`phw_gt()`, `phw_reactable()`, `phw_datatable()` and `phw_write_xlsx()`.
+Name the column that says what each row is with `row_type`. Its values are
+`"variable"`, `"level"`, `"subtotal"`, `"group"` and `"total"`.
+
+```{r}
+by_age <- cases |> count(age_group, name = "cases")
+mine <- tibble(
+  label = c("Age group", by_age$age_group, "All ages"),
+  cases = c(NA, by_age$cases, sum(by_age$cases)),
+  kind = c("variable", rep("level", nrow(by_age)), "total")
+) |>
+  phw_as_summary(row_type = kind, note = "Example data.")
+phw_flextable(mine, caption = "Cases by age group")
+```
+
+```{r, eval = requireNamespace("DT", quietly = TRUE)}
+phw_datatable(mine)
+```
+
 `phw_crosstab()` cross-tabulates two variables with totals and optional
 percentages, and `phw_flextable_heat()` colours the counts.
 
