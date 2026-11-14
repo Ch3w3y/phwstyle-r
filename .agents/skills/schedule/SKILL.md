@@ -47,10 +47,33 @@ The directory name must start with the item ID. That is the link: every backlog 
 
 **Follow-up stages:** if `task_types` contains more skills than `execute` (for example a review or reflect skill added later), read each one's `schedule` hint and append it as a stage where the hint says it belongs. Do not invent task types that are not registered.
 
+## This project's pipeline
+
+Changes reach `main` only through GitHub pull requests. Every backlog item (a GitHub issue labelled `noodle`) becomes one order with three stages, one per group:
+
+1. group 0: `execute`. The prompt is the issue title and body. The stage fixes the issue on branch `noodle/issue-<id>` and opens a PR.
+2. group 1: `verify-pr`. The prompt is `Verify the PR for issue #<id>.`
+3. group 2: `ship-pr`. The prompt is `Ship the PR for issue #<id>.`
+
+This replaces every item shape in "Building orders" above, complex items included: never schedule the planning stage or `noodle worktree merge` here, because only pull requests may change `main`. A complex item gets the same three stages, and execute plans the work inside its own PR.
+
+Schedule at most ONE issue order at a time, the lowest issue number first, so every PR is cut from, reviewed against and merged into the latest `main`.
+
+Labels on the item (in `tags`):
+- `noodle-retry-1` or `noodle-retry-2`: the last attempt failed review or CI. Schedule the same three stages again. On execute, set `extra_prompt` to `Fix round: read the FAIL verdict on the open PR for branch noodle/issue-<id> and fix exactly those defects on the same branch.`
+- `noodle-blocked`: list the item in `action_needed`. Never schedule it.
+
+### Sweeping and stopping
+
+- When the backlog has no open item without `noodle-blocked`, and no order is active, read `$P/.noodle/converged.json`, where `P=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")` is the main checkout (run `git -C "$P" fetch -q origin` first).
+  - If it exists and its `sha` equals the current `origin/main` commit, the package has converged. Write `{"orders": []}` and nothing else.
+  - Otherwise schedule one standalone order with id `sweep-<n>` (n = 1 + the number in `$P/.noodle/sweep-rounds`, or 1 if missing). It has a single `sweep` stage whose prompt is `Sweep round <n>.`
+- Never schedule a sweep while any issue order is active or any open, unblocked item remains.
+
 ## Priorities
 
 - Finish one plan before starting another. If the current plan is blocked, schedule nothing for it rather than spreading work across plans. Unrelated small items may still run.
-- An item that failed 2 or more times in `recent_history` gets split into a planning stage or left in `action_needed`. Do not retry it unchanged.
+- An item that failed 2 or more times in `recent_history` gets the `noodle-blocked` label (`gh issue edit <id> --add-label noodle-blocked`) and goes in `action_needed`. Do not retry it unchanged.
 - After `merge.conflict`, do not reschedule the affected order straight away; list it in `action_needed`.
 - Every order needs a `rationale` naming the rule above that placed it.
 
