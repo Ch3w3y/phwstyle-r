@@ -135,19 +135,24 @@ to `"sans"` when Ubuntu can't be used.
 phw_font()
 ```
 
-Most outputs need nothing from you:
+Most outputs need nothing from you. phwstyle registers the bundled font with
+systemfonts when the package loads, so ragg, svglite and the Word and
+PowerPoint outputs in officer and flextable can find it. That is
+`phw_register_fonts()`, which you can also call yourself. It returns `TRUE`
+invisibly when the fonts are registered.
 
-* `phw_register_fonts()` runs when the package loads. It registers the bundled
-  font with systemfonts, so ragg, svglite and the Word and PowerPoint outputs
-  in officer and flextable can find it.
-* HTML outputs and the phwstyle PDF formats carry the font with them.
+```{r}
+phw_register_fonts()
+```
+
+HTML outputs and the phwstyle PDF formats carry the font with them.
 
 Run `phw_install_fonts()` once per computer when you open phwstyle's output in
 Word or PowerPoint on your own computer, draw with base R devices such as
 `pdf()`, or build LaTeX documents outside the phwstyle formats. It copies the
 font files into your personal font folder and asks first.
 
-```r
+```{r, eval = FALSE}
 phw_install_fonts()
 ```
 
@@ -183,7 +188,7 @@ There are two ways to provide the logo:
 * Set `options(phwstyle.logo_dir = "path/to/folder")` to a folder with your own
   copies of the files.
 
-```r
+```{r, eval = FALSE}
 phw_download_logos()
 ```
 
