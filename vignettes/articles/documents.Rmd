@@ -1,9 +1,9 @@
 ---
-title: "Reports and documents"
+title: "Reports, slides and dashboards"
 description: >
-  R Markdown and Quarto formats for HTML, Word and PDF reports, slides and
-  dashboards, the starter documents, and rendering one document in default
-  and accessible colours.
+  R Markdown and Quarto formats for HTML, Word and PDF reports, PowerPoint and
+  HTML slides and dashboards, the starter documents, the files behind the
+  formats, and rendering one document in default and accessible colours.
 ---
 
 ```{r, include = FALSE}
@@ -12,14 +12,15 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 
 phwstyle gives whole documents the PHW look: the Ubuntu font, navy
 headings, the gradient header band, a cover page for PDFs and slides, and
-"Page x of y" footers. You choose a format once in the document's YAML
+"Page x of y" footers. This page shows how to render a report, a slide deck
+or a dashboard from one document. The examples use made-up names. You choose a format once in the document's YAML
 header, and the charts and tables inside follow the same style.
 
 There are two routes. Use whichever your team already uses:
 
 | | R Markdown (`.Rmd`) | Quarto (`.qmd`) |
 |---|---|---|
-| Formats | HTML, Word, PDF | HTML, Word, PDF (Typst or LaTeX), slides, dashboards |
+| Formats | HTML, Word, PDF | HTML, Word, PowerPoint, PDF (Typst or LaTeX), slides, dashboards |
 | Setup | None: the formats come with phwstyle | Run `use_phw_quarto()` once in each project |
 | Charts and flextables | Styled for you | Call `use_phw_ggplot()` and `use_phw_flextable()` in the setup chunk |
 | Needs | The rmarkdown package; LaTeX for PDF | Quarto 1.5 or later (recent versions of RStudio include it) |
@@ -52,7 +53,8 @@ The formats call `use_phw_ggplot()` and `use_phw_flextable()` before
 knitting, so don't repeat them in the document. Add `theme_phw()` or a
 PHW scale to a plot only to change something for that plot.
 
-Options go under the format name:
+Options go under the format name. Each format takes the arguments of the
+R Markdown format it builds on, and these ones too:
 
 ```yaml
 output:
@@ -60,10 +62,30 @@ output:
     toc: true
     team: "Team name"
     number_sections: false
+    fig_width: 7
+    palette: accessible
 ```
 
-`?phw_formats` lists every option, including `fig_width` and `fig_height`,
-`cover = FALSE` to drop the PDF cover, and `palette`.
+- `toc` and `number_sections` add a table of contents and numbered headings.
+  The HTML format turns on the table of contents, the PDF format turns on
+  numbered headings, and the Word format turns on neither.
+- `fig_width` and `fig_height` set the default figure size in inches.
+- `team` adds a team line to the PDF cover, and `cover: false` drops the
+  cover.
+- `style_plots: false` stops the format calling `use_phw_ggplot()` and
+  `use_phw_flextable()`, for a document that styles its own charts.
+- `palette` picks the colours for the whole document. See
+  [Default and accessible colours](#default-and-accessible-colours).
+
+`?phw_formats` lists every option.
+
+To render from R without a YAML header, pass the format object with the same
+options:
+
+```{r}
+rmarkdown::render("report.Rmd", phwstyle::phw_html_document(toc = FALSE))
+rmarkdown::render("report.Rmd", phwstyle::phw_pdf_document(team = "Team name"))
+```
 
 ## Quarto
 
@@ -92,6 +114,7 @@ format: phw-docx
 |---|---|
 | `phw-html` | A web page with the header band and a table of contents |
 | `phw-docx` | A Word document built from the PHW reference document |
+| `phw-pptx` | PowerPoint slides built from the PHW template: 16:9, Ubuntu text and navy titles |
 | `phw-typst` | A PDF through Typst, which comes with Quarto, so no LaTeX is needed. Cover page, running header band, page numbers |
 | `phw-pdf` | A PDF through LaTeX, for teams that already use it |
 | `phw-revealjs` | 16:9 HTML slides with a title slide, logo and footer |
@@ -114,6 +137,10 @@ The Typst PDF takes a few extra options in the YAML header:
 `phw-team: "Team name"` adds a team line to the cover, `phw-no-cover:
 true` drops the cover, and `phw-org`, `phw-page-label` and `phw-of-label`
 change the footer wording. See `?use_phw_quarto`.
+
+Quarto builds a `phw-pptx` deck from your headings and content. To fill a
+deck from R, with a slide for each chart or table, see
+[Excel, PowerPoint and Word](exporting.html#powerpoint).
 
 To make several formats from one document, list them:
 
@@ -186,36 +213,52 @@ Quarto doesn't pass `-M` values or `_quarto.yml` settings on to R.
 If you keep colour keys in a file (`phw_key_file()` in the setup chunk),
 each group keeps its colour in both versions, from one run to the next.
 
+## The files behind the formats
+
+Three functions write the files the formats are built from. Use them to
+look at what a format does, or to brand a tool that phwstyle has no format
+for. Each takes a `file` path and returns it.
+
+- `phw_reference_docx()` writes the Word document behind `phw_word_document()` and
+  `phw-docx`. Open it in Word to see its styles, or pass it to Quarto as
+  `reference-doc` or to `officer::read_docx()`.
+- `phw_reference_pptx()` writes the PowerPoint template behind `phw_pptx()` and
+  `phw-pptx`. It has one slide master called `"PHW"` and the layouts that
+  [Excel, PowerPoint and Word](exporting.html#layouts) describes.
+- `phw_latex_header()` writes the LaTeX header behind `phw_pdf_document()`, with the font and
+  logo paths filled in. `team` adds the cover line and `cover = FALSE` drops
+  the cover. Use it for another LaTeX format, such as bookdown.
+
+```{r, eval = TRUE}
+library(phwstyle)
+files <- c(docx = phw_reference_docx(),
+           pptx = phw_reference_pptx(),
+           tex = phw_latex_header(team = "Team name"))
+file.exists(files)
+```
+
+Give each function a `file` to keep the copy, and name it in your document:
+
+```yaml
+format:
+  docx:
+    reference-doc: phw-reference.docx
+  pdf:
+    include-in-header: phw-header.tex
+```
+
 ## Fonts and the logo
 
-The fonts travel with the outputs where they can: HTML pages, slides and
-dashboards embed Ubuntu, and the PDF formats use the copy inside phwstyle.
-Word documents name Ubuntu, so Word shows it only on computers that have
-it. Run `phw_install_fonts()` once if you can; otherwise Word uses a
-similar font.
-
-The PHW logo isn't included in phwstyle. Without it, every format is
-still styled and shows the organisation name instead. To add it, run
-`phw_download_logos()` once, or point phwstyle at an approved copy with
-`options(phwstyle.logo_dir = "path/to/logos")`. For Quarto, run
-`use_phw_quarto(overwrite = TRUE)` afterwards so the extension picks it
+HTML pages, slides and dashboards embed Ubuntu, and the PDF formats use the
+copy inside phwstyle. Word and PowerPoint files name Ubuntu without embedding it,
+so they show it only on computers that have it. See
+[Installation and setup](setup.html#fonts) for installing the fonts, and
+[the logos section](setup.html#logos) for adding the PHW logo. After adding
+the logo, run `use_phw_quarto(overwrite = TRUE)` so the Quarto extension picks it
 up.
 
 ## Shiny apps
 
-For an app, `phw_page_navbar()` gives a complete page with the header
-band, navigation bar and footer, and `phw_bs_theme()` styles any bslib or
-Shiny page:
-
-```{r}
-library(shiny)
-library(bslib)
-ui <- phw_page_navbar(
-  title = "Weekly surveillance",
-  nav_panel("Overview", plotOutput("epicurve")),
-  nav_panel("Data", reactable::reactableOutput("table"))
-)
-```
-
-Interactive charts and tables in an app are styled the same way as in an
-HTML report: `phw_plotly()`, `phw_reactable()` and `phw_datatable()`.
+Apps have their own page. See
+[Interactive charts, tables and apps](interactive.html#shiny-and-bslib) for
+`phw_page_navbar()`, `phw_bs_theme()` and the example app.
