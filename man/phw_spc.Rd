@@ -12,7 +12,9 @@ phw_spc(
   improvement = c("none", "increase", "decrease"),
   baseline = NULL,
   shift = 7,
-  trend = 6
+  trend = 6,
+  labels = NULL,
+  ...
 )
 }
 \arguments{
@@ -31,6 +33,13 @@ mean moving range) or \code{"run"} (median line, no limits).}
 from (e.g. the first 20). \code{NULL} uses all points.}
 
 \item{shift, trend}{Run lengths that count as special causes.}
+
+\item{labels}{Optional named character vector that renames the signals
+in the legend and in \verb{$data}, e.g. \code{c("Common cause" = "Achos cyffredin")}.
+Names are the default signal text and values the replacement. Each
+signal keeps its colour and shape.}
+
+\item{...}{Passed to \code{\link[ggplot2:geom_point]{ggplot2::geom_point()}}, e.g. \code{size = 3}.}
 }
 \value{
 A ggplot. The points, with a \code{signal} column, are in \verb{$data}.
