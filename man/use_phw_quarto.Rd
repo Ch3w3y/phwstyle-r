@@ -31,6 +31,7 @@ The extension provides these formats:\tabular{ll}{
    Format \tab Output \cr
    \code{phw-html} \tab Web report with the gradient header band and logo \cr
    \code{phw-docx} \tab Word report built from the PHW reference document \cr
+   \code{phw-pptx} \tab PowerPoint slides built from the PHW template \cr
    \code{phw-typst} \tab PDF via Typst (fast, no LaTeX needed) with cover and band \cr
    \code{phw-pdf} \tab PDF via XeLaTeX with cover and band \cr
    \code{phw-revealjs} \tab 16:9 slides with gradient title slide, logo and footer \cr

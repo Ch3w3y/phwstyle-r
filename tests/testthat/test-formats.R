@@ -275,6 +275,17 @@ test_that("use_phw_quarto copies the extension and a template", {
   expect_true(file.exists(file.path(dir, "report.qmd")))
 })
 
+test_that("use_phw_quarto ships the PowerPoint template for the pptx format", {
+  dir <- withr::local_tempdir()
+  suppressMessages(use_phw_quarto(dir, "none"))
+  ext <- file.path(dir, "_extensions", "phw")
+  expect_true(file.exists(file.path(ext, "phw-reference.pptx")))
+  cfg <- paste(readLines(file.path(ext, "_extension.yml")), collapse = "\n")
+  expect_match(cfg, "pptx:\\s+reference-doc: phw-reference.pptx")
+  deck <- officer::read_pptx(file.path(ext, "phw-reference.pptx"))
+  expect_equal(unique(officer::layout_summary(deck)$master), "PHW")
+})
+
 test_that("the Word reference document renders", {
   skip_if_not(rmarkdown::pandoc_available())
   md <- withr::local_tempfile(fileext = ".md")

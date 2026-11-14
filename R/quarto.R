@@ -10,6 +10,7 @@
 #' |-----------------|---------------------------------------------------------------|
 #' | `phw-html`      | Web report with the gradient header band and logo             |
 #' | `phw-docx`      | Word report built from the PHW reference document             |
+#' | `phw-pptx`      | PowerPoint slides built from the PHW template                 |
 #' | `phw-typst`     | PDF via Typst (fast, no LaTeX needed) with cover and band     |
 #' | `phw-pdf`       | PDF via XeLaTeX with cover and band                           |
 #' | `phw-revealjs`  | 16:9 slides with gradient title slide, logo and footer        |
@@ -107,6 +108,7 @@ build_quarto_extension <- function(dest) {
   cover_wide_with_logo(file.path(dest, "cover-wide.jpg"))
   band_with_logo(file.path(dest, "header-band-logo.png"))
   phw_reference_docx(file.path(dest, "phw-reference.docx"))
+  phw_reference_pptx(file.path(dest, "phw-reference.pptx"))
   writeLines(html_band(), file.path(dest, "phw-band.html"))
 
   # Logos: real files if available, otherwise blank placeholders so the
