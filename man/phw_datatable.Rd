@@ -40,9 +40,11 @@ A DT htmlwidget (wrapped with the title and source when given).
 Builds a \code{\link[DT:datatable]{DT::datatable()}} in the PHW style: PHW font, navy header, light
 row lines, thousands separators, and a title and source line. Useful in
 Shiny apps and HTML reports when readers need to search, sort or page
-through a long table. A summary table (see \code{\link[=phw_summary_table]{phw_summary_table()}} and
-\code{\link[=phw_as_summary]{phw_as_summary()}}) keeps its bold variable and total rows and indented
-levels, and is shown whole, without sorting or paging.
+through a long table. A summary table (see \code{\link[=phw_summary_table]{phw_summary_table()}},
+\code{\link[=phw_group_table]{phw_group_table()}} and \code{\link[=phw_as_summary]{phw_as_summary()}}) looks as it does in
+\code{\link[=phw_gt]{phw_gt()}} and \code{\link[=phw_reactable]{phw_reactable()}}: shaded variable rows with navy labels,
+indented levels, total rows, the header spanning the group columns and
+right-aligned statistics. It is shown whole, without sorting or paging.
 }
 \examples{
 if (requireNamespace("DT", quietly = TRUE)) {
