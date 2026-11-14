@@ -100,3 +100,30 @@ test_that("palettes for groups start with the same colours in the same order", {
   # The default single-series colour is the first palette colour.
   expect_equal(phw_pal(1), navy)
 })
+
+test_that("missing colours stay missing in the colour tools", {
+  expect_equal(phw_contrast(NA), NA_real_)
+  expect_equal(phw_text_on(c(NA, "#285087")), c(NA, "#FFFFFF"))
+  expect_equal(phw_cvd(c(NA, "#285087"))[1], NA_character_)
+  expect_error(phw_check_colours(c("#285087", NA, "#FF5D0C")), "must be colours: NA")
+})
+
+test_that("the colour tools take palette names and name bad input", {
+  expect_length(phw_contrast("main"), 4)
+  expect_length(phw_cvd("main"), 4)
+  expect_error(phw_check_colours("nope"), "not a colour or a palette name")
+  expect_error(phw_check_colours(function(n) 1:n), "must be colours or a palette name")
+  expect_error(phw_check_colours(c("#285087", "notacolour")), "\"notacolour\" is not")
+})
+
+test_that("show_phw_palettes names an unknown palette", {
+  expect_error(show_phw_palettes(c("main", "nope")), "must be one of")
+  expect_error(show_phw_palettes(character()), "at least one palette")
+})
+
+test_that("phw_pal checks its colours, n and reverse", {
+  expect_error(phw_pal(2, c("#285087", NA)), "must be a palette name")
+  expect_error(phw_pal(3, function(n) 1:n), "must return colours")
+  expect_error(phw_pal(NA), "`n` must be one number")
+  expect_error(phw_pal(2, reverse = NA), "`reverse` must be")
+})

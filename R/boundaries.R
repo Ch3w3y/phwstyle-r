@@ -70,7 +70,11 @@ phw_boundaries <- function(level, detail = c("generalised", "super", "ultra", "f
   detail <- rlang::arg_match(detail)
   rlang::check_installed(c("sf", "jsonlite"), reason = "to download boundaries.")
   reg <- boundary_registry()
+  if (!rlang::is_string(level)) {
+    cli::cli_abort(c("{.arg level} must be one level.", i = "Levels are {.val {unique(reg$level)}}."))
+  }
   level <- rlang::arg_match(level, unique(reg$level))
+  check_crs(crs)
   # The layer to use, followed by the others for this level. They are tried
   # in turn, so one source being down does not stop the download.
   rows <- boundary_candidates(reg[reg$level == level, , drop = FALSE], detail)
@@ -150,6 +154,7 @@ phw_boundaries <- function(level, detail = c("generalised", "super", "ultra", "f
 #' phw_boundary_levels()
 #' @export
 phw_boundary_levels <- function(detail = FALSE) {
+  check_flag(detail, "detail")
   reg <- boundary_registry()
   if (detail) return(reg[, c("level", "label", "detail", "source", "layer", "release")])
   out <- do.call(rbind, lapply(split(reg, factor(reg$level, unique(reg$level))), function(r) {
@@ -171,6 +176,7 @@ phw_boundary_levels <- function(detail = FALSE) {
 #' phw_boundaries_cache()
 #' @export
 phw_boundaries_cache <- function(clear = FALSE) {
+  check_flag(clear, "clear")
   dir <- getOption("phwstyle.boundary_dir", file.path(tools::R_user_dir("phwstyle", which = "cache"), "boundaries"))
   if (clear) {
     files <- list.files(dir, pattern = "\\.geojson$", full.names = TRUE)
@@ -197,10 +203,12 @@ boundary_fetch <- function(rows, level, reg, refresh, cache, quiet) {
     # Download to a temporary file first, so a failed download never
     # replaces a good cached copy.
     tmp <- tempfile(fileext = ".geojson")
-    ok <- tryCatch({
+    # A failed download warns before it errors. The error is kept in
+    # `problems`, so the warning would only repeat it.
+    ok <- tryCatch(suppressWarnings({
       if (r$source == "ons") download_ons(r, tmp) else download_dmw(r, tmp)
       TRUE
-    }, error = function(e) e)
+    }), error = function(e) e)
     if (isTRUE(ok)) {
       if (cache) {
         dir.create(dirname(f), recursive = TRUE, showWarnings = FALSE)
@@ -338,6 +346,20 @@ boundary_candidates <- function(rows, detail) {
   rank <- match(rows$detail, order_pref)
   rank[rows$source == "datamapwales"] <- 1L
   rows[order(rank), , drop = FALSE]
+}
+
+check_crs <- function(crs, call = rlang::caller_env()) {
+  ok <- !is.null(crs) && length(crs) == 1 &&
+    !is.na(tryCatch(suppressWarnings(sf::st_crs(crs)), error = function(e) sf::NA_crs_))
+  if (!ok) {
+    cli::cli_abort(c("{.arg crs} must be a coordinate reference system that {.pkg sf} knows.",
+                     i = "Use {.code 27700} for British National Grid or {.code 4326} for longitude and latitude."),
+                   call = call)
+  }
+}
+
+check_flag <- function(x, arg, call = rlang::caller_env()) {
+  if (!rlang::is_bool(x)) cli::cli_abort("{.arg {arg}} must be {.code TRUE} or {.code FALSE}.", call = call)
 }
 
 pick_boundary <- function(rows, detail) boundary_candidates(rows, detail)[1, ]

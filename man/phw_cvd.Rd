@@ -7,13 +7,15 @@
 phw_cvd(colours, type = c("deutan", "protan", "tritan"))
 }
 \arguments{
-\item{colours}{Colours (any form \code{\link[grDevices:col2rgb]{grDevices::col2rgb()}} accepts).}
+\item{colours}{Colours (any form \code{\link[grDevices:col2rgb]{grDevices::col2rgb()}} accepts), or a
+palette name. A missing colour (\code{NA}) stays \code{NA}.}
 
 \item{type}{\code{"deutan"} (green-blind, the most common), \code{"protan"}
 (red-blind) or \code{"tritan"} (blue-blind).}
 }
 \value{
-Hex colours as they would be seen.
+Hex colours as they would be seen, with \code{NA} where a colour is
+missing.
 }
 \description{
 Shows how colours look to someone with one of the three common colour

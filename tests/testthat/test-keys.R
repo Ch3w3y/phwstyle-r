@@ -79,3 +79,42 @@ test_that("the accessible RAG palette separates red and good for deuteranopes", 
   res <- suppressMessages(phw_check_colours("rag_accessible", min_distance = 25))
   expect_true(res$pass[res$vision == "deuteranopia"])
 })
+
+test_that("a function palette gives groups its colours in its own order", {
+  pal <- function(n) c("#111111", "#222222", "#333333")[seq_len(n)]
+  expect_equal(unname(phw_colour_key(c("A", "B", "C"), palette = pal)), pal(3))
+})
+
+test_that("an empty group name stops instead of losing its colour", {
+  expect_error(phw_colour_key(c("", "a")), "empty name")
+})
+
+test_that("key colours are checked and the argument is named", {
+  expect_error(phw_colour_key("a", fixed = c(a = "notacolour")), "`fixed` must be colours")
+  expect_error(phw_colour_key("a", fixed = c(a = NA)), "`fixed` must be colours")
+  expect_error(phw_colour_key("a", neutral_colour = "nope"), "`neutral_colour` must be colours")
+  expect_error(phw_key_set("k", c(a = "notacolour")), "`values` must be colours")
+  expect_error(phw_key_set("k", stats::setNames("#285087", NA)), "named vector")
+})
+
+test_that("key names must be one string", {
+  expect_error(phw_key(NULL), "one key name")
+  expect_error(phw_key(c("a", "b")), "one key name")
+  expect_error(phw_colour_key("a", name = 1), "one key name")
+})
+
+test_that("phw_key_file checks the folder, takes an empty file and rejects bad colours", {
+  withr::defer(phw_key_file(NULL))
+  dir <- withr::local_tempdir()
+  expect_error(phw_key_file(file.path(dir, "missing", "keys.csv")), "does not exist")
+  expect_error(phw_key_file(dir), "is a folder")
+  f <- file.path(dir, "keys.csv")
+  file.create(f)
+  phw_key_file(f)
+  expect_equal(unname(phw_colour_key(c("A", "B"), "file_demo")), phw_palettes$main[1:2])
+  expect_equal(read.csv(f)$level, c("A", "B"))
+  phw_key_reset("file_demo")
+  bad <- file.path(dir, "bad.csv")
+  writeLines(c("key,level,colour", "k,a,notacolour"), bad)
+  expect_error(phw_key_file(bad), "not colours")
+})

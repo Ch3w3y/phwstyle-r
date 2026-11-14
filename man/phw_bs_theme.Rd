@@ -7,7 +7,7 @@
 phw_bs_theme(version = 5, ...)
 }
 \arguments{
-\item{version}{Bootstrap version.}
+\item{version}{Bootstrap version: 5 or 4.}
 
 \item{...}{Extra variables passed to \code{\link[bslib:bs_theme]{bslib::bs_theme()}}. They override
 the PHW values, e.g. \code{primary = "#24A2B5"} or \code{"navbar-bg" = "#1B3660"}.}

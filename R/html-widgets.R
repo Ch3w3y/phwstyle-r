@@ -180,19 +180,22 @@ wrap_widget <- function(widget, caption, cap) {
 #' @param p A plotly object or a ggplot.
 #' @param source,date Passed to [phw_caption()] and shown under the chart.
 #' @param legend `"bottom"`, `"right"` or `"none"`.
-#' @param palette Colour order for traces that don't set their own colour: a
-#'   palette name or a vector of colours.
+#' @param palette Colours for traces that don't set their own: a palette
+#'   name, a vector of colours or a function of `n`, as in [phw_pal()]. A
+#'   trace that maps `color` to groups without giving `colors` takes them
+#'   from this palette too.
 #' @param font_size Base font size in px.
 #' @param caption_args List of other [phw_caption()] arguments.
 #' @param modebar Show the plotly tool bar?
 #' @param ... Extra arguments for [plotly::layout()]. They override the PHW
 #'   defaults; lists are merged, so `title = list(text = "My title")` keeps
-#'   the PHW title style.
+#'   the PHW title style. `annotations` are added after the caption.
 #' @return A plotly object.
 #' @details Any plotly chart type works: scatter and lines, bars, pies and
 #'   donuts (given the PHW colours and white slice borders), box and violin plots, histograms,
-#'   heatmaps and choropleth maps (which pick up the PHW sequential
-#'   colour scale unless you set `colorscale`), and figures combined with
+#'   heatmaps, contours and choropleth maps, and markers coloured by a number
+#'   (which pick up the PHW sequential colour scale unless you set
+#'   `colorscale` or `colors`), and figures combined with
 #'   [plotly::subplot()]. Use [phw_plotly_colorscale()] to set a PHW scale on
 #'   a trace yourself.
 #'
@@ -227,11 +230,17 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
                        modebar = TRUE) {
   rlang::check_installed("plotly")
   legend <- rlang::arg_match(legend)
+  if (!inherits(p, c("plotly", "ggplot"))) {
+    cli::cli_abort("{.arg p} must be a plotly chart or a ggplot, not {.obj_type_friendly {p}}.")
+  }
+  bad <- setdiff(names(caption_args), names(formals(phw_caption)))
+  if (!is.list(caption_args) || length(bad) || (length(caption_args) && !rlang::is_named(caption_args))) {
+    cli::cli_abort(c("{.arg caption_args} must be a named list of {.fn phw_caption} arguments.",
+                     x = if (length(bad)) "Not {.fn phw_caption} argument{?s}: {.val {bad}}."))
+  }
   if (inherits(p, "ggplot")) p <- ggplotly_phw(p)
   col <- phw_colours
-  # plotly works through the colours in order, so "main" needs the rest of
-  # "extended" behind it for charts with more than four traces.
-  colorway <- palette_colours(palette_for(palette, Inf))
+  colorway <- plotly_colorway(p, palette)
   font <- list(family = paste0(phw_font(), ", Arial, sans-serif"), size = font_size, color = col[["text"]])
   axis <- list(gridcolor = col[["grey_border"]], zerolinecolor = col[["grey_mid"]],
                linecolor = col[["grey_mid"]], tickfont = list(color = col[["text_secondary"]]),
@@ -261,13 +270,18 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
   )
   extra <- list(...)
   for (nm in names(extra)) {
-    base[[nm]] <- if (is.list(base[[nm]]) && is.list(extra[[nm]])) {
+    base[[nm]] <- if (nm == "annotations") {
+      # One annotation, or a list of them, goes after the caption.
+      add <- extra[[nm]]
+      c(base[[nm]], if (rlang::is_named(add)) list(add) else add)
+    } else if (is.list(base[[nm]]) && is.list(extra[[nm]])) {
       utils::modifyList(base[[nm]], extra[[nm]])
     } else {
       extra[[nm]]
     }
   }
   p <- colour_pies(p, unname(colorway))
+  p <- colour_mapped(p, palette, colorway)
   p <- do.call(plotly::layout, c(list(p), base))
   p <- plotly::config(p, displaylogo = FALSE, displayModeBar = modebar,
                       modeBarButtonsToRemove = c("lasso2d", "select2d", "autoScale2d",
@@ -476,26 +490,94 @@ phw_col_percent <- function(digits = 1, ...) {
 #' heatmaps, choropleths and markers coloured by a number, e.g.
 #' `plot_ly(z = volcano, type = "heatmap", colorscale = phw_plotly_colorscale("teals"))`.
 #'
-#' @param palette A sequential or diverging palette name, or a vector of
-#'   colours.
+#' @param palette A sequential or diverging palette name, a vector of
+#'   colours, or a function of `n`.
 #' @param reverse Reverse the scale?
-#' @param n Number of steps.
+#' @param n Number of steps, 2 or more.
 #' @return A list of `list(position, colour)` pairs.
 #' @examples
 #' phw_plotly_colorscale("blues", n = 3)
 #' @export
 phw_plotly_colorscale <- function(palette = "blues", reverse = FALSE, n = 9) {
-  cols <- grDevices::colorRampPalette(seq_cols(palette, reverse), space = "Lab")(n)
+  if (!is.numeric(n) || length(n) != 1 || is.na(n) || n < 2) {
+    cli::cli_abort("{.arg n} must be one number, 2 or more.")
+  }
+  cols <- if (is.function(palette)) {
+    phw_pal(n, palette, reverse = reverse)
+  } else {
+    grDevices::colorRampPalette(seq_cols(palette, reverse), space = "Lab")(n)
+  }
   lapply(seq_len(n), function(i) list((i - 1) / (n - 1), cols[i]))
 }
 
+# The colours plotly gives traces in turn. "main" needs the rest of
+# "extended" behind it for charts with more than four traces. A function
+# palette is asked for as many colours as there are traces. Sequential and
+# diverging palettes drop their near-white steps, which vanish on white.
+plotly_colorway <- function(p, palette) {
+  if (is.function(palette)) {
+    return(phw_pal(max(length(plotly::plotly_build(p)$x$data), 1), palette))
+  }
+  cols <- palette_colours(palette_for(palette, Inf))
+  if (is.character(palette) && length(palette) == 1 && palette %in% names(phw_palettes) &&
+      palette_type(palette) != "qualitative") {
+    cols <- cols[phw_contrast(cols) >= 1.3]
+  }
+  cols
+}
+
+# A trace that maps `color` without `colors` gets plotly's own palette, so
+# give it PHW colours: the palette for groups, and the PHW sequential scale
+# for numbers and for heatmaps, contours and choropleths.
+colour_mapped <- function(p, palette, colorway) {
+  if (is.null(p$x$attrs)) return(p)
+  scale_types <- c("heatmap", "contour", "histogram2d", "histogram2dcontour", "choropleth")
+  seq <- palette_colours("blues")
+  p$x$attrs <- lapply(p$x$attrs, function(a) {
+    if (!is.null(a$colors) || !is.null(a$colorscale)) return(a)
+    if (is.null(a$color)) {
+      if (isTRUE(a$type %in% scale_types)) a$colors <- seq
+      return(a)
+    }
+    v <- mapped_values(a$color, p$x$visdat[[a$visdat %||% 1]])
+    if (is.null(v)) return(a)
+    if (is.numeric(v)) {
+      a$colors <- seq
+    } else {
+      n <- length(if (is.factor(v)) levels(v) else unique(v[!is.na(v)]))
+      a$colors <- if (is.function(palette)) phw_pal(n, palette) else colorway[seq_len(min(n, length(colorway)))]
+    }
+    a
+  })
+  p
+}
+
+# The values a plotly attribute maps: a formula of the trace's data, or the
+# values themselves. NULL for a constant such as I("red").
+mapped_values <- function(x, data_fun) {
+  if (inherits(x, "AsIs")) return(NULL)
+  if (!rlang::is_formula(x)) return(x)
+  data <- if (is.function(data_fun)) tryCatch(data_fun(), error = function(e) NULL)
+  tryCatch(rlang::eval_tidy(rlang::f_rhs(x), data = data, env = rlang::f_env(x)), error = function(e) NULL)
+}
+
 # Pie traces ignore colorway, so give them PHW colours unless they set their own.
+# A missing label would show as "null", so it shows as "NA" in grey, as
+# missing groups do in the charts.
 colour_pies <- function(p, cols) {
   if (is.null(p$x$attrs)) return(p)
   p$x$attrs <- lapply(p$x$attrs, function(a) {
     if (identical(a$type, "pie") && is.null(a$marker$colors)) {
+      slices <- cols
+      lab <- mapped_values(a$labels, p$x$visdat[[a$visdat %||% 1]])
+      if (anyNA(lab)) {
+        lab <- as.character(lab)
+        slices <- cols[match(lab, unique(lab[!is.na(lab)]))]
+        slices[is.na(lab)] <- phw_colours[["grey_light"]]
+        a$labels <- ifelse(is.na(lab), "NA", lab)
+      }
       a$marker <- utils::modifyList(a$marker %||% list(),
-                                    list(colors = cols, line = list(color = "#FFFFFF", width = 1.5)))
+                                    list(colors = slices, line = list(color = "#FFFFFF", width = 1.5)))
     }
     a
   })

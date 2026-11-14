@@ -7,12 +7,12 @@
 phw_plotly_colorscale(palette = "blues", reverse = FALSE, n = 9)
 }
 \arguments{
-\item{palette}{A sequential or diverging palette name, or a vector of
-colours.}
+\item{palette}{A sequential or diverging palette name, a vector of
+colours, or a function of \code{n}.}
 
 \item{reverse}{Reverse the scale?}
 
-\item{n}{Number of steps.}
+\item{n}{Number of steps, 2 or more.}
 }
 \value{
 A list of \code{list(position, colour)} pairs.
