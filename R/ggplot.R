@@ -30,7 +30,8 @@
 #' @param legend_title Show the legend title? PHW reports usually don't.
 #' @param strip Facet strip style: `"light"` (grey band, navy text),
 #'   `"navy"` (navy band, white text) or `"plain"` (text only).
-#' @param axis_line Draw a mid-grey line along the bottom axis?
+#' @param axis_line Draw a mid-grey line along the bottom axis (the left
+#'   axis with `grid = "x"`)? It is not drawn with `grid = "none"`.
 #' @param axis_ticks Draw axis tick marks?
 #' @param grid_minor Draw minor gridlines too (on the same axes as `grid`)?
 #' @param title_colour,text_colour Colours for the title and other text.
@@ -73,7 +74,13 @@ theme_phw <- function(base_size = 11,
                       accessible = FALSE) {
   grid <- rlang::arg_match(grid)
   strip <- rlang::arg_match(strip)
+  if (!(is.numeric(base_size) && length(base_size) == 1 && isTRUE(base_size > 0))) {
+    cli::cli_abort("{.arg base_size} must be one number of points, such as {.code 11}.")
+  }
   inside <- is.numeric(legend)
+  if (inside && !(length(legend) == 2 && !anyNA(legend) && all(legend >= 0 & legend <= 1))) {
+    cli::cli_abort("A numeric {.arg legend} must be two numbers from 0 to 1, {.code c(x, y)} inside the panel.")
+  }
   if (!inside) {
     legend <- rlang::arg_match(legend, c("bottom", "top", "right", "left", "inside", "none"))
   }
@@ -202,7 +209,8 @@ phw_continuous_auto <- phw_palettes$blues[2:6]
 #' [scale_fill_phw_c()] or [scale_fill_phw_b()].
 #'
 #' @inheritParams theme_phw
-#' @param ... Passed to [theme_phw()].
+#' @param ... Passed to [theme_phw()], except `grid`: a map has no
+#'   gridlines.
 #' @return A ggplot2 theme.
 #' @examples
 #' library(ggplot2)
@@ -224,8 +232,15 @@ phw_continuous_auto <- phw_palettes$blues[2:6]
 #' }
 #' @export
 theme_phw_map <- function(base_size = 11, base_family = phw_font(), legend = "right", ...) {
-  theme_phw(base_size = base_size, base_family = base_family, grid = "none",
-            legend = legend, legend_title = TRUE, ...) +
+  extra <- list(...)
+  if ("grid" %in% names(extra)) {
+    cli::cli_abort(c("{.fn theme_phw_map} draws no gridlines, so it has no {.arg grid}.",
+                     i = "Use {.fn theme_phw} for a chart with gridlines."))
+  }
+  args <- list(base_size = base_size, base_family = base_family, grid = "none",
+               legend = legend, legend_title = TRUE)
+  args[names(extra)] <- extra
+  do.call(theme_phw, args) +
     ggplot2::theme(axis.text = ggplot2::element_blank(),
                    axis.title = ggplot2::element_blank(),
                    panel.grid = ggplot2::element_blank())
@@ -298,8 +313,18 @@ theme_phw_map <- function(base_size = 11, base_family = phw_font(), legend = "ri
 #' phw_key_reset("drive_example")
 NULL
 
-phw_discrete_scale <- function(aesthetics, palette, reverse, key, values, neutral, na.value, ...) {
-  if (reverse && !is.function(palette)) palette <- rev(palette_colours(palette))
+phw_discrete_scale <- function(aesthetics, palette, reverse, key, values, neutral, na.value, ...,
+                               call = rlang::caller_env()) {
+  if (!is.function(palette)) {
+    pal <- palette_colours(palette)
+    if (reverse) palette <- rev(pal)
+  }
+  if (length(values)) {
+    if (!rlang::is_named(values)) {
+      cli::cli_abort("{.arg values} must be a named vector of colours, such as {.code c(Wales = \"#285087\")}.", call = call)
+    }
+    check_colours(values, "values", call = call)
+  }
   sc <- ggplot2::discrete_scale(aesthetics, palette = phw_discrete_auto, na.value = na.value, ...)
   ggplot2::ggproto(NULL, sc,
     phw_args = list(palette = palette, key = key, values = values, neutral = neutral),
@@ -307,8 +332,13 @@ phw_discrete_scale <- function(aesthetics, palette, reverse, key, values, neutra
       a <- self$phw_args
       lv <- as.character(limits)
       lv <- lv[!is.na(lv)]
-      cols <- phw_colour_key(lv, name = a$key, palette = a$palette, fixed = a$values,
-                             neutral = a$neutral)
+      cols <- rlang::try_fetch(
+        phw_colour_key(lv, name = a$key, palette = a$palette, fixed = a$values, neutral = a$neutral),
+        error = function(e) {
+          cli::cli_abort(c("Can't give {length(lv)} groups a colour each.",
+                           i = "With this many groups, use facets or direct labels instead of colour."),
+                         parent = e, call = NULL)
+        })
       out <- unname(cols[as.character(x)])
       out[is.na(out)] <- self$na.value
       out
@@ -337,10 +367,12 @@ scale_fill_phw_d <- function(palette = phw_default_palette(), reverse = FALSE, k
 #' @export
 scale_color_phw_d <- scale_colour_phw_d
 
-seq_cols <- function(palette, reverse) {
+seq_cols <- function(palette, reverse, call = rlang::caller_env()) {
   if (is.character(palette) && length(palette) == 1 && palette %in% names(phw_palettes) &&
       palette_type(palette) == "qualitative") {
-    cli::cli_abort("{.val {palette}} is a qualitative palette. Use a {.code _d} scale.")
+    cli::cli_abort(c("{.val {palette}} is a qualitative palette, for groups.",
+                     i = "For numbers use a sequential palette such as {.val blues}, or {.val orange_navy} to diverge.",
+                     i = "For groups use a {.code _d} scale."), call = call)
   }
   cols <- palette_colours(palette)
   if (reverse) cols <- rev(cols)

@@ -116,7 +116,10 @@ phw_check_colours <- function(colours, background = "#FFFFFF", min_distance = 10
 #' @param ... Passed to [ggplot2::scale_shape_manual()] or
 #'   [ggplot2::scale_linetype_manual()].
 #' @param values Override the shapes or line types.
-#' @return A ggplot2 scale.
+#' @param na.value Shape or line type for a missing group, so it stays on
+#'   the chart.
+#' @return A ggplot2 scale. A chart with more groups than `values` stops
+#'   with an error when it is drawn.
 #' @examples
 #' library(ggplot2)
 #' ggplot(mpg, aes(displ, hwy, colour = drv, shape = drv)) +
@@ -124,12 +127,23 @@ phw_check_colours <- function(colours, background = "#FFFFFF", min_distance = 10
 #'   scale_shape_phw() +
 #'   theme_phw()
 #' @export
-scale_shape_phw <- function(..., values = c(16, 17, 15, 18, 1, 2, 0, 5)) {
-  ggplot2::scale_shape_manual(..., values = values)
+scale_shape_phw <- function(..., values = c(16, 17, 15, 18, 1, 2, 0, 5), na.value = 4) {
+  limit_groups(ggplot2::scale_shape_manual(..., values = values, na.value = na.value), values, "shapes")
 }
 
 #' @rdname scale_shape_phw
 #' @export
-scale_linetype_phw <- function(..., values = c("solid", "22", "42", "13", "1343", "73", "2262", "12223242")) {
-  ggplot2::scale_linetype_manual(..., values = values)
+scale_linetype_phw <- function(..., values = c("solid", "22", "42", "13", "1343", "73", "2262", "12223242"),
+                               na.value = "16") {
+  limit_groups(ggplot2::scale_linetype_manual(..., values = values, na.value = na.value), values, "line types")
+}
+
+limit_groups <- function(scale, values, what) {
+  ggplot2::ggproto(NULL, scale, palette = function(n) {
+    if (n > length(values)) {
+      cli::cli_abort(c("There are {n} groups but only {length(values)} {what}.",
+                       i = "Use facets or direct labels to tell this many groups apart."), call = NULL)
+    }
+    values
+  })
 }

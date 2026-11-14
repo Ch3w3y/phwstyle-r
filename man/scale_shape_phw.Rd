@@ -5,11 +5,12 @@
 \alias{scale_linetype_phw}
 \title{Shape and linetype scales for colour-blind readers}
 \usage{
-scale_shape_phw(..., values = c(16, 17, 15, 18, 1, 2, 0, 5))
+scale_shape_phw(..., values = c(16, 17, 15, 18, 1, 2, 0, 5), na.value = 4)
 
 scale_linetype_phw(
   ...,
-  values = c("solid", "22", "42", "13", "1343", "73", "2262", "12223242")
+  values = c("solid", "22", "42", "13", "1343", "73", "2262", "12223242"),
+  na.value = "16"
 )
 }
 \arguments{
@@ -17,9 +18,13 @@ scale_linetype_phw(
 \code{\link[ggplot2:scale_linetype_manual]{ggplot2::scale_linetype_manual()}}.}
 
 \item{values}{Override the shapes or line types.}
+
+\item{na.value}{Shape or line type for a missing group, so it stays on
+the chart.}
 }
 \value{
-A ggplot2 scale.
+A ggplot2 scale. A chart with more groups than \code{values} stops
+with an error when it is drawn.
 }
 \description{
 Colour should never be the only way to tell groups apart. These scales
