@@ -279,6 +279,14 @@ if (requireNamespace("flextable", quietly = TRUE)) {
   xft <- phw_flextable_heat(phw_flextable(xt, caption = "Counts by period and age group", number = 5,
                                           source = "Example data"), j = 2:5)
   st(xft, "table-crosstab")
+  own <- data.frame(
+    Characteristic = c("Age group", "0-14", "15-64", "65+", "All ages", "Setting", "Home", "Care home", "All settings"),
+    Cases = c(NA, 12, 48, 30, 90, NA, 61, 29, 90),
+    Share = c(NA, 0.13, 0.53, 0.33, 1, NA, 0.68, 0.32, 1),
+    kind = c("variable", "level", "level", "level", "total", "variable", "level", "level", "total"))
+  own <- phw_as_summary(own, row_type = kind, note = "Made-up counts, built with a plain data frame.")
+  st(phw_flextable(own, caption = "A table of your own, styled as a summary", number = 8, source = "Example data",
+                   digits = 2), "table-as-summary")
   dat <- data.frame(category = sample(c("Category A", "Category B", "Category C"), 400, TRUE),
                     subgroup = sample(c("Type 1", "Type 2", "Type 3"), 400, TRUE, prob = c(.45, .45, .1)),
                     year = sample(2023:2024, 400, TRUE), half = sample(c("H1", "H2"), 400, TRUE))
@@ -358,7 +366,7 @@ save(phw_spc(spc, month, value, improvement = "increase", baseline = 20) +
             y = "Measure", caption = src), "23-spc")
 
 # 24-35. More chart combinations, all built from plain ggplot2 plus phwstyle
-# 24. Rate over time with a confidence ribbon (exact Poisson limits)
+# 24. Rate over time with a confidence ribbon drawn from limits you supply
 rt <- data.frame(month = seq(as.Date("2024-01-01"), by = "month", length.out = 24))
 rt$pop <- 250000
 rt$cases <- rpois(24, 60 + 25 * sin((1:24) / 3))
@@ -370,7 +378,7 @@ p24 <- ggplot(rt, aes(month, rate)) +
   geom_ribbon(aes(ymin = lower, ymax = upper), fill = phw_col("light_teal"), alpha = 0.6) +
   geom_line(colour = phw_col("navy"), linewidth = 1) +
   scale_x_date(date_labels = "%b %Y", date_breaks = "4 months") +
-  labs(title = "Rate with a 95% confidence interval", subtitle = "phw_poisson_ci() for the limits, geom_ribbon() for the band",
+  labs(title = "Rate with a 95% confidence interval", subtitle = "geom_ribbon() with your own limits",
        x = NULL, y = "Rate per 100,000", caption = src)
 save(p24, "24-ribbon")
 
@@ -460,6 +468,13 @@ if (requireNamespace("sf", quietly = TRUE)) {
     labs(title = "One map per year", subtitle = "phw_map() with facet_wrap()", fill = "Value",
          caption = phw_caption("Example data. Boundaries: ONS (OGL v3)"))
   save(p32, "32-map-facets", w = 20, h = 10)
+
+  # 32b. Values printed on each area with label =
+  la$rate <- round(runif(nrow(la), 10, 50))
+  p32b <- phw_map(sf::st_drop_geometry(la), by = code, fill = rate, level = la, bins = c(20, 30, 40), label = rate) +
+    labs(title = "Values printed on each area", subtitle = "phw_map(label = rate)", fill = "Rate per 1,000",
+         caption = phw_caption("Example data. Boundaries: ONS (OGL v3)"))
+  save(p32b, "34-map-labels", w = 14, h = 14)
 
   # 33. Health boards by name with sites as points and labels
   hbm <- phw_boundaries("health_board", quiet = TRUE)
