@@ -403,7 +403,9 @@ scale_plot_text <- function(plot, scale) {
     # element_geom() reads points but calc_element() returns millimetres
     fontsize <- ggplot2::calc_element("geom", current)$fontsize
     if (!is.null(fontsize)) {
-      plot <- plot + ggplot2::theme(geom = ggplot2::element_geom(fontsize = fontsize * scale * ggplot2::.pt))
+      # Looked up by name: ggplot2 before 4.0 has no element_geom(), as in theme_phw().
+      element_geom <- getExportedValue("ggplot2", "element_geom")
+      plot <- plot + ggplot2::theme(geom = element_geom(fontsize = fontsize * scale * ggplot2::.pt))
     }
   }
   plot
