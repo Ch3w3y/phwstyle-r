@@ -89,6 +89,7 @@ weekly <- tidyr::expand_grid(week = 1:12, group = paste("Group", 1:6)) |>
 
 ggplot(weekly, aes(week, cases, colour = group)) +
   geom_line(linewidth = 1) +
+  scale_x_continuous(breaks = seq(2, 12, 2)) +
   labs(title = "Six groups: the four main colours, then black and green",
        x = "Week", y = "Cases")
 ```
@@ -230,6 +231,7 @@ options(old)
 ggplot(weekly, aes(week, cases, colour = group)) +
   geom_line(linewidth = 1) +
   scale_colour_phw_d(palette = "accessible") +
+  scale_x_continuous(breaks = seq(2, 12, 2)) +
   labs(title = "The same chart in the accessible palette", x = "Week", y = "Cases")
 ```
 
@@ -258,6 +260,7 @@ weekly |>
   geom_line() +
   geom_point(size = 2.2) +
   scale_shape_phw() +
+  scale_x_continuous(breaks = seq(2, 12, 2)) +
   labs(title = "Colour and shape", x = "Week", y = "Cases")
 ```
 

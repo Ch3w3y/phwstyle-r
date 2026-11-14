@@ -111,14 +111,14 @@ installing, and neither does an accented letter in your user name.
 Run the check once after installing. It lists what is ready and what is
 missing, with the command that fixes each item.
 
-```{r}
+```{r, eval = FALSE}
 library(phwstyle)
 phw_setup_check(install = FALSE)
 ```
 
 It checks the Ubuntu font on your computer, the logo, the optional R packages
-for each type of output, Pandoc, Quarto and XeLaTeX. Your results will differ
-from the ones above. In an interactive session, `phw_setup_check()` with no
+for each type of output, Pandoc, Quarto and XeLaTeX, and marks each one
+ready or missing. In an interactive session, `phw_setup_check()` with no
 arguments also offers to install the missing R packages and the font. The
 function returns the checks as a data frame, invisibly.
 
