@@ -22,7 +22,10 @@ phw_map(
 for use with \code{\link[ggplot2:facet_wrap]{ggplot2::facet_wrap()}}).}
 
 \item{by}{Column of \code{data} holding the area codes, unquoted as in dplyr
-(a string works too). Codes are matched to the boundary \code{code}.}
+(a string works too). Codes are matched to the boundary \code{code}. Rows
+whose code is missing or matches no boundary are left out, and a
+message lists those codes. A code that appears twice in one panel gives
+a message when the map is drawn, since its area is drawn twice.}
 
 \item{fill}{Column of \code{data} to colour by. Numbers get a continuous or
 binned scale; text and factors get distinct colours.}
@@ -31,7 +34,8 @@ binned scale; text and factors get distinct colours.}
 \code{"local_authority"}, or an sf data frame with \code{code} and \code{name} columns
 that you have already loaded.}
 
-\item{bins}{Breaks for numeric \code{fill}, or a single number of bins.
+\item{bins}{Breaks for numeric \code{fill}, or a single number of bins. Not
+used for text or factor \code{fill}.
 \code{NULL} gives a continuous scale. The legend also shows the lowest and
 highest values, rounded out to tidy numbers.}
 
@@ -39,7 +43,7 @@ highest values, rounded out to tidy numbers.}
 \code{"blues"} for numbers and the default palette for groups.}
 
 \item{key}{Name of a colour key, so groups keep their colours (see
-\code{\link[=phw_colour_key]{phw_colour_key()}}).}
+\code{\link[=phw_colour_key]{phw_colour_key()}}). Not used for numeric \code{fill}.}
 
 \item{label}{Text to print on each area: a column of \code{data}, unquoted, or
 an expression built from its columns such as \code{paste(name, rate)}. The
