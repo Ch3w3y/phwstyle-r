@@ -7,7 +7,10 @@
 phw_date(x, style = "short")
 }
 \arguments{
-\item{x}{A Date, or anything \code{\link[=as.Date]{as.Date()}} accepts.}
+\item{x}{A Date, a date-time, or text in ISO form (\code{"2026-11-03"}). Text
+in any other form, such as \code{"03/11/2026"}, stops with a message rather
+than being guessed at: convert it first with \code{\link[=as.Date]{as.Date()}} and a \code{format}.
+Missing dates stay \code{NA}.}
 
 \item{style}{\code{"short"} (03/11/2026) or \code{"long"} (3 November 2026), or a
 \code{\link[=format]{format()}} string such as \code{"\%B \%Y"}.}
@@ -23,4 +26,5 @@ Reports write dates as dd/mm/yyyy in captions ("Data correct as of
 phw_date(as.Date("2026-11-03"))
 phw_date(as.Date("2026-11-03"), "long")
 phw_date(as.Date("2026-11-03"), "\%b \%Y")
+phw_date(as.Date("03/11/2026", format = "\%d/\%m/\%Y"))
 }

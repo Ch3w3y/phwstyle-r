@@ -6,7 +6,10 @@ phw_cdsc <- "Communicable Disease Surveillance Centre"
 #' Reports write dates as dd/mm/yyyy in captions ("Data correct as of
 #' 03/11/2026") and as "3 November 2026" in text.
 #'
-#' @param x A Date, or anything [as.Date()] accepts.
+#' @param x A Date, a date-time, or text in ISO form (`"2026-11-03"`). Text
+#'   in any other form, such as `"03/11/2026"`, stops with a message rather
+#'   than being guessed at: convert it first with [as.Date()] and a `format`.
+#'   Missing dates stay `NA`.
 #' @param style `"short"` (03/11/2026) or `"long"` (3 November 2026), or a
 #'   [format()] string such as `"%B %Y"`.
 #' @return A character vector.
@@ -14,15 +17,44 @@ phw_cdsc <- "Communicable Disease Surveillance Centre"
 #' phw_date(as.Date("2026-11-03"))
 #' phw_date(as.Date("2026-11-03"), "long")
 #' phw_date(as.Date("2026-11-03"), "%b %Y")
+#' phw_date(as.Date("03/11/2026", format = "%d/%m/%Y"))
 #' @export
 phw_date <- function(x, style = "short") {
-  x <- as.Date(x)
+  if (!is.character(style) || length(style) != 1 || is.na(style)) {
+    cli::cli_abort('{.arg style} must be {.val short}, {.val long} or a {.fn format} string such as {.val %B %Y}.')
+  }
+  x <- as_date_value(x, arg = "x")
   if (identical(style, "short")) return(format(x, "%d/%m/%Y"))
   if (identical(style, "long")) {
-    return(paste(as.integer(format(x, "%d")), month.name[as.integer(format(x, "%m"))],
-                 format(x, "%Y")))
+    out <- paste(as.integer(format(x, "%d")), month.name[as.integer(format(x, "%m"))],
+                 format(x, "%Y"))
+    out[is.na(x)] <- NA
+    return(out)
   }
   format(x, style)
+}
+
+# Dates as Date, POSIXt or ISO 8601 text, like as_date_col() in checks.R but
+# for a value rather than a data column. Other text stops instead of being
+# guessed at; NA stays NA.
+as_date_value <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
+  if (inherits(x, "Date")) return(x)
+  if (inherits(x, "POSIXt")) return(as.Date(x, tz = attr(x, "tzone") %||% ""))
+  if (is.logical(x) && all(is.na(x))) return(as.Date(x))
+  if (is.character(x) || is.factor(x)) {
+    x <- as.character(x)
+    iso <- !is.na(x) & grepl("^\\d{4}-\\d{2}-\\d{2}", x)
+    out <- as.Date(ifelse(iso, substr(x, 1, 10), NA_character_), format = "%Y-%m-%d", optional = TRUE)
+    bad <- !is.na(x) & is.na(out)
+    if (!any(bad)) return(out)
+    example <- 'as.Date(x, format = "%d/%m/%Y")'
+    cli::cli_abort(c("{.arg {arg}} must be a date.",
+                     x = "{.val {x[bad][1]}} is not an ISO date.",
+                     i = "Use ISO dates like {.val 2026-11-14}, or convert it first with {.code {example}}."),
+                   call = call)
+  }
+  cli::cli_abort("{.arg {arg}} must be a Date, a date-time or ISO text such as {.val 2026-11-14}, not {.obj_type_friendly {x}}.",
+                 call = call)
 }
 
 #' Build a PHW source caption
@@ -36,7 +68,9 @@ phw_date <- function(x, style = "short") {
 #' Every piece of wording can be changed, so the line can say anything your
 #' output needs, in any language.
 #'
-#' @param source Data source, e.g. `"Example system, 2024"`. Can be `NULL`.
+#' @param source Data source, e.g. `"Example system, 2024"`. `NULL`, `NA` or
+#'   `""` leaves the source line out, and the same goes for `date` and
+#'   `note`.
 #' @param date Optional extraction date. Adds "Data correct as of ...". A
 #'   Date is formatted with `date_format`; a string is used as it is.
 #' @param source_prefix,date_prefix Text before the source and the date.
@@ -53,15 +87,19 @@ phw_caption <- function(source = NULL, date = NULL, source_prefix = "Source: ",
                         date_prefix = "Data correct as of ", date_format = "short",
                         note = NULL, sep = "\n") {
   parts <- character()
-  if (!is.null(source)) parts <- c(parts, paste0(source_prefix, source))
-  if (!is.null(date)) {
+  if (has_text(source)) parts <- c(parts, paste0(source_prefix, source))
+  if (has_text(date)) {
     d <- if (inherits(date, c("Date", "POSIXt"))) phw_date(date, date_format) else date
     parts <- c(parts, paste0(date_prefix, d))
   }
-  parts <- c(parts, note)
+  if (has_text(note)) parts <- c(parts, note)
   if (!length(parts)) return(NULL)
   paste(parts, collapse = sep)
 }
+
+# A caption part counts only if it has something to show: NULL, NA, an empty
+# string or a zero-length vector is left out rather than printed as "NA".
+has_text <- function(x) length(x) > 0 && !all(is.na(x) | (is.character(x) & !nzchar(x)))
 
 #' Number formatting in PHW style
 #'
@@ -84,7 +122,37 @@ phw_percent <- function(accuracy = 0.1, ...) {
   scales::label_percent(accuracy = accuracy, big.mark = ",", ...)
 }
 
-# Pull caption arguments out of `...` so wrappers can forward them.
-caption_from <- function(source, date, caption_args) {
+# Build the caption a wrapper shows, from its source, date and caption_args.
+# Names are checked here, so a typo such as `sorce_prefix` names the
+# argument instead of failing inside phw_caption().
+caption_from <- function(source, date, caption_args = list(), arg = "caption_args",
+                         call = rlang::caller_env()) {
+  if (!is.list(caption_args)) {
+    cli::cli_abort("{.arg {arg}} must be a list, such as {.code list(note = \"Provisional\")}.", call = call)
+  }
+  known <- setdiff(names(formals(phw_caption)), c("source", "date"))
+  nms <- names(caption_args) %||% rep("", length(caption_args))
+  bad <- nms[!nms %in% known]
+  if (length(bad)) {
+    cli::cli_abort(c("{.arg {arg}} has {cli::qty(length(bad))}{?an/} unknown name{?s}: {.val {bad}}.",
+                     i = "{.fn phw_caption} takes {.arg {known}}."), call = call)
+  }
   do.call(phw_caption, c(list(source = source, date = date), caption_args))
+}
+
+# Argument checks used by several exported functions. They belong with the
+# shared checks in checks.R.
+check_true_false <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
+  if (!isTRUE(x) && !isFALSE(x)) {
+    cli::cli_abort("{.arg {arg}} must be {.code TRUE} or {.code FALSE}, not {.obj_type_friendly {x}}.", call = call)
+  }
+  invisible(x)
+}
+
+check_one_string <- function(x, arg = rlang::caller_arg(x), allow_null = FALSE, call = rlang::caller_env()) {
+  if (allow_null && is.null(x)) return(invisible(x))
+  if (!is.character(x) || length(x) != 1 || is.na(x)) {
+    cli::cli_abort("{.arg {arg}} must be a single string, not {.obj_type_friendly {x}}.", call = call)
+  }
+  invisible(x)
 }
