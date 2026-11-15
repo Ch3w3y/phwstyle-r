@@ -218,6 +218,9 @@ says what to change.
 
 ## Interactive outputs and colours
 
+* `phw_reactable()` and `phw_plotly()` now bring the Ubuntu web font into
+  the page, as `phw_datatable()` and `phw_leaflet()` do. Before, a table
+  without a caption and every chart fell back to Arial.
 * Leaflet maps draw areas with a missing value in the house grey, matching
   the legend, and give one clear message when a numeric fill has no values
   to colour by.

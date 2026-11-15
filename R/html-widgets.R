@@ -148,7 +148,7 @@ phw_reactable <- function(data, ..., caption = NULL, source = NULL, date = NULL,
     args$columns <- merge_col_defs(group_def, args$columns)
   }
   tbl <- do.call(reactable::reactable, c(list(data), args))
-  tbl <- htmltools::attachDependencies(tbl, phw_font_dependency(), append = TRUE)
+  tbl$dependencies <- c(tbl$dependencies, list(phw_font_dependency()))
   wrap_widget(tbl, caption, caption_from(source, date, caption_args), note)
 }
 
@@ -332,7 +332,8 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
                       modeBarButtonsToRemove = c("lasso2d", "select2d", "autoScale2d",
                                                  "hoverCompareCartesian", "toggleSpikelines"),
                       toImageButtonOptions = list(format = "png", scale = 2))
-  htmltools::attachDependencies(p, phw_font_dependency(), append = TRUE)
+  p$dependencies <- c(p$dependencies, list(phw_font_dependency()))
+  p
 }
 
 # plotly::ggplotly() builds the plot itself and ignores palettes stored in

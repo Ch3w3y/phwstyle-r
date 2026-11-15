@@ -37,6 +37,22 @@ test_that("reactable and plotly helpers return widgets", {
   expect_match(w2$x$layoutAttrs[[1]]$font$family, "Ubuntu")
 })
 
+test_that("every PHW widget brings the Ubuntu web font into the saved page", {
+  skip_if_not_installed("reactable")
+  skip_if_not_installed("plotly")
+  skip_if_not_installed("DT")
+  df <- data.frame(group = c("B", "A"), n = 1:2)
+  p <- plotly::plot_ly(df, x = ~group, y = ~n, type = "bar")
+  font_refs <- function(x) {
+    f <- withr::local_tempfile(fileext = ".html")
+    htmltools::save_html(x, f)
+    sum(grepl("phw-ubuntu", readLines(f)))
+  }
+  widgets <- list(reactable = phw_reactable(df), plotly = phw_plotly(p),
+                  plotly_source = phw_plotly(p, source = "S"), datatable = phw_datatable(df))
+  for (nm in names(widgets)) expect_gt(font_refs(widgets[[nm]]), 0, label = nm)
+})
+
 test_that("Shiny theme and header build", {
   skip_if_not_installed("bslib")
   expect_s3_class(phw_bs_theme(), "bs_theme")
