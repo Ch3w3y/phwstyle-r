@@ -321,8 +321,7 @@ phw_discrete_scale <- function(aesthetics, palette, reverse, key, values, neutra
       palette <- function(n) rev(f(n))
     }
   } else {
-    pal <- palette_colours(palette)
-    if (reverse) palette <- rev(pal)
+    palette_colours(palette)
   }
   if (length(values)) {
     if (!rlang::is_named(values)) {
@@ -332,11 +331,18 @@ phw_discrete_scale <- function(aesthetics, palette, reverse, key, values, neutra
   }
   sc <- ggplot2::discrete_scale(aesthetics, palette = phw_discrete_auto, na.value = na.value, ...)
   ggplot2::ggproto(NULL, sc,
-    phw_args = list(palette = palette, key = key, values = values, neutral = neutral),
+    phw_args = list(palette = palette, reverse = reverse, key = key, values = values, neutral = neutral),
     map = function(self, x, limits = self$get_limits()) {
       a <- self$phw_args
       lv <- as.character(limits)
       lv <- lv[!is.na(lv)]
+      # Reversing needs the number of groups, so that "main" carries on into
+      # "extended" and the colours match phw_pal(n, reverse = TRUE).
+      if (a$reverse && !is.function(a$palette)) {
+        n <- sum(!tolower(lv) %in% tolower(a$neutral))
+        pal <- palette_colours(palette_for(a$palette, n))
+        a$palette <- rev(pal[seq_len(min(n, length(pal)))])
+      }
       cols <- rlang::try_fetch(
         phw_colour_key(lv, name = a$key, palette = a$palette, fixed = a$values, neutral = a$neutral),
         phwstyle_too_many_groups = function(e) {
