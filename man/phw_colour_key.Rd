@@ -23,7 +23,8 @@ with no memory.}
 
 \item{palette}{Palette for new groups: a name from \link{phw_palettes}, or a
 vector of colours. A sequential or diverging palette is spread over the
-groups, as in \code{\link[=phw_pal]{phw_pal()}}.}
+groups, as in \code{\link[=phw_pal]{phw_pal()}}. Groups a key gains later take the colours of
+the palette furthest from the ones the key already uses.}
 
 \item{fixed}{Named vector of colours to pin, e.g.
 \code{c(Wales = "#285087")}. Pinned colours replace any stored colour.}
