@@ -19,9 +19,19 @@ set -- --state open --limit "${ISSUE_LIMIT:-200}" --json number,title,body,label
 [ -n "${GH_REPO:-}" ] && set -- "$@" --repo "$GH_REPO"
 [ -n "${ISSUE_LABEL:-}" ] && set -- "$@" --label "$ISSUE_LABEL"
 
-# Read the issues first, so a failed gh call stops here instead of looking like
-# an empty backlog.
-issues=$(gh issue list "$@")
+# Read the issues first, so a failed gh call never looks like an empty backlog.
+# On failure, serve the last good result if there is one. Otherwise exit 1 with
+# our own message: Noodle reads sync errors that mention "not found" as a
+# missing script and treats the backlog as empty, so gh's text is kept out.
+if ! issues=$(gh issue list "$@" 2>/dev/null) || ! printf '%s' "$issues" | jq -e 'type == "array"' >/dev/null 2>&1; then
+  if [ -f "$CACHE" ]; then
+    echo "backlog-sync: gh issue list failed; serving the last good backlog" >&2
+    cat "$CACHE"
+    exit 0
+  fi
+  echo "backlog-sync: gh issue list failed; check gh auth status" >&2
+  exit 1
+fi
 printf '%s\n' "$issues" | jq -c --arg done "$DONE_LABEL" '.[] | {
     id: (.number | tostring),
     title: .title,

@@ -22,7 +22,7 @@ From mise, use:
 
 - `backlog`: items with `id`, `title`, `status`, and optionally `plan`. Other fields depend on the issue source the adapter syncs from (for example `tags`, `section`, `estimate`, `milestone`, `url`, `body`). Treat them all as context.
 - `task_types`: every schedulable skill and its `schedule` hint. Only these keys are valid `do` values.
-- Active orders and sessions: never schedule an item that is already in flight.
+- Active orders and sessions: never schedule an item that is already in flight. Never write an order whose `id` is already in `orders.json`, even unchanged: re-listing it can rewrite its queued stages.
 - `recent_history` and `recent_events`: failures, merges, conflicts.
 
 ## Building orders

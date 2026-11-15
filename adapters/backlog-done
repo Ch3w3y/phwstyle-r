@@ -5,6 +5,9 @@
 set -eu
 . "$(dirname -- "$0")/lib.sh"
 
+# An order just finished, so the cached backlog backlog-sync serves is stale.
+rm -f "$ADAPTER_DIR/../.noodle/backlog-cache.ndjson"
+
 id=${1:-}
 [ -n "$id" ] || { echo "id required" >&2; exit 1; }
 case "$id" in *[!0-9]*) exit 0 ;; esac   # standalone orders (slug IDs) have no issue
