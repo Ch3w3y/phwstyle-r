@@ -134,6 +134,7 @@ phw_reactable <- function(data, ..., caption = NULL, source = NULL, date = NULL,
     note <- attr(data, "note")
     data <- as.data.frame(unclass(data)[names(data)], check.names = FALSE)
   }
+  data <- local_times(data)
   for (nm in names(defaults)) if (is.null(args[[nm]])) args[[nm]] <- defaults[[nm]]
   if (!own_format) args$columns <- with_number_formats(args$columns, data, digits)
   if (!is.null(group_col)) {
@@ -160,6 +161,14 @@ merge_col_defs <- function(base, user) {
     base[[nm]] <- def
   }
   base
+}
+
+# Date-times as text at the clock time of their own time zone, as
+# phw_flextable() and phw_gt() show them. The widgets would show UTC.
+local_times <- function(data) {
+  is_time <- vapply(data, inherits, logical(1), "POSIXt")
+  data[is_time] <- lapply(data[is_time], format, format = "%Y-%m-%d %H:%M:%S")
+  data
 }
 
 with_number_formats <- function(columns, data, digits) {

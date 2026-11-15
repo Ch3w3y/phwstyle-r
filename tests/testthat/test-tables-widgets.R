@@ -315,3 +315,12 @@ test_that("every renderer stops on duplicated column names", {
   expect_error(phw_datatable(d), "more than one column named")
   expect_error(phw_write_xlsx(d, withr::local_tempfile(fileext = ".xlsx")), "more than one column named")
 })
+
+test_that("the HTML tables show date-times at their local time, as phw_flextable does", {
+  skip_if_not_installed("reactable")
+  skip_if_not_installed("DT")
+  df <- data.frame(event = c("a", "b"), ts = as.POSIXct(c("2026-07-01 10:00", NA), tz = "Europe/London"))
+  shown <- jsonlite::fromJSON(as.character(phw_reactable(df)$x$tag$attribs$data))
+  expect_equal(shown$ts, c("2026-07-01 10:00:00", NA))
+  expect_equal(phw_datatable(df)$x$data$ts, c("2026-07-01 10:00:00", NA))
+})

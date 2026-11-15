@@ -36,7 +36,7 @@ phw_datatable <- function(data, caption = NULL, source = NULL, date = NULL, digi
     note <- attr(data, "note")
     data <- sm$data
   }
-  data <- as.data.frame(data)
+  data <- local_times(as.data.frame(data))
   defaults <- if (is.null(sm)) {
     list(pageLength = page_length, dom = "ftip")
   } else {
