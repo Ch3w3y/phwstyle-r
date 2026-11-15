@@ -19,7 +19,9 @@ phw_write_xlsx(
 }
 \arguments{
 \item{x}{A data frame, or a named list of data frames (one sheet each;
-the names become the sheet names).}
+the names become the sheet names). Characters Excel does not allow in
+a sheet name become spaces and names are cut to 31 characters. The
+names must still differ after that, ignoring case.}
 
 \item{file}{Path of the \code{.xlsx} file.}
 
