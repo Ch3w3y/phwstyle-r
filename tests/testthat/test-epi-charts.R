@@ -159,6 +159,31 @@ test_that("phw_epicurve keeps its default date labels within the data", {
   expect_true(all(b >= as.numeric(min(d$day)) & b <= as.numeric(max(d$day))))
 })
 
+test_that("phw_epicurve labels period starts in a format that suits the interval", {
+  x_axis <- function(p) {
+    x <- ggplot2::ggplot_build(p)$layout$panel_params[[1]]$x
+    keep <- !is.na(x$get_breaks())
+    list(breaks = as.Date(unname(x$get_breaks()[keep])), labels = unname(x$get_labels()[keep]))
+  }
+  one_week <- x_axis(phw_epicurve(data.frame(d = as.Date("2025-03-05")), d))
+  expect_equal(one_week$labels, "03/03/2025")
+  one_month <- x_axis(phw_epicurve(data.frame(d = as.Date(c("2025-03-05", "2025-03-20"))), d, interval = "month"))
+  expect_equal(one_month$labels, format(as.Date("2025-03-01"), "%b %Y"))
+  one_year <- x_axis(phw_epicurve(data.frame(d = as.Date("2025-03-05")), d, interval = "year"))
+  expect_equal(one_year$labels, "2025")
+
+  weeks <- data.frame(d = seq(as.Date("2025-01-01"), by = "week", length.out = 52))
+  p <- phw_epicurve(weeks, d)
+  a <- x_axis(p)
+  expect_equal(a$breaks[1], min(p$data$period))
+  expect_true(all(a$breaks %in% p$data$period))
+  expect_lte(length(a$breaks), 7)
+  expect_equal(a$labels, format(a$breaks, "%d/%m/%Y"))
+
+  own <- x_axis(phw_epicurve(weeks, d, date_labels = "%d %b"))
+  expect_equal(own$labels, format(own$breaks, "%d %b"))
+})
+
 test_that("phw_epicurve stops on dates written as text in another format", {
   d <- data.frame(onset = c("01/02/2025", "03/02/2025"))
   expect_error(phw_epicurve(d, onset), "must be a date")

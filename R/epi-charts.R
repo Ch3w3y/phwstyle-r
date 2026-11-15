@@ -35,6 +35,21 @@ period_step <- function(interval) {
   switch(interval, day = "day", week = "week", month = "month", quarter = "3 months", year = "year")
 }
 
+# Each bar starts on its period, so the axis labels period starts: every
+# one, or every k-th from the first, so that no more than 7 show.
+period_breaks <- function(periods, interval) {
+  steps <- switch(interval, day = c(1, 2, 7, 14, 28), week = c(1, 2, 4, 8, 13, 26, 52),
+                  month = c(1, 2, 3, 6, 12), quarter = c(1, 2, 4), year = c(1, 2, 5, 10, 20, 50))
+  n <- length(periods)
+  k <- steps[ceiling(n / steps) <= 7][1]
+  if (is.na(k)) k <- ceiling(n / 7)
+  periods[seq(1, n, by = k)]
+}
+
+period_label <- function(interval) {
+  switch(interval, day = , week = "%d/%m/%Y", month = , quarter = "%b %Y", year = "%Y")
+}
+
 #' Epidemic curve
 #'
 #' Counts of cases (or any events) by day, week, month, quarter or year,
@@ -58,7 +73,11 @@ period_step <- function(interval) {
 #' @param palette,key Colours for groups, as in [scale_fill_phw_d()].
 #'   `key` keeps each group's colour across charts.
 #' @param fill Column colour when there is no `group`.
-#' @param date_labels,date_breaks Passed to [ggplot2::scale_x_date()].
+#' @param date_labels,date_breaks Passed to [ggplot2::scale_x_date()]. By
+#'   default the axis labels the start of each period, or of every few
+#'   periods when there are many, always including the first. Days and
+#'   weeks show as `"%d/%m/%Y"`, months and quarters as `"%b %Y"` and years
+#'   as `"%Y"`.
 #' @param range Optional two dates for the start and end of the axis,
 #'   e.g. to show a full year even when the first weeks have no cases.
 #'   Rows dated outside it are left out, with a message.
@@ -165,16 +184,12 @@ phw_epicurve <- function(data, date, group = NULL, count = NULL,
                          data = full[!duplicated(full$period), ], linewidth = 1, na.rm = TRUE) +
       ggplot2::scale_colour_manual(values = stats::setNames(phw_colours[["black"]], label), name = NULL)
   }
-  xargs <- list(expand = ggplot2::expansion(mult = c(0.01, 0.02)))
-  if (!is.null(date_labels)) xargs$date_labels <- date_labels
+  xargs <- list(expand = ggplot2::expansion(mult = c(0.01, 0.02)),
+                date_labels = date_labels %||% period_label(interval))
   if (!is.null(date_breaks)) {
     xargs$date_breaks <- date_breaks
   } else {
-    # The default breaks can land in the axis padding past the last bar, where the label is cut off.
-    xargs$breaks <- function(x) {
-      b <- scales::breaks_pretty()(x)
-      b[b >= lims[1] & b <= lims[2]]
-    }
+    xargs$breaks <- period_breaks(all_p, interval)
   }
   p + do.call(ggplot2::scale_x_date, xargs) +
     ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0, 0.05))) +
