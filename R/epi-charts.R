@@ -142,20 +142,26 @@ phw_epicurve <- function(data, date, group = NULL, count = NULL,
   col_args <- utils::modifyList(
     list(width = switch(interval, day = 0.9, week = 6.3, month = 27, quarter = 82, year = 330), just = 0),
     list(...))
-  width <- col_args$width
+  centre <- col_args$width * (0.5 - col_args$just)
   p <- ggplot2::ggplot(full, ggplot2::aes(x = .data$period, y = .data$n))
-  pos <- if (position == "stack") ggplot2::position_stack(reverse = TRUE) else ggplot2::position_dodge()
   if (is.null(group)) {
     p <- p + do.call(ggplot2::geom_col, c(list(fill = fill), col_args))
   } else {
-    p <- p + do.call(ggplot2::geom_col, c(list(ggplot2::aes(fill = .data$group)),
-                                          utils::modifyList(list(position = pos), col_args))) +
+    bars <- ggplot2::aes(fill = .data$group)
+    pos <- ggplot2::position_stack(reverse = TRUE)
+    if (position == "dodge") {
+      # position_dodge() centres the bars on x and ignores `just`.
+      bars <- ggplot2::aes(x = .data$period + centre, fill = .data$group)
+      pos <- ggplot2::position_dodge()
+      col_args$just <- 0.5
+    }
+    p <- p + do.call(ggplot2::geom_col, c(list(bars), utils::modifyList(list(position = pos), col_args))) +
       scale_fill_phw_d(palette = palette %||% phw_default_palette(), key = key, name = NULL)
   }
   if (!is.null(average) && !all(is.na(full$average))) {
     label <- average_label %||% paste0(average, "-", interval, " average")
     p <- p +
-      ggplot2::geom_line(ggplot2::aes(x = .data$period + width / 2, y = .data$average, colour = label),
+      ggplot2::geom_line(ggplot2::aes(x = .data$period + centre, y = .data$average, colour = label),
                          data = full[!duplicated(full$period), ], linewidth = 1, na.rm = TRUE) +
       ggplot2::scale_colour_manual(values = stats::setNames(phw_colours[["black"]], label), name = NULL)
   }
