@@ -297,10 +297,11 @@ phw_flextable_heat <- function(x, j, palette = "teals", domain = NULL, breaks = 
     txt <- ifelse(fills == "transparent", phw_colours[["text"]], phw_text_on(sub("transparent", "#FFFFFF", fills)))
     x <- flextable::color(x, j = col, color = txt, part = "body")
     if (rag && symbols) {
-      st <- unname(rag_status(v))
-      shown <- ifelse(is.na(v), "", paste(shapes[st], format(v, big.mark = ",", trim = TRUE)))
-      x <- flextable::compose(x, j = col, part = "body",
-                              value = flextable::as_paragraph(flextable::as_chunk(shown)))
+      i <- which(!is.na(v))
+      if (length(i)) {
+        x <- flextable::prepend_chunks(x, i = i, j = col, part = "body",
+                                       flextable::as_chunk(paste0(shapes[unname(rag_status(v[i]))], " ")))
+      }
     }
   }
   x
