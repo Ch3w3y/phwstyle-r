@@ -61,7 +61,8 @@ says what to change.
   background as before.
 * `phw_save()` writes `.eps` and `.ps` files. Before, it failed with
   "family 'Ubuntu' not included in postscript() device". Like `.pdf`, they
-  use Ubuntu once it is installed with `phw_install_fonts()`.
+  use Ubuntu once it is installed with `phw_install_fonts()`. On macOS
+  they need XQuartz, and without it `phw_save()` says so.
 
 ## Tables
 

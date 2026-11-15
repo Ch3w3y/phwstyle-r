@@ -58,7 +58,7 @@ test_that("phw_save bg sets the saved background", {
 })
 
 test_that("phw_save writes EPS and PostScript", {
-  skip_if_not(capabilities("cairo"))
+  skip_if_not(cairo_loads(), "Cairo cannot be loaded")
   library(ggplot2)
   p <- ggplot(mpg, aes(displ, hwy)) + geom_point() + theme_phw()
   for (ext in c(".eps", ".ps")) {
@@ -66,6 +66,16 @@ test_that("phw_save writes EPS and PostScript", {
     phw_save(p, out)
     expect_match(readLines(out, n = 1), "^%!PS-Adobe")
   }
+})
+
+test_that("phw_save stops before EPS when Cairo cannot be loaded", {
+  local_mocked_bindings(cairo_loads = function() FALSE)
+  p <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) + ggplot2::geom_point()
+  out <- withr::local_tempfile(fileext = ".eps")
+  open <- grDevices::dev.cur()
+  expect_error(phw_save(p, out), "needs Cairo")
+  expect_false(file.exists(out))
+  expect_identical(grDevices::dev.cur(), open)
 })
 
 test_that("phw_finalise can put the logo on the right with no rule", {

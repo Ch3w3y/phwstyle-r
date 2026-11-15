@@ -47,7 +47,8 @@ bundled Ubuntu font works, and accepts plots made with \code{\link[=phw_finalise
 \details{
 PDF, EPS and PostScript files are drawn with Cairo, which uses only the
 fonts installed on the computer. Run \code{\link[=phw_install_fonts]{phw_install_fonts()}} once to use
-Ubuntu in them.
+Ubuntu in them. On macOS, EPS and PostScript need XQuartz, and without it
+\code{phw_save()} stops with a message instead of writing the file.
 }
 \examples{
 library(ggplot2)

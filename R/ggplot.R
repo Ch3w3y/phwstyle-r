@@ -786,7 +786,8 @@ makeContent.phw_footer <- function(x) {
 #'
 #' PDF, EPS and PostScript files are drawn with Cairo, which uses only the
 #' fonts installed on the computer. Run [phw_install_fonts()] once to use
-#' Ubuntu in them.
+#' Ubuntu in them. On macOS, EPS and PostScript need XQuartz, and without it
+#' `phw_save()` stops with a message instead of writing the file.
 #'
 #' @param plot A ggplot or the result of [phw_finalise()].
 #' @param filename File name. The extension (`.png`, `.svg`, `.pdf`,
@@ -818,6 +819,10 @@ phw_save <- function(plot = ggplot2::last_plot(), filename, width = 16, height =
     cli::cli_abort("{.arg plot} must be a ggplot or a grob such as a {.fn phw_finalise} result, not {.obj_type_friendly {plot}}.")
   }
   ext <- tolower(tools::file_ext(filename))
+  if (is.null(device) && ext %in% c("eps", "ps") && !cairo_loads()) {
+    cli::cli_abort(c("Saving a {.file .{ext}} file needs Cairo, which this R cannot load.",
+      i = "On macOS, install XQuartz ({.url https://www.xquartz.org}), or save as {.file .png} instead."))
+  }
   device <- device %||% switch(ext,
     png = if (requireNamespace("ragg", quietly = TRUE)) ragg::agg_png else "png",
     jpg = , jpeg = if (requireNamespace("ragg", quietly = TRUE)) ragg::agg_jpeg else "jpeg",
@@ -830,6 +835,11 @@ phw_save <- function(plot = ggplot2::last_plot(), filename, width = 16, height =
                   dpi = dpi, device = device, bg = bg %||% if (!inherits(plot, "ggplot")) "white", ...)
   invisible(filename)
 }
+
+# capabilities("cairo") only says R was built with Cairo. On macOS without
+# XQuartz the library still fails to load, and cairo_ps() then opens no device,
+# so ggsave() would draw on and close whichever device was open.
+cairo_loads <- function() nzchar(suppressWarnings(grDevices::grSoftVersion()[["cairo"]]))
 
 # The chart's own background covers the device's, so it is removed when `bg`
 # is given. In a phw_finalise() grob it is the gtable's "background" cells,
