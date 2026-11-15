@@ -560,6 +560,11 @@ slide_areas <- function(props, size, layout, on_navy, kinds, call = rlang::calle
                      i = 'Use {.code layout = "Title and Content"} for a chart or table.'), call = call)
   }
   bodies <- props[props$type == body_type(props$type), , drop = FALSE]
+  # A content placeholder has no type in the layout XML. A typed body
+  # placeholder is for text only, such as a Comparison layout's headings,
+  # so it is used only when the layout has no content placeholder.
+  content <- !grepl("\\btype=", bodies$ph)
+  if (any(content)) bodies <- bodies[content, , drop = FALSE]
   bodies <- bodies[order(bodies$offx, bodies$offy), , drop = FALSE]
   n <- max(nrow(bodies), 1)
   if (length(kinds) > n) {
