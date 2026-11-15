@@ -273,10 +273,8 @@ phw_crosstab <- function(data, rows, cols, count = NULL,
   count <- pick_col(rlang::enquo(count), data, "count", null_ok = TRUE)
   labels <- check_labels(labels)
   data <- as.data.frame(data)
-  if (!is.null(count)) {
-    check_numeric_col(data, count, "count")
-    data <- drop_missing(data, count)
-  }
+  if (!is.null(count)) check_numeric_col(data, count, "count")
+  data <- drop_missing(data, c(count, if (is.null(missing)) c(rows, cols)))
   r <- as_levels(data[[rows]], missing)
   k <- as_levels(data[[cols]], missing)
   w <- if (is.null(count)) rep(1, nrow(data)) else data[[count]]
