@@ -158,6 +158,11 @@ says what to change.
   Before, the second table was written over the first sheet.
 * `phw_flextable_heat(symbols = TRUE)` keeps the table's number format, so
   `phw_flextable(digits = 1)` shows "▼ 92.3", not "▼ 92.34568".
+* In `phw_flextable()`, the spanner above a summary, cross-tab or group
+  table's columns takes the same colour as the column labels below it. With
+  `style = "header"` it is white on the navy band, with a white rule under
+  it. Before, it was navy on navy and could not be read. It also follows
+  `accent` and `header_colour`, and uses dark text with `style = "light"`.
 * `phw_flextable(flextable_args = list(col_keys = ))` can leave out or
   reorder the columns of a summary table, keeping the label columns first.
   Before, it failed inside flextable.
