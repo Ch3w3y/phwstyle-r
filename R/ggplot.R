@@ -315,14 +315,7 @@ NULL
 
 phw_discrete_scale <- function(aesthetics, palette, reverse, key, values, neutral, na.value, ...,
                                call = rlang::caller_env()) {
-  if (is.function(palette)) {
-    if (reverse) {
-      f <- palette
-      palette <- function(n) rev(f(n))
-    }
-  } else {
-    palette_colours(palette)
-  }
+  if (!is.function(palette)) palette_colours(palette)
   if (length(values)) {
     if (!rlang::is_named(values)) {
       cli::cli_abort("{.arg values} must be a named vector of colours, such as {.code c(Wales = \"#285087\")}.", call = call)
@@ -336,13 +329,7 @@ phw_discrete_scale <- function(aesthetics, palette, reverse, key, values, neutra
       a <- self$phw_args
       lv <- as.character(limits)
       lv <- lv[!is.na(lv)]
-      # Reversing needs the number of groups, so that "main" carries on into
-      # "extended" and the colours match phw_pal(n, reverse = TRUE).
-      if (a$reverse && !is.function(a$palette)) {
-        n <- sum(!tolower(lv) %in% tolower(a$neutral))
-        pal <- palette_colours(palette_for(a$palette, n))
-        a$palette <- rev(pal[seq_len(min(n, length(pal)))])
-      }
+      if (a$reverse) a$palette <- reverse_key_palette(a$palette, lv, a$neutral)
       cols <- rlang::try_fetch(
         phw_colour_key(lv, name = a$key, palette = a$palette, fixed = a$values, neutral = a$neutral),
         phwstyle_too_many_groups = function(e) {

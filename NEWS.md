@@ -61,6 +61,12 @@ says what to change.
   `NA` or unused levels when sizing the palette, which gave colours blended
   between PHW colours. Maps of groups that are not in sorted order change
   colour.
+* `phw_leaflet_palette(type = "factor")` gives each group its
+  `phw_colour_key()` colour, as `phw_leaflet_polygons()` does: groups such
+  as "Unknown" are grey, the other groups take the palette colours in turn,
+  and more than twelve groups carry on with the warning the colour key
+  gives instead of stopping. Before, "Unknown" took a palette colour and
+  pushed the groups after it along by one.
 * `phw_plotly()` colours the groups of a `plot_ly()` chart as the PHW
   ggplot2 scales do: unused levels are left out, `NA` is grey instead of
   invisible, groups such as "Unknown" are grey, and every group gets its own

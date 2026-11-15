@@ -99,6 +99,16 @@ phw_colour_key <- function(levels, name = NULL, palette = phw_default_palette(),
   vals[lv]
 }
 
+# The palette that gives phw_colour_key(levels) the colours of
+# phw_pal(n, reverse = TRUE). Reversing needs the number of groups, so that
+# "main" carries on into "extended".
+reverse_key_palette <- function(palette, levels, neutral = default_neutral) {
+  if (is.function(palette)) return(function(n) rev(palette(n)))
+  n <- sum(!tolower(levels) %in% tolower(neutral))
+  pal <- palette_colours(palette_for(palette, n))
+  rev(pal[seq_len(min(n, length(pal)))])
+}
+
 # The accessible palette keeps its own copy of each key, so switching a
 # document to it changes keyed charts too, without losing the colours the
 # default version of the report uses.

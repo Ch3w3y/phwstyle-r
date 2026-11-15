@@ -196,6 +196,7 @@ phw_leaflet_palette <- function(palette = "blues", domain, type = c("numeric", "
                                 bins = 5, reverse = FALSE, na.color = phw_colours[["grey_light"]]) {
   rlang::check_installed("leaflet")
   type <- rlang::arg_match(type)
+  check_true_false(reverse)
   if (type != "factor") {
     if (is.character(palette) && length(palette) == 1 && palette %in% names(phw_palettes) &&
         palette_type(palette) == "qualitative") {
@@ -216,8 +217,9 @@ phw_leaflet_palette <- function(palette = "blues", domain, type = c("numeric", "
   }
   if (type == "factor") {
     levels <- group_levels(domain)
-    cols <- phw_pal(length(levels), palette = palette, reverse = reverse, type = "qualitative")
-    return(leaflet::colorFactor(cols, levels = levels, ordered = TRUE, na.color = na.color))
+    if (reverse) palette <- reverse_key_palette(palette, levels)
+    cols <- phw_colour_key(levels, palette = palette)
+    return(leaflet::colorFactor(unname(cols), levels = levels, ordered = TRUE, na.color = na.color))
   }
   cols <- phw_pal(9, palette = palette, reverse = reverse, type = "sequential")
   switch(type,
