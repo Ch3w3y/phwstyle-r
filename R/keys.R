@@ -157,8 +157,9 @@ next_colour <- function(used, palette, neutral_colour) {
 #' * `phw_keys()` lists every key as a data frame.
 #' * `phw_key_set()` adds or changes colours by hand.
 #' * `phw_key_recolour()` reassigns a whole key from a new palette, keeping
-#'   the group order. Use it on purpose, e.g. to move to the
-#'   `"accessible"` palette, because every report after that changes.
+#'   the group order and the colour of neutral groups such as "Other".
+#'   Use it on purpose, e.g. to move to the `"accessible"` palette, because
+#'   every report after that changes.
 #' * `phw_key_reset()` forgets a key (and its accessible copy), or all of
 #'   them.
 #' * `phw_key_file()` sets a CSV file that keys are read from and saved to,
@@ -169,6 +170,8 @@ next_colour <- function(used, palette, neutral_colour) {
 #' @param name Key name.
 #' @param values Named vector of colours, e.g. `c("65+" = "#285087")`.
 #' @param palette Palette to reassign from.
+#' @param neutral Group names that keep their colour, as in
+#'   [phw_colour_key()]. Groups in mid grey keep it too.
 #' @param path Path to the CSV file. `NULL` stops using a file.
 #' @return `phw_key()`: a named vector (empty if the key doesn't exist).
 #'   `phw_keys()`: a data frame. The others return their input invisibly.
@@ -214,15 +217,16 @@ phw_key_set <- function(name, values) {
 
 #' @rdname phw_key
 #' @export
-phw_key_recolour <- function(name, palette = "accessible") {
+phw_key_recolour <- function(name, palette = "accessible", neutral = default_neutral) {
   old <- phw_key(name)
   if (!length(old)) cli::cli_abort("No key called {.val {name}}.")
-  neutral <- old == phw_colours[["grey_mid"]]
-  if (is.function(palette)) palette <- phw_pal(max(sum(!neutral), 1), palette)
+  keep <- toupper(old) == phw_colours[["grey_mid"]] | tolower(names(old)) %in% tolower(neutral)
+  n <- sum(!keep)
+  palette <- if (is.function(palette)) phw_pal(max(n, 1), palette) else palette_for(palette, n)
   vals <- old
   fresh <- character()
-  for (l in names(old)[!neutral]) {
-    fresh[[l]] <- next_colour(c(old[neutral], fresh), palette, phw_colours[["grey_mid"]])
+  for (l in names(old)[!keep]) {
+    fresh[[l]] <- next_colour(c(old[keep], fresh), palette, phw_colours[["grey_mid"]])
   }
   vals[names(fresh)] <- fresh
   key_store(name, vals)

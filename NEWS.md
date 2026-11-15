@@ -147,6 +147,10 @@ says what to change.
 * `phw_leaflet_polygons()`, `phw_boundaries()`, `phw_plotly()` and the
   colour key functions check their input first. `phw_boundaries()` checks
   `crs` before downloading anything.
+* `phw_key_recolour()` carries `"main"` on into `"extended"` past four
+  groups, as `phw_colour_key()` does. It keeps the colour of neutral groups
+  such as "Other", including one set with `neutral_colour`. Its new
+  `neutral` argument names which groups those are.
 * `phw_contrast()`, `phw_text_on()` and `phw_cvd()` return `NA` for a missing
   colour instead of treating it as white, and accept palette names.
 * `phw_page_navbar(header_args = )` overrides the title and subtitle by name,

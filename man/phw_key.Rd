@@ -15,7 +15,7 @@ phw_keys()
 
 phw_key_set(name, values)
 
-phw_key_recolour(name, palette = "accessible")
+phw_key_recolour(name, palette = "accessible", neutral = default_neutral)
 
 phw_key_reset(name = NULL)
 
@@ -27,6 +27,9 @@ phw_key_file(path)
 \item{values}{Named vector of colours, e.g. \code{c("65+" = "#285087")}.}
 
 \item{palette}{Palette to reassign from.}
+
+\item{neutral}{Group names that keep their colour, as in
+\code{\link[=phw_colour_key]{phw_colour_key()}}. Groups in mid grey keep it too.}
 
 \item{path}{Path to the CSV file. \code{NULL} stops using a file.}
 }
@@ -41,8 +44,9 @@ called \code{name@accessible} (see \code{\link[=phw_colour_key]{phw_colour_key()
 \item \code{phw_keys()} lists every key as a data frame.
 \item \code{phw_key_set()} adds or changes colours by hand.
 \item \code{phw_key_recolour()} reassigns a whole key from a new palette, keeping
-the group order. Use it on purpose, e.g. to move to the
-\code{"accessible"} palette, because every report after that changes.
+the group order and the colour of neutral groups such as "Other".
+Use it on purpose, e.g. to move to the \code{"accessible"} palette, because
+every report after that changes.
 \item \code{phw_key_reset()} forgets a key (and its accessible copy), or all of
 them.
 \item \code{phw_key_file()} sets a CSV file that keys are read from and saved to,
