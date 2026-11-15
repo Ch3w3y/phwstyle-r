@@ -34,9 +34,9 @@ show_phw_palettes()
 
 | Palette | Colours | Use it for |
 |---|---|---|
-| `main` | 4: navy, teal, orange, pink | Groups. The default |
-| `extended` | 12: the four of `main`, then black, green and gold, then mint and bright green, then a blue, a dark green and a violet | Charts with more than four groups. Used automatically |
-| `accessible` | 8, starting navy, teal, orange | Groups, when every reader must tell them apart. Only used when you switch it on |
+| `main` | 6: navy, teal, orange, pink, green, gold | Groups. The default |
+| `extended` | 12: the six of `main`, then wine, mint, bright green, blue, dark orange and black | Charts with more than six groups. Used automatically |
+| `accessible` | 8, starting navy, teal, orange and ending with black | Groups, when every reader must tell them apart. Only used when you switch it on |
 | `strategy` | 6, one for each strategic priority in the PHW Long-Term Strategy 2023 to 2035 | Work reported by strategic priority |
 | `highlight` | 2: navy and light grey | One group picked out from the rest |
 | `rag`, `rag_accessible` | 3: red, amber and green (RAG) status colours. `rag_accessible` has navy for "good" instead of green | Status against a target |
@@ -49,8 +49,8 @@ returns the palette that charts, tables and widgets use when you don't name
 one.
 
 ```{r}
-phw_pal()            # navy, teal, orange, pink
-phw_pal(6)           # more than four groups carry on into "extended"
+phw_pal()            # navy, teal, orange, pink, green, gold
+phw_pal(8)           # more than six groups carry on into "extended"
 phw_pal(5, "greens") # sequential palettes give any number of colours
 phw_col("navy", "teal")
 phw_default_palette()
@@ -78,20 +78,22 @@ Every `palette` argument also takes your own vector of colours, e.g.
 
 ## How groups get their colours
 
-Charts, tables and widgets colour groups from one palette. Up to four
-groups use `main`. More than four carry on into `extended`, so a chart
-with six groups starts with the same colours as a chart with four, and
-charts in the same report match.
+Charts, tables and widgets colour groups from one palette. Up to six
+groups use `main`. More than six carry on into `extended`, so a chart
+with eight groups starts with the same colours as a chart with six, and
+charts in the same report match. Black is the last colour of `extended`,
+so it only appears in a chart with twelve groups, where it can't be
+mistaken for a total or a reference line.
 
-```{r, fig.alt = "Six lines of weekly cases over 52 weeks, coloured navy, teal, orange, pink, black and green."}
-weekly <- tidyr::expand_grid(week = 1:52, group = paste("Group", 1:6)) |>
+```{r, fig.alt = "Eight lines of weekly cases over 52 weeks, coloured navy, teal, orange, pink, green, gold, wine and mint."}
+weekly <- tidyr::expand_grid(week = 1:52, group = paste("Group", 1:8)) |>
   mutate(cases = round(40 + 0.5 * week + 12 * as.integer(factor(group)) +
                          15 * sin(week / 8 + as.integer(factor(group))) + rnorm(n(), 0, 5)))
 
 ggplot(weekly, aes(week, cases, colour = group)) +
   geom_line(linewidth = 0.9) +
   scale_x_continuous(breaks = seq(4, 52, 8)) +
-  labs(title = "Six groups: the four main colours, then black and green",
+  labs(title = "Eight groups: the six main colours, then wine and mint",
        x = "Week", y = "Cases")
 ```
 
@@ -228,7 +230,7 @@ phw_default_palette()
 options(old)
 ```
 
-```{r, fig.alt = "Six lines of weekly cases over 52 weeks in the accessible palette."}
+```{r, fig.alt = "Eight lines of weekly cases over 52 weeks in the accessible palette."}
 ggplot(weekly, aes(week, cases, colour = group)) +
   geom_line(linewidth = 0.9) +
   scale_colour_phw_d(palette = "accessible") +
@@ -300,15 +302,15 @@ phw_check_colours(c("#285087", "#D50B5C", "#338276"))
 simulated version:
 
 ```{r}
-orig <- c(phw_col("navy"), phw_col("teal"), phw_col("orange"), phw_col("pink"))
+orig <- phw_pal(palette = "main")
 phw_cvd(orig, "deutan")
 ```
 
-```{r, fig.height = 2.5, fig.alt = "Two rows of four swatches. The top row shows the main palette and the bottom row shows how a green-blind reader sees it."}
+```{r, fig.height = 2.5, fig.alt = "Two rows of six swatches. The top row shows the main palette and the bottom row shows how a green-blind reader sees it."}
 swatches <- tibble(
   colour = c(orig, phw_cvd(orig, "deutan")),
-  view = factor(rep(c("As drawn", "Deutan"), each = 4), levels = c("Deutan", "As drawn")),
-  x = rep(1:4, 2)
+  view = factor(rep(c("As drawn", "Deutan"), each = 6), levels = c("Deutan", "As drawn")),
+  x = rep(1:6, 2)
 )
 ggplot(swatches, aes(x, view, fill = colour)) +
   geom_tile(colour = "white", linewidth = 1.5) +
@@ -331,9 +333,14 @@ phw_contrast(phw_col("teal"), "white")
 phw_text_on(phw_col("navy", "light_teal"))
 ```
 
-Three of the `extended` colours (gold, mint and bright green) have less
-than 3:1 contrast on white. They suit filled bars and areas better than
-thin lines or small points.
+Gold, the sixth colour of `main`, and mint and bright green in `extended`
+have less than 3:1 contrast on white. They suit filled bars and areas
+better than thin lines or small points.
+
+Lighter and darker shades of one colour, such as light teal beside teal,
+are not used as separate groups, because colour-blind readers can hardly
+tell them apart. For ordered or nested groups, use the sequential `blues`,
+`teals` or `greens` palettes.
 
 For the same colours in charts, see [Charts](charts.html). For the
 colours in documents, see

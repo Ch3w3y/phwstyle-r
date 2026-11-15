@@ -335,7 +335,7 @@ areas |>
   labs(title = "Rate by population", x = "Population (thousands)", y = "Rate per 100,000")
 ```
 
-```{r, fig.alt = "Overlapping distributions of a score for six age groups, filled in navy, teal, orange, pink, black and green."}
+```{r, fig.alt = "Overlapping distributions of a score for six age groups, filled in navy, teal, orange, pink, green and gold."}
 library(ggridges)
 phw_style_extensions()
 cases |>
