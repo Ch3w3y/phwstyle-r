@@ -40,8 +40,11 @@ phw_datatable <- function(data, caption = NULL, source = NULL, date = NULL, digi
   defaults <- if (is.null(sm)) {
     list(pageLength = page_length, dom = "ftip")
   } else {
-    list(paging = FALSE, ordering = FALSE, dom = "t", columnDefs = sm$column_defs)
+    list(paging = FALSE, ordering = FALSE, dom = "t")
   }
+  # modifyList() cannot merge unnamed lists. Yours go first because
+  # DataTables lets earlier definitions win (className adds up instead).
+  if (!is.null(sm)) options$columnDefs <- c(options$columnDefs, sm$column_defs)
   opts <- utils::modifyList(c(defaults, list(autoWidth = FALSE, language = list(search = "Search:"))), options)
   args <- list(data = data, rownames = FALSE, class = "phw-dt compact hover", options = opts, style = "default")
   if (!is.null(sm$container)) args$container <- sm$container

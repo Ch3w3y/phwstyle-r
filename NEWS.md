@@ -133,6 +133,8 @@ says what to change.
   alignment and blank missing values of the rest. A `format` in
   `defaultColDef` now applies to every column instead of being replaced by
   `digits`.
+* `phw_datatable()` keeps the `columnDefs` you give in `options` for a
+  summary table. Before, the table's own column settings replaced them.
 * `phw_write_xlsx()` writes the spanner, navy labels, italic subtotals, a rule
   above the total, ISO dates and a bold right-aligned source. It checks `x`
   and accepts `header_fill = "navy"`.
