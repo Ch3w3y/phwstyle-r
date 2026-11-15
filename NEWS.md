@@ -88,6 +88,10 @@ says what to change.
 * `phw_add_slide()` places content on every layout. Two Content fills the
   left side first, and Title Only and Blank place the chart, table or text
   in the free space.
+* `phw_add_slide()` puts content into a layout's content placeholders and
+  leaves text-only ones empty, so on a template's Comparison layout the chart
+  and table fill the left and right areas. Before, the first went into the
+  small heading above the left area.
 * `phw_add_slide()` checks its arguments before it adds a slide, so a call
   that stops leaves the deck unchanged. It warns when a table has more rows
   than fit on the slide, and accepts a `phw_finalise()` chart as a picture.

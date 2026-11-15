@@ -79,6 +79,19 @@ test_that("Two Content fills the left area first, and the second content goes ri
   expect_equal(xml2::xml_attr(xml2::xml_find_all(deck_xml(deck), "//p:cNvPr[@descr]"), "descr"), "The chart")
 })
 
+test_that("a Comparison layout fills its content areas, not its headings", {
+  skip_if_not_installed("officer")
+  skip_if_not_installed("xml2")
+  deck <- phw_pptx(system.file("template", "template.pptx", package = "officer"))
+  deck <- phw_add_slide(deck, "Cmp", plot = test_slide_plot(), table = head(mtcars[, 1:3]),
+                        layout = "Comparison", editable = FALSE)
+  shapes <- slide_shapes(deck)
+  expect_equal(shapes$x[shapes$kind == "pic"], 0.5, tolerance = 0.01)
+  expect_equal(shapes$y[shapes$kind == "pic"], 2.378, tolerance = 0.01)
+  expect_equal(shapes$x[shapes$kind == "graphicFrame"], 5.08, tolerance = 0.01)
+  expect_equal(shapes$y[shapes$kind == "graphicFrame"], 2.378, tolerance = 0.01)
+})
+
 test_that("more contents than the layout has areas stops, naming them", {
   skip_if_not_installed("officer")
   p <- test_slide_plot()
