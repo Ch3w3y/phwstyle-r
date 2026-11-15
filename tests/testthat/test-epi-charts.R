@@ -289,6 +289,17 @@ test_that("phw_pyramid stops when left is not a sex value", {
   expect_true(all(phw_pyramid(pyr, age, sex, value = n, left = "Male")$data$x[3:4] < 0))
 })
 
+test_that("phw_pyramid keeps every age band, including empty ones", {
+  ages <- c("0-14", "15-29", "30-44", "45-64")
+  pop <- expand.grid(age = factor(ages, ages), sex = c("F", "M"))
+  pop$n <- c(24, 28, 0, 41, 25, 29, 0, 40)
+  people <- pop[rep(seq_len(nrow(pop)), pop$n), c("age", "sex")]
+  bands <- function(p) ggplot2::ggplot_build(p)$layout$panel_params[[1]]$y$get_labels()
+  expect_equal(bands(phw_pyramid(people, age, sex)), ages)
+  expect_equal(bands(phw_pyramid(pop, age, sex, value = n)), ages)
+  expect_equal(bands(phw_pyramid(pop[pop$n > 0, ], age, sex, value = n)), ages)
+})
+
 test_that("phw_pyramid checks data and compare at entry", {
   expect_error(phw_pyramid(pyr[0, ], age, sex, value = n), "no rows")
   expect_error(phw_pyramid(transform(pyr, n = as.character(n)), age, sex, value = n), "numeric column")
