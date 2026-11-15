@@ -47,8 +47,11 @@ levels <- list(
   list(level = "electoral_ward", label = "Electoral wards",
        ons = c("^WD_[A-Z]+_(\\d{4})_UK_(B[FGSU][CE])", "^Wards_[A-Za-z]+_(\\d{4})_Boundaries_UK_(B[FGSU][CE])"),
        filter = "W05"),
+  # Communities come from the ONS parishes layers, not DataMapWales: the
+  # DataMapWales layer has no code field, and community names are not unique.
   list(level = "community", label = "Communities (community and town council areas)",
-       dmw = "^geonode:communities_wales_[a-z]+_(\\d{4})$"),
+       ons = "^PARNCP_[A-Z]+_(\\d{4})_EW_(B[FGSU][CE])",
+       filter = "W04"),
   # MSOAs and LSOAs come from DataMapWales first: the ONS portal no longer
   # publishes its plain 2021 boundary layers, only a super generalised one.
   list(level = "msoa", label = "Middle layer super output areas (2021)",
@@ -119,7 +122,9 @@ ons_layer <- function(service, filter) {
   # The name fields share the code's prefix (output areas have none).
   stem <- sub("CD$", "", code)
   name <- if (paste0(stem, "NM") %in% f) paste0(stem, "NM") else code
-  name_cy <- if (paste0(stem, "NMW") %in% f) paste0(stem, "NMW") else ""
+  # Welsh names are "<stem>NMW", or "<stem>NW" in the parishes layers.
+  name_cy <- intersect(paste0(stem, c("NMW", "NW")), f)[1]
+  if (is.na(name_cy)) name_cy <- ""
   list(code = code, name = name, name_cy = name_cy, areas = n)
 }
 
