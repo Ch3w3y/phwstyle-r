@@ -50,7 +50,12 @@ Sunday.}
 
 \item{fill}{Column colour when there is no \code{group}.}
 
-\item{date_labels, date_breaks}{Passed to \code{\link[ggplot2:scale_x_date]{ggplot2::scale_x_date()}}.}
+\item{date_labels, date_breaks}{Passed to \code{\link[ggplot2:scale_x_date]{ggplot2::scale_x_date()}}. By
+default the axis labels the start of each period, or of every few
+periods when there are many, always including the first. Days and
+weeks show as \code{"6 Jan"}, months and quarters as \code{"Jan"} and years as
+\code{"2025"}, with the year under the first label and wherever it changes.
+Labels that would overlap on a narrow chart are left out.}
 
 \item{range}{Optional two dates for the start and end of the axis,
 e.g. to show a full year even when the first weeks have no cases.
