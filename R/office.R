@@ -392,8 +392,10 @@ phw_pptx <- function(template = NULL) {
 #'   result. A grob goes on the slide as a picture.
 #' @param table A data frame, flextable or summary table (rendered with
 #'   [phw_flextable()]). It must have at least one row.
-#' @param text Character vector of bullet points.
-#' @param source,date Passed to [phw_caption()] and shown at the bottom.
+#' @param text Character vector of bullet points. On a title slide or
+#'   section header it is plain lines in the template's own colour and size.
+#' @param source,date Passed to [phw_caption()] and shown at the bottom, in
+#'   white on a dark slide background and in the PHW text colour otherwise.
 #' @param layout,master Slide layout and slide master names in the
 #'   template. A slide master is the set of layouts a template provides;
 #'   see them in PowerPoint under View > Slide Master, or with
@@ -432,9 +434,8 @@ phw_pptx <- function(template = NULL) {
 #'   it. A flextable you pass in is never resized. The text never shrinks,
 #'   so a table with too many rows for the slide gives a warning that says
 #'   how many fit.
-#' @param title_size Title font size. On a layout with a dark background (the
-#'   title slide and section header) the template sets the size and colour, and
-#'   this applies only when you give it.
+#' @param title_size Title font size. On a title slide or section header the
+#'   template sets the size and colour, and this applies only when you give it.
 #' @param caption_args List of other [phw_caption()] arguments.
 #' @param alt Alternative text for the chart or table on the slide, read out
 #'   by screen readers. `NULL` adds none, except that a ggplot's own
@@ -479,28 +480,28 @@ phw_add_slide <- function(x, title = NULL, plot = NULL, table = NULL, text = NUL
     ))
   }
   props <- officer::layout_properties(x, layout = layout, master = master)
-  on_navy <- "subTitle" %in% props$type || layout == "Section Header"
+  cover <- "subTitle" %in% props$type || layout == "Section Header"
   title_type <- intersect(c("ctrTitle", "title"), props$type)[1]
   if (!is.null(title) && is.na(title_type)) {
     cli::cli_abort(c("The {.val {layout}} layout has no title.",
                      i = 'Use {.code layout = "Title Only"} for a title above the content, or leave out {.arg title}.'))
   }
-  areas <- slide_areas(props, officer::slide_size(x), layout, on_navy, names(contents))
+  areas <- slide_areas(props, officer::slide_size(x), layout, cover, names(contents))
   cap <- caption_from(source, date, caption_args)
   if (is.null(alt) && inherits(plot, "ggplot") && nzchar(ggplot2::get_alt_text(plot))) {
     alt <- ggplot2::get_alt_text(plot)
   }
   values <- Map(slide_value, contents, names(contents), areas,
                 MoreArgs = list(editable = editable, plot_scale = plot_scale,
-                                table_fit = table_fit, on_navy = on_navy))
+                                table_fit = table_fit, cover = cover))
 
   x <- officer::add_slide(x, layout = layout, master = master)
   index <- x$cursor
   tryCatch({
     if (!is.null(title)) {
-      # Cover layouts have a dark background and set their own title colour and size,
-      # so the run leaves both to the placeholder. A fixed navy would vanish there.
-      title_props <- if (on_navy) {
+      # Cover layouts set their own title colour and size, often for a dark
+      # background, so the run leaves both to the placeholder.
+      title_props <- if (cover) {
         officer::fp_text_lite(font.family = phw_font(), bold = TRUE,
                               font.size = if (missing(title_size)) NA else title_size)
       } else {
@@ -523,7 +524,7 @@ phw_add_slide <- function(x, title = NULL, plot = NULL, table = NULL, text = NUL
     if (!is.null(cap)) {
       size <- officer::slide_size(x)
       fp <- officer::fp_text(font.family = phw_font(), font.size = 10, bold = TRUE,
-                             color = phw_colours[[if (on_navy) "white" else "text"]])
+                             color = phw_text_on(layout_background(x, layout, master)))
       x <- officer::ph_with(x, officer::fpar(officer::ftext(gsub("\n", " | ", cap), fp),
                                              fp_p = officer::fp_par(text.align = "right")),
                             location = officer::ph_location(left = 0.6, top = size$height - 0.6,
@@ -535,6 +536,34 @@ phw_add_slide <- function(x, title = NULL, plot = NULL, table = NULL, text = NUL
     officer::remove_slide(x, index = index)
     stop(e)
   })
+}
+
+# The solid background colour of a layout, from the layout or else its master,
+# with a theme colour looked up in the master's theme. A picture or gradient
+# background counts as white.
+layout_background <- function(x, layout, master) {
+  meta <- x$slideLayouts$get_metadata()
+  meta <- meta[meta$name == layout & meta$master_name == master, ][1, ]
+  read <- function(...) xml2::read_xml(file.path(x$package_dir, "ppt", ...))
+  layout_doc <- read("slideLayouts", meta$filename)
+  master_doc <- read("slideMasters", meta$master_file)
+  bg <- xml2::xml_find_first(layout_doc, "p:cSld/p:bg")
+  if (inherits(bg, "xml_missing")) bg <- xml2::xml_find_first(master_doc, "p:cSld/p:bg")
+  colour <- xml2::xml_find_first(bg, "(p:bgPr/a:solidFill|p:bgRef)/*[1]")
+  if (identical(xml2::xml_name(colour), "schemeClr")) {
+    map <- xml2::xml_find_first(layout_doc, "p:clrMapOvr/a:overrideClrMapping")
+    if (inherits(map, "xml_missing")) map <- xml2::xml_find_first(master_doc, "p:clrMap")
+    name <- xml2::xml_attr(colour, "val")
+    if (xml2::xml_has_attr(map, name)) name <- xml2::xml_attr(map, name)
+    rels <- read("slideMasters", "_rels", paste0(meta$master_file, ".rels"))
+    theme <- xml2::xml_find_first(rels, "//*[local-name() = 'Relationship'][contains(@Type, '/theme')]")
+    theme <- read("slideMasters", xml2::xml_attr(theme, "Target"))
+    colour <- xml2::xml_find_first(theme, sprintf("//a:clrScheme/a:%s/*[1]", name))
+  }
+  hex <- switch(xml2::xml_name(colour),
+                srgbClr = xml2::xml_attr(colour, "val"),
+                sysClr = xml2::xml_attr(colour, "lastClr"))
+  if (is.null(hex) || is.na(hex)) "#FFFFFF" else paste0("#", hex)
 }
 
 body_type <- function(types) if ("subTitle" %in% types) "subTitle" else "body"
@@ -567,9 +596,9 @@ slide_contents <- function(plot, table, text, call = rlang::caller_env()) {
 slide_margins <- c(side = 0.6, top = 0.4, bottom = 0.95, gap = 0.25)
 
 # One area per content: its officer location and its size in inches.
-slide_areas <- function(props, size, layout, on_navy, kinds, call = rlang::caller_env()) {
+slide_areas <- function(props, size, layout, cover, kinds, call = rlang::caller_env()) {
   if (!length(kinds)) return(list())
-  if (on_navy && any(kinds %in% c("plot", "table"))) {
+  if (cover && any(kinds %in% c("plot", "table"))) {
     cli::cli_abort(c("The {.val {layout}} layout has room only for {.arg text}.",
                      i = 'Use {.code layout = "Title and Content"} for a chart or table.'), call = call)
   }
@@ -609,7 +638,7 @@ slide_areas <- function(props, size, layout, on_navy, kinds, call = rlang::calle
 }
 
 # The officer value for one content, sized for its area.
-slide_value <- function(value, kind, area, editable, plot_scale, table_fit, on_navy) {
+slide_value <- function(value, kind, area, editable, plot_scale, table_fit, cover) {
   if (kind == "plot") {
     if (!inherits(value, "ggplot")) {
       file <- tempfile(fileext = ".png")
@@ -637,8 +666,8 @@ slide_value <- function(value, kind, area, editable, plot_scale, table_fit, on_n
     }
     return(ft)
   }
-  if (on_navy) {
-    props <- officer::fp_text(font.family = phw_font(), font.size = 22, color = phw_colours[["grey_bg"]])
+  if (cover) {
+    props <- officer::fp_text_lite(font.family = phw_font())
     return(do.call(officer::block_list, lapply(value, function(t) officer::fpar(officer::ftext(t, props)))))
   }
   props <- officer::fp_text(font.family = phw_font(), font.size = 20, color = phw_colours[["text"]])

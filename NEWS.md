@@ -193,6 +193,10 @@ says what to change.
 * `phw_add_slide()` scales the text of a `phw_arrange()` figure as one: every
   panel, the figure title and the source line. Before, only the last panel
   was scaled.
+* On the title slide and section header of your own template,
+  `phw_add_slide()` gives `text` the template's colour and size, and the
+  source line is white only when the slide background is dark. Before, both
+  were near-white on every such slide, so they vanished on a white one.
 * Captions leave out a missing or empty source, date or note instead of
   printing "NA", and name a misspelt caption argument.
 * The R Markdown formats add your own `css`, `includes` and `pandoc_args` to

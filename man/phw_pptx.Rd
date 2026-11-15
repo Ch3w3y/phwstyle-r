@@ -39,9 +39,11 @@ result. A grob goes on the slide as a picture.}
 \item{table}{A data frame, flextable or summary table (rendered with
 \code{\link[=phw_flextable]{phw_flextable()}}). It must have at least one row.}
 
-\item{text}{Character vector of bullet points.}
+\item{text}{Character vector of bullet points. On a title slide or
+section header it is plain lines in the template's own colour and size.}
 
-\item{source, date}{Passed to \code{\link[=phw_caption]{phw_caption()}} and shown at the bottom.}
+\item{source, date}{Passed to \code{\link[=phw_caption]{phw_caption()}} and shown at the bottom, in
+white on a dark slide background and in the PHW text colour otherwise.}
 
 \item{layout, master}{Slide layout and slide master names in the
 template. A slide master is the set of layouts a template provides;
@@ -68,9 +70,8 @@ With your own template, give the layout names it uses.}
 
 \item{editable}{Add charts as editable vector graphics (needs rvg)?}
 
-\item{title_size}{Title font size. On a layout with a dark background (the
-title slide and section header) the template sets the size and colour, and
-this applies only when you give it.}
+\item{title_size}{Title font size. On a title slide or section header the
+template sets the size and colour, and this applies only when you give it.}
 
 \item{caption_args}{List of other \code{\link[=phw_caption]{phw_caption()}} arguments.}
 

@@ -111,6 +111,25 @@ test_that("Title Slide and Section Header refuse a chart or table", {
                "Title and Content")
 })
 
+test_that("text and source are readable on the title and section slides of any template", {
+  skip_if_not_installed("officer")
+  run_colour <- function(xml, text) {
+    run <- xml2::xml_find_first(xml, sprintf("//a:r[a:t = '%s']", text))
+    xml2::xml_attr(xml2::xml_find_first(run, "a:rPr/a:solidFill/a:srgbClr"), "val")
+  }
+  hex <- function(name) sub("#", "", phw_colours[[name]])
+  light <- file.path(system.file(package = "officer"), "template", "template.pptx")
+  for (layout in c("Title Slide", "Section Header")) {
+    for (template in list(NULL, light)) {
+      deck <- phw_add_slide(phw_pptx(template), "Title", text = "Subtitle line",
+                            layout = layout, source = "S")
+      xml <- deck_xml(deck)
+      expect_identical(run_colour(xml, "Subtitle line"), NA_character_)
+      expect_identical(run_colour(xml, "Source: S"), if (is.null(template)) "FFFFFF" else hex("text"))
+    }
+  }
+})
+
 test_that("a table too tall for the slide warns with how many rows fit", {
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
