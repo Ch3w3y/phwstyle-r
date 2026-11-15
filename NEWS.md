@@ -33,6 +33,14 @@ says what to change.
 * `phw_epicurve()` leaves unused factor levels out of the legend unless you
   give a colour `key`. Groups after an unused level take the next colour,
   so pass `key` to keep colours fixed across charts.
+* `scale_*_phw_d(reverse = TRUE)` now takes the first `n` colours of the
+  palette and then reverses them, giving the same colours as
+  `phw_pal(n, reverse = TRUE)`. Reversed charts with fewer groups than the
+  palette has colours change colour: with 3 groups, `"main"` gives `#FF5D0C`,
+  `#24A2B5`, `#285087` instead of `#F43882`, `#FF5D0C`, `#24A2B5`, and
+  `"blues"` gives its palest three colours instead of its darkest three.
+  `"main"` also carries on into `"extended"`, so more than four groups no
+  longer take colours from other palettes with a warning.
 
 ## Charts and maps
 
@@ -50,10 +58,6 @@ says what to change.
   chart (new `na.value`). Past eight groups they stop with a clear message.
 * `reverse = TRUE` now works when the palette is a function, and a palette
   function gives groups its colours in its own order.
-* `scale_*_phw_d(reverse = TRUE)` with more than four groups carries
-  `"main"` on into `"extended"`, giving the same colours as
-  `phw_pal(n, reverse = TRUE)`. Before, the fifth group onwards took colours
-  from other palettes with a warning.
 * `width` and other bar settings passed through `...` work in
   `phw_epicurve()` and `phw_pyramid()`.
 * `phw_pyramid()` shows every level of the `age` factor, so an age band
