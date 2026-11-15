@@ -341,13 +341,18 @@ test_that("phw_add_slide makes a tall table readable and keeps it inside the pla
   expect_gt(sum(xml_numbers(plain, '<a:tr h="[0-9]+"')) / 914400, area_height)
 })
 
-test_that("phw_add_slide writes light text on navy layouts", {
+test_that("phw_add_slide leaves text on navy layouts to the template's light colour", {
   skip_if_not_installed("officer")
   deck <- phw_add_slide(phw_pptx(), "Part two", text = "What comes next", layout = "Section Header")
   xml <- slide_xml(deck)
   expect_match(xml, "What comes next")
-  expect_match(xml, sub("#", "", phw_colours[["grey_bg"]]))
-  expect_no_match(xml, sub("#", "", phw_colours[["text"]]))
+  expect_no_match(xml, "srgbClr")
+  dir <- withr::local_tempdir()
+  utils::unzip(phw_reference_pptx(), exdir = dir)
+  n <- which(officer::layout_summary(deck)$layout == "Section Header")
+  layout <- xml2::read_xml(file.path(dir, sprintf("ppt/slideLayouts/slideLayout%d.xml", n)))
+  body <- xml2::xml_find_first(layout, "//p:sp[.//p:ph[@type='body']]//a:defRPr/a:solidFill/a:srgbClr")
+  expect_equal(xml2::xml_attr(body, "val"), sub("#", "", phw_colours[["grey_bg"]]))
 })
 
 test_that("a bad plot_scale fails before a slide is added", {
