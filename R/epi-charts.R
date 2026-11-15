@@ -300,6 +300,7 @@ phw_pyramid <- function(data, age, sex, value = NULL, percent = FALSE, left = NU
   p + ggplot2::geom_vline(xintercept = 0, colour = phw_colours[["text"]], linewidth = 0.4) +
     ggplot2::scale_fill_manual(values = cols, name = NULL) +
     ggplot2::scale_x_continuous(labels = lab_fun, limits = c(-lim, lim) * 1.05) +
+    ggplot2::scale_y_discrete(drop = FALSE) +
     ggplot2::labs(x = if (percent) "Percentage of population" else "Count", y = NULL) +
     chart_theme(grid = "x")
 }

@@ -43,6 +43,9 @@ says what to change.
   function gives groups its colours in its own order.
 * `width` and other bar settings passed through `...` work in
   `phw_epicurve()` and `phw_pyramid()`.
+* `phw_pyramid()` shows every level of the `age` factor, so an age band
+  with nobody in it stays on the axis as a gap. Before, it was dropped when
+  `data` had one row per person, or no row for that band.
 * `phw_epicurve(position = "dodge")` draws each period's bars inside the
   period, as stacked bars are, with the average line over their centre.
   Before, they were drawn half a period early.
