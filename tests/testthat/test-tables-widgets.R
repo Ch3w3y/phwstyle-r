@@ -75,6 +75,27 @@ test_that("phw_reactable rounds numbers like phw_flextable and phw_gt", {
   fmt <- reactable_formats(phw_reactable(sm))
   expect_equal(fmt$rate, 1)
   expect_equal(fmt$n, 0)
+  own_default <- reactable::colDef(format = reactable::colFormat(digits = 2))
+  fmt <- reactable_formats(phw_reactable(df, defaultColDef = own_default))
+  expect_equal(fmt$rate, 2)
+  expect_equal(fmt$cases, 2)
+  fmt <- reactable_formats(phw_reactable(df, defaultColDef = own_default, columns = list(rate = own)))
+  expect_equal(fmt$rate, 3)
+  expect_equal(fmt$cases, 2)
+})
+
+test_that("phw_reactable merges your columns into a summary table's own", {
+  skip_if_not_installed("reactable")
+  x <- phw_group_table(data.frame(g = c("A", "A", "B"), t = c("1", "2", "1")), c(g, t))
+  cols <- function(w) stats::setNames(w$x$tag$attribs$columns, names(x))
+  plain <- cols(phw_reactable(x))
+  mine <- cols(phw_reactable(x, columns = list(n = phw_col_bar(x, n))))
+  expect_equal(mine[[1]]$style, plain[[1]]$style)
+  expect_equal(mine[[1]]$minWidth, plain[[1]]$minWidth)
+  expect_equal(mine$n[["na"]], "")
+  expect_equal(mine$n[["name"]], plain$n[["name"]])
+  expect_equal(mine$n$align, "left")
+  expect_false(is.null(mine$n$cell))
 })
 
 # One grouped table drawn by every renderer, for the shading tests.
