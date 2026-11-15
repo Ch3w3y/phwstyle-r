@@ -26,7 +26,7 @@ Every `.noodle/` path below means `$P/.noodle/`, never the `.noodle/` of the wor
 
 Read the round count from `$P/.noodle/sweep-rounds` (0 if missing) and add one. If this would be round 9 or more, do not sweep: write `$P/.noodle/converged.json` as `{"sha": "<SHA>", "reason": "round cap", "rounds": <n-1>}`, yield `round cap reached`, and stop. Otherwise write the new count back.
 
-Read the phase from `$P/.noodle/sweep-phase`: `major`, `docs` or `deploy` (`major` if missing). Also read how many rounds this phase has run from `$P/.noodle/sweep-phase-rounds` (0 if missing), add one and write it back. Run only that phase's section below. Each phase ends by setting the next phase:
+Read the phase from `$P/.noodle/sweep-phase`: `major`, `docs` or `deploy` (`major` if missing). Also read how many rounds this phase has run from `$P/.noodle/sweep-phase-rounds` (0 if missing), add one and write it back. Run that phase's section (2, 3 or 4), then the shared sections 5 to 8. Each phase ends by setting the next phase:
 
 | Phase | Files | Moves on when |
 |---|---|---|
@@ -62,9 +62,9 @@ Do not file:
 
 Severity must be high: the output is wrong, missing or crashes for an ordinary input, a check fails, or the package or website does not build. Leave out anything cosmetic, and anything that needs an unusual input to show.
 
-**Cleanup.** Also file cleanup that makes the code simpler without changing what users see: dead or unused internal code, duplicated helpers that should use the shared ones in `R/checks.R`, stale comments, and files in the repo that nothing uses. Check each one is safe by finding every caller. Group cleanup into at most three issues, each titled `Cleanup: <area>`. Do not file renames, reformatting or style changes. Never touch `dev/`.
+**Cleanup.** Also file cleanup that makes the code simpler without changing what users see: dead or unused internal code, duplicated helpers that should use the shared ones in `R/checks.R`, stale comments, and files in the repo that nothing uses. Check each one is safe by finding every caller. Group cleanup into at most three issues, each titled `Cleanup: <area>`. Do not file renames, reformatting or style changes. Leave out the loop's own files (`.agents/`, `adapters/`, `.noodle.toml`, `brain/`), `data-raw/`, `dev/`, and the legacy `phw_rate_table()`, `phw_risk_table()` and `phw_poisson_ci()`, which get crash fixes only.
 
-**Next phase.** If this round filed no major defect (cleanup does not count), or this is the phase's 3rd round, move on to `docs`.
+**Next phase.** After filing (section 7), if this round filed no major defect (cleanup does not count), or this is the phase's 3rd round, move on to `docs`.
 
 ## 3. Phase `docs`: documentation
 
@@ -84,19 +84,23 @@ Group findings by document, titled `Docs: <document or area>`. Do not file wordi
 
 The website is built by the `pkgdown` workflow and published to GitHub Pages on every push to `main`. Check, for the current `origin/main` commit `<SHA>`:
 
-1. The latest `R-CMD-check` run on `main` passed: `gh run list --workflow R-CMD-check --branch main --limit 1`.
-2. The `pkgdown` run for `<SHA>` passed: `gh run list --workflow pkgdown --branch main --json headSha,conclusion,status`. If it is still running, wait for it with `gh run watch <run-id>` (up to 30 minutes) before going on.
-3. The live site at the first `URL` in `DESCRIPTION` serves the home page, the reference index, the gallery and every article, and shows the version in `DESCRIPTION`. Spot-check that a change merged since the last release appears on it.
+1. The `R-CMD-check` and `pkgdown` runs for `<SHA>` both passed. Find each with `gh run list --workflow <name> --branch main --json databaseId,headSha,status,conclusion` and pick the run whose `headSha` is `<SHA>`.
+2. If either run is still queued or running, wait for it: check `gh run view <databaseId> --json status,conclusion` every 60 seconds, for up to 30 minutes in all, keeping each shell call under 10 minutes.
+3. The live site at the first `URL` in `DESCRIPTION` serves the home page, the reference index, the gallery and every article, and shows the version in `DESCRIPTION`. Spot-check that a change merged since the last release tag (`gh release list --limit 1`) appears on it.
 
-If a check fails, find the cause in the run log or the site and file one issue titled `Deploy: <what failed>`, then stay in this phase. If every check passes, write `$P/.noodle/converged.json` as `{"sha": "<SHA>", "reason": "deployed", "rounds": <n>}`.
+If a check fails, find the cause in the run log or the site. If a code change can fix it, file one issue titled `Deploy: <what failed>` and stay in this phase. If it needs the maintainer instead (GitHub Pages turned off, a repository setting or secret), file nothing and write `$P/.noodle/converged.json` as `{"sha": "<SHA>", "reason": "deploy needs the maintainer: <what>", "rounds": <n>}`, so the loop stops and says why.
+
+If every check passes, write `$P/.noodle/converged.json` as `{"sha": "<SHA>", "reason": "deployed", "rounds": <n>, "blocked": [<open issues labelled noodle-blocked>]}`. The `blocked` list tells the maintainer which issues still need a person.
 
 ## 5. Avoid duplicates
 
 List every issue, open and closed, with `gh issue list --state all --label noodle --limit 500 --json number,title,state,stateReason,body`. Do not file anything already covered, and never file again a defect from an issue closed as not planned (`stateReason` NOT_PLANNED): that was a decision. If an issue closed as completed has its defect back, file a new issue that links the old one.
 
-## 6. Probe (phase `major`)
+## 6. Probe (phases `major` and `docs`)
 
 Read `brain/codebase/dev-environment.md` and install `origin/main` into your own library from a detached worktree under `~/.cache/phwstyle-dev/wt/`. Then split the exported functions (`NAMESPACE`) into four slices: slides and documents; charts and maps; tables; interactive outputs, colours and the rest. Probe them in parallel with subagents. Give each subagent the defect bar above and these instructions: reproduce every finding with a call, and return one line per finding with function, file:line, the repro call, what happened and what should happen. Also run the full test suite on both ggplot2 versions and `R CMD check --as-cran --no-manual` on a clean `git archive` tarball.
+
+In phase `docs`, install `origin/main` the same way, then run every help-page example and build the articles instead of probing the slices.
 
 Set `R_USER_CACHE_DIR` to a scratch folder for every probe. Never delete the user's cache.
 
@@ -116,8 +120,9 @@ The body gives the repro call, what happens, what should happen, file:line, and 
 
 If you filed any issue, delete `$P/.noodle/converged.json` if it exists. Only the `deploy` phase writes it.
 
-Remove your worktree, then yield with the phase, what you filed, and the minor problems you left out:
+Remove your worktree, then yield with the phase, what you filed, and the minor problems you left out. Build the payload with `jq` so quotes in the text are escaped:
 
 ```bash
-noodle event emit --session "$NOODLE_SESSION_ID" stage_yield --payload '{"message": "sweep round <n> (<phase>): filed <k> issues; next phase <phase>; not filed: <one line each>"}'
+msg="sweep round <n> (<phase>): filed <k> issues; next phase <phase>; not filed: <one line each>"
+noodle event emit --session "$NOODLE_SESSION_ID" stage_yield --payload "$(jq -nc --arg m "$msg" '{message: $m}')"
 ```
