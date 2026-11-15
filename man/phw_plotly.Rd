@@ -56,6 +56,12 @@ heatmaps, contours and choropleth maps, and markers coloured by a number
 \code{\link[plotly:subplot]{plotly::subplot()}}. Use \code{\link[=phw_plotly_colorscale]{phw_plotly_colorscale()}} to set a PHW scale on
 a trace yourself.
 
+In a \code{\link[plotly:subplot]{plotly::subplot()}} figure, a group has the same colour in every
+panel. If a panel sets its own colours with \code{colors} or \code{I()}, the group
+colours and colour scales stay as each panel was built. To give the
+other panels PHW colours, style each panel with \code{phw_plotly()} before
+combining them.
+
 For colours that stay with a group across charts, pass a colour
 key to plotly yourself, e.g.
 \code{plot_ly(df, x = ~week, y = ~rate, color = ~age, colors = phw_colour_key(df$age, "age"))}.

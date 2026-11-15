@@ -237,6 +237,12 @@ wrap_widget <- function(widget, caption, cap, note = NULL) {
 #'   [plotly::subplot()]. Use [phw_plotly_colorscale()] to set a PHW scale on
 #'   a trace yourself.
 #'
+#'   In a [plotly::subplot()] figure, a group has the same colour in every
+#'   panel. If a panel sets its own colours with `colors` or `I()`, the group
+#'   colours and colour scales stay as each panel was built. To give the
+#'   other panels PHW colours, style each panel with `phw_plotly()` before
+#'   combining them.
+#'
 #'   For colours that stay with a group across charts, pass a colour
 #'   key to plotly yourself, e.g.
 #'   `plot_ly(df, x = ~week, y = ~rate, color = ~age, colors = phw_colour_key(df$age, "age"))`.
@@ -318,6 +324,7 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
       extra[[nm]]
     }
   }
+  p <- colour_built(p, palette, colorway)
   p <- colour_pies(p, palette, unname(colorway))
   p <- colour_mapped(p, palette, colorway)
   p <- do.call(plotly::layout, c(list(p), base))
@@ -560,13 +567,15 @@ plotly_colorway <- function(p, palette) {
   cols
 }
 
+# Trace types coloured by a colour scale.
+plotly_scale_types <- c("heatmap", "contour", "histogram2d", "histogram2dcontour", "choropleth")
+
 # A trace that maps `color` without `colors` gets plotly's own palette, so
 # give it PHW colours: a colour key for groups, and the PHW sequential scale
 # for numbers and for heatmaps, contours and choropleths. Every trace takes
 # the same key, as plotly colours all traces from the first one's `colors`.
 colour_mapped <- function(p, palette, colorway) {
   if (is.null(p$x$attrs)) return(p)
-  scale_types <- c("heatmap", "contour", "histogram2d", "histogram2dcontour", "choropleth")
   seq <- palette_colours("blues")
   values <- Map(function(a, id) {
     if (is.null(a$colors) && is.null(a$colorscale) && !is.null(a$color)) mapped_values(a$color, p, id)
@@ -576,7 +585,7 @@ colour_mapped <- function(p, palette, colorway) {
   p$x$attrs <- Map(function(a, v) {
     if (!is.null(a$colors) || !is.null(a$colorscale)) return(a)
     if (is.null(a$color)) {
-      if (isTRUE(a$type %in% scale_types)) a$colors <- seq
+      if (isTRUE(a$type %in% plotly_scale_types)) a$colors <- seq
       return(a)
     }
     if (is.null(v)) return(a)
@@ -590,6 +599,69 @@ colour_mapped <- function(p, palette, colorway) {
   }, p$x$attrs, values)
   p
 }
+
+# A plotly::subplot() figure arrives with its traces built, in plotly's own
+# colours, which plotly marks with the classes "colorway" (a trace with no
+# colour mapping) and "plotly_default" (group colours and colour scales).
+# Give them PHW colours as colour_mapped() does before a build: the colorway
+# in trace order, a colour key by trace name and the PHW sequential scale.
+# Colours a panel set itself are marked "plotly_default" too, so when any
+# panel sets its own, groups and scales keep the colours they were built with.
+colour_built <- function(p, palette, colorway) {
+  if (!length(p$x$data)) return(p)
+  own <- any(vapply(p$x$attrs, sets_colours, logical(1)))
+  if (own && any(vapply(p$x$attrs, maps_colours, logical(1)))) {
+    cli::cli_inform(c(
+      "phw_plotly(): The groups and colour scales of this {.fn plotly::subplot} keep the colours each panel was built with, because a panel sets its own colours.",
+      i = "Style each panel with {.fn phw_plotly} before combining them, or give each panel its own {.arg colors}."
+    ))
+  }
+  colorway <- unname(colorway)
+  grouped <- !own & vapply(p$x$data, function(t) any(rapply(t, is_group_colour, how = "unlist")), logical(1))
+  trace_names <- vapply(p$x$data, function(t) t$name %||% NA_character_, "")
+  lv <- unique(trace_names[grouped & !is.na(trace_names)])
+  key <- if (length(lv)) group_colours(list(factor(lv, lv)), palette, colorway)
+  at <- seq(0, 1, length.out = 25)
+  scale <- matrix(c(at, plotly::toRGB(scales::col_numeric(palette_colours("blues"), c(0, 1))(at))), ncol = 2)
+  p$x$data <- lapply(seq_along(p$x$data), function(i) {
+    way <- colorway[[(i - 1) %% length(colorway) + 1]]
+    group <- if (grouped[[i]]) if (is.na(trace_names[[i]])) way else key[[trace_names[[i]]]]
+    rapply(p$x$data[[i]], function(x) {
+      new <- if (inherits(x, "colorway")) {
+        plotly::toRGB(way, rgba_alpha(x))
+      } else if (!is.null(group) && is_group_colour(x)) {
+        plotly::toRGB(group, rgba_alpha(x))
+      } else if (!own && is_default(x) && is.matrix(x)) {
+        scale
+      }
+      # plotly reads the class to tell its defaults from colours a user set.
+      if (is.null(new)) x else structure(new, class = oldClass(x))
+    }, how = "replace")
+  })
+  p
+}
+
+# Whether a trace's attributes set its colours, or map colours from plotly's
+# defaults.
+sets_colours <- function(a) {
+  !is.null(a$colors) || !is.null(a$strokes) || inherits(a$color, "AsIs") || inherits(a$stroke, "AsIs")
+}
+
+maps_colours <- function(a) {
+  (!is.null(a$color) && !inherits(a$color, "AsIs") && is.null(a$colors)) ||
+    (!is.null(a$stroke) && !inherits(a$stroke, "AsIs") && is.null(a$strokes)) ||
+    (isTRUE(a$type %in% plotly_scale_types) && is.null(a$colors) && is.null(a$colorscale))
+}
+
+is_default <- function(x) inherits(x, "plotly_default") && !inherits(x, "colorway")
+
+# A colour plotly gave a group: one rgba() value marked as its default. A
+# missing group is "transparent", and other defaults are titles and numbers.
+is_group_colour <- function(x) {
+  is_default(x) && is.character(x) && length(x) == 1 && startsWith(x, "rgba(")
+}
+
+rgba_alpha <- function(x) as.numeric(sub(".*,\\s*([0-9.]+)\\)$", "\\1", x))
 
 # Colours for groups, named by group, as the PHW ggplot2 scales give them:
 # the groups in use, in order, each with its own colour from

@@ -74,6 +74,12 @@ says what to change.
   colours the static chart has. Before, a continuous colour started from the
   palest blue, groups such as "Other" turned grey and `NA` was a lighter
   grey than in the static chart.
+* `phw_plotly()` gives a figure combined with `plotly::subplot()` the PHW
+  colours. Before, it kept plotly's default colours: groups, traces with no
+  colour mapping and heatmaps all came out in plotly's palettes. A group
+  now has the same colour in every panel. If a panel sets its own colours,
+  `phw_plotly()` keeps them and says how to give the other panels PHW
+  colours.
 
 ## Charts and maps
 

@@ -130,3 +130,34 @@ test_that("a ggplot without a colour scale draws the same colours static and in 
   cols <- trace_colours(bars)
   expect_equal(cols, static(bars, "fill")[names(cols)])
 })
+
+test_that("subplot() panels take the PHW colours, and a group keeps its colour across panels", {
+  d <- data.frame(week = rep(1:3, 3), y = 1:9, g = rep(c("a", "b", "c"), each = 3))
+  s <- plotly::subplot(
+    plotly::plot_ly(d, x = ~week, y = ~y, color = ~g, type = "bar"),
+    plotly::plot_ly(d[d$g != "a", ], x = ~week, y = ~y, color = ~g, type = "scatter", mode = "lines", fill = "tozeroy"),
+    plotly::plot_ly(d, x = ~week, y = ~y, type = "scatter", mode = "lines"),
+    plotly::plot_ly(z = volcano, type = "heatmap")
+  )
+  expect_no_warning(tr <- built(phw_plotly(s))$data)
+  key <- phw_colour_key(c("a", "b", "c"))
+  key <- stats::setNames(plotly::toRGB(key), names(key))
+  expect_equal(vapply(tr[1:3], function(t) t$marker$color, ""), unname(key))
+  expect_equal(vapply(tr[4:5], function(t) t$line$color, ""), unname(key[c("b", "c")]))
+  expect_equal(unclass(tr[[4]]$fillcolor), plotly::toRGB(phw_colour_key(c("a", "b", "c"))[["b"]], 0.5))
+  expect_equal(unclass(tr[[6]]$line$color), plotly::toRGB(phw_pal(6)[6]))
+  alone <- built(phw_plotly(plotly::plot_ly(z = volcano, type = "heatmap")))$data[[1]]$colorscale
+  expect_equal(tr[[7]]$colorscale[, 2], alone[, 2])
+})
+
+test_that("subplot() keeps colours a panel sets, and says how to colour the rest", {
+  d <- data.frame(week = rep(1:3, 2), y = 1:6, g = rep(c("a", "b"), each = 3))
+  own <- plotly::plot_ly(d, x = ~week, y = ~y, color = ~g, colors = c("red", "blue"), type = "bar")
+  mapped <- plotly::plot_ly(d, x = ~week, y = ~y, color = ~g, type = "bar")
+  expect_no_message(tr <- built(phw_plotly(plotly::subplot(own)))$data)
+  expect_equal(vapply(tr, function(t) t$marker$color, ""), c("rgba(255,0,0,1)", "rgba(0,0,255,1)"))
+  expect_message(phw_plotly(plotly::subplot(own, mapped)), "Style each panel")
+  styled <- built(phw_plotly(plotly::subplot(phw_plotly(own), phw_plotly(mapped))))$data
+  expect_equal(vapply(styled[3:4], function(t) t$marker$color, ""),
+               unname(plotly::toRGB(phw_colour_key(c("a", "b")))))
+})
