@@ -193,6 +193,23 @@ test_that("phw_write_xlsx checks what it is given before writing", {
   expect_error(phw_write_xlsx(mtcars, f, header_fill = "nope"), "header_fill")
 })
 
+test_that("phw_write_xlsx stops on sheet names Excel would treat as the same", {
+  skip_if_not_installed("openxlsx2")
+  f <- withr::local_tempfile(fileext = ".xlsx")
+  one <- data.frame(a = 1)
+  expect_error(phw_write_xlsx(list("North/South" = one, "North?South" = one), f),
+               "North/South.*North\\?South.*North South")
+  expect_error(phw_write_xlsx(list(Cases = one, cases = one), f), "Cases.*cases")
+  expect_error(phw_write_xlsx(list(one, sheet1 = one), f), "Sheet1.*sheet1")
+  long <- strrep("x", 31)
+  expect_error(phw_write_xlsx(setNames(list(one, one), paste0(long, 1:2)), f), "31 characters")
+  expect_false(file.exists(f))
+  phw_write_xlsx(list("North/South" = data.frame(area = c("N1", "N2")), "North-South" = data.frame(area = "S1")), f)
+  expect_equal(unname(openxlsx2::wb_load(f)$get_sheet_names()), c("North South", "North-South"))
+  expect_equal(openxlsx2::read_xlsx(f, sheet = 1)$area, c("N1", "N2"))
+  expect_equal(openxlsx2::read_xlsx(f, sheet = 2)$area, "S1")
+})
+
 test_that("phw_gt carries the Ubuntu web font and italic subtotals, and left-aligns dates", {
   skip_if_not_installed("gt")
   g <- phw_gt(data.frame(d = as.Date("2026-01-01"), n = 1)) |> gt::tab_header("Title")

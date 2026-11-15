@@ -163,7 +163,9 @@ phw_dt_css <- function() {
 #' levels, italic subtotals and a navy rule above the total.
 #'
 #' @param x A data frame, or a named list of data frames (one sheet each;
-#'   the names become the sheet names).
+#'   the names become the sheet names). Characters Excel does not allow in
+#'   a sheet name become spaces and names are cut to 31 characters. The
+#'   names must still differ after that, ignoring case.
 #' @param file Path of the `.xlsx` file.
 #' @param title Title for the first row of each sheet: one string, or one
 #'   per sheet. `NULL` for none.
@@ -203,7 +205,7 @@ phw_write_xlsx <- function(x, file, title = NULL, source = NULL, date = NULL, ca
   wb <- openxlsx2::wb_workbook()
   wb <- openxlsx2::wb_set_base_font(wb, font_size = 10, font_name = font)
   for (k in seq_along(x)) {
-    sheet <- substr(gsub("[][*?:/\\\\]", " ", names(x)[k]), 1, 31)
+    sheet <- names(x)[k]
     s <- x[[k]]
     is_sum <- inherits(s, "phw_summary")
     df <- as.data.frame(unclass(s)[names(s)], check.names = FALSE)
@@ -305,8 +307,17 @@ xlsx_sheets <- function(x, call = rlang::caller_env()) {
   nms <- names(x) %||% rep("", length(x))
   blank <- is.na(nms) | !nzchar(nms)
   nms[blank] <- paste0("Sheet", which(blank))
-  names(x) <- nms
-  for (nm in nms) check_unique_names(x[[nm]], arg = "x", call = call)
+  sheets <- substr(gsub("[][*?:/\\\\]", " ", nms), 1, 31)
+  key <- tolower(sheets)
+  clash <- key == key[duplicated(key)][1]
+  if (any(clash, na.rm = TRUE)) {
+    cli::cli_abort(c("Each table needs its own sheet name.",
+                     x = "{.val {nms[clash]}} become the same sheet, {.val {sheets[clash][1]}}.",
+                     i = "In sheet names {.code [ ] * ? : / \\} become spaces, only the first 31 characters are kept and Excel ignores case."),
+                   call = call)
+  }
+  names(x) <- sheets
+  for (s in x) check_unique_names(s, arg = "x", call = call)
   x
 }
 
