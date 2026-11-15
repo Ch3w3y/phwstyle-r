@@ -60,7 +60,7 @@ Use subagents only for two or more independent changes that touch different file
 Run the project's checks before every commit.
 
 <!-- noodle-init:verify:start -->
-This is an R package (`phwstyle`). CI is `.github/workflows/R-CMD-check.yaml`: `R CMD check --no-manual --as-cran` across a version matrix, failing on warnings.
+This is an R package (`phwstyle`). CI is `.github/workflows/R-CMD-check.yaml`: `R CMD check --no-manual --as-cran`, failing on warnings. A PR runs three of its jobs (Linux, Windows and the oldest versions) and the full version matrix runs weekly and before a release, so the local checks below, including the old-ggplot2 run, are what cover the other versions on a PR.
 
 Environment on this machine: read `brain/codebase/dev-environment.md` and use its R, library and Pandoc setup. Never write into the shared library.
 

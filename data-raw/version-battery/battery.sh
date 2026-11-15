@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Run phwstyle's tests across versions of R, of its dependencies, and of the
-# document tools (Pandoc, Quarto, LaTeX). CI covers part of this on every
-# push (.github/workflows/R-CMD-check.yaml); this script covers the rest and
-# can be run on one Linux machine before a release.
+# document tools (Pandoc, Quarto, LaTeX). CI covers part of this every week
+# and before a release (.github/workflows/R-CMD-check.yaml); this script
+# covers the rest and can be run on one Linux machine before a release.
 #
 #   data-raw/version-battery/battery.sh              # every cell
 #   data-raw/version-battery/battery.sh r44-latest   # named cells only

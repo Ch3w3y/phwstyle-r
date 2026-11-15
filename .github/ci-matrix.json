@@ -1,0 +1,17 @@
+[
+  {"os": "ubuntu-latest",  "r": "release", "latex": true, "pr": true},
+  {"os": "windows-latest", "r": "release", "pr": true},
+  {"os": "ubuntu-22.04",   "r": "4.3.3",   "label": "oldest (CRAN 2024-06)", "extra": "ggplot2@3.5.0", "snapshot": "2024-06-03", "quarto": "1.5.57", "pandoc": "2.19.2", "error-on": "\"error\"", "pr": true},
+  {"os": "macos-latest",   "r": "release"},
+  {"os": "windows-latest", "r": "oldrel-1"},
+  {"os": "windows-latest", "r": "4.3",     "label": "minimum R"},
+  {"os": "ubuntu-latest",  "r": "devel",   "http-user-agent": "release"},
+  {"os": "ubuntu-latest",  "r": "oldrel-1"},
+  {"os": "ubuntu-latest",  "r": "oldrel-2"},
+  {"os": "ubuntu-latest",  "r": "4.3",     "label": "minimum R"},
+  {"os": "ubuntu-latest",  "r": "release", "label": "ggplot2 3.5", "extra": "ggplot2@3.5.2"},
+  {"os": "ubuntu-22.04",   "r": "4.4.2",   "label": "CRAN 2024-12", "snapshot": "2024-12-02", "quarto": "1.6.43", "pandoc": "3.1.11", "error-on": "\"error\""},
+  {"os": "ubuntu-24.04",   "r": "4.5.0",   "label": "CRAN 2025-06", "snapshot": "2025-06-02", "quarto": "1.7.34", "pandoc": "3.6.4", "error-on": "\"error\""},
+  {"os": "ubuntu-24.04",   "r": "4.5.2",   "label": "CRAN 2025-12", "snapshot": "2025-12-01", "quarto": "1.8.26", "pandoc": "3.6.4", "error-on": "\"error\""},
+  {"os": "ubuntu-latest",  "r": "release", "label": "ggplot2 dev", "extra": "tidyverse/ggplot2", "allow-failure": true}
+]
