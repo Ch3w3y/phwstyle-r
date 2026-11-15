@@ -50,6 +50,26 @@ test_that("a factor palette gives each group an exact palette colour, ignoring N
   expect_equal(pal(NA), phw_colours[["grey_light"]], ignore_attr = TRUE)
 })
 
+test_that("a factor palette gives each group the colour a map of the same groups gives it", {
+  areas <- c("Wrexham", "Cardiff", "Unknown", "Bangor", "Newport")
+  pal <- phw_leaflet_palette("main", domain = areas, type = "factor")
+  sq <- squares(5)
+  sq$grp <- areas
+  m <- phw_leaflet() |> phw_leaflet_polygons(sq, fill = grp)
+  expect_equal(pal(areas), polygon_fill(m))
+  expect_equal(pal("Unknown"), phw_colours[["grey_mid"]], ignore_attr = TRUE)
+  expect_equal(pal(c("Bangor", "Cardiff", "Newport", "Wrexham")), phw_pal(4))
+})
+
+test_that("a factor palette carries \"main\" on into \"extended\" and reverses as phw_pal() does", {
+  lv <- sprintf("g%02d", 1:13)
+  pal <- suppressWarnings(phw_leaflet_palette("main", domain = lv, type = "factor"))
+  expect_equal(pal(lv[1:12]), phw_pal(12))
+  expect_length(unique(pal(lv)), 13)
+  pal <- phw_leaflet_palette("main", domain = c(lv[1:3], "Unknown"), type = "factor", reverse = TRUE)
+  expect_equal(pal(c(lv[1:3], "Unknown")), c(phw_pal(3, reverse = TRUE), phw_colours[["grey_mid"]]))
+})
+
 test_that("a numeric fill with no usable values draws every area as missing, with one message", {
   sq <- squares()
   sq$rate <- c(NA, Inf, NA)
