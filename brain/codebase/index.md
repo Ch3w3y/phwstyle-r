@@ -5,3 +5,4 @@
 - [[codebase/dev-environment]]
 - [[codebase/noodle-runtime-quirks]]
 - [[codebase/grid-measured-heights]]
+- [[codebase/plotly-attrs-traps]]
