@@ -385,6 +385,11 @@ style_summary_ft <- function(ft, x) {
   if (nd) ft <- flextable::align(ft, j = data_j, align = "right", part = "all")
   ch <- attr(x, "col_header")
   sp <- attr(x, "spanner")
+  # Spanner rows copy the column labels' colours. On a dark header band
+  # their rule is white so it stays visible.
+  fill <- ft$header$styles$cells$background.color$data[1, data_j[1]]
+  dark <- nd && fill != "transparent" && phw_text_on(fill) == "#FFFFFF"
+  rule <- if (dark) officer::fp_border(color = "#FFFFFF", width = 0.75) else grey
   if (!is.null(ch) && nd) {
     ch <- ch[, shown - nl, drop = FALSE]
     L <- nrow(ch)
@@ -395,18 +400,16 @@ style_summary_ft <- function(ft, x) {
       r <- rle(key)
       vals <- ch[l, cumsum(r$lengths)]
       ft <- flextable::add_header_row(ft, values = c(rep("", nl), vals), colwidths = c(rep(1, nl), r$lengths))
-      ft <- flextable::hline(ft, i = 1, j = data_j, border = grey, part = "header")
+      ft <- flextable::hline(ft, i = 1, j = data_j, border = rule, part = "header")
     }
     ft <- flextable::merge_v(ft, j = data_j, part = "header")
     ft <- flextable::align(ft, i = seq_len(L - 1), j = data_j, align = "center", part = "header")
     ft <- flextable::bold(ft, part = "header")
-    ft <- flextable::color(ft, i = seq_len(L - 1), color = phw_colours[["navy"]], part = "header")
   } else if (!is.null(sp) && nd) {
     ft <- flextable::add_header_row(ft, values = c(rep("", nl), sp), colwidths = c(rep(1, nl), nd))
     ft <- flextable::align(ft, i = 1, j = data_j, align = "center", part = "header")
     ft <- flextable::bold(ft, part = "header")
-    ft <- flextable::color(ft, i = 1, color = phw_colours[["navy"]], part = "header")
-    ft <- flextable::hline(ft, i = 1, j = data_j, border = grey, part = "header")
+    ft <- flextable::hline(ft, i = 1, j = data_j, border = rule, part = "header")
   }
   note <- attr(x, "note")
   if (!is.null(note)) {

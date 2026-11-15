@@ -261,6 +261,24 @@ test_that("use_phw_flextable() styles are not carried into another style", {
   expect_true(all(ft$body$styles$cells$background.color$data == "transparent"))
 })
 
+test_that("phw_flextable spanners take the header's colours", {
+  skip_if_not_installed("flextable")
+  set.seed(1)
+  ll <- data.frame(group = sample(c("A", "B"), 40, TRUE), area = sample(c("X", "Y"), 40, TRUE),
+                   year = sample(2023:2024, 40, TRUE), quarter = sample(c("Q1", "Q2"), 40, TRUE))
+  spanner <- function(ft) {
+    h <- ft$header$styles
+    list(text = unique(h$text$color$data[1, -1]), rule = unique(h$cells$border.color.bottom$data[1, -1]))
+  }
+  tabs <- list(phw_summary_table(ll, by = group), phw_crosstab(ll, area, group),
+               phw_group_table(ll, area, cols = c(year, quarter)))
+  for (tab in tabs) {
+    expect_equal(spanner(phw_flextable(tab, style = "header")), list(text = "#FFFFFF", rule = "#FFFFFF"))
+    expect_equal(spanner(phw_flextable(tab))$text, phw_colours[["navy"]])
+  }
+  expect_equal(spanner(phw_flextable(tabs[[1]], accent = "#AA0000"))$text, "#AA0000")
+})
+
 test_that("theme styles are checked when they are set", {
   skip_if_not_installed("flextable")
   skip_if_not_installed("gtsummary")
