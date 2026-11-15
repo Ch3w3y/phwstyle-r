@@ -73,6 +73,25 @@ test_that("phw_finalise and phw_title_grob work with gridExtra", {
   expect_s3_class(phw_title_grob("Only a title"), "gtable")
 })
 
+test_that("phw_title_grob makes room for every title and subtitle line", {
+  skip_if_not_installed("gridExtra")
+  grDevices::pdf(NULL)
+  on.exit(grDevices::dev.off(), add = TRUE)
+  top_row <- function(title, subtitle = NULL) {
+    g <- gridExtra::arrangeGrob(grid::nullGrob(), top = phw_title_grob(title, subtitle))
+    grid::convertHeight(g$heights[1], "pt", valueOnly = TRUE)
+  }
+  one <- top_row("Title", "Sub")
+  expect_gt(top_row("Title\nsecond line", "Sub") - one, 14)
+  expect_gt(top_row("Title", "Sub\nsecond line") - one, 11)
+  expect_gt(top_row("Title\nsecond line") - top_row("Title"), 14)
+
+  kids <- phw_title_grob("Title\nsecond line", "Sub")$grobs[[1]]$children
+  title_bottom <- grid::unit(1, "mm") + grid::grobHeight(kids[[1]])
+  sub_top <- grid::unit(1, "npc") - kids[[2]]$y
+  expect_gt(grid::convertHeight(sub_top - title_bottom, "pt", valueOnly = TRUE), 0)
+})
+
 test_that("phw_arrange checks legend, each plot and caption_args", {
   skip_if_not_installed("patchwork")
   p1 <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) + ggplot2::geom_point()
