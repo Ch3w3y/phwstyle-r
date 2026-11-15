@@ -45,29 +45,37 @@ set.seed(2026)
 # 1. Example data: a raw line list (one row per case) and a list of grouped records
 # -----------------------------------------------------------------------------
 
-n <- 600
+# 5,000 cases over two winters, in 22 areas.
+n <- 5000
 cases <- tibble(
   id        = seq_len(n),
-  onset     = as.Date("2025-01-06") + round(rgamma(n, 5, 0.12)),
+  wave      = sample(1:3, n, replace = TRUE, prob = c(0.4, 0.5, 0.1)),
+  onset     = as.Date("2023-09-04") + pmax(0, round(case_when(
+    wave == 1 ~ rnorm(n, 120, 30),
+    wave == 2 ~ rnorm(n, 480, 28),
+    TRUE      ~ runif(n, 0, 640)))),
   age       = round(pmin(95, rgamma(n, 3, 0.07))),
   sex       = sample(c("Female", "Male", NA), n, replace = TRUE, prob = c(0.49, 0.49, 0.02)),
-  area      = sample(paste("Area", LETTERS[1:6]), n, replace = TRUE),
-  setting   = sample(c("Setting 1", "Setting 2", "Setting 3"), n, replace = TRUE, prob = c(0.6, 0.15, 0.25)),
-  organism  = sample(c("Type 1", "Type 2", "Type 3"), n, replace = TRUE, prob = c(0.5, 0.35, 0.15)),
-  outcome   = sample(c("Outcome X", "Outcome Y"), n, replace = TRUE, prob = c(0.8, 0.2)),
+  area      = sample(sprintf("Area %02d", 1:22), n, replace = TRUE),
+  setting   = sample(paste("Setting", 1:4), n, replace = TRUE, prob = c(0.5, 0.15, 0.25, 0.1)),
+  organism  = sample(paste("Type", 1:4), n, replace = TRUE, prob = c(0.45, 0.3, 0.15, 0.1)),
+  outcome   = sample(c("Outcome X", "Outcome Y", "Outcome Z"), n, replace = TRUE, prob = c(0.7, 0.2, 0.1)),
   days      = rpois(n, 4)
 ) |>
-  # Age groups: cut() bands a number.
-  mutate(age_group = cut(age, c(-Inf, 14, 44, 64, Inf),
-                         labels = c("0-14", "15-44", "45-64", "65+")))
+  # Age groups: cut() bands a number. 5-year bands for the pyramid, wider
+  # groups for tables.
+  mutate(age_band = cut(age, c(seq(0, 90, 5), Inf), right = FALSE,
+                        labels = c(paste0(seq(0, 85, 5), "-", seq(4, 89, 5)), "90+")),
+         age_group = cut(age, c(0, 5, 15, 25, 45, 65, 75, Inf), right = FALSE,
+                         labels = c("0-4", "5-14", "15-24", "25-44", "45-64", "65-74", "75+")))
 
 # Grouped records for nested tables: group, then type, by year and quarter.
 dat <- tibble(
-  group = sample(c("Group A", "Group B", "Group C"), 800, replace = TRUE, prob = c(0.45, 0.4, 0.15)),
-  type  = sample(c("Type 1", "Type 2", "Type 3"), 800, replace = TRUE, prob = c(0.45, 0.45, 0.1)),
-  year  = sample(2024:2025, 800, replace = TRUE),
-  quarter = sample(paste0("Q", 1:4), 800, replace = TRUE),
-  days   = rpois(800, 3)
+  group = sample(paste("Group", LETTERS[1:4]), 5000, replace = TRUE, prob = c(0.4, 0.3, 0.2, 0.1)),
+  type  = sample(c("Type 1", "Type 2", "Type 3"), 5000, replace = TRUE, prob = c(0.45, 0.4, 0.15)),
+  year  = sample(2023:2025, 5000, replace = TRUE),
+  quarter = sample(paste0("Q", 1:4), 5000, replace = TRUE),
+  days   = rpois(5000, 3)
 ) |>
   # Factor levels control the order of rows and columns everywhere.
   mutate(type = factor(type, levels = c("Type 1", "Type 2", "Type 3")))
@@ -80,7 +88,7 @@ dat <- tibble(
 # colour in every chart and table, and adding a level never reshuffles the
 # others. Keys last for the session; phw_key_file() saves them to a CSV so
 # they carry across reports and years.
-phw_colour_key(c("Setting 1", "Setting 2", "Setting 3"), name = "setting")
+phw_colour_key(paste("Setting", 1:4), name = "setting")
 # phw_key_file("phw-colours.csv")   # keep keys between reports
 
 # Check any colours for contrast and colour-blind distinguishability:
@@ -93,13 +101,13 @@ phw_check_colours(phw_pal(4))
 # -----------------------------------------------------------------------------
 
 # Bars. The data are aggregated by ggplot (geom_bar counts rows), so no
-# summarising is needed first.
-p_bar <- ggplot(cases, aes(area, fill = setting)) +
+# summarising is needed first. Horizontal bars leave room for 22 area names.
+p_bar <- ggplot(cases, aes(y = area, fill = setting)) +
   geom_bar() +
   scale_fill_phw_d(key = "setting") +       # colours from the key above
   labs(title = "Cases by area and setting",
        subtitle = "Stacked bars",
-       x = NULL, y = "Cases",
+       x = "Cases", y = NULL,
        caption = phw_caption("Example data"))
 p_bar
 
@@ -113,16 +121,18 @@ p_hbar <- ggplot(cases, aes(y = reorder(area, area, length))) +
 weekly <- cases |>
   count(week = lubridate::floor_date(onset, "week", week_start = 1), organism)
 p_line <- ggplot(weekly, aes(week, n, colour = organism, shape = organism)) +
-  geom_line() + geom_point() +
+  geom_line() + geom_point(size = 1.2) +
   scale_colour_phw_d() + scale_shape_phw() +
   labs(title = "Weekly cases by type", x = NULL, y = "Cases")
 
 # Small multiples: facet_wrap works as normal and strips are styled.
+# facet_grid() splits by two variables.
 p_facet <- ggplot(cases, aes(age_group, fill = sex)) +
   geom_bar(position = "dodge") +
-  facet_wrap(~setting) +
+  facet_grid(outcome ~ setting, scales = "free_y") +
+  scale_x_discrete(guide = guide_axis(angle = 90)) +
   scale_fill_phw_d() +                       # NA (missing sex) shows in grey
-  labs(title = "Cases by age group, sex and setting", x = NULL, y = "Cases")
+  labs(title = "Cases by age group, sex, outcome and setting", x = NULL, y = "Cases")
 
 # Continuous and diverging colour scales.
 p_heat <- cases |>
@@ -137,7 +147,7 @@ p_heat <- cases |>
 # Add the logo, source and date bar under a chart, then save at the right
 # size. phw_save() uses the ragg device so the bundled font always works.
 fin <- phw_finalise(p_bar, source = "Example data", date = Sys.Date())
-phw_save(fin, out("bar-finalised.png"), width = 16, height = 10)
+phw_save(fin, out("bar-finalised.png"), width = 16, height = 13)
 if (requireNamespace("svglite", quietly = TRUE)) {
   phw_save(p_line, out("line.svg"), width = 16, height = 10)   # SVG for web
 }
@@ -187,21 +197,21 @@ p_epi <- phw_epicurve(cases, onset, group = organism, interval = "week") +
   labs(title = "Cases by week of onset", x = "Week beginning", y = "Cases")
 phw_save(p_epi, out("epicurve.png"))
 
-# Population pyramid, as percentages.
-p_pyr <- phw_pyramid(filter(cases, !is.na(sex)), age = age_group, sex = sex, percent = TRUE) +
+# Population pyramid in 5-year age bands, as percentages.
+p_pyr <- phw_pyramid(filter(cases, !is.na(sex)), age = age_band, sex = sex, percent = TRUE) +
   labs(title = "Cases by age and sex")
 
 # Funnel plot: one row per unit with a numerator and denominator.
-units <- tibble(area = paste("Area", 1:30), eligible = round(runif(30, 300, 6000))) |>
+units <- tibble(unit = sprintf("Unit %03d", 1:150), eligible = round(runif(150, 300, 12000))) |>
   mutate(events = rbinom(n(), eligible, 0.72))
-p_funnel <- phw_funnel(units, events, eligible, label = area) +
-  labs(title = "Proportion by area", x = "Population", y = "Proportion (%)")
+p_funnel <- phw_funnel(units, events, eligible, label = unit) +
+  labs(title = "Proportion by unit", x = "Population", y = "Proportion (%)")
 
 # SPC chart (XmR), with limits from a baseline period and the direction
 # that counts as improvement.
-monthly <- tibble(month = seq(as.Date("2023-01-01"), by = "month", length.out = 30),
-                  value = c(rnorm(20, 50, 4), rnorm(10, 57, 4)))
-p_spc <- phw_spc(monthly, month, value, improvement = "increase", baseline = 20) +
+monthly <- tibble(month = seq(as.Date("2021-01-01"), by = "month", length.out = 60),
+                  value = c(rnorm(42, 50, 3), rnorm(18, 56, 3)))
+p_spc <- phw_spc(monthly, month, value, improvement = "increase", baseline = 24) +
   labs(title = "Monthly measure", y = "Value")
 
 # -----------------------------------------------------------------------------
@@ -215,24 +225,30 @@ if (requireNamespace("sf", quietly = TRUE) && requireNamespace("jsonlite", quiet
 
   # Downloads once, then reads from your cache. Columns: code, name,
   # name_cy (Welsh) and geometry.
-  hb <- phw_boundaries("health_board")
+  # Middle layer super output areas: about 400 small areas.
+  msoa <- phw_boundaries("msoa")
+
+  # Made-up rates, higher in the south, for every area.
+  northing <- sf::st_coordinates(sf::st_point_on_surface(sf::st_geometry(msoa)))[, "Y"]
+  rates <- tibble(code = msoa$code,
+                  rate = round(30 + 40 * (max(northing) - northing) / diff(range(northing)) +
+                                 rnorm(nrow(msoa), 0, 6), 1))
 
   # Join your data on the ONS code (or the name). Put the boundaries first
   # so the result keeps its map geometry.
-  rates <- tibble(code = hb$code, rate = round(runif(nrow(hb), 20, 80), 1))
-  hb <- left_join(hb, rates, by = "code")
+  msoa <- left_join(msoa, rates, by = "code")
 
-  p_map <- ggplot(hb) +
-    geom_sf(aes(fill = rate), colour = "white", linewidth = 0.3) +
+  p_map <- ggplot(msoa) +
+    geom_sf(aes(fill = rate), colour = "white", linewidth = 0.1) +
     scale_fill_phw_b(name = "Rate per\n100,000") +    # binned scale reads well on maps
     theme_phw_map() +
-    labs(title = "Rate by health board", caption = attr(hb, "attribution"))
+    labs(title = "Rate by MSOA", caption = paste(strwrap(attr(msoa, "attribution"), 70), collapse = "\n"))
   phw_save(p_map, out("map.png"), width = 14, height = 14)
 
   # Interactive map with leaflet (needs longitude/latitude: crs = 4326).
   if (requireNamespace("leaflet", quietly = TRUE)) {
     m <- phw_leaflet() |>
-      phw_leaflet_polygons(sf::st_transform(hb, 4326), fill = rate, bins = 4,
+      phw_leaflet_polygons(sf::st_transform(msoa, 4326), fill = rate, bins = 4,
                            label = name, legend_title = "Rate")
     htmlwidgets::saveWidget(m, out("map.html"))
   }
@@ -265,11 +281,14 @@ rates_tab <- phw_rate_table(agg, c(age_group, sex), cases, population,
                             labels = list(age_group = "Age group", sex = "Sex"))
 
 # Attack rates and relative risks by exposure (outbreak style).
-outbreak <- tibble(exposure_a = sample(c("Yes", "No"), 120, replace = TRUE),
-                   exposure_b = sample(c("Yes", "No"), 120, replace = TRUE)) |>
+outbreak <- tibble(exposure_a = sample(c("Yes", "No"), 400, replace = TRUE),
+                   exposure_b = sample(c("Yes", "No"), 400, replace = TRUE),
+                   exposure_c = sample(c("Yes", "No"), 400, replace = TRUE),
+                   exposure_d = sample(c("Yes", "No"), 400, replace = TRUE)) |>
   mutate(ill = rbinom(n(), 1, if_else(exposure_a == "Yes", 0.6, 0.15)))
-risk_tab <- phw_risk_table(outbreak, c(exposure_a, exposure_b), ill,
-                           labels = list(exposure_a = "Exposure A", exposure_b = "Exposure B"))
+risk_tab <- phw_risk_table(outbreak, c(exposure_a, exposure_b, exposure_c, exposure_d), ill,
+                           labels = list(exposure_a = "Exposure A", exposure_b = "Exposure B",
+                                         exposure_c = "Exposure C", exposure_d = "Exposure D"))
 
 # Nested groups from a raw data frame: group, then type, split by year and
 # quarter. Group rows carry their totals; there is a table total and a
@@ -296,7 +315,8 @@ if (requireNamespace("flextable", quietly = TRUE)) {
   ft1 <- phw_flextable(tab1, caption = "Characteristics by outcome", number = 1, source = "Example data")
   ft2 <- phw_flextable(nested, caption = "Counts by group and type", number = 2, source = "Example data")
   # Extra formats: heat colours and in-cell bars.
-  ft3 <- phw_flextable_heat(phw_flextable(phw_crosstab(cases, area, age_group)), j = 2:5)
+  ft3 <- phw_flextable_heat(phw_flextable(phw_crosstab(cases, area, age_group)),
+                            j = seq_len(nlevels(cases$age_group)) + 1)
   ft4 <- phw_flextable_bars(phw_flextable(count(cases, Area = area, name = "Cases")), Cases)
   # Several tables in one Word file:
   flextable::save_as_docx(`Table 1` = ft1, `Table 2` = ft2, `Heat` = ft3, `Bars` = ft4, path = out("tables.docx"))
@@ -376,7 +396,7 @@ if (requireNamespace("openxlsx2", quietly = TRUE)) {
 if (requireNamespace("officer", quietly = TRUE)) {
   # Pass your organisation's template with phw_pptx("template.pptx").
   deck <- phw_pptx() |>
-    phw_add_slide("Key messages", text = c("Cases peaked in early February", "Most cases were in the community")) |>
+    phw_add_slide("Key messages", text = c("Cases peaked in late December", "Most cases were in the community")) |>
     phw_add_slide("Cases by week", plot = p_epi, source = "Example data") |>   # editable with rvg
     phw_add_slide("Grouped table", table = phw_group_table(dat, c(group, type), year), source = "Example data")
   print(deck, target = out("slides.pptx"))
