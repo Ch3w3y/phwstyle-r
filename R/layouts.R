@@ -90,23 +90,32 @@ phw_arrange <- function(..., plots = NULL, ncol = NULL, nrow = NULL, widths = NU
 phw_title_grob <- function(title, subtitle = NULL, size = 14, margin = 3) {
   fam <- phw_font()
   x <- grid::unit(margin, "mm")
-  t <- grid::textGrob(title, x = x, hjust = 0, vjust = 1, y = grid::unit(1, "npc") - grid::unit(1, "mm"),
+  gap <- grid::unit(size * 0.7, "pt")
+  top <- grid::unit(1, "mm")
+  t <- grid::textGrob(title, x = x, hjust = 0, vjust = 1, y = grid::unit(1, "npc") - top,
                       gp = grid::gpar(fontfamily = fam, fontface = "bold", fontsize = size,
                                       col = phw_colours[["navy"]]))
   kids <- list(t)
-  h <- size * 1.6
+  h <- top + grid::grobHeight(t) + gap
   if (!is.null(subtitle)) {
-    s <- grid::textGrob(subtitle, x = x, hjust = 0, vjust = 1,
-                        y = grid::unit(1, "npc") - grid::unit(1, "mm") - grid::unit(size * 1.4, "pt"),
+    s <- grid::textGrob(subtitle, x = x, hjust = 0, vjust = 1, y = grid::unit(1, "npc") - h,
                         gp = grid::gpar(fontfamily = fam, fontsize = size * 0.8,
                                         col = phw_colours[["text_secondary"]]))
     kids <- c(kids, list(s))
-    h <- h + size * 1.2
+    h <- h + grid::grobHeight(s) + gap
   }
   wrap_title_height(grid::gTree(children = do.call(grid::gList, kids), name = "phw-title"), h)
 }
 
 wrap_title_height <- function(g, h) {
-  gt <- gtable::gtable(widths = grid::unit(1, "null"), heights = grid::unit(h, "pt"))
-  gtable::gtable_add_grob(gt, g, t = 1, l = 1, clip = "off", name = "phw-title")
+  gt <- gtable::gtable(widths = grid::unit(1, "null"), heights = h)
+  gt <- gtable::gtable_add_grob(gt, g, t = 1, l = 1, clip = "off", name = "phw-title")
+  class(gt) <- c("phw_title", class(gt))
+  gt
 }
+
+# gtable's own method passes the heights through absolute.size(), which turns
+# the measured text heights into null units, so gridExtra's `top =` row would
+# lose them.
+#' @exportS3Method grid::heightDetails
+heightDetails.phw_title <- function(x) sum(x$heights)

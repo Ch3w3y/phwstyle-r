@@ -54,6 +54,9 @@ says what to change.
   them and wraps to the width of the chart.
 * `phw_finalise()` on a `phw_arrange()` figure keeps every panel, the
   figure title and the panel tags. Before, only the last panel was kept.
+* `phw_title_grob()` makes room for a title or subtitle on more than one
+  line. Before, the subtitle was drawn over the second title line, and
+  without a subtitle the second line ran into the plot.
 * `phw_save(bg = )` sets the background of the saved file, so
   `bg = "transparent"` gives a transparent PNG. Before, the white
   `theme_phw()` background covered it, and a `phw_finalise()` chart took
