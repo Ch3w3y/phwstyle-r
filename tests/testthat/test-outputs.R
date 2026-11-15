@@ -58,6 +58,21 @@ test_that("phw_write_xlsx writes styled sheets", {
   expect_equal(d$mpg[1], 21)
 })
 
+test_that("phw_write_xlsx number formats follow digits", {
+  skip_if_not_installed("openxlsx2")
+  formats <- function(digits) {
+    f <- withr::local_tempfile(fileext = ".xlsx")
+    phw_write_xlsx(data.frame(area = c("A", "B"), rate = c(1.234, 5.6)), f, digits = digits)
+    ex <- withr::local_tempdir()
+    utils::unzip(f, exdir = ex)
+    styles <- paste(readLines(file.path(ex, "xl", "styles.xml"), warn = FALSE), collapse = "")
+    regmatches(styles, gregexpr('(?<=formatCode=")[^"]*', styles, perl = TRUE))[[1]]
+  }
+  expect_true("#,##0" %in% formats(0))
+  expect_false(any(grepl("\\.$", formats(0))))
+  expect_true("#,##0.00" %in% formats(2))
+})
+
 test_that("phw_pptx builds a deck", {
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")

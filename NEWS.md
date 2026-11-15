@@ -152,6 +152,8 @@ says what to change.
 * `phw_write_xlsx()` writes the spanner, navy labels, italic subtotals, a rule
   above the total, ISO dates and a bold right-aligned source. It checks `x`
   and accepts `header_fill = "navy"`.
+* `phw_write_xlsx(digits = 0)` writes whole numbers as `1,235`. Before, the
+  number format had a trailing point, so Excel showed `1,235.`.
 * `phw_write_xlsx()` stops when two sheet names become the same once
   cleaned for Excel, such as `"North/South"` and `"North?South"`, `"Cases"`
   and `"cases"`, or two long names that share their first 31 characters.
