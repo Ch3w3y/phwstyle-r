@@ -84,7 +84,7 @@ Group findings by document, titled `Docs: <document or area>`. Do not file wordi
 
 The website is built by the `pkgdown` workflow and published to GitHub Pages on every push to `main`. Check, for the current `origin/main` commit `<SHA>`:
 
-1. The `R-CMD-check` and `pkgdown` runs for `<SHA>` both passed. Find each with `gh run list --workflow <name> --branch main --json databaseId,headSha,status,conclusion` and pick the run whose `headSha` is `<SHA>`.
+1. The full `R-CMD-check` run and the `pkgdown` run for `<SHA>` both passed. Pull requests run only part of R-CMD-check and pushes to `main` run none of it, so start the full run yourself with `gh workflow run R-CMD-check --ref main`, unless a `workflow_dispatch` or `schedule` run for `<SHA>` already exists. Find each run with `gh run list --workflow <name> --branch main --json databaseId,headSha,event,status,conclusion` and pick the run whose `headSha` is `<SHA>` (for R-CMD-check, one whose `event` is `workflow_dispatch` or `schedule`). A run you just started can take a minute to appear.
 2. If either run is still queued or running, wait for it: check `gh run view <databaseId> --json status,conclusion` every 60 seconds, for up to 30 minutes in all, keeping each shell call under 10 minutes.
 3. The live site at the first `URL` in `DESCRIPTION` serves the home page, the reference index, the gallery and every article, and shows the version in `DESCRIPTION`. Spot-check that a change merged since the last release tag (`gh release list --limit 1`) appears on it.
 

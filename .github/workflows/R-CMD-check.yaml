@@ -1,5 +1,24 @@
-# Runs R CMD check (with the tests) on every push and pull request. Based on
-# r-lib/actions.
+# Runs R CMD check (with the tests). Based on r-lib/actions.
+#
+# Which jobs run:
+#
+# * Pull requests: the three jobs marked "pr" in .github/ci-matrix.json
+#   (Linux with LaTeX, Windows, and the oldest versions), and only when
+#   the pull request changes a file that goes into the package (anything
+#   .Rbuildignore keeps), this workflow, ci-matrix.json or
+#   .github/scripts/package-files.pl. A pull request that changes
+#   only the loop's skills, brain notes, the gallery or data-raw runs the
+#   "Choose jobs" job alone. A new push cancels the run before it.
+# * Every Monday, on demand (Actions > R-CMD-check > Run workflow), and
+#   before a release: every job in .github/ci-matrix.json.
+# * Pushes to main run nothing here. Each pull request was checked against
+#   main as it was then; two pull requests merged close together are only
+#   checked together by the next full run. The pkgdown workflow still
+#   builds the site from main.
+# * Boundary updates (update-boundaries.yaml) start a full run on their
+#   branch, because a pull request opened by a workflow triggers none.
+#
+# The jobs in .github/ci-matrix.json:
 #
 # Analysts don't all have the same versions of R, of the packages phwstyle
 # uses, or of the document tools, and phwstyle takes different routes
@@ -28,39 +47,65 @@
 # data-raw/version-battery/battery.sh runs the same cells on one machine,
 # with more versions of Pandoc and Quarto.
 on:
-  push:
-    branches: [main, master]
   pull_request:
+  schedule:
+    - cron: '0 5 * * 1'
   workflow_dispatch:
 
 name: R-CMD-check
 
 permissions: read-all
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+  plan:
+    name: Choose jobs
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: plan
+        shell: bash
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          filter='.'
+          if [ "$EVENT" = pull_request ]; then
+            changed=$(git -c core.quotePath=false diff --name-only --no-renames "$BASE...$HEAD")
+            package=$(printf '%s\n' "$changed" | perl .github/scripts/package-files.pl)
+            ci=$(printf '%s\n' "$changed" | grep -E '^\.github/(workflows/R-CMD-check\.yaml|ci-matrix\.json|scripts/package-files\.pl)$' || true)
+            relevant=$(printf '%s\n' "$package" "$ci" | sed '/^$/d')
+            if [ -n "$relevant" ]; then
+              filter='[.[] | select(.pr)]'
+              { echo "Files that need the check:"; echo '```'; echo "$relevant"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+            else
+              filter='[]'
+              echo "No file in this pull request goes into the package, so the check is skipped." >> "$GITHUB_STEP_SUMMARY"
+            fi
+          fi
+          matrix=$(jq -c "$filter" .github/ci-matrix.json)
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
   R-CMD-check:
+    needs: plan
+    if: needs.plan.outputs.matrix != '[]'
     runs-on: ${{ matrix.config.os }}
     name: ${{ matrix.config.os }} (${{ matrix.config.r }}) ${{ matrix.config.label }}
     continue-on-error: ${{ matrix.config.allow-failure == true }}
     strategy:
       fail-fast: false
       matrix:
-        config:
-          - {os: macos-latest,   r: 'release'}
-          - {os: windows-latest, r: 'release'}
-          - {os: windows-latest, r: 'oldrel-1'}
-          - {os: windows-latest, r: '4.3', label: 'minimum R'}
-          - {os: ubuntu-latest,  r: 'devel', http-user-agent: 'release'}
-          - {os: ubuntu-latest,  r: 'release', latex: true}
-          - {os: ubuntu-latest,  r: 'oldrel-1'}
-          - {os: ubuntu-latest,  r: 'oldrel-2'}
-          - {os: ubuntu-latest,  r: '4.3', label: 'minimum R'}
-          - {os: ubuntu-latest,  r: 'release', label: 'ggplot2 3.5', extra: 'ggplot2@3.5.2'}
-          - {os: ubuntu-22.04,   r: '4.3.3',   label: 'oldest (CRAN 2024-06)', extra: 'ggplot2@3.5.0', snapshot: '2024-06-03', quarto: '1.5.57', pandoc: '2.19.2', error-on: '"error"'}
-          - {os: ubuntu-22.04,   r: '4.4.2',   label: 'CRAN 2024-12', snapshot: '2024-12-02', quarto: '1.6.43', pandoc: '3.1.11', error-on: '"error"'}
-          - {os: ubuntu-24.04,   r: '4.5.0',   label: 'CRAN 2025-06', snapshot: '2025-06-02', quarto: '1.7.34', pandoc: '3.6.4', error-on: '"error"'}
-          - {os: ubuntu-24.04,   r: '4.5.2',   label: 'CRAN 2025-12', snapshot: '2025-12-01', quarto: '1.8.26', pandoc: '3.6.4', error-on: '"error"'}
-          - {os: ubuntu-latest,  r: 'release', label: 'ggplot2 dev', extra: 'tidyverse/ggplot2', allow-failure: true}
+        config: ${{ fromJSON(needs.plan.outputs.matrix) }}
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes

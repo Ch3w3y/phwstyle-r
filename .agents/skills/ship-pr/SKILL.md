@@ -39,7 +39,7 @@ Read the PR's latest comment whose first line is `PASS`, `PASS+NOTES` or `FAIL`,
 - **Verdict for an older head, or no verdict:** do not merge. Go to step 4 (this counts as a retry, so it cannot repeat without end).
 - **FAIL:** do not merge. Go to step 4.
 - **PASS or PASS+NOTES for the current head:** wait for CI with `gh pr checks <n> --watch --interval 60`, then read `gh pr checks <n> --json name,state,workflow`.
-  - All green: go to step 3. Green means at least one check has `"workflow": "R-CMD-check"` and every check has `"state": "SUCCESS"`. An empty list ("no checks reported") or any pending check is not green: wait again, and after 60 minutes treat it as a failure.
+  - All green: go to step 3. Green means at least one check has `"workflow": "R-CMD-check"` and `"state": "SUCCESS"`, and every check has `"state"` `SUCCESS` or `SKIPPED`. R-CMD-check skips its check jobs when no file in the PR goes into the package (its `Choose jobs` job decides), so a PR that changes only skills, brain notes or the gallery shows them as `SKIPPED`: that is green. An empty list ("no checks reported"), an R-CMD-check that shows only its `Choose jobs` check, or any pending check is not green: wait again, and after 60 minutes treat it as a failure.
   - Any failure: post a comment on the PR whose first line is `FAIL`, second line `Head: <sha>`, then the failing jobs and the key error lines from `gh run view <run> --log-failed` (at most 15 lines). Go to step 4.
 
 ## 3. Merge
