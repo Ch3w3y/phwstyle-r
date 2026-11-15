@@ -135,6 +135,9 @@ says what to change.
   `digits`.
 * `phw_datatable()` keeps the `columnDefs` you give in `options` for a
   summary table. Before, the table's own column settings replaced them.
+* `phw_reactable()` and `phw_datatable()` show date-times at the clock time
+  of their own time zone, as `2026-07-01 10:00:00`, like `phw_flextable()`.
+  Before, they showed them in UTC.
 * `phw_write_xlsx()` writes the spanner, navy labels, italic subtotals, a rule
   above the total, ISO dates and a bold right-aligned source. It checks `x`
   and accepts `header_fill = "navy"`.
