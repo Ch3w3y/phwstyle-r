@@ -341,6 +341,20 @@ test_that("reverse flips a function palette and keeps its order", {
   expect_equal(toupper(fill_of(reverse = TRUE)), toupper(rev(grDevices::hcl.colors(3))))
 })
 
+test_that("sequential and diverging palettes spread over the groups as phw_pal() does", {
+  fill_of <- function(groups, ...) {
+    d <- data.frame(x = seq_along(groups), y = 1, g = groups)
+    p <- ggplot2::ggplot(d, ggplot2::aes(x, y, fill = g)) + ggplot2::geom_col() +
+      scale_fill_phw_d(...)
+    ggplot2::layer_data(p)$fill
+  }
+  expect_equal(fill_of(c("a", "b", "c"), "blues"), phw_pal(3, "blues"))
+  expect_equal(fill_of(c("a", "b", "c"), "orange_navy"), phw_pal(3, "orange_navy"))
+  expect_equal(fill_of(c("a", "b", "c"), "blues", reverse = TRUE), phw_pal(3, "blues", reverse = TRUE))
+  expect_equal(fill_of(c("a", "b", "Unknown"), "blues"),
+               c(phw_pal(2, "blues"), phw_colours[["grey_mid"]]))
+})
+
 test_that("reverse carries \"main\" on into \"extended\" as phw_pal() does", {
   fill_of <- function(groups) {
     d <- data.frame(x = seq_along(groups), y = 1, g = groups)

@@ -22,7 +22,8 @@ character vector.}
 with no memory.}
 
 \item{palette}{Palette for new groups: a name from \link{phw_palettes}, or a
-vector of colours.}
+vector of colours. A sequential or diverging palette is spread over the
+groups, as in \code{\link[=phw_pal]{phw_pal()}}.}
 
 \item{fixed}{Named vector of colours to pin, e.g.
 \code{c(Wales = "#285087")}. Pinned colours replace any stored colour.}

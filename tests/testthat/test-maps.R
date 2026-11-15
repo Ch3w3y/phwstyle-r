@@ -43,6 +43,16 @@ test_that("text fills use the group palette and keep factor levels", {
   expect_false(cols[1] == cols[2])
 })
 
+test_that("ten deciles take the whole sequential palette, as phw_pal() does", {
+  skip_if_not_installed("sf")
+  square <- function(x) sf::st_polygon(list(rbind(c(x, 0), c(x + 1, 0), c(x + 1, 1), c(x, 1), c(x, 0))))
+  areas <- sf::st_sf(code = paste0("A", 1:10), name = paste("Area", 1:10),
+                     geometry = sf::st_sfc(lapply(1:10, square)))
+  d <- data.frame(area = areas$code, decile = factor(1:10))
+  expect_no_warning(p <- phw_map(d, by = area, fill = decile, level = areas, palette = "blues"))
+  expect_equal(fills(p), phw_pal(10, "blues"))
+})
+
 test_that("areas without data are drawn in the NA colour", {
   areas <- tiny_areas()
   p <- phw_map(data.frame(area = c("A1", "A2"), rate = c(1, 2)), by = area, fill = rate, level = areas)

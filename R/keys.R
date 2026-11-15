@@ -43,7 +43,8 @@ default_neutral <- c("Other", "Others", "Unknown", "Not known", "Not stated", "M
 #' @param name Key name, e.g. `"age_group"`. `NULL` gives colours in order
 #'   with no memory.
 #' @param palette Palette for new groups: a name from [phw_palettes], or a
-#'   vector of colours.
+#'   vector of colours. A sequential or diverging palette is spread over the
+#'   groups, as in [phw_pal()].
 #' @param fixed Named vector of colours to pin, e.g.
 #'   `c(Wales = "#285087")`. Pinned colours replace any stored colour.
 #' @param neutral Group names to draw in `neutral_colour`. Matching ignores
@@ -76,6 +77,7 @@ phw_colour_key <- function(levels, name = NULL, palette = phw_default_palette(),
   # A palette function is asked once for every group, so its colours stay
   # in its own order.
   if (is.function(palette) && length(lv)) palette <- phw_pal(length(lv), palette)
+  palette <- spread_palette(palette, sum(!tolower(lv) %in% tolower(neutral)))
   # "main" is the start of "extended", so groups past the sixth carry on
   # into it. A key grows over time, so it can't wait to see how many groups
   # there are.
@@ -105,8 +107,19 @@ phw_colour_key <- function(levels, name = NULL, palette = phw_default_palette(),
 reverse_key_palette <- function(palette, levels, neutral = default_neutral) {
   if (is.function(palette)) return(function(n) rev(palette(n)))
   n <- sum(!tolower(levels) %in% tolower(neutral))
-  pal <- palette_colours(palette_for(palette, n))
+  pal <- palette_colours(spread_palette(palette_for(palette, n), n))
   rev(pal[seq_len(min(n, length(pal)))])
+}
+
+# A sequential or diverging palette spreads over the `n` groups, as
+# phw_pal() does, so groups run from light to dark (or from one side to the
+# other) rather than taking the palest steps.
+spread_palette <- function(palette, n) {
+  if (is.character(palette) && length(palette) == 1 && palette %in% names(phw_palettes) &&
+      palette_type(palette) != "qualitative") {
+    return(phw_pal(n, palette))
+  }
+  palette
 }
 
 # The accessible palette keeps its own copy of each key, so switching a
@@ -232,7 +245,7 @@ phw_key_recolour <- function(name, palette = "accessible", neutral = default_neu
   if (!length(old)) cli::cli_abort("No key called {.val {name}}.")
   keep <- toupper(old) == phw_colours[["grey_mid"]] | tolower(names(old)) %in% tolower(neutral)
   n <- sum(!keep)
-  palette <- if (is.function(palette)) phw_pal(max(n, 1), palette) else palette_for(palette, n)
+  palette <- if (is.function(palette)) phw_pal(max(n, 1), palette) else spread_palette(palette_for(palette, n), n)
   vals <- old
   fresh <- character()
   for (l in names(old)[!keep]) {

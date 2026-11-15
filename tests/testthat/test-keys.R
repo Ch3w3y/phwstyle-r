@@ -19,6 +19,14 @@ test_that("keys switch palette only for new groups, and recolour on request", {
   expect_equal(unname(r), phw_palettes$accessible[1:3])
 })
 
+test_that("a key spreads a sequential palette over its groups", {
+  phw_key_reset("t_seq")
+  withr::defer(phw_key_reset("t_seq"))
+  expect_equal(unname(phw_colour_key(c("a", "b", "c"), "t_seq", palette = "blues")), phw_pal(3, "blues"))
+  r <- phw_key_recolour("t_seq", "orange_navy")
+  expect_equal(unname(r), phw_pal(3, "orange_navy"))
+})
+
 test_that("recolouring to \"main\" carries on into \"extended\"", {
   phw_key_reset("t_big")
   withr::defer(phw_key_reset("t_big"))
