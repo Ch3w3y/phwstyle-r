@@ -149,6 +149,18 @@ test_that("phw_datatable draws the spanner, column levels, group lines and right
   expect_match(as.character(phw_dt_css()$head), "font-size: 14px", fixed = TRUE)
 })
 
+test_that("phw_datatable keeps your columnDefs for a summary table", {
+  skip_if_not_installed("DT")
+  mine <- list(width = "200px", targets = 1)
+  w <- phw_datatable(make_groups(), options = list(columnDefs = list(mine)))
+  defs <- w$x$options$columnDefs
+  at <- function(keep) which(vapply(defs, keep, logical(1)))
+  hide <- at(function(d) isFALSE(d$visible))
+  expect_lt(at(function(d) identical(d, mine)), hide)
+  hidden <- defs[[hide]]
+  expect_equal(names(w$x$data)[hidden$targets + 1], ".phw_row")
+})
+
 test_that("phw_flextable's source line is bold and not italic under a summary note", {
   skip_if_not_installed("flextable")
   ft <- phw_flextable(phw_summary_table(data.frame(a = c("x", "y"))), source = "Probe")

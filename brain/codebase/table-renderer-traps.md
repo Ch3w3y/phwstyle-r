@@ -5,3 +5,4 @@
 - **One row model for all renderers.** `summary_rows()` in R/summaries.R decides shading, bold, italic, navy, rules and indents for every summary and group row. Change the look there, not in one renderer, so the five stay the same.
 - **Shading rule:** shade variable and group rows when `attr(x, "highlight") %||% TRUE`.
 - To compare all five renderers by eye, render the same inputs through each one and montage the screenshots: HTML via headless Firefox, docx and xlsx via the `phw-lo-writer` image ([[codebase/render-pptx-with-libreoffice]]).
+- **DataTables `columnDefs`: earlier definitions win.** DataTables 1.13 reads the array from last to first, so the first definition that sets a property wins. `className` is the exception: classes add up, and `dt-right` beats `dt-left` in the stylesheet. `utils::modifyList()` replaces unnamed lists whole, so join `columnDefs` with `c()`, never through `modifyList()`.
