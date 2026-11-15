@@ -58,6 +58,10 @@ says what to change.
   colour of their group, not of their row, so a pie and a bar chart of the
   same data match. Traces added with their own `data` are coloured from
   that data, and all traces share one set of colours.
+* `phw_plotly()` gives a ggplot with no colour or fill scale of its own the
+  colours the static chart has. Before, a continuous colour started from the
+  palest blue, groups such as "Other" turned grey and `NA` was a lighter
+  grey than in the static chart.
 
 ## Charts and maps
 

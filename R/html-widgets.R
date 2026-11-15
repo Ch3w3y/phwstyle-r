@@ -305,8 +305,8 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
 }
 
 # plotly::ggplotly() builds the plot itself and ignores palettes stored in
-# the theme (ggplot2 >= 4.0), so add PHW scales explicitly where the plot
-# has none.
+# the theme (ggplot2 >= 4.0), so add the default scales use_phw_ggplot()
+# gives a static chart where the plot has none.
 ggplotly_phw <- function(p) {
   b <- ggplot2::ggplot_build(p)
   has <- vapply(c("colour", "fill"), function(a) !is.null(b$plot$scales$get_scales(a)), logical(1))
@@ -315,12 +315,8 @@ ggplotly_phw <- function(p) {
   }, logical(1))
   for (a in c("colour", "fill")) {
     if (has[[a]] && !user[[a]]) {
-      sc <- b$plot$scales$get_scales(a)
-      p <- p + if (sc$is_discrete()) {
-        if (a == "colour") scale_colour_phw_d() else scale_fill_phw_d()
-      } else {
-        if (a == "colour") scale_colour_phw_c() else scale_fill_phw_c()
-      }
+      discrete <- b$plot$scales$get_scales(a)$is_discrete()
+      p <- p + phw_default_scale(a, if (discrete) "discrete" else "continuous")
     }
   }
   plotly::ggplotly(p)

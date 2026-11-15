@@ -107,3 +107,26 @@ test_that("traces with their own data share one set of group colours", {
   cols <- trace_colours(p)
   expect_equal(cols, ggplot_colours(rbind(d1, d2))[names(cols)])
 })
+
+test_that("a ggplot without a colour scale draws the same colours static and in plotly", {
+  local_ggplot_state()
+  use_phw_ggplot()
+  df <- data.frame(x = 1:5, y = 1:5, v = c(0, 25, 50, 75, 100), g = c("A", "Other", "B", NA, "A"))
+  static <- function(p, aes) {
+    g <- as.character(df$g)
+    g[is.na(g)] <- "NA"
+    stats::setNames(plotly::toRGB(ggplot2::layer_data(p)[[aes]]), g)
+  }
+
+  ramp <- ggplot2::ggplot(df, ggplot2::aes(x, y, colour = v)) + ggplot2::geom_point()
+  drawn <- unlist(lapply(built(phw_plotly(ramp))$data, function(t) t$marker$color))
+  expect_equal(drawn[seq_len(nrow(df))], unname(static(ramp, "colour")))
+
+  points <- ggplot2::ggplot(df, ggplot2::aes(x, y, colour = g)) + ggplot2::geom_point()
+  cols <- trace_colours(points)
+  expect_equal(cols, static(points, "colour")[names(cols)])
+
+  bars <- ggplot2::ggplot(df, ggplot2::aes(x, y, fill = g)) + ggplot2::geom_col()
+  cols <- trace_colours(bars)
+  expect_equal(cols, static(bars, "fill")[names(cols)])
+})
