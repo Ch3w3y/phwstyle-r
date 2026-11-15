@@ -151,6 +151,40 @@ test_that("MSOA boundaries download from DataMapWales", {
   expect_equal(attr(msoa, "source"), "datamapwales")
 })
 
+test_that("communities that share a name stay separate areas", {
+  skip_if_not_installed("sf")
+  skip_if_not_installed("jsonlite")
+  withr::local_options(phwstyle.boundary_dir = withr::local_tempdir(), phwstyle.boundary_update = FALSE)
+  castle <- function(code, x) {
+    sprintf('{"type":"Feature","properties":{"PARNCP26CD":"%s","PARNCP26NM":"Castle","PARNCP26NW":"Castell"},"geometry":{"type":"Polygon","coordinates":[[[%s,51.5],[%s,51.5],[%s,51.6],[%s,51.6],[%s,51.5]]]}}',
+            code, x, x + 0.1, x + 0.1, x, x)
+  }
+  local_mocked_bindings(
+    download_dmw = function(row, file) stop("not this source"),
+    download_ons = function(row, file) {
+      writeLines(sprintf('{"type":"FeatureCollection","features":[%s,%s]}',
+                         castle("W04000171", -3.2), castle("W04000979", -3.9)), file)
+    })
+  x <- phw_boundaries("community", quiet = TRUE)
+  expect_equal(x$code, c("W04000171", "W04000979"))
+  expect_equal(x$name, c("Castle", "Castle"))
+  expect_equal(x$name_cy, c("Castell", "Castell"))
+})
+
+test_that("community boundaries download with a code for each community", {
+  skip_on_cran()
+  skip_if_offline("services1.arcgis.com")
+  skip_if_not_installed("sf")
+  skip_if_not_installed("jsonlite")
+  withr::local_options(phwstyle.boundary_dir = withr::local_tempdir())
+  cm <- phw_boundaries("community", detail = "super", quiet = TRUE)
+  expect_equal(nrow(cm), 878)
+  expect_true(all(startsWith(cm$code, "W04")))
+  expect_false(anyDuplicated(cm$code) > 0)
+  expect_equal(sum(cm$name == "Castle"), 2)
+  expect_false(anyNA(cm$name_cy))
+})
+
 # One health board as GeoJSON, with the fields of the given release.
 one_board <- function(prefix = "LHB23") {
   sprintf('{"type":"FeatureCollection","features":[{"type":"Feature","properties":{"%sCD":"W11000001","%sNM":"A","%sNMW":"B"},"geometry":{"type":"Point","coordinates":[-3.5,52]}}]}',
