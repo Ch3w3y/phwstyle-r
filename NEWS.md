@@ -52,6 +52,8 @@ says what to change.
 * `phw_finalise()` keeps the footer readable on narrow charts. When the
   source does not fit beside the logo or organisation name, it moves above
   them and wraps to the width of the chart.
+* `phw_finalise()` on a `phw_arrange()` figure keeps every panel, the
+  figure title and the panel tags. Before, only the last panel was kept.
 
 ## Tables
 
