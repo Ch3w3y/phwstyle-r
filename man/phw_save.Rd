@@ -11,7 +11,7 @@ phw_save(
   height = 10,
   units = "cm",
   dpi = 300,
-  bg = "white",
+  bg = NULL,
   device = NULL,
   ...
 )
@@ -27,7 +27,10 @@ Word page with standard margins.}
 
 \item{dpi}{Resolution for raster formats.}
 
-\item{bg}{Background colour. Use \code{"transparent"} for overlays.}
+\item{bg}{Background colour, such as \code{"transparent"} for overlays. It
+replaces the chart's own background. The default keeps the background
+the chart was drawn with, and white for a grob such as a \code{\link[=phw_finalise]{phw_finalise()}}
+result.}
 
 \item{device}{Override the graphics device that the extension picks.}
 

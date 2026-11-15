@@ -790,7 +790,10 @@ makeContent.phw_footer <- function(x) {
 #' @param width,height,units Size. Defaults to 16 x 10 cm, which fits an A4
 #'   Word page with standard margins.
 #' @param dpi Resolution for raster formats.
-#' @param bg Background colour. Use `"transparent"` for overlays.
+#' @param bg Background colour, such as `"transparent"` for overlays. It
+#'   replaces the chart's own background. The default keeps the background
+#'   the chart was drawn with, and white for a grob such as a [phw_finalise()]
+#'   result.
 #' @param device Override the graphics device that the extension picks.
 #' @param ... Passed to [ggplot2::ggsave()].
 #' @return The file name, invisibly.
@@ -806,7 +809,7 @@ makeContent.phw_footer <- function(x) {
 #' phw_save(p, tempfile(fileext = ".png"), width = 25, height = 12)
 #' @export
 phw_save <- function(plot = ggplot2::last_plot(), filename, width = 16, height = 10,
-                     units = "cm", dpi = 300, bg = "white", device = NULL, ...) {
+                     units = "cm", dpi = 300, bg = NULL, device = NULL, ...) {
   if (!inherits(plot, c("ggplot", "grob"))) {
     cli::cli_abort("{.arg plot} must be a ggplot or a grob such as a {.fn phw_finalise} result, not {.obj_type_friendly {plot}}.")
   }
@@ -817,7 +820,21 @@ phw_save <- function(plot = ggplot2::last_plot(), filename, width = 16, height =
     tif = , tiff = if (requireNamespace("ragg", quietly = TRUE)) ragg::agg_tiff else "tiff",
     pdf = grDevices::cairo_pdf,
     NULL)
-  ggplot2::ggsave(filename, plot = plot, width = width, height = height,
-                  units = units, dpi = dpi, device = device, bg = bg, ...)
+  if (!is.null(bg)) plot <- blank_background(plot)
+  ggplot2::ggsave(filename, plot = plot, width = width, height = height, units = units,
+                  dpi = dpi, device = device, bg = bg %||% if (!inherits(plot, "ggplot")) "white", ...)
   invisible(filename)
+}
+
+# The chart's own background covers the device's, so it is removed when `bg`
+# is given. In a phw_finalise() grob it is the gtable's "background" cells,
+# one per panel for a patchwork.
+blank_background <- function(plot) {
+  if (inherits(plot, "patchwork")) return(plot & ggplot2::theme(plot.background = ggplot2::element_blank()))
+  if (inherits(plot, "ggplot")) return(plot + ggplot2::theme(plot.background = ggplot2::element_blank()))
+  if (inherits(plot, "gtable")) {
+    bg <- grepl("^background(-[0-9]+)?$", plot$layout$name)
+    plot$grobs[bg] <- list(ggplot2::zeroGrob())
+  }
+  plot
 }
