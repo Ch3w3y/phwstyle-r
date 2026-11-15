@@ -37,6 +37,8 @@ says what to change.
   twice in one panel or when `bins` or `key` do not apply. `phw_forest()`
   says when a unit has more than one row in a panel. Faceting by period
   stays quiet in both.
+* Faceted `phw_map()` panels draw every area. An area with no data in a
+  panel is drawn in the missing-value colour instead of being left out.
 * `scale_shape_phw()` and `scale_linetype_phw()` keep missing groups on the
   chart (new `na.value`). Past eight groups they stop with a clear message.
 * `reverse = TRUE` now works when the palette is a function, and a palette
