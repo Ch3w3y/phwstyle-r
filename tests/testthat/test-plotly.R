@@ -80,6 +80,19 @@ test_that("plot_ly groups take the colours the ggplot2 scales give them", {
   expect_equal(cols[["High"]], plotly::toRGB(phw_colours[["teal"]]))
 })
 
+test_that("a colour key keeps missing groups visible in grey", {
+  na <- data.frame(x = 1:4, y = 1:4, grp = c("A", "B", NA, "A"))
+  key <- phw_colour_key(na$grp, "grp")
+  p <- plotly::plot_ly(na, x = ~x, y = ~y, color = ~grp, colors = key, type = "scatter", mode = "markers")
+  cols <- trace_colours(p)
+  expect_equal(cols, stats::setNames(plotly::toRGB(c(key, phw_colours[["grey_light"]])), c(names(key), "NA")))
+  expect_equal(cols, ggplot_colours(na)[names(cols)])
+
+  own <- c(key, "NA" = "#000000")
+  p <- plotly::plot_ly(na, x = ~x, y = ~y, color = ~grp, colors = own, type = "scatter", mode = "markers")
+  expect_equal(trace_colours(p)[["NA"]], plotly::toRGB("#000000"))
+})
+
 test_that("plot_ly gives each of many groups its own colour, with a warning", {
   withr::local_options(rlib_warning_verbosity = "verbose")
   many <- data.frame(x = 1:14, y = 1:14, grp = sprintf("G%02d", 1:14))

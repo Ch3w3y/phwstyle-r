@@ -575,15 +575,25 @@ plotly_scale_types <- c("heatmap", "contour", "histogram2d", "histogram2dcontour
 # give it PHW colours: a colour key for groups, and the PHW sequential scale
 # for numbers and for heatmaps, contours and choropleths. Every trace takes
 # the same key, as plotly colours all traces from the first one's `colors`.
+# A trace with its own key, such as one from phw_colour_key(), keeps it, with
+# "NA" added in grey when a value is missing.
 colour_mapped <- function(p, palette, colorway) {
   if (is.null(p$x$attrs)) return(p)
   seq <- palette_colours("blues")
   values <- Map(function(a, id) {
-    if (is.null(a$colors) && is.null(a$colorscale) && !is.null(a$color)) mapped_values(a$color, p, id)
+    if (is.null(a$colorscale) && !is.null(a$color)) mapped_values(a$color, p, id)
   }, p$x$attrs, rlang::names2(p$x$attrs))
-  groups <- Filter(function(v) !is.null(v) && !is.numeric(v), values)
+  own <- vapply(p$x$attrs, function(a) !is.null(a$colors), logical(1))
+  keyed <- vapply(p$x$attrs, function(a) is.character(a$colors) && rlang::is_named(a$colors), logical(1))
+  missing <- vapply(values, function(v) !is.numeric(v) && anyNA(v), logical(1))
+  groups <- Filter(function(v) !is.null(v) && !is.numeric(v), values[!own])
   key <- if (length(groups)) group_colours(groups, palette, colorway)
-  p$x$attrs <- Map(function(a, v) {
+  keyed_na <- any(keyed & missing)
+  p$x$attrs <- Map(function(a, v, keyed) {
+    if (keyed && keyed_na) {
+      if (!"NA" %in% names(a$colors)) a$colors[["NA"]] <- phw_colours[["grey_light"]]
+      if (!is.numeric(v) && anyNA(v)) a$color <- na_as_group(a$color)
+    }
     if (!is.null(a$colors) || !is.null(a$colorscale)) return(a)
     if (is.null(a$color)) {
       if (isTRUE(a$type %in% plotly_scale_types)) a$colors <- seq
@@ -597,7 +607,7 @@ colour_mapped <- function(p, palette, colorway) {
       if (anyNA(v)) a$color <- na_as_group(a$color)
     }
     a
-  }, p$x$attrs, values)
+  }, p$x$attrs, values, keyed)
   p
 }
 
