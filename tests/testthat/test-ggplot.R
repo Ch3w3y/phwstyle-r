@@ -38,6 +38,25 @@ test_that("phw_finalise adds a footer and saves", {
   expect_true(file.exists(out))
 })
 
+test_that("phw_save bg sets the saved background", {
+  skip_if_not_installed("png")
+  library(ggplot2)
+  p <- ggplot(mpg, aes(displ, hwy)) + geom_point() + theme_phw()
+  saved <- function(plot, ...) {
+    out <- withr::local_tempfile(fileext = ".png", .local_envir = parent.frame())
+    png::readPNG(phw_save(plot, out, width = 8, height = 5, dpi = 72, ...))
+  }
+  opaque <- function(img) mean(img[, , 4] == 1)
+  red <- function(img) mean(img[, , 1] > 0.9 & img[, , 2] < 0.1 & img[, , 3] < 0.1)
+  f <- phw_finalise(p, source = "test", logo = FALSE)
+  expect_lt(opaque(saved(p, bg = "transparent")), 0.5)
+  expect_lt(opaque(saved(f, bg = "transparent")), 0.5)
+  expect_gt(red(saved(p, bg = "red")), 0.5)
+  expect_gt(red(saved(f, bg = "red")), 0.5)
+  grey <- saved(p + theme_phw(background = "#EEEEEE"))
+  expect_equal(grey[2, 2, 1:3], rep(0xEE / 255, 3))
+})
+
 test_that("phw_finalise can put the logo on the right with no rule", {
   library(ggplot2)
   p <- ggplot(mpg, aes(displ, hwy)) + geom_point() + labs(caption = "kept")

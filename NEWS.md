@@ -54,6 +54,11 @@ says what to change.
   them and wraps to the width of the chart.
 * `phw_finalise()` on a `phw_arrange()` figure keeps every panel, the
   figure title and the panel tags. Before, only the last panel was kept.
+* `phw_save(bg = )` sets the background of the saved file, so
+  `bg = "transparent"` gives a transparent PNG. Before, the white
+  `theme_phw()` background covered it, and a `phw_finalise()` chart took
+  `bg` only under its footer. With no `bg`, a chart keeps its own
+  background as before.
 
 ## Tables
 

@@ -35,6 +35,19 @@ test_that("phw_arrange builds a patchwork with a PHW caption", {
   expect_true(file.exists(out))
 })
 
+test_that("phw_save bg sets the background of a phw_arrange figure", {
+  skip_if_not_installed("patchwork")
+  skip_if_not_installed("png")
+  library(ggplot2)
+  p <- ggplot(mpg, aes(displ, hwy)) + geom_point()
+  pw <- phw_arrange(p, p, title = "T", source = "S")
+  for (plot in list(pw, phw_finalise(pw, logo = FALSE))) {
+    out <- withr::local_tempfile(fileext = ".png")
+    img <- png::readPNG(phw_save(plot, out, width = 8, height = 5, dpi = 72, bg = "transparent"))
+    expect_lt(mean(img[, , 4] == 1), 0.5)
+  }
+})
+
 test_that("phw_finalise keeps every panel, the title and the tags of a phw_arrange figure", {
   skip_if_not_installed("patchwork")
   library(ggplot2)
