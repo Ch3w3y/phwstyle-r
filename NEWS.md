@@ -49,6 +49,15 @@ says what to change.
   `NA` or unused levels when sizing the palette, which gave colours blended
   between PHW colours. Maps of groups that are not in sorted order change
   colour.
+* `phw_plotly()` colours the groups of a `plot_ly()` chart as the PHW
+  ggplot2 scales do: unused levels are left out, `NA` is grey instead of
+  invisible, groups such as "Unknown" are grey, and every group gets its own
+  colour, with the warning `phw_colour_key()` gives when the palette runs
+  out. Before, more than twelve groups or an unused level gave colours
+  blended between PHW colours or shifted along by one. Pie slices take the
+  colour of their group, not of their row, so a pie and a bar chart of the
+  same data match. Traces added with their own `data` are coloured from
+  that data, and all traces share one set of colours.
 
 ## Charts and maps
 

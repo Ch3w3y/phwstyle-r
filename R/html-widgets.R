@@ -294,7 +294,7 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
       extra[[nm]]
     }
   }
-  p <- colour_pies(p, unname(colorway))
+  p <- colour_pies(p, palette, unname(colorway))
   p <- colour_mapped(p, palette, colorway)
   p <- do.call(plotly::layout, c(list(p), base))
   p <- plotly::config(p, displaylogo = FALSE, displayModeBar = modebar,
@@ -541,59 +541,88 @@ plotly_colorway <- function(p, palette) {
 }
 
 # A trace that maps `color` without `colors` gets plotly's own palette, so
-# give it PHW colours: the palette for groups, and the PHW sequential scale
-# for numbers and for heatmaps, contours and choropleths.
+# give it PHW colours: a colour key for groups, and the PHW sequential scale
+# for numbers and for heatmaps, contours and choropleths. Every trace takes
+# the same key, as plotly colours all traces from the first one's `colors`.
 colour_mapped <- function(p, palette, colorway) {
   if (is.null(p$x$attrs)) return(p)
   scale_types <- c("heatmap", "contour", "histogram2d", "histogram2dcontour", "choropleth")
   seq <- palette_colours("blues")
-  p$x$attrs <- lapply(p$x$attrs, function(a) {
+  values <- Map(function(a, id) {
+    if (is.null(a$colors) && is.null(a$colorscale) && !is.null(a$color)) mapped_values(a$color, p, id)
+  }, p$x$attrs, rlang::names2(p$x$attrs))
+  groups <- Filter(function(v) !is.null(v) && !is.numeric(v), values)
+  key <- if (length(groups)) group_colours(groups, palette, colorway)
+  p$x$attrs <- Map(function(a, v) {
     if (!is.null(a$colors) || !is.null(a$colorscale)) return(a)
     if (is.null(a$color)) {
       if (isTRUE(a$type %in% scale_types)) a$colors <- seq
       return(a)
     }
-    v <- mapped_values(a$color, p$x$visdat[[a$visdat %||% 1]])
     if (is.null(v)) return(a)
     if (is.numeric(v)) {
       a$colors <- seq
     } else {
-      n <- length(if (is.factor(v)) levels(v) else unique(v[!is.na(v)]))
-      a$colors <- if (is.function(palette)) phw_pal(n, palette) else colorway[seq_len(min(n, length(colorway)))]
+      a$colors <- key
+      if (anyNA(v)) a$color <- na_as_group(a$color)
     }
     a
-  })
+  }, p$x$attrs, values)
   p
 }
 
+# Colours for groups, named by group, as the PHW ggplot2 scales give them:
+# the groups in use, in order, each with its own colour from
+# phw_colour_key(), and "NA" in grey when a value is missing.
+group_colours <- function(values, palette, colorway) {
+  lv <- unique(unlist(lapply(values, group_levels)))
+  key <- phw_colour_key(lv, palette = if (is.function(palette)) palette else colorway)
+  if (any(vapply(values, anyNA, logical(1)))) key[["NA"]] <- phw_colours[["grey_light"]]
+  key
+}
+
+# plotly makes missing values transparent, so map them to an "NA" group
+# instead, which group_colours() gives a colour.
+na_as_group <- function(x) {
+  if (!rlang::is_formula(x)) return(na_group(x))
+  rlang::new_formula(NULL, rlang::call2(na_group, rlang::f_rhs(x)), env = rlang::f_env(x))
+}
+
+na_group <- function(x) {
+  lv <- group_levels(x)
+  x <- as.character(x)
+  x[is.na(x)] <- "NA"
+  factor(x, levels = c(lv, "NA"))
+}
+
 # The values a plotly attribute maps: a formula of the trace's data, or the
-# values themselves. NULL for a constant such as I("red").
-mapped_values <- function(x, data_fun) {
+# values themselves. NULL for a constant such as I("red"). Each trace's data
+# is stored under the name of its attributes.
+mapped_values <- function(x, p, id) {
   if (inherits(x, "AsIs")) return(NULL)
   if (!rlang::is_formula(x)) return(x)
-  data <- if (is.function(data_fun)) tryCatch(data_fun(), error = function(e) NULL)
+  data <- tryCatch(plotly::plotly_data(p, id), error = function(e) NULL)
   tryCatch(rlang::eval_tidy(rlang::f_rhs(x), data = data, env = rlang::f_env(x)), error = function(e) NULL)
 }
 
-# Pie traces ignore colorway, so give them PHW colours unless they set their own.
-# A missing label would show as "null", so it shows as "NA" in grey, as
-# missing groups do in the charts.
-colour_pies <- function(p, cols) {
+# Pie traces ignore colorway, so give them PHW colours unless they set their
+# own, by group as in the other charts. A missing label would show as
+# "null", so it shows as "NA" in grey, as missing groups do in the charts.
+colour_pies <- function(p, palette, colorway) {
   if (is.null(p$x$attrs)) return(p)
-  p$x$attrs <- lapply(p$x$attrs, function(a) {
+  p$x$attrs <- Map(function(a, id) {
     if (identical(a$type, "pie") && is.null(a$marker$colors)) {
-      slices <- cols
-      lab <- mapped_values(a$labels, p$x$visdat[[a$visdat %||% 1]])
-      if (anyNA(lab)) {
-        lab <- as.character(lab)
-        slices <- cols[match(lab, unique(lab[!is.na(lab)]))]
-        slices[is.na(lab)] <- phw_colours[["grey_light"]]
-        a$labels <- ifelse(is.na(lab), "NA", lab)
+      lab <- mapped_values(a$labels, p, id)
+      slices <- colorway
+      if (!is.null(lab)) {
+        key <- group_colours(list(lab), palette, colorway)
+        if (anyNA(lab)) a$labels <- lab <- as.character(na_group(lab))
+        slices <- unname(key[as.character(lab)])
       }
       a$marker <- utils::modifyList(a$marker %||% list(),
                                     list(colors = slices, line = list(color = "#FFFFFF", width = 1.5)))
     }
     a
-  })
+  }, p$x$attrs, rlang::names2(p$x$attrs))
   p
 }

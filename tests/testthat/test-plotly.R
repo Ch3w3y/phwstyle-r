@@ -53,3 +53,57 @@ test_that("phw_plotly_colorscale takes a function and checks n", {
   expect_equal(sc[[3]][[2]], "#123456")
   expect_error(phw_plotly_colorscale(n = 0), "2 or more")
 })
+
+trace_colours <- function(p) {
+  d <- built(phw_plotly(p))$data
+  stats::setNames(vapply(d, function(t) t$marker$color, ""), vapply(d, function(t) t$name, ""))
+}
+ggplot_colours <- function(df) {
+  g <- ggplot2::ggplot(df, ggplot2::aes(x, y, colour = grp)) + ggplot2::geom_point() + scale_colour_phw_d()
+  cols <- ggplot2::layer_data(g)$colour
+  grp <- as.character(df$grp)
+  grp[is.na(grp)] <- "NA"
+  stats::setNames(plotly::toRGB(cols), grp)
+}
+
+test_that("plot_ly groups take the colours the ggplot2 scales give them", {
+  na <- data.frame(x = 1:4, y = 1:4, grp = c("A", "B", NA, "C"))
+  p <- plotly::plot_ly(na, x = ~x, y = ~y, color = ~grp, type = "scatter", mode = "markers")
+  cols <- trace_colours(p)
+  expect_equal(cols[["NA"]], plotly::toRGB(phw_colours[["grey_light"]]))
+  expect_equal(cols, ggplot_colours(na)[names(cols)])
+
+  unused <- data.frame(x = 1:2, y = 1:2, grp = factor(c("Low", "High"), levels = c("Low", "Mid", "High")))
+  p <- plotly::plot_ly(unused, x = ~x, y = ~y, color = ~grp, type = "bar")
+  cols <- trace_colours(p)
+  expect_equal(cols, ggplot_colours(unused)[names(cols)])
+  expect_equal(cols[["High"]], plotly::toRGB(phw_colours[["teal"]]))
+})
+
+test_that("plot_ly gives each of many groups its own colour, with a warning", {
+  withr::local_options(rlib_warning_verbosity = "verbose")
+  many <- data.frame(x = 1:14, y = 1:14, grp = sprintf("G%02d", 1:14))
+  p <- plotly::plot_ly(many, x = ~x, y = ~y, color = ~grp, type = "scatter", mode = "markers")
+  expect_match(testthat::capture_warnings(cols <- trace_colours(p)), "run out")
+  expect_equal(cols[["G02"]], plotly::toRGB(phw_colours[["teal"]]))
+  expect_equal(cols, suppressWarnings(ggplot_colours(many))[names(cols)])
+  expect_length(unique(cols), 14)
+})
+
+test_that("pie slices are coloured by group, as in the other charts", {
+  df <- data.frame(lab = factor(c("Zeta", "Alpha", "Mid"), levels = c("Alpha", "Mid", "Zeta")), n = c(5, 3, 2))
+  tr <- built(phw_plotly(plotly::plot_ly(df, labels = ~lab, values = ~n, type = "pie")))$data[[1]]
+  bars <- trace_colours(plotly::plot_ly(df, x = ~lab, y = ~n, color = ~lab, type = "bar"))
+  expect_equal(plotly::toRGB(tr$marker$colors), unname(bars[as.character(tr$labels)]))
+  expect_equal(tr$marker$colors[as.character(tr$labels) == "Alpha"], phw_colours[["navy"]])
+})
+
+test_that("traces with their own data share one set of group colours", {
+  d1 <- data.frame(x = 1:2, y = 1:2, grp = c("A", "B"))
+  d2 <- data.frame(x = 3:4, y = 3:4, grp = c("C", NA))
+  p <- plotly::plot_ly() |>
+    plotly::add_trace(data = d1, x = ~x, y = ~y, color = ~grp, type = "scatter", mode = "markers") |>
+    plotly::add_trace(data = d2, x = ~x, y = ~y, color = ~grp, type = "scatter", mode = "markers")
+  cols <- trace_colours(p)
+  expect_equal(cols, ggplot_colours(rbind(d1, d2))[names(cols)])
+})
