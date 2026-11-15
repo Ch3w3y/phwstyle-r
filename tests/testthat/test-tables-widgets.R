@@ -288,6 +288,24 @@ test_that("RAG symbols keep the table's number format", {
   expect_no_match(html, "92\\.34|95\\.10")
 })
 
+test_that("col_keys drops columns from a summary table", {
+  skip_if_not_installed("flextable")
+  rt <- phw_rate_table(data.frame(a = c("x", "y"), cases = c(1, 2), pop = c(100, 100)), a, cases, pop)
+  ft <- phw_flextable(rt, flextable_args = list(col_keys = c("Group", "Cases")))
+  expect_equal(ft$col_keys, c("Group", "Cases"))
+  ct <- phw_crosstab(mtcars, cyl, gear)
+  ft <- phw_flextable(ct, flextable_args = list(col_keys = c("cyl", "4", "3")))
+  expect_equal(ft$header$spans$rows[1, ], c(1, 2, 0))
+  dat <- expand.grid(group = c("A", "B"), year = c(2024, 2025), q = c("Q1", "Q2"))
+  grouped <- phw_group_table(dat, group, c(year, q))
+  ft <- phw_flextable(grouped, flextable_args = list(col_keys = names(grouped)[c(1, 2, 3, 6)]))
+  expect_equal(ft$header$spans$rows[1, ], c(1, 2, 0, 1))
+  expect_error(phw_flextable(rt, flextable_args = list(col_keys = c("Cases", "Group"))),
+               "must start with the label column")
+  expect_error(phw_flextable(rt, flextable_args = list(col_keys = c("Group", "Nope"))),
+               "must name columns of the summary table")
+})
+
 test_that("flextable colouring helpers check their table and columns", {
   skip_if_not_installed("flextable")
   v <- data.frame(a = c("x", "y"), n = c(NA, NA), m = c(1, 3), neg = c(-5, 2))

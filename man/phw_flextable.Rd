@@ -47,7 +47,8 @@ the group columns and a note on the statistics shown.}
 \code{list(note = "Provisional")}.}
 
 \item{flextable_args}{List of arguments for \code{\link[flextable:flextable]{flextable::flextable()}},
-e.g. \code{list(col_keys = c("area", "rate"))}.}
+e.g. \code{list(col_keys = c("area", "rate"))}. For a summary table,
+\code{col_keys} must start with its label columns.}
 
 \item{...}{Passed to \code{\link[=phw_flextable_theme]{phw_flextable_theme()}}.}
 }

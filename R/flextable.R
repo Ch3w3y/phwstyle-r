@@ -138,7 +138,8 @@ align_by_type <- function(ft) {
 #' @param caption_args List of other [phw_caption()] arguments, e.g.
 #'   `list(note = "Provisional")`.
 #' @param flextable_args List of arguments for [flextable::flextable()],
-#'   e.g. `list(col_keys = c("area", "rate"))`.
+#'   e.g. `list(col_keys = c("area", "rate"))`. For a summary table,
+#'   `col_keys` must start with its label columns.
 #' @param style Passed to [phw_flextable_theme()].
 #' @param digits Decimal places for non-integer numbers.
 #' @param col_labels Optional named list of display names, as in
@@ -157,6 +158,7 @@ phw_flextable <- function(data, caption = NULL, number = NULL, source = NULL,
                           caption_args = list(), flextable_args = list(), ...) {
   rlang::check_installed(c("flextable", "officer"))
   check_unique_names(data)
+  if (inherits(data, "phw_summary")) check_summary_keys(data, flextable_args$col_keys)
   ft <- do.call(flextable::flextable, c(list(as.data.frame(data)), flextable_args))
   shown <- names(data) %in% ft$col_keys
   is_int <- vapply(data, function(v) is.numeric(v) && all(v == round(v), na.rm = TRUE), logical(1)) & shown
@@ -358,7 +360,9 @@ phw_flextable_groups <- function(x, j, key = NULL, palette = phw_default_palette
 style_summary_ft <- function(ft, x) {
   r <- summary_rows(x)
   nl <- attr(x, "label_cols") %||% 1L
-  nc <- ncol(x)
+  shown <- match(ft$col_keys[-seq_len(nl)], names(x))
+  nd <- length(shown)
+  data_j <- nl + seq_len(nd)
   navy <- officer::fp_border(color = phw_colours[["navy"]], width = 1)
   grey <- officer::fp_border(color = phw_colours[["grey_mid"]], width = 0.75)
   lab_j <- seq_len(nl)
@@ -378,13 +382,13 @@ style_summary_ft <- function(ft, x) {
   line <- setdiff(which(r$line) - 1, 0)
   if (length(line)) ft <- flextable::hline(ft, i = line, border = grey, part = "body")
   # Numbers and statistics right-aligned, whatever their type.
-  if (nc > nl) ft <- flextable::align(ft, j = seq(nl + 1, nc), align = "right", part = "all")
+  if (nd) ft <- flextable::align(ft, j = data_j, align = "right", part = "all")
   ch <- attr(x, "col_header")
   sp <- attr(x, "spanner")
-  if (!is.null(ch)) {
-    data_j <- seq(nl + 1, nc)
+  if (!is.null(ch) && nd) {
+    ch <- ch[, shown - nl, drop = FALSE]
     L <- nrow(ch)
-    labs <- stats::setNames(as.list(ch[L, ]), names(x)[data_j])
+    labs <- stats::setNames(as.list(ch[L, ]), names(x)[shown])
     ft <- do.call(flextable::set_header_labels, c(list(ft), labs))
     for (l in rev(seq_len(L - 1))) {
       key <- apply(ch[seq_len(l), , drop = FALSE], 2, paste, collapse = "\r")
@@ -397,12 +401,12 @@ style_summary_ft <- function(ft, x) {
     ft <- flextable::align(ft, i = seq_len(L - 1), j = data_j, align = "center", part = "header")
     ft <- flextable::bold(ft, part = "header")
     ft <- flextable::color(ft, i = seq_len(L - 1), color = phw_colours[["navy"]], part = "header")
-  } else if (!is.null(sp) && nc > nl) {
-    ft <- flextable::add_header_row(ft, values = c(rep("", nl), sp), colwidths = c(rep(1, nl), nc - nl))
-    ft <- flextable::align(ft, i = 1, j = seq(nl + 1, nc), align = "center", part = "header")
+  } else if (!is.null(sp) && nd) {
+    ft <- flextable::add_header_row(ft, values = c(rep("", nl), sp), colwidths = c(rep(1, nl), nd))
+    ft <- flextable::align(ft, i = 1, j = data_j, align = "center", part = "header")
     ft <- flextable::bold(ft, part = "header")
     ft <- flextable::color(ft, i = 1, color = phw_colours[["navy"]], part = "header")
-    ft <- flextable::hline(ft, i = 1, j = seq(nl + 1, nc), border = grey, part = "header")
+    ft <- flextable::hline(ft, i = 1, j = data_j, border = grey, part = "header")
   }
   note <- attr(x, "note")
   if (!is.null(note)) {
@@ -412,6 +416,23 @@ style_summary_ft <- function(ft, x) {
     ft <- flextable::color(ft, i = flextable::nrow_part(ft, "footer"), color = phw_colours[["text_secondary"]], part = "footer")
   }
   ft
+}
+
+# style_summary_ft() bolds, indents and spans the label columns by position,
+# so `col_keys` may drop or reorder the other columns but not the labels.
+check_summary_keys <- function(x, keys, call = rlang::caller_env()) {
+  if (is.null(keys)) return(invisible())
+  labels <- names(x)[seq_len(attr(x, "label_cols") %||% 1L)]
+  unknown <- setdiff(keys, names(x))
+  if (length(unknown)) {
+    cli::cli_abort(c("{.code col_keys} must name columns of the summary table.",
+                     x = "Not columns: {.val {unknown}}."), call = call)
+  }
+  if (!identical(keys[seq_along(labels)], labels)) {
+    cli::cli_abort(c("{.code col_keys} must start with the label {cli::qty(labels)}column{?s} {.val {labels}}.",
+                     i = "Drop or reorder the other columns."), call = call)
+  }
+  invisible()
 }
 
 #' Add in-cell bars to a flextable
