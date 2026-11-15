@@ -211,3 +211,10 @@ test_that("the legacy rate and risk tables stop clearly with no rows to use", {
   expect_error(phw_risk_table(rk[0, ], e, y), "has no rows")
   expect_error(phw_risk_table(transform(rk, e = NA), e, y), "no rows with both")
 })
+
+test_that("the legacy rate table stops on a text count or population", {
+  rd <- data.frame(age = c("0-14", "15+"), cases = c("3", "5"), pop = c(100, 200))
+  expect_error(phw_rate_table(rd, age, cases, pop), "`cases` must be a numeric column")
+  rd <- transform(rd, cases = c(3, 5), pop = c("100", "200"))
+  expect_error(phw_rate_table(rd, age, cases, pop), "`population` must be a numeric column")
+})

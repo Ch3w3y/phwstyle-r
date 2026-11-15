@@ -14,7 +14,8 @@ says what to change.
 * Rows with a missing date, count, value, estimate or code are left out with
   one message saying how many. Before, they could turn a whole period into 0
   or blank a chart. `phw_crosstab(missing = NULL)` now also says how many
-  rows it leaves out for a missing row or column value.
+  rows it leaves out for a missing row or column value. `phw_rate_table()` and
+  `phw_risk_table()` handle missing values as before.
 * `phw_reactable()` rows are no longer striped by default, to match the
   other tables. Pass `striped = TRUE` to stripe them.
 * `phw_add_slide()` stops when given more content than the layout has room
@@ -138,6 +139,8 @@ says what to change.
   left-aligned and subtotals are italic.
 * `phw_summary_table()` shows a blank, not "( to )", when a statistic can't
   be calculated, and `labels` can be a named character vector.
+* `phw_rate_table()` stops with a message naming the column when the count
+  or population column is text, instead of failing inside `sum()`.
 * Table and column helpers give clear errors for duplicated column names,
   negative bar values, a data frame where a flextable is needed, or an
   unknown style.

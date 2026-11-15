@@ -343,6 +343,8 @@ phw_rate_table <- function(data, groups, cases, population, per = 1e5, conf_leve
   cases <- pick_col(rlang::enquo(cases), data, "cases")
   population <- pick_col(rlang::enquo(population), data, "population")
   check_has_rows(data)
+  check_numeric_col(data, cases, "cases")
+  check_numeric_col(data, population, "population")
   data <- as.data.frame(data)
   rate_label <- rate_label %||% paste("Rate per", fmt_n(per))
   ci_label <- sprintf("%s%% CI", 100 * conf_level)
