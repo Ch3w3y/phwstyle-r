@@ -262,7 +262,7 @@ phw_write_xlsx <- function(x, file, title = NULL, source = NULL, date = NULL, ca
       for (j in seq_along(df)) {
         v <- df[[j]]
         fmt <- if (inherits(v, "POSIXt")) "yyyy-mm-dd hh:mm" else if (inherits(v, "Date")) "yyyy-mm-dd" else if (is.numeric(v)) {
-          if (all(v == round(v), na.rm = TRUE)) "#,##0" else paste0("#,##0.", strrep("0", digits))
+          if (digits == 0 || all(v == round(v), na.rm = TRUE)) "#,##0" else paste0("#,##0.", strrep("0", digits))
         }
         if (!is.null(fmt)) wb <- openxlsx2::wb_add_numfmt(wb, sheet, openxlsx2::wb_dims(rows = head_row + seq_len(nr), cols = j), fmt)
       }
