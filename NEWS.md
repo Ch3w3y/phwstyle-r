@@ -46,12 +46,14 @@ says what to change.
 * `phw_epicurve(position = "dodge")` draws each period's bars inside the
   period, as stacked bars are, with the average line over their centre.
   Before, they were drawn half a period early.
-* `phw_epicurve()` labels the x axis at period starts, in a format that
-  suits `interval`: `"%d/%m/%Y"` for days and weeks, `"%b %Y"` for months
-  and quarters and `"%Y"` for years. The first period is always labelled,
-  so cases that all fall in one week or month still get a date. Before,
-  such a chart could have no date labels, and weekly labels fell on month
-  starts rather than week starts.
+* `phw_epicurve()` labels the x axis at period starts, in a short format
+  that suits `interval`: `"6 Jan"` for days and weeks, `"Jan"` for months
+  and quarters and `"2025"` for years, with the year under the first label
+  and wherever it changes. The first period is always labelled, so cases
+  that all fall in one week or month still get a date. Labels that would
+  overlap on a narrow chart are left out. Before, such a chart could have
+  no date labels, and weekly labels fell on month starts rather than week
+  starts.
 * `theme_phw()`, `theme_phw_map()`, `phw_arrange()`, `phw_style_extensions()`
   and the colour scales check their arguments when called, not when the
   plot is drawn.

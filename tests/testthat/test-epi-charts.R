@@ -166,9 +166,9 @@ test_that("phw_epicurve labels period starts in a format that suits the interval
     list(breaks = as.Date(unname(x$get_breaks()[keep])), labels = unname(x$get_labels()[keep]))
   }
   one_week <- x_axis(phw_epicurve(data.frame(d = as.Date("2025-03-05")), d))
-  expect_equal(one_week$labels, "03/03/2025")
+  expect_equal(one_week$labels, paste0("3 ", format(as.Date("2025-03-03"), "%b"), "\n2025"))
   one_month <- x_axis(phw_epicurve(data.frame(d = as.Date(c("2025-03-05", "2025-03-20"))), d, interval = "month"))
-  expect_equal(one_month$labels, format(as.Date("2025-03-01"), "%b %Y"))
+  expect_equal(one_month$labels, paste0(format(as.Date("2025-03-01"), "%b"), "\n2025"))
   one_year <- x_axis(phw_epicurve(data.frame(d = as.Date("2025-03-05")), d, interval = "year"))
   expect_equal(one_year$labels, "2025")
 
@@ -177,11 +177,43 @@ test_that("phw_epicurve labels period starts in a format that suits the interval
   a <- x_axis(p)
   expect_equal(a$breaks[1], min(p$data$period))
   expect_true(all(a$breaks %in% p$data$period))
-  expect_lte(length(a$breaks), 7)
-  expect_equal(a$labels, format(a$breaks, "%d/%m/%Y"))
+  expect_lte(length(a$breaks), 5)
+  expect_match(a$labels[1], "\n2024$")
+  expect_match(a$labels[2], "\n2025$")
+  expect_no_match(a$labels[3], "\n")
 
   own <- x_axis(phw_epicurve(weeks, d, date_labels = "%d %b"))
   expect_equal(own$labels, format(own$breaks, "%d %b"))
+})
+
+test_that("phw_epicurve date labels fit side by side on a narrow or faceted chart", {
+  skip_if_not_installed("ragg")
+  # Each pair of neighbouring labels must fit in the space between their breaks.
+  labels_fit <- function(p, width, height = 3.5) {
+    f <- tempfile(fileext = ".png")
+    ragg::agg_png(f, width, height, units = "in", res = 96)
+    on.exit({ grDevices::dev.off(); unlink(f) })
+    g <- ggplot2::ggplotGrob(p)
+    n_panels <- length(unique(g$layout$l[grepl("^panel", g$layout$name)]))
+    panel_in <- (width - sum(grid::convertWidth(g$widths, "in", valueOnly = TRUE))) / n_panels
+    x <- ggplot2::ggplot_build(p)$layout$panel_params[[1]]$x
+    keep <- !is.na(x$get_breaks())
+    pos <- (x$get_breaks()[keep] - x$continuous_range[1]) / diff(x$continuous_range) * panel_in
+    el <- ggplot2::calc_element("axis.text.x.bottom", p$theme)
+    gp <- grid::gpar(fontsize = el$size, fontfamily = el$family)
+    w <- vapply(strsplit(x$get_labels()[keep], "\n"), function(l) {
+      max(grid::convertWidth(grid::grobWidth(grid::textGrob(l, gp = gp)), "in", valueOnly = TRUE))
+    }, numeric(1))
+    all(diff(pos) > (utils::head(w, -1) + utils::tail(w, -1)) / 2)
+  }
+  set.seed(1)
+  cases <- data.frame(onset = as.Date("2025-01-01") + round(stats::rgamma(300, 6, 0.15)),
+                      group = sample(c("Group A", "Group B"), 300, TRUE))
+  expect_true(labels_fit(phw_epicurve(cases, onset, group = group) + ggplot2::facet_wrap(~group), 7))
+  long <- data.frame(d = seq(as.Date("2024-11-01"), as.Date("2026-02-01"), by = "day"))
+  for (interval in c("day", "week", "month", "quarter", "year")) {
+    expect_true(labels_fit(phw_epicurve(long, d, interval = interval), 3.5), label = interval)
+  }
 })
 
 test_that("phw_epicurve stops on dates written as text in another format", {

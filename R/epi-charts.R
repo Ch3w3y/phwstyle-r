@@ -36,18 +36,30 @@ period_step <- function(interval) {
 }
 
 # Each bar starts on its period, so the axis labels period starts: every
-# one, or every k-th from the first, so that no more than 7 show.
+# one, or every k-th from the first, so that no more labels show than fit
+# on a narrow or faceted chart.
 period_breaks <- function(periods, interval) {
   steps <- switch(interval, day = c(1, 2, 7, 14, 28), week = c(1, 2, 4, 8, 13, 26, 52),
                   month = c(1, 2, 3, 6, 12), quarter = c(1, 2, 4), year = c(1, 2, 5, 10, 20, 50))
+  most <- if (interval %in% c("day", "week")) 5 else 7
   n <- length(periods)
-  k <- steps[ceiling(n / steps) <= 7][1]
-  if (is.na(k)) k <- ceiling(n / 7)
+  k <- steps[ceiling(n / steps) <= most][1]
+  if (is.na(k)) k <- ceiling(n / most)
   periods[seq(1, n, by = k)]
 }
 
-period_label <- function(interval) {
-  switch(interval, day = , week = "%d/%m/%Y", month = , quarter = "%b %Y", year = "%Y")
+# Short labels ("6 Jan", "Jan"), with the year underneath on the first
+# label and wherever the year changes.
+period_labels <- function(interval) {
+  if (interval == "year") return(function(x) format(x, "%Y"))
+  function(x) {
+    out <- if (interval %in% c("day", "week")) paste(as.integer(format(x, "%d")), format(x, "%b")) else format(x, "%b")
+    year <- format(x, "%Y")
+    new_year <- !duplicated(year)
+    out[new_year] <- paste(out[new_year], year[new_year], sep = "\n")
+    out[is.na(x)] <- NA
+    out
+  }
 }
 
 #' Epidemic curve
@@ -76,8 +88,9 @@ period_label <- function(interval) {
 #' @param date_labels,date_breaks Passed to [ggplot2::scale_x_date()]. By
 #'   default the axis labels the start of each period, or of every few
 #'   periods when there are many, always including the first. Days and
-#'   weeks show as `"%d/%m/%Y"`, months and quarters as `"%b %Y"` and years
-#'   as `"%Y"`.
+#'   weeks show as `"6 Jan"`, months and quarters as `"Jan"` and years as
+#'   `"2025"`, with the year under the first label and wherever it changes.
+#'   Labels that would overlap on a narrow chart are left out.
 #' @param range Optional two dates for the start and end of the axis,
 #'   e.g. to show a full year even when the first weeks have no cases.
 #'   Rows dated outside it are left out, with a message.
@@ -185,7 +198,8 @@ phw_epicurve <- function(data, date, group = NULL, count = NULL,
       ggplot2::scale_colour_manual(values = stats::setNames(phw_colours[["black"]], label), name = NULL)
   }
   xargs <- list(expand = ggplot2::expansion(mult = c(0.01, 0.02)),
-                date_labels = date_labels %||% period_label(interval))
+                guide = ggplot2::guide_axis(check.overlap = TRUE))
+  if (is.null(date_labels)) xargs$labels <- period_labels(interval) else xargs$date_labels <- date_labels
   if (!is.null(date_breaks)) {
     xargs$date_breaks <- date_breaks
   } else {
