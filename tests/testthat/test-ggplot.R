@@ -57,6 +57,17 @@ test_that("phw_save bg sets the saved background", {
   expect_equal(grey[2, 2, 1:3], rep(0xEE / 255, 3))
 })
 
+test_that("phw_save writes EPS and PostScript", {
+  skip_if_not(capabilities("cairo"))
+  library(ggplot2)
+  p <- ggplot(mpg, aes(displ, hwy)) + geom_point() + theme_phw()
+  for (ext in c(".eps", ".ps")) {
+    out <- withr::local_tempfile(fileext = ext)
+    phw_save(p, out)
+    expect_match(readLines(out, n = 1), "^%!PS-Adobe")
+  }
+})
+
 test_that("phw_finalise can put the logo on the right with no rule", {
   library(ggplot2)
   p <- ggplot(mpg, aes(displ, hwy)) + geom_point() + labs(caption = "kept")

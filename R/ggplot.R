@@ -784,9 +784,13 @@ makeContent.phw_footer <- function(x) {
 #' outputs. It saves at 16 x 10 cm and 300 dpi, uses 'ragg' for PNG so the
 #' bundled Ubuntu font works, and accepts plots made with [phw_finalise()].
 #'
+#' PDF, EPS and PostScript files are drawn with Cairo, which uses only the
+#' fonts installed on the computer. Run [phw_install_fonts()] once to use
+#' Ubuntu in them.
+#'
 #' @param plot A ggplot or the result of [phw_finalise()].
 #' @param filename File name. The extension (`.png`, `.svg`, `.pdf`,
-#'   `.jpeg`) picks the format.
+#'   `.eps`, `.jpeg`) picks the format.
 #' @param width,height,units Size. Defaults to 16 x 10 cm, which fits an A4
 #'   Word page with standard margins.
 #' @param dpi Resolution for raster formats.
@@ -819,6 +823,7 @@ phw_save <- function(plot = ggplot2::last_plot(), filename, width = 16, height =
     jpg = , jpeg = if (requireNamespace("ragg", quietly = TRUE)) ragg::agg_jpeg else "jpeg",
     tif = , tiff = if (requireNamespace("ragg", quietly = TRUE)) ragg::agg_tiff else "tiff",
     pdf = grDevices::cairo_pdf,
+    eps = , ps = grDevices::cairo_ps,
     NULL)
   if (!is.null(bg)) plot <- blank_background(plot)
   ggplot2::ggsave(filename, plot = plot, width = width, height = height, units = units,
