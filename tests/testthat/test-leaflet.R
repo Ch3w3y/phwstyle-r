@@ -25,6 +25,31 @@ test_that("missing groups are drawn in the house grey, as the legend shows", {
   expect_equal(legend_args(m)$na_color, phw_colours[["grey_light"]])
 })
 
+test_that("groups take the colours a PHW ggplot2 scale gives the same data", {
+  skip_if_not_installed("ggplot2")
+  gg_fill <- function(d) {
+    ggplot2::layer_data(ggplot2::ggplot(d) + ggplot2::geom_sf(ggplot2::aes(fill = grp)) + scale_fill_phw_d())$fill
+  }
+  sq <- squares()
+  sq$grp <- c("Zeta", "Alpha", "Mid")
+  m <- phw_leaflet() |> phw_leaflet_polygons(sq, fill = grp)
+  expect_equal(polygon_fill(m), gg_fill(sq), ignore_attr = TRUE)
+  expect_equal(polygon_fill(m), phw_colours[c("orange", "navy", "teal")], ignore_attr = TRUE)
+  sq$grp <- factor(c("Low", "High", "Low"), levels = c("Low", "Mid", "High"))
+  m <- phw_leaflet() |> phw_leaflet_polygons(sq, fill = grp)
+  expect_equal(polygon_fill(m), gg_fill(sq), ignore_attr = TRUE)
+  expect_equal(legend_args(m)$labels, c("Low", "High"), ignore_attr = TRUE)
+})
+
+test_that("a factor palette gives each group an exact palette colour, ignoring NA and unused levels", {
+  main <- unname(phw_palettes$main[1:3])
+  pal <- phw_leaflet_palette("main", domain = c("b", "a", NA, "c"), type = "factor")
+  expect_equal(pal(c("a", "b", "c")), main)
+  pal <- phw_leaflet_palette("main", domain = factor(c("c", "a"), levels = c("a", "b", "c")), type = "factor")
+  expect_equal(pal(c("a", "c")), main[1:2])
+  expect_equal(pal(NA), phw_colours[["grey_light"]], ignore_attr = TRUE)
+})
+
 test_that("a numeric fill with no usable values draws every area as missing, with one message", {
   sq <- squares()
   sq$rate <- c(NA, Inf, NA)

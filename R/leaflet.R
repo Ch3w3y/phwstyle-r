@@ -100,10 +100,10 @@ phw_leaflet_polygons <- function(map, data, fill = NULL, palette = NULL, bins = 
       }
     } else {
       if (!is.null(bins)) cli::cli_warn("{.arg bins} is for a numeric fill, so it is not used with groups.")
-      levels <- if (is.factor(v)) levels(v) else unique(as.character(v[!is.na(v)]))
+      levels <- group_levels(v)
       cols <- phw_colour_key(levels, name = key, palette = palette %||% phw_default_palette(),
                              save = !is.null(key))
-      pal_fun <- leaflet::colorFactor(unname(cols[levels]), levels = levels, ordered = TRUE,
+      pal_fun <- leaflet::colorFactor(unname(cols), levels = levels, ordered = TRUE,
                                       na.color = na_col)
       legend_values <- v
       fill_col <- pal_fun(v)
@@ -214,13 +214,23 @@ phw_leaflet_palette <- function(palette = "blues", domain, type = c("numeric", "
                        i = "Use fewer {.arg bins}, or {.code type = \"bin\"}."))
     }
   }
-  n <- if (type == "factor") length(unique(domain)) else 9
-  cols <- phw_pal(n, palette = palette, reverse = reverse,
-                  type = if (type == "factor") "qualitative" else "sequential")
+  if (type == "factor") {
+    levels <- group_levels(domain)
+    cols <- phw_pal(length(levels), palette = palette, reverse = reverse, type = "qualitative")
+    return(leaflet::colorFactor(cols, levels = levels, ordered = TRUE, na.color = na.color))
+  }
+  cols <- phw_pal(9, palette = palette, reverse = reverse, type = "sequential")
   switch(type,
     numeric = leaflet::colorNumeric(cols, domain = domain, na.color = na.color),
     bin = leaflet::colorBin(cols, domain = domain, bins = bins %||% 5, na.color = na.color),
     quantile = leaflet::colorQuantile(cols, domain = domain, n = if (length(bins) == 1) bins else 5,
-                                      na.color = na.color),
-    factor = leaflet::colorFactor(cols, domain = domain, na.color = na.color))
+                                      na.color = na.color))
+}
+
+# Groups in the order a ggplot2 discrete scale gives them, so a map and a
+# chart of the same data colour each group alike: the factor levels in use,
+# or the sorted values, without NA.
+group_levels <- function(x) {
+  lv <- if (is.factor(x)) levels(droplevels(x)) else as.character(sort(unique(x)))
+  lv[!is.na(lv)]
 }

@@ -41,6 +41,14 @@ says what to change.
   `"blues"` gives its palest three colours instead of its darkest three.
   `"main"` also carries on into `"extended"`, so more than four groups no
   longer take colours from other palettes with a warning.
+* `phw_leaflet_polygons()` and `phw_leaflet_palette(type = "factor")` order
+  groups as the PHW ggplot2 scales do: text sorted, factor levels in their
+  order, with unused levels and `NA` left out. A group now has the same
+  colour on a leaflet map as in a chart of the same data. Before, groups
+  took colours in row order. `phw_leaflet_palette()` also no longer counts
+  `NA` or unused levels when sizing the palette, which gave colours blended
+  between PHW colours. Maps of groups that are not in sorted order change
+  colour.
 
 ## Charts and maps
 
