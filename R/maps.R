@@ -85,11 +85,11 @@ phw_map <- function(data, by, fill, level, bins = NULL, palette = NULL, key = NU
   scale <- map_fill_scale(joined[[fill]], bins, palette, key)
   geom_args <- utils::modifyList(list(colour = "#FFFFFF", linewidth = 0.3), list(...))
 
-  p <- ggplot2::ggplot(joined)
-  if (!all(bounds$code %in% data[[by]])) {
-    p <- p + do.call(ggplot2::geom_sf, c(list(data = bounds[!bounds$code %in% data[[by]], ],
-                                              fill = scale$na.value), geom_args))
-  }
+  # Every boundary goes underneath with no other columns, so it repeats in each
+  # facet panel and an area with no data in that panel shows the missing colour.
+  outline <- sf::st_sf(geometry = sf::st_geometry(bounds))
+  p <- ggplot2::ggplot(joined) +
+    do.call(ggplot2::geom_sf, c(list(data = outline, fill = scale$na.value, inherit.aes = FALSE), geom_args))
   areas <- ggplot2::aes(fill = .data[[fill]], phw_code = .data[[by]])
   p <- p + do.call(ggplot2::geom_sf, c(list(mapping = areas, stat = StatPhwMapAreas), geom_args)) +
     scale +

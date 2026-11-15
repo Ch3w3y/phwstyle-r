@@ -51,6 +51,16 @@ test_that("areas without data are drawn in the NA colour", {
   expect_no_error(ggplot2::ggplot_build(p))
 })
 
+test_that("each facet panel draws every area, in the NA colour where it has no data", {
+  areas <- tiny_areas()
+  d <- data.frame(area = c("A1", "A2", "A3", "A4", "A1", "A2"), yr = c(1, 1, 1, 1, 2, 2), v = 1:6)
+  p <- phw_map(d, by = area, fill = v, level = areas) + ggplot2::facet_wrap(~yr)
+  under <- ggplot2::layer_data(p, 1)
+  expect_equal(as.vector(table(under$PANEL)), c(4, 4))
+  expect_equal(unique(under$fill), unname(phw_colours[["grey_light"]]))
+  expect_equal(as.vector(table(ggplot2::layer_data(p, 2)$PANEL)), c(4, 2))
+})
+
 test_that("codes that match nothing are an error showing the expected codes", {
   areas <- tiny_areas()
   expect_error(phw_map(data.frame(area = c("X1", "X2"), rate = 1:2), by = area, fill = rate, level = areas),
