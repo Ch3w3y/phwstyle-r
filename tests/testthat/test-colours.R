@@ -29,9 +29,12 @@ test_that("text colours meet WCAG AA on white", {
 })
 
 test_that("chart and RAG colours meet the 3:1 non-text contrast rule", {
-  for (k in c(phw_palettes$main, phw_palettes$rag, phw_palettes$accessible, phw_palettes$rag_accessible)) {
+  for (k in c(phw_palettes$rag, phw_palettes$accessible, phw_palettes$rag_accessible)) {
     expect_gte(phw_contrast(k, "#FFFFFF"), 3)
   }
+  # In "main" only gold is below 3:1, as its documentation says.
+  low <- phw_palettes$main[phw_contrast(phw_palettes$main, "#FFFFFF") < 3]
+  expect_equal(low, phw_colours[["gold_465"]])
 })
 
 test_that("phw_text_on picks readable text", {
@@ -39,21 +42,34 @@ test_that("phw_text_on picks readable text", {
   expect_equal(phw_text_on("#F0F4F5"), phw_colours[["text"]])
 })
 
-test_that("extended is built from sourced colours first and stays distinguishable", {
+test_that("extended starts with main, keeps black last and stays distinguishable", {
   ext <- phw_palettes$extended
   expect_length(ext, 12)
   expect_false(anyDuplicated(toupper(ext)) > 0)
-  expect_equal(ext[1:4], phw_palettes$main)
-  # 5 to 7 have a published source, 8 and 9 are from the Long-Term Strategy.
-  expect_equal(ext[5:7], unname(phw_colours[c("black", "green", "gold_465")]))
-  expect_equal(ext[8:9], unname(phw_colours[c("mint", "green_bright")]))
-  # Seven, and all twelve, keep every pair apart for colour-blind readers.
-  for (n in c(7, 12)) {
-    res <- suppressMessages(phw_check_colours(ext[seq_len(n)], min_distance = 15))
-    expect_true(all(res$pass[res$vision != "tritanopia"]), info = paste(n, "colours"))
+  expect_equal(ext[1:6], phw_palettes$main)
+  expect_equal(phw_palettes$main,
+               unname(phw_colours[c("navy", "teal", "orange", "pink", "green", "gold_465")]))
+  expect_equal(ext[8:10], unname(phw_colours[c("mint", "green_bright", "blue")]))
+  expect_equal(ext[12], phw_colours[["black"]])
+  # The two oranges are far apart.
+  expect_equal(diff(match(c("#FF5D0C", "#C94100"), ext)), 8)
+  # Every pair stays apart for colour-blind readers: main by 17, all twelve
+  # by 11.5 (normal vision, deuteranopia and protanopia).
+  red_green <- function(x) {
+    res <- suppressMessages(phw_check_colours(x))
+    min(res$min_distance[res$vision != "tritanopia"])
   }
+  expect_gte(red_green(ext[1:6]), 17)
+  expect_gte(red_green(ext), 11.5)
   # The neutral grey is kept for "Other" and "Unknown", not used as a group colour.
   expect_false(phw_colours[["grey_mid"]] %in% ext)
+})
+
+test_that("accessible keeps black and the rose-brown last and stays distinguishable", {
+  acc <- phw_palettes$accessible
+  expect_equal(acc[7:8], c("#9D5659", "#000000"))
+  expect_gte(min(suppressMessages(phw_check_colours(acc))$min_distance), 17)
+  expect_gte(min(suppressMessages(phw_check_colours(acc[1:5]))$min_distance), 20)
 })
 
 test_that("the strategy and greens palettes work as extra options", {
@@ -94,7 +110,7 @@ test_that("palettes for groups start with the same colours in the same order", {
   # its first four colours is closest to the matching colour in "main".
   lab <- function(x) grDevices::convertColor(t(grDevices::col2rgb(x)) / 255, "sRGB", "Lab")
   s <- lab(phw_palettes$strategy[1:4])
-  m <- lab(phw_palettes$main)
+  m <- lab(phw_palettes$main[1:4])
   nearest <- apply(s, 1, function(r) which.min(sqrt(colSums((t(m) - r)^2))))
   expect_equal(unname(nearest), 1:4)
   # The default single-series colour is the first palette colour.
@@ -109,8 +125,8 @@ test_that("missing colours stay missing in the colour tools", {
 })
 
 test_that("the colour tools take palette names and name bad input", {
-  expect_length(phw_contrast("main"), 4)
-  expect_length(phw_cvd("main"), 4)
+  expect_length(phw_contrast("main"), 6)
+  expect_length(phw_cvd("main"), 6)
   expect_error(phw_check_colours("nope"), "not a colour or a palette name")
   expect_error(phw_check_colours(function(n) 1:n), "must be colours or a palette name")
   expect_error(phw_check_colours(c("#285087", "notacolour")), "\"notacolour\" is not")

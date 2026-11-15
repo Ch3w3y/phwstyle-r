@@ -29,7 +29,7 @@ default_neutral <- c("Other", "Others", "Unknown", "Not known", "Not stated", "M
 #' default and in accessible colours, and each version keeps its colours
 #' from one run to the next.
 #'
-#' `"main"` carries on into `"extended"` after four groups. When a palette
+#' `"main"` carries on into `"extended"` after six groups. When a palette
 #' runs out altogether, the key carries on with unused colours from the
 #' other PHW palettes, then lighter tints, and warns you. `"extended"` keeps
 #' twelve colours apart, but past about eight groups a chart is hard to read
@@ -76,7 +76,7 @@ phw_colour_key <- function(levels, name = NULL, palette = phw_default_palette(),
   # A palette function is asked once for every group, so its colours stay
   # in its own order.
   if (is.function(palette) && length(lv)) palette <- phw_pal(length(lv), palette)
-  # "main" is the start of "extended", so groups past the fourth carry on
+  # "main" is the start of "extended", so groups past the sixth carry on
   # into it. A key grows over time, so it can't wait to see how many groups
   # there are.
   if (identical(palette, "main")) palette <- "extended"

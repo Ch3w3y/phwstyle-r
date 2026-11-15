@@ -7,6 +7,17 @@ says what to change.
 
 ## Changes that may affect existing code
 
+* The default palette `"main"` now has six colours: navy, teal, orange,
+  pink, green and gold. Charts with five or six groups change colour, and
+  charts with more than six carry on into `"extended"` after the sixth.
+  `"extended"` is now `"main"` followed by wine, mint, bright green, blue,
+  dark orange and black. Black comes last, so it no longer appears in a
+  chart with five groups, where it read like a total. The three colours
+  that were not PHW colours (`#5A82E6`, `#274309`, `#730BB1`) are gone.
+  `"accessible"` has the same eight colours, with black and the dark
+  rose-brown moved to the end. Gold is below 3:1 contrast on white, so it
+  suits bars and areas better than thin lines. A saved colour key keeps the
+  colours it already gave its groups.
 * Text dates must be ISO dates such as `"2026-11-14"`. `phw_epicurve()`,
   `phw_date()` and the caption `date` stop on text such as `"05/01/2026"`
   instead of misreading it, and show how to convert it. `phw_epicurve()`

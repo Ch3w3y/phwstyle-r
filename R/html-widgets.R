@@ -546,7 +546,7 @@ phw_plotly_colorscale <- function(palette = "blues", reverse = FALSE, n = 9) {
 }
 
 # The colours plotly gives traces in turn. "main" needs the rest of
-# "extended" behind it for charts with more than four traces. A function
+# "extended" behind it for charts with more than six traces. A function
 # palette is asked for as many colours as there are traces. Sequential and
 # diverging palettes drop their near-white steps, which vanish on white.
 plotly_colorway <- function(p, palette) {

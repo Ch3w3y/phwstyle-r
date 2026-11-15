@@ -11,9 +11,9 @@ A palette name or vector.
 }
 \description{
 The palette that charts, tables and widgets use for groups when you
-don't name one. Out of the box it is \code{"main"} (navy, teal, orange, pink),
-carrying on into \code{"extended"} past four groups, so every chart in a
-report draws from one set of colours however many groups it has.
+don't name one. Out of the box it is \code{"main"} (navy, teal, orange, pink,
+green, gold), carrying on into \code{"extended"} past six groups, so every
+chart in a report draws from one set of colours however many groups it has.
 }
 \details{
 The colour-blind safe \code{"accessible"} palette is a switch you turn on
@@ -40,9 +40,9 @@ separate setting, \code{accessible = TRUE} in \code{\link[=theme_phw]{theme_phw(
 }
 \examples{
 phw_default_palette()
-phw_pal(6)
+phw_pal(8)
 
 old <- options(phwstyle.palette = "accessible")
-phw_pal(6)
+phw_pal(8)
 options(old)
 }

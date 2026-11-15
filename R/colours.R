@@ -77,34 +77,46 @@ phw_col <- function(..., names = TRUE) {
 #' The palettes the package uses for discrete (qualitative), sequential and
 #' diverging scales.
 #'
-#' * `main` (qualitative, 4): navy, teal, orange, pink. The default. It stays
-#'   distinguishable under all three colour-vision deficiencies.
-#' * `extended` (qualitative, 12): `main` and eight more. Charts with more
-#'   than four groups carry on into it automatically, so every chart in a
-#'   report starts with the same four colours. It is built in order of how
-#'   well each colour is sourced:
-#'   * 1 to 4 are `main`.
-#'   * 5 to 7 have a published source: black and gold (Pantone 465) from the
-#'     NHS Wales logo guidelines, and the green of the phw.nhs.wales
-#'     website.
+#' * `main` (qualitative, 6): navy, teal, orange, pink, green and gold. The
+#'   default. Every pair of the six stays apart for colour-blind readers:
+#'   the colour difference (delta E in CIELAB, a scale where about 10 or
+#'   more is easy to tell apart) is at least 17 under simulated deuteranopia
+#'   and protanopia, the two red-green types, and about 9 under tritanopia.
+#'   Gold is below 3:1 contrast on white, so it suits filled shapes (bars,
+#'   areas, map fills) better than thin lines.
+#' * `extended` (qualitative, 12): `main` and six more. Charts with more
+#'   than six groups carry on into it automatically, so every chart in a
+#'   report starts with the same six colours. Its colours are:
+#'   * 1 to 6 are `main`: the four chart colours PHW reports use, the green
+#'     of the phw.nhs.wales website and gold (Pantone 465) from the NHS
+#'     Wales logo guidelines.
+#'   * 7 is wine, which is not a PHW colour. It was chosen to stay distinct
+#'     from the others.
 #'   * 8 and 9 are mint and bright green from the Long-Term Strategy.
-#'   * 10 to 12 (blue, dark green, violet) are not PHW colours. They were
-#'     chosen in the same hues to stay distinct from the other nine.
+#'   * 10 is the blue of the phw.nhs.wales website.
+#'   * 11 is dark orange, the dark end of `orange_navy`. It is eight places
+#'     after the bright orange, so the two oranges are never side by side.
+#'   * 12 is black from the NHS Wales logo guidelines. It comes last so that
+#'     a chart with a few groups does not get a black series, which reads
+#'     like a total or a reference line.
 #'
-#'   Every pair of the twelve stays apart for colour-blind readers: the
-#'   colour difference (delta E in CIELAB, a scale where about 10 or more
-#'   is easy to tell apart) is at least 15 under simulated deuteranopia and
-#'   protanopia, the two red-green types. Gold, mint
-#'   and bright green are below 3:1 contrast on white, so they suit filled
-#'   shapes better than thin lines. Twelve lines on one chart are still hard
+#'   Every pair of the twelve has a delta E of at least 11.5 for normal
+#'   vision, deuteranopia and protanopia. Gold, mint and bright green are
+#'   below 3:1 contrast on white. Twelve lines on one chart are still hard
 #'   to read: use facets or direct labels where you can.
+#'
+#'   Lighter and darker shades of one hue (light teal beside teal, for
+#'   example) are not used as separate groups, because colour-blind readers
+#'   can hardly tell them apart. For ordered or nested groups, use the
+#'   sequential `blues`, `teals` or `greens` palettes instead.
 #' * `accessible` (qualitative, 8): chosen so every pair stays distinct under
 #'   simulated deuteranopia, protanopia and tritanopia (minimum colour
-#'   difference, delta E, of about 20), and every colour has at least 3:1 contrast on
-#'   white. It starts with navy, teal and orange, so short series still look
-#'   like PHW. It is never used unless you ask for it: see
-#'   [phw_default_palette()] for how to switch a whole script or document
-#'   to it.
+#'   difference, delta E, of about 17), and every colour has at least 3:1
+#'   contrast on white. It starts with navy, teal and orange, so short series
+#'   still look like PHW. Black and a dark rose-brown come last, for the
+#'   same reason as black in `extended`. It is never used unless you ask
+#'   for it: see [phw_default_palette()] for how to switch a whole script or
+#'   document to it.
 #' * `highlight` (qualitative, 2): navy for the focus series, light grey for
 #'   everything else.
 #' * `rag` (qualitative, 3): red / amber / green (RAG) status colours that
@@ -116,17 +128,19 @@ phw_col <- function(..., names = TRUE) {
 #'   priorities in PHW's Long-Term Strategy 2023 to 2035, named `services`,
 #'   `system`, `behaviours`, `wellbeing`, `determinants` and `climate`. Use
 #'   it for work reported by priority. The order is not the strategy's own
-#'   numbering: it follows `main` (blue, teal, orange, pink, then the rest),
-#'   so the first groups in a chart look the same whichever palette is used.
+#'   numbering: its first four follow the first four of `main` (blue, teal,
+#'   orange, pink, then the rest), so the first groups in a chart look the
+#'   same whichever palette is used.
 #'   To colour by priority, match on the names.
 #' * `blues`, `teals`, `greens`, `gradient` (sequential). `greens` runs from
 #'   a pale tint to the website green and its dark shade.
 #' * `orange_navy` (diverging).
 #'
-#' **Colour order.** `main`, `extended` and `accessible` all start navy,
-#' teal, orange, so a chart with up to three groups looks the same
-#' whichever of them a report uses. `highlight` starts with the same navy,
-#' then grey. `strategy` has its own shades in the same order: blue, mint,
+#' **Colour order.** `extended` starts with the six colours of `main`, so a
+#' chart with up to six groups looks the same whichever of the two a report
+#' uses. `accessible` starts with the same navy, teal and orange, so a chart
+#' with up to three groups looks the same in all three. `highlight` starts
+#' with the same navy, then grey. `strategy` has its own shades in the same order: blue, mint,
 #' orange, pink. The exceptions are the palettes where colour carries a
 #' fixed meaning (`rag`, `rag_accessible`), and the sequential and diverging
 #' palettes, which run from light to dark.
@@ -139,19 +153,16 @@ phw_col <- function(..., names = TRUE) {
 #' show_phw_palettes(c("main", "extended", "accessible"))
 #' @export
 phw_palettes <- list(
-  main      = unname(phw_colours[c("navy", "teal", "orange", "pink")]),
+  main      = unname(phw_colours[c("navy", "teal", "orange", "pink", "green", "gold_465")]),
+  # See data-raw/palette-search.R for how the order is checked.
   extended  = c(
-    # 1-4: the chart colours PHW reports use.
-    unname(phw_colours[c("navy", "teal", "orange", "pink")]),
-    # 5-7: published sources (NHS Wales logo guidelines; phw.nhs.wales).
-    unname(phw_colours[c("black", "green", "gold_465")]),
-    # 8-9: Long-Term Strategy 2023 to 2035 priority colours.
-    unname(phw_colours[c("mint", "green_bright")]),
-    # 10-12: not PHW colours; chosen in the same hues to stay distinct from
-    # the rest. See data-raw/palette-search.R.
-    "#5A82E6", "#274309", "#730BB1"),
-  accessible = c("#285087", "#24A2B5", "#FF5D0C", "#000000", "#9D5659",
-                 "#8478CF", "#882255", "#332288"),
+    unname(phw_colours[c("navy", "teal", "orange", "pink", "green", "gold_465")]),
+    "#A3245A",
+    unname(phw_colours[c("mint", "green_bright", "blue")]),
+    "#C94100",
+    unname(phw_colours["black"])),
+  accessible = c("#285087", "#24A2B5", "#FF5D0C", "#882255", "#8478CF",
+                 "#332288", "#9D5659", "#000000"),
   highlight = unname(phw_colours[c("navy", "grey_light")]),
   rag       = c(red = "#D50B5C", amber = "#D97F00", green = "#338276"),
   rag_accessible = c(red = "#D50B5C", amber = "#D97F00", green = "#285087"),
@@ -165,9 +176,9 @@ phw_palettes <- list(
                   "#285087", "#1B3660")
 )
 
-# "main" is the first four colours of "extended". Past four groups the
-# default carries on into "extended", so a chart with six groups starts with
-# the same colours as a chart with four.
+# "main" is the first six colours of "extended". Past six groups the
+# default carries on into "extended", so a chart with eight groups starts
+# with the same colours as a chart with six.
 palette_for <- function(palette, n) {
   if (identical(palette, "main") && n > length(phw_palettes$main)) "extended" else palette
 }
@@ -182,7 +193,7 @@ palette_type <- function(name) {
 #'
 #' Qualitative palettes return their colours in order (and refuse to make up
 #' extra ones). Sequential and diverging palettes are interpolated to any
-#' length. Asking `"main"` for more than four colours carries on into
+#' length. Asking `"main"` for more than six colours carries on into
 #' `"extended"`, as the charts do.
 #'
 #' `palette` can be a PHW palette name, your own vector of colours, or a
@@ -272,9 +283,9 @@ as_colours <- function(x, arg, na_ok = FALSE, call = rlang::caller_env()) {
 #' The default qualitative palette
 #'
 #' The palette that charts, tables and widgets use for groups when you
-#' don't name one. Out of the box it is `"main"` (navy, teal, orange, pink),
-#' carrying on into `"extended"` past four groups, so every chart in a
-#' report draws from one set of colours however many groups it has.
+#' don't name one. Out of the box it is `"main"` (navy, teal, orange, pink,
+#' green, gold), carrying on into `"extended"` past six groups, so every
+#' chart in a report draws from one set of colours however many groups it has.
 #'
 #' The colour-blind safe `"accessible"` palette is a switch you turn on
 #' once, and it then applies to every chart, table and widget, for any
@@ -300,10 +311,10 @@ as_colours <- function(x, arg, na_ok = FALSE, call = rlang::caller_env()) {
 #' @return A palette name or vector.
 #' @examples
 #' phw_default_palette()
-#' phw_pal(6)
+#' phw_pal(8)
 #'
 #' old <- options(phwstyle.palette = "accessible")
-#' phw_pal(6)
+#' phw_pal(8)
 #' options(old)
 #' @export
 phw_default_palette <- function() {

@@ -348,8 +348,8 @@ test_that("reverse carries \"main\" on into \"extended\" as phw_pal() does", {
       scale_fill_phw_d(palette = "main", reverse = TRUE)
     ggplot2::layer_data(p)$fill
   }
-  expect_no_warning(six <- fill_of(LETTERS[1:6]))
-  expect_equal(six, phw_pal(6, "main", reverse = TRUE))
+  expect_no_warning(eight <- fill_of(LETTERS[1:8]))
+  expect_equal(eight, phw_pal(8, "main", reverse = TRUE))
   expect_equal(fill_of(LETTERS[1:3]), phw_pal(3, "main", reverse = TRUE))
   expect_equal(fill_of(c(LETTERS[1:4], "Other")),
                c(phw_pal(4, "main", reverse = TRUE), phw_colours[["grey_mid"]]))

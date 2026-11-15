@@ -15,36 +15,48 @@ diverging scales.
 }
 \details{
 \itemize{
-\item \code{main} (qualitative, 4): navy, teal, orange, pink. The default. It stays
-distinguishable under all three colour-vision deficiencies.
-\item \code{extended} (qualitative, 12): \code{main} and eight more. Charts with more
-than four groups carry on into it automatically, so every chart in a
-report starts with the same four colours. It is built in order of how
-well each colour is sourced:
+\item \code{main} (qualitative, 6): navy, teal, orange, pink, green and gold. The
+default. Every pair of the six stays apart for colour-blind readers:
+the colour difference (delta E in CIELAB, a scale where about 10 or
+more is easy to tell apart) is at least 17 under simulated deuteranopia
+and protanopia, the two red-green types, and about 9 under tritanopia.
+Gold is below 3:1 contrast on white, so it suits filled shapes (bars,
+areas, map fills) better than thin lines.
+\item \code{extended} (qualitative, 12): \code{main} and six more. Charts with more
+than six groups carry on into it automatically, so every chart in a
+report starts with the same six colours. Its colours are:
 \itemize{
-\item 1 to 4 are \code{main}.
-\item 5 to 7 have a published source: black and gold (Pantone 465) from the
-NHS Wales logo guidelines, and the green of the phw.nhs.wales
-website.
+\item 1 to 6 are \code{main}: the four chart colours PHW reports use, the green
+of the phw.nhs.wales website and gold (Pantone 465) from the NHS
+Wales logo guidelines.
+\item 7 is wine, which is not a PHW colour. It was chosen to stay distinct
+from the others.
 \item 8 and 9 are mint and bright green from the Long-Term Strategy.
-\item 10 to 12 (blue, dark green, violet) are not PHW colours. They were
-chosen in the same hues to stay distinct from the other nine.
+\item 10 is the blue of the phw.nhs.wales website.
+\item 11 is dark orange, the dark end of \code{orange_navy}. It is eight places
+after the bright orange, so the two oranges are never side by side.
+\item 12 is black from the NHS Wales logo guidelines. It comes last so that
+a chart with a few groups does not get a black series, which reads
+like a total or a reference line.
 }
 
-Every pair of the twelve stays apart for colour-blind readers: the
-colour difference (delta E in CIELAB, a scale where about 10 or more
-is easy to tell apart) is at least 15 under simulated deuteranopia and
-protanopia, the two red-green types. Gold, mint
-and bright green are below 3:1 contrast on white, so they suit filled
-shapes better than thin lines. Twelve lines on one chart are still hard
+Every pair of the twelve has a delta E of at least 11.5 for normal
+vision, deuteranopia and protanopia. Gold, mint and bright green are
+below 3:1 contrast on white. Twelve lines on one chart are still hard
 to read: use facets or direct labels where you can.
+
+Lighter and darker shades of one hue (light teal beside teal, for
+example) are not used as separate groups, because colour-blind readers
+can hardly tell them apart. For ordered or nested groups, use the
+sequential \code{blues}, \code{teals} or \code{greens} palettes instead.
 \item \code{accessible} (qualitative, 8): chosen so every pair stays distinct under
 simulated deuteranopia, protanopia and tritanopia (minimum colour
-difference, delta E, of about 20), and every colour has at least 3:1 contrast on
-white. It starts with navy, teal and orange, so short series still look
-like PHW. It is never used unless you ask for it: see
-\code{\link[=phw_default_palette]{phw_default_palette()}} for how to switch a whole script or document
-to it.
+difference, delta E, of about 17), and every colour has at least 3:1
+contrast on white. It starts with navy, teal and orange, so short series
+still look like PHW. Black and a dark rose-brown come last, for the
+same reason as black in \code{extended}. It is never used unless you ask
+for it: see \code{\link[=phw_default_palette]{phw_default_palette()}} for how to switch a whole script or
+document to it.
 \item \code{highlight} (qualitative, 2): navy for the focus series, light grey for
 everything else.
 \item \code{rag} (qualitative, 3): red / amber / green (RAG) status colours that
@@ -56,18 +68,20 @@ readers.
 priorities in PHW's Long-Term Strategy 2023 to 2035, named \code{services},
 \code{system}, \code{behaviours}, \code{wellbeing}, \code{determinants} and \code{climate}. Use
 it for work reported by priority. The order is not the strategy's own
-numbering: it follows \code{main} (blue, teal, orange, pink, then the rest),
-so the first groups in a chart look the same whichever palette is used.
+numbering: its first four follow the first four of \code{main} (blue, teal,
+orange, pink, then the rest), so the first groups in a chart look the
+same whichever palette is used.
 To colour by priority, match on the names.
 \item \code{blues}, \code{teals}, \code{greens}, \code{gradient} (sequential). \code{greens} runs from
 a pale tint to the website green and its dark shade.
 \item \code{orange_navy} (diverging).
 }
 
-\strong{Colour order.} \code{main}, \code{extended} and \code{accessible} all start navy,
-teal, orange, so a chart with up to three groups looks the same
-whichever of them a report uses. \code{highlight} starts with the same navy,
-then grey. \code{strategy} has its own shades in the same order: blue, mint,
+\strong{Colour order.} \code{extended} starts with the six colours of \code{main}, so a
+chart with up to six groups looks the same whichever of the two a report
+uses. \code{accessible} starts with the same navy, teal and orange, so a chart
+with up to three groups looks the same in all three. \code{highlight} starts
+with the same navy, then grey. \code{strategy} has its own shades in the same order: blue, mint,
 orange, pink. The exceptions are the palettes where colour carries a
 fixed meaning (\code{rag}, \code{rag_accessible}), and the sequential and diverging
 palettes, which run from light to dark.
