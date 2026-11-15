@@ -145,6 +145,11 @@ says what to change.
   cleaned for Excel, such as `"North/South"` and `"North?South"`, `"Cases"`
   and `"cases"`, or two long names that share their first 31 characters.
   Before, the second table was written over the first sheet.
+* `phw_flextable_heat(symbols = TRUE)` keeps the table's number format, so
+  `phw_flextable(digits = 1)` shows "▼ 92.3", not "▼ 92.34568".
+* `phw_flextable(flextable_args = list(col_keys = ))` can leave out or
+  reorder the columns of a summary table, keeping the label columns first.
+  Before, it failed inside flextable.
 * `phw_gt()` tables carry the bundled Ubuntu web font, dates are
   left-aligned and subtotals are italic.
 * `phw_summary_table()` shows a blank, not "( to )", when a statistic can't
