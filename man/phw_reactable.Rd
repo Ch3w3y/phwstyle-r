@@ -25,7 +25,9 @@ phw_reactable(
 bold headings, indented levels and no sorting or paging).}
 
 \item{...}{Passed to \code{\link[reactable:reactable]{reactable::reactable()}}. Any of them, including
-\code{theme}, \code{defaultColDef} and \code{language}, replace the PHW defaults.}
+\code{theme}, \code{defaultColDef} and \code{language}, replace the PHW defaults. For a
+summary table, \code{columns} change only the settings you give, so the
+table keeps its indents, alignment and headings.}
 
 \item{caption}{Optional title shown above the table.}
 
@@ -37,7 +39,8 @@ bold headings, indented levels and no sorting or paging).}
 
 \item{digits}{Decimal places for non-integer numbers, as in
 \code{\link[=phw_flextable]{phw_flextable()}} and \code{\link[=phw_gt]{phw_gt()}}. A column of whole numbers shows none.
-A column you format yourself in \code{columns} or \code{...} keeps your format.}
+A column you format yourself in \code{columns} keeps your format, and a
+\code{format} in \code{defaultColDef} applies to every column.}
 
 \item{group_col, key, palette}{Colour the cells of the column \code{group_col}
 (unquoted as in dplyr, or a string) by group, with the same colours as

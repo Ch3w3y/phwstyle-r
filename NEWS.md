@@ -128,6 +128,11 @@ says what to change.
   spanner, two-level column headers, group separators and right-aligned
   statistics.
 * `phw_reactable()` tables close with a navy rule and have a navy spanner.
+* `phw_reactable()` merges your `columns` into a summary table's own column
+  settings, so restyling one column keeps the indents, navy headings,
+  alignment and blank missing values of the rest. A `format` in
+  `defaultColDef` now applies to every column instead of being replaced by
+  `digits`.
 * `phw_write_xlsx()` writes the spanner, navy labels, italic subtotals, a rule
   above the total, ISO dates and a bold right-aligned source. It checks `x`
   and accepts `header_fill = "navy"`.

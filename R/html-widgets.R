@@ -75,14 +75,17 @@ phw_reactable_theme <- function(font_size = 14, header = c("booktabs", "navy", "
 #'   [phw_crosstab()], [phw_rate_table()] or [phw_risk_table()] (shown with
 #'   bold headings, indented levels and no sorting or paging).
 #' @param ... Passed to [reactable::reactable()]. Any of them, including
-#'   `theme`, `defaultColDef` and `language`, replace the PHW defaults.
+#'   `theme`, `defaultColDef` and `language`, replace the PHW defaults. For a
+#'   summary table, `columns` change only the settings you give, so the
+#'   table keeps its indents, alignment and headings.
 #' @param caption Optional title shown above the table.
 #' @param source,date Passed to [phw_caption()] and shown below the table.
 #' @param header,accent Passed to [phw_reactable_theme()].
 #' @param caption_args List of other [phw_caption()] arguments.
 #' @param digits Decimal places for non-integer numbers, as in
 #'   [phw_flextable()] and [phw_gt()]. A column of whole numbers shows none.
-#'   A column you format yourself in `columns` or `...` keeps your format.
+#'   A column you format yourself in `columns` keeps your format, and a
+#'   `format` in `defaultColDef` applies to every column.
 #' @param group_col,key,palette Colour the cells of the column `group_col`
 #'   (unquoted as in dplyr, or a string) by group, with the same colours as
 #'   your charts. `key` and `palette` are
@@ -122,14 +125,17 @@ phw_reactable <- function(data, ..., caption = NULL, source = NULL, date = NULL,
                    defaultColDef = reactable::colDef(
                      format = reactable::colFormat(separators = TRUE),
                      headerVAlign = "bottom"))
+  own_format <- !is.null(args[["defaultColDef"]][["format"]])
   if (inherits(data, "phw_summary")) {
     sm <- summary_reactable_args(data)
+    args$columns <- merge_col_defs(sm$columns, args$columns)
+    sm$columns <- NULL
     for (nm in names(sm)) if (is.null(args[[nm]])) args[[nm]] <- sm[[nm]]
     note <- attr(data, "note")
     data <- as.data.frame(unclass(data)[names(data)], check.names = FALSE)
   }
   for (nm in names(defaults)) if (is.null(args[[nm]])) args[[nm]] <- defaults[[nm]]
-  args$columns <- with_number_formats(args$columns, data, digits)
+  if (!own_format) args$columns <- with_number_formats(args$columns, data, digits)
   if (!is.null(group_col)) {
     cols <- phw_colour_key(data[[group_col]], name = key, palette = palette)
     style_fun <- function(value) {
@@ -144,6 +150,16 @@ phw_reactable <- function(data, ..., caption = NULL, source = NULL, date = NULL,
   tbl <- do.call(reactable::reactable, c(list(data), args))
   tbl <- htmltools::attachDependencies(tbl, phw_font_dependency(), append = TRUE)
   wrap_widget(tbl, caption, caption_from(source, date, caption_args), note)
+}
+
+# The user's settings for a column replace only the same settings in `base`.
+merge_col_defs <- function(base, user) {
+  for (nm in names(user)) {
+    def <- base[[nm]] %||% reactable::colDef()
+    def[names(user[[nm]])] <- user[[nm]]
+    base[[nm]] <- def
+  }
+  base
 }
 
 with_number_formats <- function(columns, data, digits) {
