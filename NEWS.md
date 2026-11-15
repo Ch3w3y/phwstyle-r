@@ -13,7 +13,8 @@ says what to change.
   also stops on a numeric date column.
 * Rows with a missing date, count, value, estimate or code are left out with
   one message saying how many. Before, they could turn a whole period into 0
-  or blank a chart.
+  or blank a chart. `phw_crosstab(missing = NULL)` now also says how many
+  rows it leaves out for a missing row or column value.
 * `phw_reactable()` rows are no longer striped by default, to match the
   other tables. Pass `striped = TRUE` to stripe them.
 * `phw_add_slide()` stops when given more content than the layout has room

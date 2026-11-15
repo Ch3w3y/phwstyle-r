@@ -185,6 +185,17 @@ test_that("phw_group_table and phw_crosstab leave out rows with a missing value"
   expect_error(phw_crosstab(transform(ct, n = "1"), r, k, count = n), "must be a numeric column")
 })
 
+test_that("phw_crosstab says how many rows it leaves out when missing = NULL", {
+  d <- data.frame(area = c("A", "A", NA, "B"), sex = c("F", "M", "F", NA), n = c(3, 4, 5, 6))
+  expect_message(tab <- phw_crosstab(d, area, sex, count = n, missing = NULL),
+                 "Left out 2 rows")
+  expect_equal(tab$Total[tab$area == "Total"], 7)
+  expect_message(phw_crosstab(transform(d, n = c(NA, 4, 5, 6)), area, sex, count = n, missing = NULL),
+                 "Left out 3 rows")
+  expect_no_message(tab <- phw_crosstab(d, area, sex, count = n))
+  expect_equal(tab$Total[tab$area == "Total"], 18)
+})
+
 test_that("labels can be a named character vector", {
   ll <- data.frame(age = c("0-14", "15-44"), sex = c("F", "M"))
   expect_equal(phw_summary_table(ll, labels = c(sex = "Sex"))[[1]][4], "Sex")
