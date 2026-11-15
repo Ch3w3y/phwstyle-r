@@ -264,7 +264,7 @@ guess_boundary_fields <- function(x) {
   if (!nzchar(code)) code <- name
   if (!nzchar(name)) name <- code
   if (!nzchar(code)) return(NULL)
-  c(code = code, name = name, name_cy = first("^(name_cy|enw_cy|enw|.*[0-9]{2}nmw)$"))
+  c(code = code, name = name, name_cy = first("^(name_cy|enw_cy|enw|.*[0-9]{2}nm?w)$"))
 }
 
 # Keep the cache small: once a level is downloaded, delete cached files for

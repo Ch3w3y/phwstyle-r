@@ -23,6 +23,13 @@ says what to change.
 * A group with an empty name (`""`) stops `phw_colour_key()` and the PHW
   colour scales. Give it a label, or make it `NA` to show it as missing.
 * `phw_map()` stops when every fill value is missing.
+* `phw_boundaries("community")` returns every community as its own row,
+  coded with its ONS code (`W04...`), with Welsh names in `name_cy`. Before,
+  `code` was the community name, so communities that share a name, such as
+  Castle in Cardiff and in Swansea, were merged into one area. Join your data
+  by `code`, as names are not unique across Wales. Communities now come
+  from the ONS Open Geography Portal (May 2026), in full, generalised and
+  super generalised detail.
 * `phw_epicurve()` leaves unused factor levels out of the legend unless you
   give a colour `key`. Groups after an unused level take the next colour,
   so pass `key` to keep colours fixed across charts.
