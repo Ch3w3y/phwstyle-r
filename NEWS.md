@@ -59,6 +59,10 @@ says what to change.
   `theme_phw()` background covered it, and a `phw_finalise()` chart took
   `bg` only under its footer. With no `bg`, a chart keeps its own
   background as before.
+* `phw_save()` writes `.eps` and `.ps` files. Before, it failed with
+  "family 'Ubuntu' not included in postscript() device". Like `.pdf`, they
+  use Ubuntu once it is installed with `phw_install_fonts()`. On macOS
+  they need XQuartz, and without it `phw_save()` says so.
 
 ## Tables
 

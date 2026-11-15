@@ -20,7 +20,7 @@ phw_save(
 \item{plot}{A ggplot or the result of \code{\link[=phw_finalise]{phw_finalise()}}.}
 
 \item{filename}{File name. The extension (\code{.png}, \code{.svg}, \code{.pdf},
-\code{.jpeg}) picks the format.}
+\code{.eps}, \code{.jpeg}) picks the format.}
 
 \item{width, height, units}{Size. Defaults to 16 x 10 cm, which fits an A4
 Word page with standard margins.}
@@ -43,6 +43,12 @@ The file name, invisibly.
 A wrapper around \code{\link[ggplot2:ggsave]{ggplot2::ggsave()}} with sensible defaults for PHW
 outputs. It saves at 16 x 10 cm and 300 dpi, uses 'ragg' for PNG so the
 bundled Ubuntu font works, and accepts plots made with \code{\link[=phw_finalise]{phw_finalise()}}.
+}
+\details{
+PDF, EPS and PostScript files are drawn with Cairo, which uses only the
+fonts installed on the computer. Run \code{\link[=phw_install_fonts]{phw_install_fonts()}} once to use
+Ubuntu in them. On macOS, EPS and PostScript need XQuartz, and without it
+\code{phw_save()} stops with a message instead of writing the file.
 }
 \examples{
 library(ggplot2)
