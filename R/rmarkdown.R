@@ -187,7 +187,8 @@ phw_pdf_document <- function(..., toc = FALSE, number_sections = TRUE,
   check_true_false(cover)
   dots <- list(...)
   args <- format_args(list(toc = toc, number_sections = number_sections,
-                           fig_width = fig_width, fig_height = fig_height, fig_caption = TRUE),
+                           fig_width = fig_width, fig_height = fig_height, fig_caption = TRUE,
+                           dev = if (requireNamespace("ragg", quietly = TRUE)) "ragg_png" else "pdf"),
                       dots, fixed = "latex_engine", base = "pdf_document")
   header <- phw_latex_header(team = team, cover = cover)
   args$latex_engine <- "xelatex"
@@ -197,7 +198,6 @@ phw_pdf_document <- function(..., toc = FALSE, number_sections = TRUE,
                         "--variable", "fontsize:11pt",
                         "--variable", "colorlinks:true", dots$pandoc_args)
   fmt <- do.call(rmarkdown::pdf_document, args)
-  if (requireNamespace("ragg", quietly = TRUE)) fmt$knitr$opts_chunk$dev <- "ragg_png"
   fmt$knitr$opts_chunk$dpi <- 300
   add_setup(fmt, style_plots, palette)
 }

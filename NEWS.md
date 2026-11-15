@@ -98,6 +98,8 @@ says what to change.
   printing "NA", and name a misspelt caption argument.
 * The R Markdown formats add your own `css`, `includes` and `pandoc_args` to
   the PHW ones, and LaTeX characters in `team` print as typed.
+* `phw_pdf_document()` keeps the `dev` you give it instead of always using
+  `"ragg_png"`.
 * `phw_download_logos()` saves nothing when the reply isn't an SVG.
 
 ## Interactive outputs and colours

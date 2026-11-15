@@ -310,6 +310,10 @@ test_that("format arguments in ... are merged with the PHW ones or refused", {
   expect_error(phw_html_document(theme = "cerulean"), "sets `theme` itself")
   expect_error(phw_pdf_document(latex_engine = "pdflatex"), "sets `latex_engine` itself")
   expect_equal(phw_html_document(dev = "svg")$knitr$opts_chunk$dev, "svg")
+  expect_equal(phw_pdf_document(dev = "pdf")$knitr$opts_chunk$dev, "pdf")
+  if (requireNamespace("ragg", quietly = TRUE)) {
+    expect_equal(phw_pdf_document()$knitr$opts_chunk$dev, "ragg_png")
+  }
   pdf <- phw_pdf_document(includes = rmarkdown::includes(in_header = "mine.tex"),
                           pandoc_args = c("--variable", "linestretch:1.2"))
   expect_equal(sum(pdf$pandoc$args == "--include-in-header"), 2)
