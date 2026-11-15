@@ -8,7 +8,7 @@ Found while running the loop with Claude Code 2.1.x. Each item says whether it w
 - **The scheduler holds a slot.** The schedule session is meant to stay alive and receive stage events, and it counts toward `max_concurrency` (source: `loop/cook_spawn.go` `atMaxConcurrency`). Keep `max_concurrency = 2`.
 - **The scheduler only hears about failures.** The live scheduler gets a message on a failed stage, a yield, a merge failure or a stage message, but not when an order finishes (source: `loop/cook_completion.go` `advanceAndPersist`). Noodle starts no new scheduler while one is alive (source: `loop/loop_cycle_pipeline.go`). So after the first order, the idle scheduler keeps its slot and nothing else is scheduled.
 - **Usage-limit stalls (observed).** A session that hits the Claude usage limit stops at once. Check its `meta.json` for "hit your" before you debug anything else.
-- **Backlog sync runs every second (source: `loop/util.go` `pollInterval`).** `adapters/backlog-sync` caches its result for 30 seconds so the loop stays inside GitHub's rate limit, and `adapters/backlog-done` drops the finished item from the cache and expires it when an order finishes. If `gh` fails, `backlog-sync` serves the last cached backlog.
+- **Backlog sync runs every second (source: `loop/util.go` `pollInterval`).** `adapters/backlog-sync` caches its result for 30 seconds so the loop stays inside GitHub's rate limit, and `adapters/backlog-done` drops the finished item from the cache and expires it when an order finishes. If `gh` fails or returns something other than a list of issues, `backlog-sync` serves the last cached backlog.
 
 ## Local build
 

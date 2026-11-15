@@ -8,6 +8,7 @@ set -eu
 . "$(dirname -- "$0")/lib.sh"
 
 CACHE="$ADAPTER_DIR/../.noodle/backlog-cache.ndjson"
+mkdir -p "$(dirname -- "$CACHE")"
 TTL=${BACKLOG_CACHE_SECONDS:-30}
 if [ -f "$CACHE" ] && [ $(( $(date +%s) - $(date -r "$CACHE" +%s) )) -lt "$TTL" ]; then
   cat "$CACHE"
@@ -23,16 +24,17 @@ set -- --state open --limit "${ISSUE_LIMIT:-200}" --json number,title,body,label
 # On failure, serve the last good result if there is one. Otherwise exit 1 with
 # our own message: Noodle reads sync errors that mention "not found" as a
 # missing script and treats the backlog as empty, so gh's text is kept out.
-if ! issues=$(gh issue list "$@" 2>/dev/null) || ! printf '%s' "$issues" | jq -e 'type == "array"' >/dev/null 2>&1; then
+fail() {
   if [ -f "$CACHE" ]; then
-    echo "backlog-sync: gh issue list failed; serving the last good backlog" >&2
+    echo "backlog-sync: $1; serving the last good backlog" >&2
     cat "$CACHE"
     exit 0
   fi
-  echo "backlog-sync: gh issue list failed; check gh auth status" >&2
+  echo "backlog-sync: $1; check gh auth status" >&2
   exit 1
-fi
-printf '%s\n' "$issues" | jq -c --arg done "$DONE_LABEL" '.[] | {
+}
+issues=$(gh issue list "$@" 2>/dev/null) || fail "gh issue list failed"
+items=$(printf '%s' "$issues" | jq -ce --arg done "$DONE_LABEL" 'if type == "array" then .[] else error end | {
     id: (.number | tostring),
     title: .title,
     status: (if any(.labels[]; .name == $done) then "done" else "open" end),
@@ -40,6 +42,9 @@ printf '%s\n' "$issues" | jq -c --arg done "$DONE_LABEL" '.[] | {
     milestone: (.milestone.title // null),
     url: .url,
     body: ((.body // "") | .[0:2000])
-  } | with_entries(select(.value != null))' | attach_plans > "$CACHE.$$"
+  } | with_entries(select(.value != null))' 2>/dev/null) && rc=0 || rc=$?
+# jq -e exits 4 when the array is empty; that is a real empty backlog.
+[ "$rc" -eq 0 ] || [ "$rc" -eq 4 ] || fail "gh issue list returned unexpected output"
+if [ -n "$items" ]; then printf '%s\n' "$items"; fi | attach_plans > "$CACHE.$$"
 mv "$CACHE.$$" "$CACHE"
 cat "$CACHE"

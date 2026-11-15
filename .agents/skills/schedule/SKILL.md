@@ -22,7 +22,7 @@ From mise, use:
 
 - `backlog`: items with `id`, `title`, `status`, and optionally `plan`. Other fields depend on the issue source the adapter syncs from (for example `tags`, `section`, `estimate`, `milestone`, `url`, `body`). Treat them all as context.
 - `task_types`: every schedulable skill and its `schedule` hint. Only these keys are valid `do` values.
-- Active orders and sessions: never schedule an item that is already in flight. Never write an order whose `id` is already in `orders.json`, even unchanged: re-listing it can rewrite its queued stages.
+- Active orders and sessions: never schedule an item that is already in flight. Never write an order whose `id` is in `orders.json` with status `active`, even unchanged: re-listing it can rewrite its queued stages. An order with status `failed` stays in `orders.json` until it is listed again, so list it again to retry it (the failure limit in Priorities still applies).
 - `recent_history` and `recent_events`: failures, merges, conflicts.
 
 ## Building orders
@@ -83,7 +83,7 @@ Leave `with` and `model` unset so `routing.defaults` in `.noodle.toml` applies, 
 
 ## Messages from the loop
 
-This session stays open between orders. The loop sends it one line per event, such as `[order_completed] order=8 ...` when an order finishes, or `[stage_failed] ...` and `[stage_yield] ...`. On every message, re-read `.noodle/mise.json` and write `.noodle/orders-next.json` again by the rules above.
+This session stays open between orders. The loop sends it one line per event, such as `[order_completed] order=8 ...` when an order finishes, or `[stage_failed] ...` and `[stage_yield] ...`. On every message, re-read `.noodle/mise.json` and write `.noodle/orders-next.json` again by the rules above. Mise can lag GitHub by a few seconds, so before you schedule an issue order, run `gh issue view <id> --json state,labels` and skip the issue unless it is open. Use the labels from that output for the retry rules.
 
 ## Output
 
