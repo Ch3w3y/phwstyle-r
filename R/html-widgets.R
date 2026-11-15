@@ -138,15 +138,14 @@ phw_reactable <- function(data, ..., caption = NULL, source = NULL, date = NULL,
   for (nm in names(defaults)) if (is.null(args[[nm]])) args[[nm]] <- defaults[[nm]]
   if (!own_format) args$columns <- with_number_formats(args$columns, data, digits)
   if (!is.null(group_col)) {
-    cols <- phw_colour_key(data[[group_col]], name = key, palette = palette)
+    cols <- phw_colour_key(group_levels(data[[group_col]]), name = key, palette = palette)
     style_fun <- function(value) {
       bg <- unname(cols[as.character(value)])
       if (is.na(bg)) return(NULL)
       list(background = bg, color = phw_text_on(bg), fontWeight = 500)
     }
-    col_defs <- args$columns %||% list()
-    col_defs[[group_col]] <- col_defs[[group_col]] %||% reactable::colDef(style = style_fun)
-    args$columns <- col_defs
+    group_def <- stats::setNames(list(reactable::colDef(style = style_fun)), group_col)
+    args$columns <- merge_col_defs(group_def, args$columns)
   }
   tbl <- do.call(reactable::reactable, c(list(data), args))
   tbl <- htmltools::attachDependencies(tbl, phw_font_dependency(), append = TRUE)

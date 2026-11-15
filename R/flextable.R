@@ -343,7 +343,7 @@ phw_flextable_groups <- function(x, j, key = NULL, palette = phw_default_palette
   data <- x$body$dataset
   j <- pick_col(rlang::enquo(j), data, "j")
   groups <- data[[j]]
-  cols <- phw_colour_key(groups, name = key, palette = palette, fixed = values)
+  cols <- phw_colour_key(group_levels(groups), name = key, palette = palette, fixed = values)
   fill <- unname(cols[as.character(groups)])
   target <- if (rows) x$col_keys else j
   for (k in target) {
