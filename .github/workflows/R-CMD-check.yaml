@@ -5,13 +5,18 @@
 # * Pull requests: the three jobs marked "pr" in .github/ci-matrix.json
 #   (Linux with LaTeX, Windows, and the oldest versions), and only when
 #   the pull request changes a file that goes into the package (anything
-#   .Rbuildignore keeps) or this workflow. A pull request that changes
+#   .Rbuildignore keeps), this workflow, ci-matrix.json or
+#   .github/scripts/package-files.pl. A pull request that changes
 #   only the loop's skills, brain notes, the gallery or data-raw runs the
 #   "Choose jobs" job alone. A new push cancels the run before it.
 # * Every Monday, on demand (Actions > R-CMD-check > Run workflow), and
 #   before a release: every job in .github/ci-matrix.json.
-# * Pushes to main run nothing here: the pull request already checked the
-#   merge. The pkgdown workflow still builds the site from main.
+# * Pushes to main run nothing here. Each pull request was checked against
+#   main as it was then; two pull requests merged close together are only
+#   checked together by the next full run. The pkgdown workflow still
+#   builds the site from main.
+# * Boundary updates (update-boundaries.yaml) start a full run on their
+#   branch, because a pull request opened by a workflow triggers none.
 #
 # The jobs in .github/ci-matrix.json:
 #
@@ -76,7 +81,7 @@ jobs:
           set -euo pipefail
           filter='.'
           if [ "$EVENT" = pull_request ]; then
-            changed=$(git diff --name-only --no-renames "$BASE...$HEAD")
+            changed=$(git -c core.quotePath=false diff --name-only --no-renames "$BASE...$HEAD")
             package=$(printf '%s\n' "$changed" | perl .github/scripts/package-files.pl)
             ci=$(printf '%s\n' "$changed" | grep -E '^\.github/(workflows/R-CMD-check\.yaml|ci-matrix\.json|scripts/package-files\.pl)$' || true)
             relevant=$(printf '%s\n' "$package" "$ci" | sed '/^$/d')
@@ -88,7 +93,8 @@ jobs:
               echo "No file in this pull request goes into the package, so the check is skipped." >> "$GITHUB_STEP_SUMMARY"
             fi
           fi
-          echo "matrix=$(jq -c "$filter" .github/ci-matrix.json)" >> "$GITHUB_OUTPUT"
+          matrix=$(jq -c "$filter" .github/ci-matrix.json)
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
   R-CMD-check:
     needs: plan

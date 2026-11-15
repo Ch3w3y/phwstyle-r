@@ -1,7 +1,8 @@
 # Checks the ONS Open Geography Portal and DataMapWales once a week. It opens
 # a pull request updating inst/extdata/boundaries.csv when a new release has
-# appeared (e.g. new wards or health boards), and the R-CMD-check workflow
-# then runs on that pull request. The run fails if a source the package
+# appeared (e.g. new wards or health boards), then starts the full
+# R-CMD-check run on its branch (a pull request opened by a workflow does
+# not start one itself). The run fails if a source the package
 # relies on has stopped working, so that it is noticed.
 on:
   schedule:
@@ -11,6 +12,7 @@ on:
 name: update-boundaries
 
 permissions:
+  actions: write
   contents: write
   pull-requests: write
 
@@ -42,6 +44,7 @@ jobs:
             echo 'EOF'
           } >> "$GITHUB_OUTPUT"
       - name: Open a pull request
+        id: pr
         uses: peter-evans/create-pull-request@v7
         with:
           branch: auto/update-boundaries
@@ -62,6 +65,11 @@ jobs:
             ${{ steps.diff.outputs.problems }}
             ```
           add-paths: inst/extdata/boundaries.csv
+      - name: Check the pull request
+        if: steps.pr.outputs.pull-request-operation == 'created' || steps.pr.outputs.pull-request-operation == 'updated'
+        run: gh workflow run R-CMD-check.yaml --ref auto/update-boundaries
+        env:
+          GH_TOKEN: ${{ github.token }}
       - name: Fail if a source has stopped working
         run: |
           if [ -s "$RUNNER_TEMP/boundary-problems.txt" ]; then
