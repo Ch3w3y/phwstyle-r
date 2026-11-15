@@ -372,3 +372,24 @@ test_that("the HTML tables show date-times at their local time, as phw_flextable
   expect_equal(shown$ts, c("2026-07-01 10:00:00", NA))
   expect_equal(phw_datatable(df)$x$data$ts, c("2026-07-01 10:00:00", NA))
 })
+
+test_that("table group colours match the chart's colours", {
+  df <- data.frame(group = c("Group B", "Group A", "Group C", "Group A"), n = 1:4)
+  chart <- phw_colour_key(c("Group A", "Group B", "Group C"))
+  if (requireNamespace("flextable", quietly = TRUE)) {
+    ft <- phw_flextable_groups(phw_flextable(df), group)
+    expect_equal(ft$body$styles$cells$background.color$data[, "group"],
+                 unname(chart[df$group]))
+    f <- data.frame(g = factor(c("A", "B", "C"), levels = c("Z", "A", "B", "C")))
+    ft <- phw_flextable_groups(phw_flextable(f), g)
+    expect_equal(ft$body$styles$cells$background.color$data[, "g"], phw_pal(3))
+  }
+  skip_if_not_installed("reactable")
+  group_def <- function(tbl) tbl$x$tag$attribs$columns[[1]]
+  bg <- function(tbl) vapply(group_def(tbl)$style, function(s) s$background, "")
+  expect_equal(bg(phw_reactable(df, group_col = group)), unname(chart[df$group]))
+  r <- phw_reactable(df, group_col = group,
+                     columns = list(group = reactable::colDef(name = "Group")))
+  expect_equal(bg(r), unname(chart[df$group]))
+  expect_equal(group_def(r)$name, "Group")
+})
