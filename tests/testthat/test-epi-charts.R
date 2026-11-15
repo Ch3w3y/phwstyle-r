@@ -13,6 +13,30 @@ test_that("phw_epicurve fills empty periods and stacks groups", {
   expect_silent(ggplot2::ggplot_build(p))
 })
 
+test_that("phw_epicurve draws dodged bars inside their period, like stacked bars", {
+  d <- data.frame(onset = as.Date(c(rep("2025-01-15", 5), rep("2025-02-10", 3))),
+                  g = c("A", "A", "B", "B", "B", "A", "B", "B"))
+  # The first and last day covered by each month's two bars.
+  span <- function(p) {
+    ld <- ggplot2::layer_data(p, 1)
+    ld <- ld[order(ld$xmin), ]
+    month <- rep(1:2, each = 2)
+    as.Date(unname(c(tapply(ld$xmin, month, min), tapply(ld$xmax, month, max))))
+  }
+  stack <- phw_epicurve(d, onset, group = g, interval = "month", average = 1)
+  dodge <- phw_epicurve(d, onset, group = g, interval = "month", average = 1, position = "dodge")
+  expect_equal(span(dodge), span(stack))
+  expect_equal(span(dodge), as.Date(c("2025-01-01", "2025-02-01", "2025-01-28", "2025-02-28")))
+  line_x <- as.Date(ggplot2::layer_data(dodge, 2)$x)
+  expect_equal(line_x, as.Date(ggplot2::layer_data(stack, 2)$x))
+  expect_equal(line_x[1], as.Date("2025-01-01") + 13.5)
+  # A user's `just` moves dodged bars and the line together, as it does stacked bars.
+  centred <- phw_epicurve(d, onset, group = g, interval = "month", average = 1, position = "dodge", just = 0.5)
+  expect_equal(span(centred), span(phw_epicurve(d, onset, group = g, interval = "month", just = 0.5)))
+  expect_equal(span(centred)[c(1, 3)], as.Date("2025-01-01") + c(-13.5, 13.5))
+  expect_equal(as.Date(ggplot2::layer_data(centred, 2)$x[1]), as.Date("2025-01-01"))
+})
+
 test_that("phw_pyramid puts one sex on each side", {
   pop <- expand.grid(age = factor(c("0-14", "15+"), c("0-14", "15+")), sex = c("F", "M"))
   pop$n <- c(10, 30, 20, 40)

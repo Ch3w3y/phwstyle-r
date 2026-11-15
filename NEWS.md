@@ -43,6 +43,9 @@ says what to change.
   function gives groups its colours in its own order.
 * `width` and other bar settings passed through `...` work in
   `phw_epicurve()` and `phw_pyramid()`.
+* `phw_epicurve(position = "dodge")` draws each period's bars inside the
+  period, as stacked bars are, with the average line over their centre.
+  Before, they were drawn half a period early.
 * `theme_phw()`, `theme_phw_map()`, `phw_arrange()`, `phw_style_extensions()`
   and the colour scales check their arguments when called, not when the
   plot is drawn.
