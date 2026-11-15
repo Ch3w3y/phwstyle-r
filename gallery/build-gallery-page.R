@@ -71,7 +71,7 @@ sections <- list(
          item("29-histogram", "Histograms by group", "The distribution of a measure in each group, one panel per group.", "chart",
               fns = c("scale_fill_phw_d")),
          item("15-ridges", "Ridgeline plot", "Distributions stacked as ridges. ggridges picks up the PHW styling automatically.", "chart",
-              pkgs = c("ggplot2", "ggridges"), fns = c("scale_fill_phw_d", "phw_style_extensions"))
+              pkgs = c("ggplot2", "ggridges"), fns = c("use_phw_ggplot", "phw_style_extensions"))
        )),
   list(id = "public-health", title = "Public health charts",
        intro = "Ready-made charts for common surveillance and quality outputs. Each returns a ggplot, so you can add titles, scales or layers as usual.",
@@ -120,9 +120,9 @@ sections <- list(
   list(id = "maps", title = "Maps",
        intro = "Boundaries for every level of Welsh geography are downloaded on first use and cached. Static maps use ggplot2 and sf, and interactive maps use leaflet.",
        items = list(
-         item("06-map", "Choropleth", "Local authorities filled by a binned value, joined to the boundaries by area code.", "map",
-              pkgs = c("ggplot2", "sf"), fns = "phw_map", args = "by = code, fill = value, level = la, bins = c(1, 2, 3, 5)"),
-         item("34-map-labels", "Choropleth with values printed", "The same kind of map with each area's value printed on it. With ggrepel installed, labels that would overlap on small areas are moved apart.", "map",
+         item("06-map", "Choropleth", "Small areas (MSOAs) filled by a binned value, joined to the boundaries by area code.", "map",
+              pkgs = c("ggplot2", "sf"), fns = c("phw_map", "phw_boundaries"), args = 'by = code, fill = value, level = msoa, bins = c(2, 4, 6, 8)'),
+         item("34-map-labels", "Choropleth with values printed", "The same kind of map for local authorities, with each area's value printed on it. With ggrepel installed, labels that would overlap on small areas are moved apart.", "map",
               pkgs = c("ggplot2", "sf"), fns = "phw_map", args = "label = rate"),
          item("32-map-facets", "One map per year", "Small-multiple maps with `facet_wrap()`, sharing one legend. The data has one row per area and year.", "map",
               pkgs = c("ggplot2", "sf"), fns = "phw_map", args = "bins = c(2, 4, 6, 8)"),
@@ -132,7 +132,7 @@ sections <- list(
               pkgs = c("ggplot2", "sf", "patchwork"), fns = c("phw_boundaries", "phw_boundary_levels", "phw_arrange")),
          item("leaflet", "Interactive map with bins", "Hover for each area's name and value, zoom and pan. Values are grouped into bins with a legend.", "widget",
               pkgs = c("leaflet", "sf"), fns = c("phw_leaflet", "phw_leaflet_polygons", "phw_boundaries"), args = "bins = c(10, 20, 30, 40, 50)"),
-         item("leaflet-groups", "Interactive map with categories", "The same map coloured by category, with colours from a PHW palette.", "widget",
+         item("leaflet-groups", "Interactive map with categories", "Local authorities coloured by category, with colours from a PHW palette.", "widget",
               pkgs = c("leaflet", "sf"), fns = c("phw_leaflet", "phw_leaflet_polygons", "phw_leaflet_palette"), args = 'palette = "accessible"')
        )),
   list(id = "tables", title = "Tables for reports",
