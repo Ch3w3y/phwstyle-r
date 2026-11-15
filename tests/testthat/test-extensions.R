@@ -35,6 +35,21 @@ test_that("phw_arrange builds a patchwork with a PHW caption", {
   expect_true(file.exists(out))
 })
 
+test_that("phw_finalise keeps every panel, the title and the tags of a phw_arrange figure", {
+  skip_if_not_installed("patchwork")
+  library(ggplot2)
+  p1 <- ggplot(mpg, aes(displ, hwy)) + geom_point() + labs(title = "P1")
+  p2 <- ggplot(mpg, aes(drv)) + geom_bar() + labs(title = "P2")
+  f <- phw_finalise(phw_arrange(p1, p2, title = "FIG", source = "S", tag_levels = "A"),
+                    logo = FALSE)
+  labels <- function(g) {
+    own <- if (inherits(g, "text")) g$label
+    c(own, unlist(lapply(c(g$grobs, g$children), labels)))
+  }
+  expect_true(all(c("P1", "P2", "FIG", "A", "B") %in% labels(f)))
+  expect_true("phw-footer" %in% f$layout$name)
+})
+
 test_that("phw_finalise and phw_title_grob work with gridExtra", {
   skip_if_not_installed("gridExtra")
   library(ggplot2)

@@ -673,7 +673,8 @@ phw_finalise <- function(plot, source = NULL, date = NULL, logo = "blue",
     gtable::gtable_add_grob(gtable::gtable(widths = grid::unit(1, "null"), heights = grid::unit(1, "null")),
                             plot, t = 1, l = 1, name = "phw-content")
   } else {
-    withCallingHandlers(ggplot2::ggplotGrob(plot), warning = function(w) {
+    build <- if (inherits(plot, "patchwork")) patchwork::patchworkGrob else ggplot2::ggplotGrob
+    withCallingHandlers(build(plot), warning = function(w) {
       if (grepl("font (family|database)", conditionMessage(w))) invokeRestart("muffleWarning")
     })
   }
