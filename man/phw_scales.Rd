@@ -173,10 +173,10 @@ no setup, add one to each plot. A scale added to a plot always replaces
 the default for that aesthetic, whether it is one of these or a ggplot2
 scale such as \code{\link[ggplot2:scale_fill_manual]{ggplot2::scale_fill_manual()}}.
 
-\strong{More than four groups.} \code{"main"} has four colours and carries on into
-\code{"extended"} (twelve), so a chart with six groups starts with the same
-four colours as a chart with four. The first seven have a published
-source; see \link{phw_palettes} for where the rest come from. Past the end of a palette you get
+\strong{More than six groups.} \code{"main"} has six colours and carries on into
+\code{"extended"} (twelve), so a chart with eight groups starts with the same
+six colours as a chart with six. See \link{phw_palettes} for where each
+colour comes from. Past the end of a palette you get
 colours from the other PHW palettes and a warning.
 
 \strong{Colours that stick to groups.} By default a \verb{_d} scale colours groups

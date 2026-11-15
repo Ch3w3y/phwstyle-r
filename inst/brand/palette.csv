@@ -1,13 +1,13 @@
 token,hex,role
 phw_navy,#285087,Primary brand colour; first categorical series; headings on light backgrounds
 nhsw_blue_534,#325A8A,Official NHS Wales / PHW logo blue (Pantone 534 RGB 50 90 138)
-nhsw_gold_465,#CFAB7A,Official NHS Wales logo gold (Pantone 465 RGB 207 171 122)
-nhsw_black,#231F20,Official NHS Wales logo black (RGB 35 31 32)
+nhsw_gold_465,#CFAB7A,Official NHS Wales logo gold (Pantone 465 RGB 207 171 122); sixth categorical series
+nhsw_black,#231F20,Official NHS Wales logo black (RGB 35 31 32); extended palette slot 12
 phw_teal,#24A2B5,Second categorical series; accent
 phw_orange,#FF5D0C,Third categorical series; highlight
 phw_pink,#F43882,Fourth categorical series
-phw_blue,#2D78A0,Web primary (navigation bar; links; inset borders)
-phw_green,#338276,Web action/button colour; hero panels
+phw_blue,#2D78A0,Web primary (navigation bar; links; inset borders); extended palette slot 10
+phw_green,#338276,Web action/button colour; hero panels; fifth categorical series
 phw_green_dark,#173934,Button hover / dark accent
 phw_magenta,#D50B5C,Link hover colour on web
 phw_cyan,#27B8CD,End of header gradient band
@@ -15,9 +15,8 @@ phw_light_teal,#7CC7D3,Table header shading
 phw_purple,#846AA4,Extra categorical series
 phw_mint,#5FBDAF,Long-Term Strategy 2023 to 2035 priority colour (sustainable health and care system); extended palette slot 8
 phw_green_bright,#50AF31,Long-Term Strategy 2023 to 2035 priority colour (climate change); extended palette slot 9
-extended_blue,#5A82E6,Not a PHW colour: chosen to stay distinct; extended palette slot 10
-extended_green_dark,#274309,Not a PHW colour: chosen to stay distinct; extended palette slot 11
-extended_violet,#730BB1,Not a PHW colour: chosen to stay distinct; extended palette slot 12
+extended_wine,#A3245A,Not a PHW colour: chosen to stay distinct; extended palette slot 7
+orange_dark,#C94100,Dark end of the orange_navy diverging palette; extended palette slot 11
 strategy_purple,#5A356B,Long-Term Strategy 2023 to 2035 priority colour (wider determinants of health)
 strategy_pink,#E05A8C,Long-Term Strategy 2023 to 2035 priority colour (mental and social wellbeing)
 strategy_orange,#ED6F18,Long-Term Strategy 2023 to 2035 priority colour (healthy behaviours)

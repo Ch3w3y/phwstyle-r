@@ -65,7 +65,7 @@ the groups in the same order. So the same report can be rendered in
 default and in accessible colours, and each version keeps its colours
 from one run to the next.
 
-\code{"main"} carries on into \code{"extended"} after four groups. When a palette
+\code{"main"} carries on into \code{"extended"} after six groups. When a palette
 runs out altogether, the key carries on with unused colours from the
 other PHW palettes, then lighter tints, and warns you. \code{"extended"} keeps
 twelve colours apart, but past about eight groups a chart is hard to read

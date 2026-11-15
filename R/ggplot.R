@@ -268,10 +268,10 @@ theme_phw_map <- function(base_size = 11, base_family = phw_font(), legend = "ri
 #' the default for that aesthetic, whether it is one of these or a ggplot2
 #' scale such as [ggplot2::scale_fill_manual()].
 #'
-#' **More than four groups.** `"main"` has four colours and carries on into
-#' `"extended"` (twelve), so a chart with six groups starts with the same
-#' four colours as a chart with four. The first seven have a published
-#' source; see [phw_palettes] for where the rest come from. Past the end of a palette you get
+#' **More than six groups.** `"main"` has six colours and carries on into
+#' `"extended"` (twelve), so a chart with eight groups starts with the same
+#' six colours as a chart with six. See [phw_palettes] for where each
+#' colour comes from. Past the end of a palette you get
 #' colours from the other PHW palettes and a warning.
 #'
 #' **Colours that stick to groups.** By default a `_d` scale colours groups

@@ -42,29 +42,29 @@ default_routes <- function(n) {
 }
 
 test_that("main carries on into extended", {
-  expect_equal(extended[1:4], main)
-  expect_equal(phw_pal(4), main)
-  expect_equal(phw_pal(6), extended[1:6])
-  expect_equal(phw_pal(6, "main"), extended[1:6])
-  expect_equal(palette_for("main", 4), "main")
-  expect_equal(palette_for("main", 5), "extended")
+  expect_equal(extended[1:6], main)
+  expect_equal(phw_pal(6), main)
+  expect_equal(phw_pal(8), extended[1:8])
+  expect_equal(phw_pal(8, "main"), extended[1:8])
+  expect_equal(palette_for("main", 6), "main")
+  expect_equal(palette_for("main", 7), "extended")
   expect_equal(palette_for("accessible", 12), "accessible")
   expect_equal(palette_for(c("#111111", "#222222"), 5), c("#111111", "#222222"))
 })
 
-test_that("by default charts with 4 and with 5 or more groups share their colours", {
+test_that("by default charts with 6 and with 7 or more groups share their colours", {
   local_ggplot_state()
   use_phw_ggplot()
-  four <- default_routes(4)
   six <- default_routes(6)
-  for (route in names(four)) {
-    expect_equal(four[[!!route]], main)
-    expect_equal(six[[!!route]], extended[1:6])
+  eight <- default_routes(8)
+  for (route in names(six)) {
+    expect_equal(six[[!!route]], main)
+    expect_equal(eight[[!!route]], extended[1:8])
     # The first colours of the bigger chart are the colours of the smaller.
-    expect_equal(six[[!!route]][1:4], four[[!!route]])
+    expect_equal(eight[[!!route]][1:6], six[[!!route]])
   }
   # Nothing switches to the accessible palette unasked.
-  expect_false(any(unlist(default_routes(7)) %in% setdiff(accessible, extended)))
+  expect_false(any(unlist(default_routes(8)) %in% setdiff(accessible, extended)))
 })
 
 test_that("the accessible switch changes every chart, table and widget", {

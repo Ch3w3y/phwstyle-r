@@ -22,9 +22,9 @@ test_that("keys switch palette only for new groups, and recolour on request", {
 test_that("recolouring to \"main\" carries on into \"extended\"", {
   phw_key_reset("t_big")
   withr::defer(phw_key_reset("t_big"))
-  phw_key_set("t_big", stats::setNames(phw_pal(6, "accessible"), LETTERS[1:6]))
+  phw_key_set("t_big", stats::setNames(phw_pal(8, "accessible"), LETTERS[1:8]))
   expect_no_warning(r <- phw_key_recolour("t_big", "main"))
-  expect_equal(unname(r), phw_pal(6, "main"))
+  expect_equal(unname(r), phw_pal(8, "main"))
 })
 
 test_that("recolouring keeps the key's own neutral colour", {
