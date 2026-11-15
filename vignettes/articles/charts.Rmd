@@ -13,12 +13,20 @@ library(ggplot2)
 library(dplyr)
 use_phw_ggplot()
 set.seed(1)
+n <- 4000
+days <- seq(as.Date("2023-01-02"), as.Date("2025-12-28"), by = "day")
+winter <- 1 + 0.8 * cos(2 * pi * (as.integer(format(days, "%j")) - 20) / 365)
+age <- round(100 * rbeta(n, 2, 1.8))
 cases <- tibble(
-  onset = as.Date("2025-01-06") + round(rgamma(400, 5, 0.12)),
-  age_group = sample(c("0-14", "15-44", "45-64", "65+"), 400, replace = TRUE),
-  sex = sample(c("Female", "Male"), 400, replace = TRUE),
-  setting = sample(c("Setting 1", "Setting 2", "Setting 3"), 400, replace = TRUE, prob = c(0.6, 0.15, 0.25)),
-  organism = sample(c("Type 1", "Type 2", "Type 3"), 400, replace = TRUE)
+  onset = sample(days, n, replace = TRUE, prob = winter),
+  age = age,
+  age_band = cut(age, c(seq(0, 90, 5), Inf), right = FALSE,
+                 labels = c(paste(seq(0, 85, 5), seq(4, 89, 5), sep = "-"), "90+")),
+  age_group = cut(age, c(0, 15, 25, 45, 65, 80, Inf), right = FALSE,
+                  labels = c("0-14", "15-24", "25-44", "45-64", "65-79", "80+")),
+  sex = sample(c("Female", "Male"), n, replace = TRUE),
+  setting = sample(paste("Setting", 1:6), n, replace = TRUE, prob = c(0.35, 0.2, 0.15, 0.12, 0.1, 0.08)),
+  organism = sample(paste("Type", 1:5), n, replace = TRUE, prob = c(0.4, 0.25, 0.15, 0.12, 0.08))
 )
 ```
 
@@ -70,9 +78,10 @@ Numbers need a continuous scale. `scale_fill_phw_c()` and
 `scale_colour_phw_c()` blend a sequential palette such as `blues`, `teals`
 or `greens`.
 
-```{r, fig.alt = "A grid of tiles for six weeks and four age groups, shaded from light to dark blue by case count."}
-grid <- tidyr::expand_grid(week = 1:6, age_group = c("0-14", "15-44", "45-64", "65+")) |>
-  mutate(cases = rpois(n(), 10 + 4 * week))
+```{r, fig.alt = "A grid of tiles for 52 weeks and six age groups, shaded from light to dark blue by case count, with darker patches around weeks 8 and 40."}
+grid <- tidyr::expand_grid(week = 1:52, age_group = levels(cases$age_group)) |>
+  mutate(age_group = factor(age_group, levels = levels(cases$age_group)),
+         cases = rpois(n(), 6 + (25 * exp(-((week - 8) / 6)^2) + 18 * exp(-((week - 40) / 5)^2)) * as.integer(age_group) / 3))
 ggplot(grid, aes(week, age_group, fill = cases)) +
   geom_tile(colour = "white") +
   scale_fill_phw_c(palette = "blues") +
@@ -84,7 +93,7 @@ ggplot(grid, aes(week, age_group, fill = cases)) +
 so each colour stands for a range. This suits maps and any chart where
 readers compare bands.
 
-```{r, fig.alt = "Tiles shaded in five blue bands by case count, with a legend that lists each band."}
+```{r, fig.alt = "Tiles for 52 weeks and six age groups shaded in bands by case count, with a legend that lists each band."}
 ggplot(grid, aes(week, age_group, fill = cases)) +
   geom_tile(colour = "white") +
   scale_fill_phw_b(palette = "teals", n.breaks = 5) +
@@ -96,10 +105,10 @@ ggplot(grid, aes(week, age_group, fill = cases)) +
 meet at a pale midpoint, `0` unless you set `midpoint`. They suit values
 above and below a reference, such as change from last year.
 
-```{r, fig.alt = "Horizontal bars of change in rate for ten areas, orange below zero and navy above zero."}
-change <- tibble(area = paste("Area", LETTERS[1:10]), change = round(rnorm(10, 0, 8), 1))
+```{r, fig.height = 6.5, fig.alt = "Horizontal bars of change in rate for 22 areas, sorted from lowest to highest, orange below zero and navy above zero."}
+change <- tibble(area = sprintf("Area %02d", 1:22), change = round(rnorm(22, 0, 8), 1))
 ggplot(change, aes(change, reorder(area, change), fill = change)) +
-  geom_col(width = 0.7) +
+  geom_col(width = 0.75) +
   scale_fill_phw_div(guide = "none") +
   labs(title = "Change in rate since last year", x = "Percentage points", y = NULL) +
   theme_phw(grid = "x")
@@ -110,11 +119,11 @@ spelling that is the same function. The top row of this figure uses the
 `colour` spellings and the bottom row uses `color`.
 
 ```{r, fig.width = 12, fig.height = 6, fig.alt = "Six scatter plots in two rows of three, with points coloured by group, by number and by number bands.", eval = requireNamespace("patchwork", quietly = TRUE)}
-pts <- tibble(x = runif(60), y = runif(60), group = sample(c("A", "B", "C"), 60, TRUE),
-              value = rnorm(60, 0, 10))
+pts <- tibble(x = runif(400), y = runif(400), group = sample(c("A", "B", "C"), 400, TRUE)) |>
+  mutate(value = 25 * (x - 0.5) + rnorm(400, 0, 6))
 dots <- function(colour_aes, title) {
   ggplot(pts, aes(x, y, colour = {{ colour_aes }})) +
-    geom_point(size = 2.5) + labs(title = title, x = NULL, y = NULL) +
+    geom_point(size = 1.8, alpha = 0.8) + labs(title = title, x = NULL, y = NULL) +
     theme_phw(legend = "right")
 }
 phw_arrange(
@@ -130,7 +139,7 @@ phw_arrange(
 
 ```{r, fig.alt = "Points coloured orange below zero and navy above zero, using the diverging colour scale."}
 ggplot(pts, aes(x, y, colour = value)) +
-  geom_point(size = 2.5) +
+  geom_point(size = 1.8, alpha = 0.8) +
   scale_colour_phw_div() +
   labs(title = "Diverging colour scale", x = NULL, y = NULL) +
   theme_phw(legend = "right")
@@ -138,7 +147,7 @@ ggplot(pts, aes(x, y, colour = value)) +
 
 ```{r, fig.alt = "Points coloured orange below zero and navy above zero, using the American spelling of the diverging scale."}
 ggplot(pts, aes(x, y, colour = value)) +
-  geom_point(size = 2.5) +
+  geom_point(size = 1.8, alpha = 0.8) +
   scale_color_phw_div() +
   labs(title = "Same scale, other spelling", x = NULL, y = NULL) +
   theme_phw(legend = "right")
@@ -152,15 +161,16 @@ Wrap the second measure in `$rescale()` and give the same object to
 `sec.axis`. Colouring the secondary axis to match its series helps readers
 see which axis belongs to which.
 
-```{r, fig.alt = "Navy columns of weekly cases with an orange line of positivity, read against a second axis on the right."}
-wk <- tibble(week = 1:20) |>
-  mutate(cases = round(180 * exp(-((week - 9) / 4)^2) + 4),
-         positivity = 2 + 28 * exp(-((week - 10) / 5)^2))
+```{r, fig.alt = "Navy columns of weekly cases over two years with an orange line of positivity, read against a second axis on the right. Both peak twice."}
+wk <- tibble(week = 1:104) |>
+  mutate(cases = rpois(n(), 30 + 400 * exp(-((week - 20) / 8)^2) + 250 * exp(-((week - 72) / 10)^2)),
+         positivity = pmax(1, 3 + 24 * exp(-((week - 22) / 9)^2) + 16 * exp(-((week - 74) / 11)^2) +
+                             rnorm(n(), 0, 1)))
 orange <- phw_col("orange")
 
 sec <- phw_sec_axis(wk$cases, wk$positivity, name = "Positivity (%)")
 ggplot(wk, aes(week)) +
-  geom_col(aes(y = cases), fill = phw_col("navy")) +
+  geom_col(aes(y = cases), fill = phw_col("navy"), width = 0.85) +
   geom_line(aes(y = sec$rescale(positivity)), colour = orange, linewidth = 1) +
   scale_y_continuous("Cases", sec.axis = sec) +
   labs(title = "Cases and positivity by week", x = "Week") +
@@ -194,7 +204,7 @@ draws them as columns, with zero for periods that have no cases. Give it
 one row per case, or a `count` column. `group` stacks the columns by a
 second variable, and `interval` changes the period.
 
-```{r, fig.alt = "Weekly columns of cases from January, stacked in three colours by organism type."}
+```{r, fig.alt = "Weekly columns of cases over three years with a winter peak each year, stacked in five colours by organism type."}
 phw_epicurve(cases, onset, group = organism) +
   labs(title = "Cases by week of onset", x = "Week beginning", y = "Cases")
 ```
@@ -221,14 +231,14 @@ sex on each side. `percent = TRUE` shows each bar as a share of the total,
 which lets you compare groups of different sizes. `compare` draws a second
 data frame with the same columns as outlines.
 
-```{r, fig.alt = "A pyramid of cases by age group, with females on one side and males on the other, shown as percentages."}
-phw_pyramid(cases, age_group, sex, percent = TRUE) +
+```{r, fig.height = 6.5, fig.alt = "A pyramid of cases in 19 five-year age bands from 0-4 to 90+, with females on one side and males on the other, shown as percentages."}
+phw_pyramid(cases, age_band, sex, percent = TRUE) +
   labs(title = "Cases by age and sex")
 ```
 
-```{r, fig.alt = "A pyramid of this year's cases with black outlines showing last year's cases for comparison."}
+```{r, fig.height = 6.5, fig.alt = "A pyramid of this year's cases in five-year age bands with black outlines showing last year's cases for comparison."}
 last_year <- cases |> slice_sample(prop = 0.8)
-phw_pyramid(cases, age_group, sex, percent = TRUE, compare = last_year) +
+phw_pyramid(cases, age_band, sex, percent = TRUE, compare = last_year) +
   labs(title = "Cases by age and sex, with last year outlined")
 ```
 
@@ -240,9 +250,9 @@ Points outside the limits are coloured and shaped, and labelled when you
 give `label`. The limits are the normal approximation around the target,
 which `?phw_funnel` describes.
 
-```{r, fig.alt = "A funnel plot of proportion against population for 30 areas, with two pairs of limits and two labelled points outside them."}
-units <- tibble(area = paste("Area", 1:30), eligible = round(runif(30, 300, 6000))) |>
-  mutate(events = rbinom(n(), eligible, c(rep(0.72, 28), 0.6, 0.82)))
+```{r, fig.alt = "A funnel plot of proportion against population for 150 areas, with two pairs of limits and a few labelled points outside them."}
+units <- tibble(area = sprintf("Area %03d", 1:150), eligible = round(rlnorm(150, 7.5, 0.8))) |>
+  mutate(events = rbinom(n(), eligible, c(rep(0.72, 146), 0.66, 0.78, 0.65, 0.79)))
 phw_funnel(units, events, eligible, label = area) +
   labs(title = "Proportion by area", x = "Population", y = "Proportion (%)")
 ```
@@ -265,9 +275,9 @@ one row per unit, sorted by value. The chunk below makes up the numbers
 so you can run it. With `target`, units whose whole interval lies above or
 below it are coloured and shaped Higher or Lower, and the rest Similar.
 
-```{r, fig.alt = "A forest plot of ten areas sorted by rate, with intervals, a dashed target line, and areas coloured Higher, Similar or Lower."}
-areas <- tibble(area = paste("Area", LETTERS[1:10]), rate = round(runif(10, 40, 90), 1)) |>
-  mutate(lower = rate - round(runif(10, 4, 12), 1), upper = rate + round(runif(10, 4, 12), 1))
+```{r, fig.height = 6.5, fig.alt = "A forest plot of 22 areas sorted by rate, with intervals, a dashed target line, and areas coloured Higher, Similar or Lower."}
+areas <- tibble(area = sprintf("Area %02d", 1:22), rate = round(runif(22, 40, 90), 1)) |>
+  mutate(lower = rate - round(runif(22, 4, 12), 1), upper = rate + round(runif(22, 4, 12), 1))
 phw_forest(areas, rate, lower, upper, label = area, target = 65) +
   labs(title = "Rate by area", x = "Rate per 100,000",
        colour = "Compared with Wales", shape = "Compared with Wales")
@@ -276,7 +286,7 @@ phw_forest(areas, rate, lower, upper, label = area, target = 65) +
 `labels` renames the three comparison levels. The names are `Higher`,
 `Similar` and `Lower`, and the values are your own text.
 
-```{r, fig.alt = "The same forest plot with the comparison levels renamed to Above target, Close to target and Below target."}
+```{r, fig.height = 6.5, fig.alt = "The same forest plot with the comparison levels renamed to Above target, Close to target and Below target."}
 phw_forest(areas, rate, lower, upper, label = area, target = 65,
            labels = c(Higher = "Above target", Similar = "Close to target",
                       Lower = "Below target")) +
@@ -292,20 +302,20 @@ which direction is better, so signals in the good direction are blue and
 those in the bad direction are orange. `baseline` sets how many of the
 first points fix the centre line and limits.
 
-```{r, fig.alt = "A control chart of a monthly measure with a centre line, process limits, and points coloured where the measure shifts upward."}
-monthly <- tibble(month = seq(as.Date("2023-01-01"), by = "month", length.out = 30),
-                  value = c(rnorm(20, 50, 4), rnorm(10, 57, 4)))
-phw_spc(monthly, month, value, improvement = "increase", baseline = 20) +
-  labs(title = "Monthly measure")
+```{r, fig.alt = "A control chart of a weekly measure over 130 weeks with a centre line, process limits, and points coloured where the measure shifts upward."}
+weekly <- tibble(week = seq(as.Date("2023-01-02"), by = "week", length.out = 130),
+                 value = c(rnorm(52, 50, 4), rnorm(78, 50, 4) + c(rep(0, 20), rep(6, 58))))
+phw_spc(weekly, week, value, improvement = "increase", baseline = 52) +
+  labs(title = "Weekly measure")
 ```
 
 `labels` works as it does for the funnel plot. The names are the default
 signal text and the values replace them.
 
 ```{r, fig.alt = "The same control chart with the common cause signal renamed to Within normal variation in the legend."}
-phw_spc(monthly, month, value, improvement = "increase", baseline = 20,
+phw_spc(weekly, week, value, improvement = "increase", baseline = 52,
         labels = c("Common cause" = "Within normal variation")) +
-  labs(title = "Monthly measure")
+  labs(title = "Weekly measure")
 ```
 
 ## Extension packages
@@ -314,22 +324,22 @@ Packages such as ggrepel and ggridges draw geoms with their own defaults.
 `use_phw_ggplot()` styles the ones that are loaded. If you load a package
 after calling it, run `phw_style_extensions()` again.
 
-```{r, fig.alt = "Labelled points of rate against population for eight areas, with text in the PHW font and no overlaps."}
+```{r, fig.alt = "Labelled points of rate against population for 22 areas, with text in the PHW font and no overlaps."}
 library(ggrepel)
 phw_style_extensions()
 areas |>
   mutate(population = round(runif(n(), 20, 200))) |>
   ggplot(aes(population, rate, label = area)) +
   geom_point(colour = phw_col("navy"), size = 2) +
-  geom_text_repel() +
+  geom_text_repel(max.overlaps = Inf) +
   labs(title = "Rate by population", x = "Population (thousands)", y = "Rate per 100,000")
 ```
 
-```{r, fig.alt = "Overlapping distributions of age score for four age groups, filled in navy, teal, orange and pink."}
+```{r, fig.alt = "Overlapping distributions of a score for six age groups, filled in navy, teal, orange, pink, black and green."}
 library(ggridges)
 phw_style_extensions()
 cases |>
-  mutate(score = rnorm(n(), 50 + 5 * match(age_group, c("0-14", "15-44", "45-64", "65+")), 8)) |>
+  mutate(score = rnorm(n(), 40 + 5 * as.integer(age_group), 8)) |>
   ggplot(aes(score, age_group, fill = age_group)) +
   geom_density_ridges(alpha = 0.85) +
   scale_fill_phw_d(guide = "none") +
@@ -341,7 +351,7 @@ cases |>
 `phw_arrange()` joins plots with patchwork, adds a title, a source line
 and panel tags, and merges identical legends into one.
 
-```{r, fig.width = 10, fig.alt = "A bar chart of cases by setting beside an epicurve by month, under one title, with panel tags A and B and a source line.", eval = requireNamespace("patchwork", quietly = TRUE)}
+```{r, fig.width = 10, fig.alt = "A bar chart of cases by setting beside an epicurve by month over three years, under one title, with panel tags A and B and a source line.", eval = requireNamespace("patchwork", quietly = TRUE)}
 a <- ggplot(cases, aes(y = setting)) + geom_bar() + labs(x = "Cases", y = NULL)
 b <- phw_epicurve(cases, onset, interval = "month") + labs(y = "Cases")
 phw_arrange(a, b, widths = c(1, 2), title = "Two charts, one title", source = "Example data",

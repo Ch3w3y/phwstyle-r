@@ -204,6 +204,14 @@ says what to change.
   so the logo link keeps its address.
 * `phw_bs_theme()` takes Bootstrap version 4 or 5 only.
 
+## Documentation
+
+* The gallery, the demo script and the website articles use larger made-up
+  data: line lists in the thousands, weekly and monthly series over several
+  years, 22 areas, 5-year age bands and maps of every local authority or
+  MSOA. The charts now look as they do on real outputs. Help-page examples
+  and the package vignette stay small.
+
 # phwstyle 0.3.0
 
 ## New charts and maps

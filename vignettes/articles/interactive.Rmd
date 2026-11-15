@@ -23,15 +23,16 @@ library(phwstyle)
 library(dplyr)
 library(ggplot2)
 set.seed(1)
-areas <- paste("Area", LETTERS[1:6])
-weekly <- expand.grid(week = 1:12, area = areas[1:3]) |>
-  mutate(cases = rpois(n(), 8 + 5 * sin(week / 2) + 3 * as.integer(factor(area))))
+areas <- sprintf("Area %02d", 1:22)
+weekly <- expand.grid(week = 1:104, area = areas[1:5]) |>
+  mutate(cases = rpois(n(), 30 + 25 * as.integer(factor(area)) + 15 * sin(week / 8 + as.integer(factor(area)) / 2)))
 areas_tab <- tibble(
   area = areas,
-  cases = c(120, 85, 64, 19, 23, 48),
-  rate = c(41.2, 22.5, 63.1, 10.4, 25.8, 33.3),
+  type = rep_len(paste("Type", 1:4), 22),
+  cases = rpois(22, 300),
+  rate = round(runif(22, 10, 70), 1),
   share = cases / sum(cases),
-  completeness = c(97, 91, 78, 99, 66, 88)
+  completeness = round(runif(22, 60, 100))
 )
 ```
 
@@ -43,7 +44,7 @@ highlighting and a compact layout. `caption` sits above the table, and
 
 ```{r, eval = have("reactable")}
 phw_reactable(areas_tab[c("area", "cases", "rate")], caption = "Cases by area",
-              source = "Example data", date = "2025-06-30")
+              source = "Example data", date = "2025-06-30", defaultPageSize = 22)
 ```
 
 Pass any other argument to `reactable::reactable()`. Your values replace the
@@ -64,7 +65,7 @@ Five helpers make `colDef()` objects for the `columns` argument.
 
 ```{r, eval = have("reactable")}
 phw_reactable(
-  areas_tab, caption = "Cases by area", source = "Example data",
+  areas_tab[-2], caption = "Cases by area", source = "Example data", defaultPageSize = 22,
   columns = list(
     area = reactable::colDef(name = "Area"),
     cases = phw_col_bar(areas_tab, cases, name = "Cases"),
@@ -80,7 +81,7 @@ non-integer column, and a column you format yourself keeps its format.
 `phw_col_number()` is the way to set the places for one column:
 
 ```{r, eval = have("reactable")}
-phw_reactable(areas_tab[c("area", "cases", "rate")], digits = 0,
+phw_reactable(areas_tab[c("area", "cases", "rate")], digits = 0, defaultPageSize = 8,
               columns = list(rate = phw_col_number(digits = 1, name = "Rate")))
 ```
 
@@ -91,7 +92,8 @@ colour the same group has in your charts. `key` names the colour key, as in
 [Colours and accessibility](colours.html#colours-that-stay-with-their-groups).
 
 ```{r, eval = have("reactable")}
-phw_reactable(areas_tab[c("area", "cases")], group_col = area, key = "area")
+phw_reactable(areas_tab[c("area", "type", "cases")], group_col = type, key = "type",
+              defaultPageSize = 8)
 ```
 
 ### Summary tables
@@ -103,12 +105,14 @@ indented levels. It shows without sorting or paging. See
 
 ```{r, eval = have("reactable")}
 cases <- tibble(
-  age_group = sample(c("0-14", "15-44", "45-64", "65+"), 200, replace = TRUE),
-  sex = sample(c("Female", "Male"), 200, replace = TRUE),
-  outcome = sample(c("Outcome X", "Outcome Y"), 200, replace = TRUE, prob = c(0.8, 0.2))
+  age_group = sample(c("0-14", "15-24", "25-44", "45-64", "65-79", "80+"), 3000, replace = TRUE,
+                     prob = c(0.06, 0.09, 0.25, 0.28, 0.2, 0.12)),
+  sex = sample(c("Female", "Male"), 3000, replace = TRUE),
+  setting = sample(paste("Setting", 1:5), 3000, replace = TRUE, prob = c(0.35, 0.25, 0.2, 0.12, 0.08)),
+  outcome = sample(c("Outcome X", "Outcome Y"), 3000, replace = TRUE, prob = c(0.85, 0.15))
 )
 phw_summary_table(cases, by = outcome,
-                  labels = list(age_group = "Age group", sex = "Sex")) |>
+                  labels = list(age_group = "Age group", sex = "Sex", setting = "Setting")) |>
   phw_reactable(caption = "Characteristics by outcome", source = "Example data")
 ```
 
@@ -123,7 +127,7 @@ phw_summary_table(cases, by = outcome,
 `reactable::reactable()` yourself.
 
 ```{r, eval = have("reactable")}
-reactable::reactable(areas_tab[c("area", "cases")],
+reactable::reactable(areas_tab[c("area", "cases")], defaultPageSize = 8,
                      theme = phw_reactable_theme(header = "navy", font_size = 16),
                      striped = TRUE)
 ```
@@ -154,7 +158,7 @@ hides the tool bar.
 ### From a ggplot
 
 ```{r, eval = have("plotly")}
-g <- ggplot(weekly, aes(week, cases, colour = area)) + geom_line() +
+g <- ggplot(weekly, aes(week, cases, colour = area)) + geom_line(linewidth = 0.5) +
   labs(x = "Week", y = "Cases")
 phw_plotly(g, source = "Example data", hovermode = "x")
 ```
