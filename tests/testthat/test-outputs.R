@@ -252,6 +252,24 @@ test_that("phw_add_slide scales a plain ggplot and rejects a bad plot_scale", {
   expect_error(phw_add_slide(phw_pptx(), "x", plot = p, plot_scale = 0), "plot_scale")
 })
 
+test_that("phw_add_slide scales every panel and the annotation of an arranged figure", {
+  skip_if_not_installed("officer")
+  skip_if_not_installed("rvg")
+  skip_if_not_installed("patchwork")
+  p1 <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) + ggplot2::geom_point() + ggplot2::labs(x = "LEFTX")
+  p2 <- ggplot2::ggplot(mtcars, ggplot2::aes(hp, mpg)) + ggplot2::geom_point() + ggplot2::labs(x = "RIGHTX")
+  fig <- phw_arrange(p1, p2, title = "FIGTITLE", source = "SRCX")
+  size_of <- function(xml, word) {
+    before <- substr(xml, 1, regexpr(word, xml, fixed = TRUE))
+    utils::tail(xml_numbers(before, 'sz="[0-9]+"'), 1) / 100
+  }
+  small <- slide_xml(phw_add_slide(phw_pptx(), "x", plot = fig, plot_scale = 1))
+  large <- slide_xml(phw_add_slide(phw_pptx(), "x", plot = fig))
+  for (word in c("LEFTX", "RIGHTX", "FIGTITLE", "SRCX")) {
+    expect_equal(size_of(large, word), size_of(small, word) * 1.5, tolerance = 0.002, label = word)
+  }
+})
+
 test_that("phw_add_slide scales the picture path the same way", {
   skip_if_not_installed("officer")
   p <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) + ggplot2::geom_point() + theme_phw()

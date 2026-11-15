@@ -633,10 +633,21 @@ table_rows_that_fit <- function(ft, height) {
   sum(fixed + cumsum(ft$body$rowheights) <= height + 0.001)
 }
 
+# Each panel of a patchwork, and its annotation, is scaled from its own theme:
+# `+` on a patchwork reaches only the last panel.
 scale_plot_text <- function(plot, scale) {
   if (scale == 1) return(plot)
-  current <- ggplot2::theme_get() + plot$theme
-  plot <- plot + ggplot2::theme(
+  if (inherits(plot, "patchwork")) {
+    plot$patches$plots <- lapply(plot$patches$plots, scale_plot_text, scale = scale)
+    annotation <- plot$patches$annotation$theme
+    plot$patches$annotation$theme <- annotation + scaled_text_theme(annotation, scale)
+  }
+  plot + scaled_text_theme(plot$theme, scale)
+}
+
+scaled_text_theme <- function(theme, scale) {
+  current <- ggplot2::theme_get() + theme
+  out <- ggplot2::theme(
     text = ggplot2::element_text(size = ggplot2::calc_element("text", current)$size * scale),
     legend.key.size = ggplot2::calc_element("legend.key.size", current) * scale
   )
@@ -646,10 +657,10 @@ scale_plot_text <- function(plot, scale) {
     if (!is.null(fontsize)) {
       # Looked up by name: ggplot2 before 4.0 has no element_geom(), as in theme_phw().
       element_geom <- getExportedValue("ggplot2", "element_geom")
-      plot <- plot + ggplot2::theme(geom = element_geom(fontsize = fontsize * scale * ggplot2::.pt))
+      out <- out + ggplot2::theme(geom = element_geom(fontsize = fontsize * scale * ggplot2::.pt))
     }
   }
-  plot
+  out
 }
 
 # Grows a table's text so it fills the area, then widens its columns. A tall

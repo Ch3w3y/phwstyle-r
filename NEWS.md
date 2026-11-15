@@ -82,6 +82,9 @@ says what to change.
 * `phw_add_slide()` checks its arguments before it adds a slide, so a call
   that stops leaves the deck unchanged. It warns when a table has more rows
   than fit on the slide, and accepts a `phw_finalise()` chart as a picture.
+* `phw_add_slide()` scales the text of a `phw_arrange()` figure as one: every
+  panel, the figure title and the source line. Before, only the last panel
+  was scaled.
 * Captions leave out a missing or empty source, date or note instead of
   printing "NA", and name a misspelt caption argument.
 * The R Markdown formats add your own `css`, `includes` and `pandoc_args` to
