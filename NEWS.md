@@ -50,6 +50,10 @@ says what to change.
   chart (new `na.value`). Past eight groups they stop with a clear message.
 * `reverse = TRUE` now works when the palette is a function, and a palette
   function gives groups its colours in its own order.
+* `scale_*_phw_d(reverse = TRUE)` with more than four groups carries
+  `"main"` on into `"extended"`, giving the same colours as
+  `phw_pal(n, reverse = TRUE)`. Before, the fifth group onwards took colours
+  from other palettes with a warning.
 * `width` and other bar settings passed through `...` work in
   `phw_epicurve()` and `phw_pyramid()`.
 * `phw_pyramid()` shows every level of the `age` factor, so an age band

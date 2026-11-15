@@ -340,3 +340,17 @@ test_that("reverse flips a function palette and keeps its order", {
   expect_equal(toupper(fill_of()), toupper(grDevices::hcl.colors(3)))
   expect_equal(toupper(fill_of(reverse = TRUE)), toupper(rev(grDevices::hcl.colors(3))))
 })
+
+test_that("reverse carries \"main\" on into \"extended\" as phw_pal() does", {
+  fill_of <- function(groups) {
+    d <- data.frame(x = seq_along(groups), y = 1, g = groups)
+    p <- ggplot2::ggplot(d, ggplot2::aes(x, y, fill = g)) + ggplot2::geom_col() +
+      scale_fill_phw_d(palette = "main", reverse = TRUE)
+    ggplot2::layer_data(p)$fill
+  }
+  expect_no_warning(six <- fill_of(LETTERS[1:6]))
+  expect_equal(six, phw_pal(6, "main", reverse = TRUE))
+  expect_equal(fill_of(LETTERS[1:3]), phw_pal(3, "main", reverse = TRUE))
+  expect_equal(fill_of(c(LETTERS[1:4], "Other")),
+               c(phw_pal(4, "main", reverse = TRUE), phw_colours[["grey_mid"]]))
+})
