@@ -6,16 +6,18 @@ Found while running the loop with Claude Code 2.1.x. Each item says whether it w
 - **Runtime watcher overflow.** The main loop reads one fsnotify event per cycle, and each cycle's `orders.json` write triggers the next cycle (source: `loop/loop.go` `Run`). Events pile up until `fsnotify: queue or buffer overflow` kills `noodle start`, about 25 minutes in (observed).
 - **Re-listed orders cancel running stages.** If the scheduler writes an order that is already active, Noodle replaces the running stage when any field differs, such as routing defaults the scheduler leaves empty or a reworded prompt. That cancels the running session (source: `loop/orders.go` `mergeAmendedActiveOrder`, `loop/loop_cycle_pipeline.go` `cancelSupersededActiveCooks`).
 - **The scheduler holds a slot.** The schedule session is meant to stay alive and receive stage events, and it counts toward `max_concurrency` (source: `loop/cook_spawn.go` `atMaxConcurrency`). Keep `max_concurrency = 2`.
+- **The scheduler only hears about failures.** The live scheduler gets a message on a failed stage, a yield, a merge failure or a stage message, but not when an order finishes (source: `loop/cook_completion.go` `advanceAndPersist`). Noodle starts no new scheduler while one is alive (source: `loop/loop_cycle_pipeline.go`). So after the first order, the idle scheduler keeps its slot and nothing else is scheduled.
 - **Usage-limit stalls (observed).** A session that hits the Claude usage limit stops at once. Check its `meta.json` for "hit your" before you debug anything else.
-- **Backlog sync runs every second (source: `loop/util.go` `pollInterval`).** `adapters/backlog-sync` caches its result for 30 seconds so the loop stays inside GitHub's rate limit, and `adapters/backlog-done` clears the cache when an order finishes.
+- **Backlog sync runs every second (source: `loop/util.go` `pollInterval`).** `adapters/backlog-sync` caches its result for 30 seconds so the loop stays inside GitHub's rate limit, and `adapters/backlog-done` drops the finished item from the cache and expires it when an order finishes. If `gh` fails, `backlog-sync` serves the last cached backlog.
 
 ## Local build
 
-The loop runs a v0.1.5 build with three changes:
+The loop runs a v0.1.5 build with four changes:
 
 1. `dispatcher/process_dispatcher.go`: close Claude's stdin after the first prompt, for worker stages only. Claude then finishes its turn and any background work, and exits. The schedule session keeps stdin open. Workers lose live steering and `noodle stop`; killing them still works. Upstream `main` fixes this differently: it marks a Claude session complete on its `result` event and kills it, which would also kill a session waiting on background work.
 2. `loop/orders.go`: while a stage is running, an amendment keeps that stage as it is and takes only the incoming stages after the one with the same task key.
 3. `loop/loop.go`: read watcher events in a goroutine and coalesce them into one pending cycle, as upstream `main` does. Unlike `main`, the loop's own `orders.json` writes no longer trigger a cycle, because `flushState` rewrites it at the end of every cycle. The one-second ticker still runs one, and `Cycle` reloads `orders.json` from disk.
+4. `loop/cook_completion.go`: when an order finishes, send the live scheduler an `[order_completed]` message. The schedule skill re-reads mise on every message.
 
 To rebuild: clone `poteto/noodle` at `v0.1.5`, apply the patch at the end of this note, create `ui/dist/client/index.html` (the web UI is not built, and the server is off in `.noodle.toml`), then run `go build`. Expected test results with `go test ./loop/... ./dispatcher/... ./monitor/...`: `TestConsumeOrdersNextDuplicateActiveIDAmendsCurrentStage` and the `orders-next-promotion-with-inflight-cook` fixture fail, because they test the amendment behaviour change 2 removes. `internal/schemadoc` already fails on plain v0.1.5.
 
@@ -64,6 +66,18 @@ index 8d135cc..e886a66 100644
  	return controller, nil
  }
  
+diff --git a/loop/cook_completion.go b/loop/cook_completion.go
+index 2d427f8..7e61a20 100644
+--- a/loop/cook_completion.go
++++ b/loop/cook_completion.go
+@@ -316,6 +316,7 @@ func (l *Loop) advanceAndPersist(ctx context.Context, cook *cookHandle, message
+ 				l.logger.Warn("schedule bootstrap completed but schedule skill is still missing")
+ 			}
+ 		}
++		l.forwardToScheduler(cook, "order_completed", "order finished; re-read mise and schedule the next order", nil)
+ 		// Final stage of a non-failing order — fire adapter "done".
+ 		if _, err := l.deps.Adapter.Run(ctx, "backlog", "done", adapter.RunOptions{Args: []string{cook.orderID}}); err != nil {
+ 			if !isMissingAdapter(err) {
 diff --git a/loop/loop.go b/loop/loop.go
 index 5e2446c..5a58726 100644
 --- a/loop/loop.go

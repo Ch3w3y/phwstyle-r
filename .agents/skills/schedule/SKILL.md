@@ -81,6 +81,10 @@ Labels on the item (in `tags`):
 
 Leave `with` and `model` unset so `routing.defaults` in `.noodle.toml` applies, unless a stage clearly needs something else. Set `"runtime": "process"` on every stage.
 
+## Messages from the loop
+
+This session stays open between orders. The loop sends it one line per event, such as `[order_completed] order=8 ...` when an order finishes, or `[stage_failed] ...` and `[stage_yield] ...`. On every message, re-read `.noodle/mise.json` and write `.noodle/orders-next.json` again by the rules above.
+
 ## Output
 
 Write valid JSON matching `noodle schema orders`. If nothing is actionable, still write:
