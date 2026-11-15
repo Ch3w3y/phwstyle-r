@@ -353,6 +353,8 @@ test_that("sequential and diverging palettes spread over the groups as phw_pal()
   expect_equal(fill_of(c("a", "b", "c"), "blues", reverse = TRUE), phw_pal(3, "blues", reverse = TRUE))
   expect_equal(fill_of(c("a", "b", "Unknown"), "blues"),
                c(phw_pal(2, "blues"), phw_colours[["grey_mid"]]))
+  expect_equal(fill_of("Unknown", "blues"), phw_colours[["grey_mid"]])
+  expect_equal(fill_of("Unknown", "blues", reverse = TRUE), phw_colours[["grey_mid"]])
 })
 
 test_that("reverse carries \"main\" on into \"extended\" as phw_pal() does", {

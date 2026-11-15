@@ -113,13 +113,14 @@ reverse_key_palette <- function(palette, levels, neutral = default_neutral) {
 
 # A sequential or diverging palette spreads over the `n` groups, as
 # phw_pal() does, so groups run from light to dark (or from one side to the
-# other) rather than taking the palest steps.
+# other) rather than taking the palest steps. The full palette follows, so
+# groups a key gains later carry on in the same palette.
 spread_palette <- function(palette, n) {
-  if (is.character(palette) && length(palette) == 1 && palette %in% names(phw_palettes) &&
-      palette_type(palette) != "qualitative") {
-    return(phw_pal(n, palette))
+  if (n < 1 || !is.character(palette) || length(palette) != 1 ||
+      !palette %in% names(phw_palettes) || palette_type(palette) == "qualitative") {
+    return(palette)
   }
-  palette
+  c(phw_pal(n, palette), palette_colours(palette))
 }
 
 # The accessible palette keeps its own copy of each key, so switching a

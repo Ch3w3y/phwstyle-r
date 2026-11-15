@@ -27,6 +27,23 @@ test_that("a key spreads a sequential palette over its groups", {
   expect_equal(unname(r), phw_pal(3, "orange_navy"))
 })
 
+test_that("a key that grows carries on down its sequential palette", {
+  phw_key_reset("t_grow")
+  withr::defer(phw_key_reset("t_grow"))
+  first <- phw_colour_key(c("a", "b", "c"), "t_grow", palette = "blues")
+  expect_no_warning(later <- phw_colour_key(c("d", "e", "f"), "t_grow", palette = "blues"))
+  expect_equal(unname(first), phw_pal(3, "blues"))
+  expect_equal(unname(later), unname(phw_palettes$blues[1:3]))
+})
+
+test_that("a sequential key with no colourable groups draws them in grey", {
+  grey <- phw_colours[["grey_mid"]]
+  expect_equal(unname(phw_colour_key("Unknown", palette = "blues")), grey)
+  expect_length(phw_colour_key(character(), palette = "blues"), 0)
+  pal <- phw_leaflet_palette("blues", domain = "Unknown", type = "factor")
+  expect_equal(pal("Unknown"), grey)
+})
+
 test_that("recolouring to \"main\" carries on into \"extended\"", {
   phw_key_reset("t_big")
   withr::defer(phw_key_reset("t_big"))

@@ -60,7 +60,8 @@ says what to change.
   were its three palest, `"orange_navy"` showed only its orange half, and
   ten deciles ran out of blues and took other PHW colours with a warning.
   Charts and maps of groups in these palettes change colour. A saved colour
-  key keeps the colours it already gave its groups.
+  key keeps the colours it already gave its groups, and groups it gains
+  later carry on down the same palette.
 * `phw_leaflet_polygons()` and `phw_leaflet_palette(type = "factor")` order
   groups as the PHW ggplot2 scales do: text sorted, factor levels in their
   order, with unused levels and `NA` left out. A group now has the same
