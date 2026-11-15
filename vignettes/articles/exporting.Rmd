@@ -20,9 +20,9 @@ library(dplyr)
 library(ggplot2)
 use_phw_ggplot()
 set.seed(1)
-dat <- tibble(group = sample(c("Group A", "Group B", "Group C"), 300, replace = TRUE),
-              type = sample(c("Type 1", "Type 2", "Type 3"), 300, replace = TRUE),
-              year = sample(2024:2025, 300, replace = TRUE))
+dat <- tibble(group = sample(paste("Group", LETTERS[1:5]), 3000, replace = TRUE),
+              type = sample(paste("Type", 1:4), 3000, replace = TRUE),
+              year = sample(2024:2025, 3000, replace = TRUE))
 tab <- phw_group_table(dat, c(group, type), year)
 bars <- ggplot(dat, aes(group, fill = type)) + geom_bar() +
   scale_fill_phw_d() + labs(x = NULL, y = "Cases", fill = NULL)
@@ -97,7 +97,7 @@ when a slide needs it.
 ```{r, eval = FALSE}
 deck <- phw_pptx() |>
   phw_add_slide("Cases by group and type", plot = bars,
-                alt = "Stacked bars of cases in groups A, B and C, split by type.",
+                alt = "Stacked bars of cases in groups A to E, split by type.",
                 source = "Example data", caption_args = list(source_prefix = "Data: "),
                 plot_scale = 1.5, editable = FALSE)
 ```
