@@ -14,7 +14,10 @@
 #'   headings, booktabs tables, a gradient band and logo header, and a
 #'   "Page x of y" footer.
 #' * `phw_pdf_document()`: XeLaTeX with Ubuntu, a full-page gradient cover,
-#'   a running header band and a branded footer.
+#'   a running header band and a branded footer. Pages are A4 with PHW
+#'   margins, in an 11pt `article` with coloured links: set `geometry`,
+#'   `fontsize`, `documentclass` or `colorlinks` in the YAML header to
+#'   change them.
 #'
 #' All three call [use_phw_ggplot()] (and [use_phw_flextable()] when
 #' flextable is installed) before knitting, so charts and tables match
@@ -193,11 +196,15 @@ phw_pdf_document <- function(..., toc = FALSE, number_sections = TRUE,
   header <- phw_latex_header(team = team, cover = cover)
   args$latex_engine <- "xelatex"
   args$includes <- merge_includes(rmarkdown::includes(in_header = header), dots$includes)
-  args$pandoc_args <- c("--variable", "geometry:a4paper,top=3.2cm,bottom=2.6cm,left=2cm,right=2cm",
-                        "--variable", "documentclass:article",
-                        "--variable", "fontsize:11pt",
-                        "--variable", "colorlinks:true", dots$pandoc_args)
+  # A metadata file, unlike --variable, gives way to the document's YAML and
+  # to the user's -V and --metadata-file.
+  args$pandoc_args <- c("--metadata-file", phw_file("rmarkdown", "resources", "phw-pdf-defaults.yaml"),
+                        dots$pandoc_args)
   fmt <- do.call(rmarkdown::pdf_document, args)
+  # rmarkdown adds 1in margins unless it sees a geometry or documentclass, and
+  # it can't see the ones in the metadata file.
+  pre <- fmt$pre_processor
+  fmt$pre_processor <- function(metadata, ...) pre(c(metadata, list(geometry = TRUE)), ...)
   fmt$knitr$opts_chunk$dpi <- 300
   add_setup(fmt, style_plots, palette)
 }

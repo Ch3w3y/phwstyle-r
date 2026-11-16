@@ -350,6 +350,10 @@ says what to change.
   header stopped the PDF build with "File not found".
 * `phw_pdf_document()` keeps the `dev` you give it instead of always using
   `"ragg_png"`.
+* `phw_pdf_document()` uses `fontsize`, `documentclass`, `geometry` and
+  `colorlinks` from the YAML header or from `pandoc_args` in place of the PHW
+  ones. Before, the PHW values silently won, and a `fontsize` in
+  `pandoc_args` gave LaTeX an option it doesn't know, so the text was 10pt.
 * `phw_download_logos()` saves nothing when the reply isn't an SVG.
 
 ## Interactive outputs and colours
