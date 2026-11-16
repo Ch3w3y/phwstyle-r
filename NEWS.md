@@ -321,6 +321,11 @@ says what to change.
   grew past the content area, and the warning asked you to split them. A
   cell with more than one line now counts as that many lines when the table
   is sized.
+* `phw_add_slide(table_fit = TRUE)` no longer narrows the columns of a table
+  that is wider than the content area until numbers and labels break across
+  lines. It shrinks the text instead, down to 8 points. A table still too
+  wide at 8 points keeps its column widths and gives a warning that names
+  how many columns it has.
 * `phw_add_slide()` scales the text of a `phw_arrange()` figure as one: every
   panel, the figure title and the source line. Before, only the last panel
   was scaled.

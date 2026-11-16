@@ -96,9 +96,11 @@ table so it fills the width of the slide's content area? The text grows
 with it, by up to 1.6 times, and a narrow table is widened by at most
 another 80\% (more for a table with more columns). A tall table tightens
 its row spacing so the text can grow. \code{FALSE} keeps the table at the size \code{\link[=phw_flextable]{phw_flextable()}} gives
-it. A flextable you pass in is never resized. The text never shrinks,
-so a table with too many rows for the slide gives a warning that says
-how many fit.}
+it. A flextable you pass in is never resized. A table too wide for the
+area shrinks its text, down to 8 points, rather than narrowing its
+columns. One still too wide at 8 points keeps its column widths and
+gives a warning. The text never shrinks for height, so a table with too
+many rows for the slide gives a warning that says how many fit.}
 }
 \value{
 An officer \code{rpptx} object. Save it with \code{print(deck, target = "file.pptx")}.
