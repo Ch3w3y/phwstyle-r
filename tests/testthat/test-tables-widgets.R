@@ -627,3 +627,32 @@ test_that("phw_col_heat colours only the level rows of a summary table", {
   top <- utils::tail(seq_cols("teals", FALSE), 1)
   expect_equal(toupper(style(ct$x[3], 3)$background), toupper(top))
 })
+
+test_that("bars cover only the level rows of a summary table", {
+  skip_if_not_installed("flextable")
+  dat <- data.frame(group = rep(c("A", "B", "C"), times = c(10, 20, 30)),
+                    type = rep(c("x", "y"), 30))
+  ct <- phw_crosstab(dat, group, type)
+  ft <- phw_flextable(ct) |> phw_flextable_bars(Total)
+  chunks <- flextable::information_data_chunk(ft)
+  chunks <- chunks[chunks$.part == "body" & chunks$.col_id == "Total", ]
+  bars <- chunks[!is.na(chunks$width), ]
+  filled <- vapply(bars$img_data, function(img) mean(toupper(img) == toupper(phw_colours[["light_teal"]])), 0)
+  # The largest level (C, 30) takes the full bar, not the grand total (60),
+  # and the total row has an empty bar.
+  expect_equal(filled, c(10, 20, 30, 0) / 30, tolerance = 0.02)
+  expect_true(all(c("10", "30", "60") %in% chunks$txt))
+})
+
+test_that("phw_col_bar draws bars on the level rows of a summary table only", {
+  skip_if_not_installed("reactable")
+  dat <- data.frame(group = rep(c("A", "B", "C"), times = c(10, 20, 30)),
+                    type = rep(c("x", "y"), 30))
+  ct <- phw_crosstab(dat, group, type)
+  cell <- phw_col_bar(ct, Total)$cell
+  width <- function(i) sub(".*width:([0-9.]+%);height.*", "\\1", as.character(cell(ct$Total[i], i)))
+  expect_equal(width(3), "100%")
+  expect_equal(width(1), "33.3%")
+  expect_equal(width(4), "0%")
+  expect_match(as.character(cell(ct$Total[4], 4)), ">60<", fixed = TRUE)
+})

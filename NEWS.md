@@ -292,6 +292,10 @@ says what to change.
   `phw_col_heat()` colour only the level rows. Before, totals and subtotals
   were coloured too and set the top of the scale, so every other cell came
   out pale, and headings lost their grey band in the coloured columns.
+* On a summary, cross-tab or group table, `phw_flextable_bars()` and
+  `phw_col_bar()` draw bars on the level rows only, scaled to the largest
+  level. Headings, subtotals and totals show the number only. Before, the
+  grand total set the scale, so every level bar came out a sliver.
 * In `phw_flextable()`, the spanner above a summary, cross-tab or group
   table's columns takes the same colour as the column labels below it. With
   `style = "header"` it is white on the navy band, with a white rule under

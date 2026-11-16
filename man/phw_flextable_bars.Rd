@@ -33,6 +33,11 @@ Draws a small horizontal bar before each value, scaled to the largest
 value in the column, so readers can compare sizes at a glance (as in
 many PHW summary tables).
 }
+\details{
+On a summary table from \code{\link[=phw_flextable]{phw_flextable()}}, only the level rows get bars.
+Headings, subtotals and totals show the number only and do not count
+towards the scale, so a total does not shrink every other bar.
+}
 \examples{
 if (requireNamespace("flextable", quietly = TRUE)) {
   df <- data.frame(Area = paste("Area", LETTERS[1:4]), Cases = c(120, 85, 64, 19))

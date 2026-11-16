@@ -62,7 +62,9 @@ in \code{columns = list(...)} of \code{\link[=phw_reactable]{phw_reactable()}} o
 \details{
 \itemize{
 \item \code{phw_col_bar()}: the value with a horizontal bar behind it, scaled to
-the column's largest value. Good for counts and rates.
+the column's largest value. Good for counts and rates. On a summary
+table, only the level rows get bars: headings, subtotals and totals
+show the number only and stay out of the scale.
 \item \code{phw_col_heat()}: cell background from a sequential or diverging
 palette, with readable text. On a summary table, only the level rows
 are coloured: headings, subtotals and totals keep their own styling and
