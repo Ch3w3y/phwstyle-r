@@ -334,6 +334,8 @@ test_that("col_keys drops columns from a summary table", {
   grouped <- phw_group_table(dat, group, c(year, q))
   ft <- phw_flextable(grouped, flextable_args = list(col_keys = names(grouped)[c(1, 2, 3, 6)]))
   expect_equal(ft$header$spans$rows[1, ], c(1, 2, 0, 1))
+  ft <- phw_flextable(grouped, flextable_args = list(col_keys = "group"))
+  expect_equal(flextable::nrow_part(ft, "header"), 1)
   expect_error(phw_flextable(rt, flextable_args = list(col_keys = c("Cases", "Group"))),
                "must start with the label column")
   expect_error(phw_flextable(rt, flextable_args = list(col_keys = c("Group", "Nope"))),

@@ -275,13 +275,8 @@ phw_flextable_heat <- function(x, j, palette = "teals", domain = NULL, breaks = 
   rag <- identical(palette, "rag") || identical(palette, "rag_accessible")
   if (rag) {
     check_breaks(breaks)
-    rag_status <- function(v) {
-      st <- ifelse(v < breaks[1], "low", ifelse(v < breaks[2], "mid", "high"))
-      if (higher_is_better) c(low = "red", mid = "amber", high = "green")[st]
-      else c(low = "green", mid = "amber", high = "red")[st]
-    }
     fill_fun <- function(v) {
-      out <- unname(phw_palettes[[palette]][rag_status(v)])
+      out <- unname(phw_palettes[[palette]][rag_status(v, breaks, higher_is_better)])
       out[is.na(v)] <- "transparent"
       out
     }
@@ -300,11 +295,19 @@ phw_flextable_heat <- function(x, j, palette = "teals", domain = NULL, breaks = 
       i <- which(!is.na(v))
       if (length(i)) {
         x <- flextable::prepend_chunks(x, i = i, j = col, part = "body",
-                                       flextable::as_chunk(paste0(shapes[unname(rag_status(v[i]))], " ")))
+                                       flextable::as_chunk(paste0(shapes[rag_status(v[i], breaks, higher_is_better)], " ")))
       }
     }
   }
   x
+}
+
+# "red", "amber" or "green" for each value: below the first break, from the
+# first up to the second, or at or above the second.
+rag_status <- function(v, breaks, higher_is_better) {
+  band <- ifelse(v < breaks[1], 1L, ifelse(v < breaks[2], 2L, 3L))
+  status <- if (higher_is_better) c("red", "amber", "green") else c("green", "amber", "red")
+  status[band]
 }
 
 #' Colour flextable cells by group
@@ -381,34 +384,28 @@ style_summary_ft <- function(ft, x, relabelled = character()) {
   if (length(line)) ft <- flextable::hline(ft, i = line, border = grey, part = "body")
   # Numbers and statistics right-aligned, whatever their type.
   if (nd) ft <- flextable::align(ft, j = data_j, align = "right", part = "all")
-  ch <- attr(x, "col_header")
-  sp <- attr(x, "spanner")
+  multi <- !is.null(attr(x, "col_header"))
+  hd <- summary_header(x, nl, shown - nl)
   # Spanner rows copy the column labels' colours. On a dark header band
   # their rule is white so it stays visible.
   fill <- ft$header$styles$cells$background.color$data[1, data_j[1]]
   dark <- nd && fill != "transparent" && phw_text_on(fill) == "#FFFFFF"
   rule <- if (dark) officer::fp_border(color = "#FFFFFF", width = 0.75) else grey
-  if (!is.null(ch) && nd) {
-    ch <- ch[, shown - nl, drop = FALSE]
-    L <- nrow(ch)
-    labs <- stats::setNames(as.list(ch[L, ]), names(x)[shown])
-    labs <- labs[setdiff(names(labs), relabelled)]
-    if (length(labs)) ft <- do.call(flextable::set_header_labels, c(list(ft), labs))
-    for (l in rev(seq_len(L - 1))) {
-      key <- apply(ch[seq_len(l), , drop = FALSE], 2, paste, collapse = "\r")
-      r <- rle(key)
-      vals <- ch[l, cumsum(r$lengths)]
-      ft <- flextable::add_header_row(ft, values = c(rep("", nl), vals), colwidths = c(rep(1, nl), r$lengths))
+  if (length(hd$upper)) {
+    if (multi) {
+      labs <- stats::setNames(as.list(hd$bottom), names(x)[shown])
+      labs <- labs[setdiff(names(labs), relabelled)]
+      if (length(labs)) ft <- do.call(flextable::set_header_labels, c(list(ft), labs))
+    }
+    # A grand total keeps its label at every level, so merge_v() joins it
+    # into one cell.
+    for (level in rev(hd$upper)) {
+      ft <- flextable::add_header_row(ft, values = c(rep("", nl), level$label), colwidths = c(rep(1, nl), level$n))
       ft <- flextable::hline(ft, i = 1, j = data_j, border = rule, part = "header")
     }
-    ft <- flextable::merge_v(ft, j = data_j, part = "header")
-    ft <- flextable::align(ft, i = seq_len(L - 1), j = data_j, align = "center", part = "header")
+    if (multi) ft <- flextable::merge_v(ft, j = data_j, part = "header")
+    ft <- flextable::align(ft, i = seq_along(hd$upper), j = data_j, align = "center", part = "header")
     ft <- flextable::bold(ft, part = "header")
-  } else if (!is.null(sp) && nd) {
-    ft <- flextable::add_header_row(ft, values = c(rep("", nl), sp), colwidths = c(rep(1, nl), nd))
-    ft <- flextable::align(ft, i = 1, j = data_j, align = "center", part = "header")
-    ft <- flextable::bold(ft, part = "header")
-    ft <- flextable::hline(ft, i = 1, j = data_j, border = rule, part = "header")
   }
   note <- attr(x, "note")
   if (!is.null(note)) {

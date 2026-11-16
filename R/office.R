@@ -76,25 +76,31 @@ summary_dt_parts <- function(x) {
 }
 
 # The header rows above the column names of a summary table: its spanner,
-# or the upper levels of a multi-level header (years above quarters). Each
-# level is a data frame of runs, giving a label, its first data column and
-# how many columns it spans. `bottom` holds the column names to show.
-summary_header <- function(x, nl) {
+# or the upper levels of a multi-level header (years above quarters), over
+# the data columns `cols` (positions after the label columns). Each level is
+# a data frame of runs, giving a label, its first column within `cols`, how
+# many columns it spans and whether it is a grand total column, which has
+# the same label at every level and so is shown once. `bottom` holds the
+# column names to show.
+summary_header <- function(x, nl, cols = seq_len(ncol(x) - nl)) {
   ch <- attr(x, "col_header")
   sp <- attr(x, "spanner")
-  data_names <- names(x)[-seq_len(nl)]
+  data_names <- names(x)[nl + cols]
+  if (!length(data_names)) return(list(upper = list(), bottom = data_names))
   if (is.null(ch)) {
-    upper <- if (!is.null(sp) && length(data_names)) list(data.frame(label = sp, start = 1L, n = length(data_names)))
+    upper <- if (!is.null(sp)) {
+      list(data.frame(label = sp, start = 1L, n = length(data_names), total = FALSE))
+    }
     return(list(upper = upper, bottom = data_names))
   }
+  ch <- ch[, cols, drop = FALSE]
   L <- nrow(ch)
   upper <- lapply(seq_len(L - 1), function(l) {
     key <- apply(ch[seq_len(l), , drop = FALSE], 2, paste, collapse = "\r")
     n <- rle(key)$lengths
     start <- cumsum(n) - n + 1
-    # A grand total column has the same label at every level: show it once.
     total <- vapply(seq_along(n), function(g) all(ch[, start[g] + seq_len(n[g]) - 1] == ch[L, start[g]]), logical(1))
-    data.frame(label = ifelse(total, "", ch[l, start]), start = start, n = n)
+    data.frame(label = ch[l, start], start = start, n = n, total = total)
   })
   list(upper = upper, bottom = ch[L, ])
 }
@@ -106,7 +112,8 @@ summary_dt_header <- function(x, nl) {
   span <- length(hd$upper) + 1
   upper <- lapply(hd$upper, function(level) {
     lapply(seq_len(nrow(level)), function(g) {
-      th(level$label[g], colspan = level$n[g], class = if (nzchar(level$label[g])) "phw-spanner" else "phw-blank")
+      label <- if (level$total[g]) "" else level$label[g]
+      th(label, colspan = level$n[g], class = if (nzchar(label)) "phw-spanner" else "phw-blank")
     })
   })
   labels <- lapply(names(x)[seq_len(nl)], th, rowspan = span, class = "phw-label")
@@ -235,7 +242,7 @@ phw_write_xlsx <- function(x, file, title = NULL, source = NULL, date = NULL, ca
       for (g in seq_len(nrow(level))) {
         cols <- nl + level$start[g] + seq_len(level$n[g]) - 1
         dims <- openxlsx2::wb_dims(rows = row, cols = cols)
-        if (!nzchar(level$label[g])) next
+        if (level$total[g] || !nzchar(level$label[g])) next
         wb <- openxlsx2::wb_add_data(wb, sheet, level$label[g], start_row = row, start_col = cols[1])
         if (length(cols) > 1) wb <- openxlsx2::wb_merge_cells(wb, sheet, dims)
         wb <- add_font(wb, sheet, dims, bold = TRUE, color = col[["navy"]])

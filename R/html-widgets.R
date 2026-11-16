@@ -394,27 +394,22 @@ summary_reactable_args <- function(x) {
         st
       })
   }
-  ch <- attr(x, "col_header")
+  hd <- summary_header(x, nl)
   data_cols <- nms[-seq_len(nl)]
   for (i in seq_along(data_cols)) {
-    cols[[data_cols[i]]] <- reactable::colDef(
-      align = "right", na = "",
-      name = if (!is.null(ch)) ch[nrow(ch), i] else data_cols[i])
+    cols[[data_cols[i]]] <- reactable::colDef(align = "right", na = "", name = hd$bottom[i])
   }
-  sp <- attr(x, "spanner")
+  ch <- attr(x, "col_header")
   groups <- NULL
-  if (!is.null(ch) && nrow(ch) > 1) {
-    key <- apply(ch[-nrow(ch), , drop = FALSE], 2, paste, collapse = " \u00b7 ")
-    run <- rle(key)
-    ends <- cumsum(run$lengths)
-    groups <- lapply(seq_along(ends), function(g) {
-      idx <- (ends[g] - run$lengths[g] + 1):ends[g]
-      # A grand total column has the same label at every level: show it once.
-      same <- all(ch[, idx] == ch[nrow(ch), idx[1]])
-      reactable::colGroup(name = if (same) "" else run$values[g], columns = data_cols[idx])
+  if (length(hd$upper)) {
+    # reactable has one level of column groups: group by the lowest upper
+    # level and name each group by every upper level.
+    level <- hd$upper[[length(hd$upper)]]
+    groups <- lapply(seq_len(nrow(level)), function(g) {
+      idx <- level$start[g] + seq_len(level$n[g]) - 1
+      name <- if (level$total[g]) "" else if (is.null(ch)) level$label[g] else paste(ch[-nrow(ch), idx[1]], collapse = " \u00b7 ")
+      reactable::colGroup(name = name, columns = data_cols[idx])
     })
-  } else if (!is.null(sp)) {
-    groups <- list(reactable::colGroup(name = sp, columns = data_cols))
   }
   list(
     columns = cols,
@@ -520,11 +515,7 @@ phw_col_rag <- function(breaks, higher_is_better = TRUE, rag_palette = "rag_acce
   rag_palette <- rlang::arg_match(rag_palette, c("rag_accessible", "rag"))
   pal <- phw_palettes[[rag_palette]]
   shapes <- c(red = "\u25BC", amber = "\u25A0", green = "\u25B2")
-  status <- function(v) {
-    st <- if (v < breaks[1]) "low" else if (v < breaks[2]) "mid" else "high"
-    if (higher_is_better) c(low = "red", mid = "amber", high = "green")[[st]]
-    else c(low = "green", mid = "amber", high = "red")[[st]]
-  }
+  status <- function(v) rag_status(v, breaks, higher_is_better)
   reactable::colDef(
     align = "right",
     cell = function(value) if (is.na(value)) "" else paste(shapes[[status(value)]], fmt_num(value, digits)),
