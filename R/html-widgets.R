@@ -296,7 +296,7 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
   })
   title <- current_title(p)
   ann <- if (!is.null(cap)) list(list(
-    text = paste0("<b>", gsub("\n", "<br>", cap), "</b>"), showarrow = FALSE,
+    name = "phw_source", text = paste0("<b>", gsub("\n", "<br>", cap), "</b>"), showarrow = FALSE,
     xref = "paper", yref = "paper", x = 1, y = 0, xanchor = "right", yanchor = "top",
     yshift = if (legend == "bottom") -70 else -40, font = list(size = 11, color = col[["text"]]))) else list()
   base <- list(
@@ -339,6 +339,10 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
                                                  "hoverCompareCartesian", "toggleSpikelines"),
                       toImageButtonOptions = list(format = "png", scale = 2))
   p$dependencies <- c(p$dependencies, list(phw_font_dependency()))
+  if (legend == "bottom") {
+    js <- paste(readLines(system.file("js", "plotly-bottom-legend.js", package = "phwstyle")), collapse = "\n")
+    p <- htmlwidgets::onRender(p, js, data = list(margin = extra$margin$b %||% 0))
+  }
   p
 }
 
