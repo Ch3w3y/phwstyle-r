@@ -193,6 +193,16 @@ test_that("phw_reactable is unstriped, closed with a navy rule and has a navy sp
   expect_equal(theme$groupHeaderStyle$color, phw_colours[["navy"]])
 })
 
+test_that("phw_reactable's booktabs top rule sits above the column groups", {
+  skip_if_not_installed("reactable")
+  rule <- paste("2px solid", phw_colours[["navy"]])
+  theme <- phw_reactable_theme()
+  expect_equal(theme$tableStyle$borderTop, rule)
+  expect_null(theme$headerStyle$borderTop)
+  expect_null(theme$groupHeaderStyle$borderTop)
+  expect_null(phw_reactable_theme(header = "navy")$tableStyle$borderTop)
+})
+
 test_that("phw_reactable and phw_datatable show a summary note above the source, not in it", {
   skip_if_not_installed("reactable")
   skip_if_not_installed("DT")
@@ -293,6 +303,24 @@ test_that("phw_flextable spanners take the header's colours", {
     expect_equal(spanner(phw_flextable(tab))$text, phw_colours[["navy"]])
   }
   expect_equal(spanner(phw_flextable(tabs[[1]], accent = "#AA0000"))$text, "#AA0000")
+})
+
+test_that("phw_flextable draws no rule over the label column inside a spanner header", {
+  skip_if_not_installed("flextable")
+  set.seed(1)
+  ll <- data.frame(group = sample(c("A", "B"), 40, TRUE), area = sample(c("X", "Y"), 40, TRUE),
+                   year = sample(2023:2024, 40, TRUE), quarter = sample(c("Q1", "Q2"), 40, TRUE))
+  tabs <- list(phw_crosstab(ll, area, group), phw_group_table(ll, area, cols = c(year, quarter)))
+  for (tab in tabs) {
+    for (style in c("booktabs", "light")) {
+      cells <- phw_flextable(tab, style = style)$header$styles$cells
+      n <- nrow(cells$border.width.top$data)
+      expect_equal(unname(cells$border.width.bottom$data[-n, 1]), rep(0, n - 1))
+      expect_equal(unname(cells$border.width.top$data[-1, 1]), rep(0, n - 1))
+    }
+    top <- phw_flextable(tab)$header$styles$cells
+    expect_equal(unique(top$border.color.top$data[1, ]), phw_colours[["navy"]])
+  }
 })
 
 test_that("theme styles are checked when they are set", {
