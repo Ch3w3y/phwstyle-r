@@ -218,7 +218,7 @@ phw_pal <- function(n = NULL, palette = phw_default_palette(), reverse = FALSE,
   if (!is.null(n) && !(is.numeric(n) && length(n) == 1 && !is.na(n) && n >= 0)) {
     cli::cli_abort("{.arg n} must be one number, 0 or more.")
   }
-  if (!rlang::is_bool(reverse)) cli::cli_abort("{.arg reverse} must be {.code TRUE} or {.code FALSE}.")
+  check_true_false(reverse)
   if (is.function(palette)) {
     out <- palette(n %||% 1L)
     if (!is.character(out) || anyNA(out) || !all(is_colour(out))) {
