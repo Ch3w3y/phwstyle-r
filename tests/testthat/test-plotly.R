@@ -209,3 +209,15 @@ test_that("legend sets where a legend goes, not whether one trace gets one", {
   expect_true(built(phw_plotly(two))$layout$showlegend)
   expect_false(built(phw_plotly(two, legend = "none"))$layout$showlegend)
 })
+
+test_that("a bottom legend is stacked under the axis title, and the source under it, when drawn", {
+  p <- plotly::plot_ly(groups_df, x = ~week, y = ~cases, color = ~group, type = "scatter", mode = "lines")
+  hook <- function(w) w$jsHooks$render
+  with_source <- hook(phw_plotly(p, source = "S", margin = list(b = 150)))
+  expect_length(with_source, 1)
+  expect_match(with_source[[1]]$code, "plotly_afterplot", fixed = TRUE)
+  expect_equal(with_source[[1]]$data, list(caption = TRUE, margin = 150))
+  expect_equal(hook(phw_plotly(p))[[1]]$data, list(caption = FALSE, margin = 0))
+  expect_null(hook(phw_plotly(p, source = "S", legend = "right")))
+  expect_null(hook(phw_plotly(p, legend = "none")))
+})

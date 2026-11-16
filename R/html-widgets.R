@@ -339,6 +339,10 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
                                                  "hoverCompareCartesian", "toggleSpikelines"),
                       toImageButtonOptions = list(format = "png", scale = 2))
   p$dependencies <- c(p$dependencies, list(phw_font_dependency()))
+  if (legend == "bottom") {
+    js <- paste(readLines(system.file("js", "plotly-bottom-legend.js", package = "phwstyle")), collapse = "\n")
+    p <- htmlwidgets::onRender(p, js, data = list(caption = !is.null(cap), margin = extra$margin$b %||% 0))
+  }
   p
 }
 
