@@ -95,11 +95,12 @@ check_ramp_palette <- function(palette, groups_hint = "For groups use a {.code _
   invisible(palette)
 }
 
-check_one_string <- function(x, arg = rlang::caller_arg(x), allow_null = FALSE, hint = NULL,
-                             call = rlang::caller_env()) {
+check_one_string <- function(x, arg = rlang::caller_arg(x), allow_null = FALSE, allow_empty = TRUE,
+                             hint = NULL, call = rlang::caller_env()) {
   if (allow_null && is.null(x)) return(invisible(x))
-  if (!is.character(x) || length(x) != 1 || is.na(x)) {
-    cli::cli_abort(c("{.arg {arg}} must be a single string, not {.obj_type_friendly {x}}.", i = hint), call = call)
+  if (!is.character(x) || length(x) != 1 || is.na(x) || (!allow_empty && !nzchar(x))) {
+    what <- if (allow_empty) "a single string" else "a single non-empty string"
+    cli::cli_abort(c("{.arg {arg}} must be {what}, not {.obj_type_friendly {x}}.", i = hint), call = call)
   }
   invisible(x)
 }

@@ -169,6 +169,7 @@ test_that("key names must be one string", {
 test_that("phw_key_file checks the folder, takes an empty file and rejects bad colours", {
   withr::defer(phw_key_file(NULL))
   dir <- withr::local_tempdir()
+  expect_error(phw_key_file(""), "non-empty string")
   expect_error(phw_key_file(file.path(dir, "missing", "keys.csv")), "does not exist")
   expect_error(phw_key_file(dir), "is a folder")
   f <- file.path(dir, "keys.csv")
