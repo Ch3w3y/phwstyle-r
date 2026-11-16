@@ -35,7 +35,7 @@ export TAR=${TAR:-$(command -v tar)}
 #   release two after it comes out, so their packages are frozen then.
 #   R 4.3 is the minimum in DESCRIPTION because it is the oldest R whose
 #   frozen packages meet every minimum version declared there.
-# * r43-2024-06 is the declared minimum of every package; keep it in step
+# * r43-2024-10 is the declared minimum of every package; keep it in step
 #   with DESCRIPTION.
 cells='
 r43-latest      | 4.3.3 | latest     |                    |
@@ -45,7 +45,7 @@ r46-latest      | 4.6.0 | latest     |                    |
 r45-ggplot2-3.5 | 4.5.3 | latest     | ggplot2@2025-06-02 |
 r43-2025-04     | 4.3.3 | 2025-04-10 |                    | 1.6.43
 r44-2026-04     | 4.4.3 | 2026-04-15 |                    | 1.8.26
-r43-2024-06     | 4.3.3 | 2024-06-03 | ggplot2@2024-03-01 | 1.5.57
+r43-2024-10     | 4.3.3 | 2024-10-14 | ggplot2@2024-03-01 | 1.5.57
 r44-2024-12     | 4.4.2 | 2024-12-02 |                    | 1.6.43
 r45-2025-06     | 4.5.0 | 2025-06-02 |                    | 1.7.34
 r45-2025-12     | 4.5.2 | 2025-12-01 |                    | 1.8.26

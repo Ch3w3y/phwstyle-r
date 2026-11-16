@@ -1,7 +1,7 @@
 [
   {"os": "ubuntu-latest",  "r": "release", "latex": true, "pr": true},
   {"os": "windows-latest", "r": "release", "pr": true},
-  {"os": "ubuntu-22.04",   "r": "4.3.3",   "label": "oldest (CRAN 2024-06)", "extra": "ggplot2@3.5.0", "snapshot": "2024-06-03", "quarto": "1.5.57", "pandoc": "2.19.2", "error-on": "\"error\"", "pr": true},
+  {"os": "ubuntu-22.04",   "r": "4.3.3",   "label": "oldest (CRAN 2024-10)", "extra": "ggplot2@3.5.0", "snapshot": "2024-10-14", "quarto": "1.5.57", "pandoc": "2.19.2", "error-on": "\"error\"", "pr": true},
   {"os": "macos-latest",   "r": "release"},
   {"os": "windows-latest", "r": "oldrel-1"},
   {"os": "windows-latest", "r": "4.3",     "label": "minimum R"},
