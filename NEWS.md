@@ -280,7 +280,8 @@ says what to change.
   source line is white only when the slide background is dark. Before, both
   were near-white on every such slide, so they vanished on a white one.
 * Captions leave out a missing or empty source, date or note instead of
-  printing "NA", and name a misspelt caption argument.
+  printing "NA", and name a misspelt caption argument. A `caption_args`
+  list without names stops with a message that asks for a named list.
 * The R Markdown formats add your own `css`, `includes` and `pandoc_args` to
   the PHW ones, and LaTeX characters in `team` print as typed.
 * `phw_pdf_document()` keeps the `dev` you give it instead of always using

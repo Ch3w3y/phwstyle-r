@@ -104,8 +104,8 @@ phw_percent <- function(accuracy = 0.1, big.mark = ",", ...) {
 # argument instead of failing inside phw_caption().
 caption_from <- function(source, date, caption_args = list(), arg = "caption_args",
                          call = rlang::caller_env()) {
-  if (!is.list(caption_args)) {
-    cli::cli_abort("{.arg {arg}} must be a list, such as {.code list(note = \"Provisional\")}.", call = call)
+  if (!is.list(caption_args) || (length(caption_args) && !rlang::is_named(caption_args))) {
+    cli::cli_abort("{.arg {arg}} must be a named list, such as {.code list(note = \"Provisional\")}.", call = call)
   }
   known <- setdiff(names(formals(phw_caption)), c("source", "date"))
   nms <- names(caption_args) %||% rep("", length(caption_args))
