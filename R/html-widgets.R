@@ -515,11 +515,7 @@ phw_col_rag <- function(breaks, higher_is_better = TRUE, rag_palette = "rag_acce
   rag_palette <- rlang::arg_match(rag_palette, c("rag_accessible", "rag"))
   pal <- phw_palettes[[rag_palette]]
   shapes <- c(red = "\u25BC", amber = "\u25A0", green = "\u25B2")
-  status <- function(v) {
-    st <- if (v < breaks[1]) "low" else if (v < breaks[2]) "mid" else "high"
-    if (higher_is_better) c(low = "red", mid = "amber", high = "green")[[st]]
-    else c(low = "green", mid = "amber", high = "red")[[st]]
-  }
+  status <- function(v) rag_status(v, breaks, higher_is_better)
   reactable::colDef(
     align = "right",
     cell = function(value) if (is.na(value)) "" else paste(shapes[[status(value)]], fmt_num(value, digits)),

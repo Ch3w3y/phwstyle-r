@@ -275,13 +275,8 @@ phw_flextable_heat <- function(x, j, palette = "teals", domain = NULL, breaks = 
   rag <- identical(palette, "rag") || identical(palette, "rag_accessible")
   if (rag) {
     check_breaks(breaks)
-    rag_status <- function(v) {
-      st <- ifelse(v < breaks[1], "low", ifelse(v < breaks[2], "mid", "high"))
-      if (higher_is_better) c(low = "red", mid = "amber", high = "green")[st]
-      else c(low = "green", mid = "amber", high = "red")[st]
-    }
     fill_fun <- function(v) {
-      out <- unname(phw_palettes[[palette]][rag_status(v)])
+      out <- unname(phw_palettes[[palette]][rag_status(v, breaks, higher_is_better)])
       out[is.na(v)] <- "transparent"
       out
     }
@@ -300,11 +295,19 @@ phw_flextable_heat <- function(x, j, palette = "teals", domain = NULL, breaks = 
       i <- which(!is.na(v))
       if (length(i)) {
         x <- flextable::prepend_chunks(x, i = i, j = col, part = "body",
-                                       flextable::as_chunk(paste0(shapes[unname(rag_status(v[i]))], " ")))
+                                       flextable::as_chunk(paste0(shapes[rag_status(v[i], breaks, higher_is_better)], " ")))
       }
     }
   }
   x
+}
+
+# "red", "amber" or "green" for each value: below the first break, from the
+# first up to the second, or at or above the second.
+rag_status <- function(v, breaks, higher_is_better) {
+  band <- ifelse(v < breaks[1], 1L, ifelse(v < breaks[2], 2L, 3L))
+  status <- if (higher_is_better) c("red", "amber", "green") else c("green", "amber", "red")
+  status[band]
 }
 
 #' Colour flextable cells by group
