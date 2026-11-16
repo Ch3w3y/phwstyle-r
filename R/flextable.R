@@ -327,7 +327,7 @@ rag_status <- function(v, breaks, higher_is_better) {
 #'   `palette` and `fixed`.
 #' @param what Colour the cell `"background"` or the `"text"`?
 #' @param rows Colour the whole row (`TRUE`) or only column `j`?
-#' @return A flextable.
+#' @return A flextable. Rows with a missing (`NA`) group are left uncoloured.
 #' @examples
 #' if (requireNamespace("flextable", quietly = TRUE)) {
 #'   df <- data.frame(Group = c("Group A", "Group B", "Group C", "Unknown"),
@@ -350,13 +350,17 @@ phw_flextable_groups <- function(x, j, key = NULL, palette = phw_default_palette
   groups <- data[[j]]
   cols <- phw_colour_key(group_levels(groups), name = key, palette = palette, fixed = values)
   fill <- unname(cols[as.character(groups)])
+  # A missing group has no colour: leave its row as it is.
+  i <- which(!is.na(fill))
+  if (!length(i)) return(x)
+  fill <- fill[i]
   target <- if (rows) x$col_keys else j
   for (k in target) {
     if (what == "background") {
-      x <- flextable::bg(x, j = k, bg = fill, part = "body")
-      x <- flextable::color(x, j = k, color = phw_text_on(fill), part = "body")
+      x <- flextable::bg(x, i = i, j = k, bg = fill, part = "body")
+      x <- flextable::color(x, i = i, j = k, color = phw_text_on(fill), part = "body")
     } else {
-      x <- flextable::color(x, j = k, color = fill, part = "body")
+      x <- flextable::color(x, i = i, j = k, color = fill, part = "body")
     }
   }
   x

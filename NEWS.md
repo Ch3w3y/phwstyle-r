@@ -260,6 +260,9 @@ says what to change.
   or in factor order. Before, colours followed the order of the rows, and
   an unused factor level took a colour. A `colDef` you give for the group
   column in `columns` now keeps the group colours.
+* `phw_flextable_groups()` leaves a row with a missing group uncoloured, as
+  `phw_reactable(group_col = )` does. Before, the row was given an `NA`
+  colour and the table could not be saved to Word.
 * `phw_datatable()` keeps the `columnDefs` you give in `options` for a
   summary table. Before, the table's own column settings replaced them.
 * `phw_datatable()` accepts columns renamed with a named `colnames`, such as

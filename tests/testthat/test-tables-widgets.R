@@ -451,6 +451,29 @@ test_that("the HTML tables show date-times at their local time, as phw_flextable
   expect_equal(phw_datatable(df)$x$data$ts, c("2026-07-01 10:00:00", NA))
 })
 
+test_that("phw_flextable_groups() leaves a missing group uncoloured and saves to Word", {
+  skip_if_not_installed("flextable")
+  df <- data.frame(Group = c("Group B", NA, "Group A"), Cases = c(120, 85, 64))
+  key <- phw_colour_key(c("Group A", "Group B"))
+  plain <- phw_flextable(df)
+  bg <- function(ft) ft$body$styles$cells$background.color$data
+  fg <- function(ft) ft$body$styles$text$color$data
+  for (what in c("background", "text")) {
+    for (rows in c(FALSE, TRUE)) {
+      ft <- phw_flextable_groups(plain, Group, what = what, rows = rows)
+      coloured <- if (what == "background") bg(ft) else fg(ft)
+      expect_equal(coloured[c(1, 3), "Group"], unname(key[c("Group B", "Group A")]))
+      expect_equal(bg(ft)[2, ], bg(plain)[2, ])
+      expect_equal(fg(ft)[2, ], fg(plain)[2, ])
+      path <- tempfile(fileext = ".docx")
+      flextable::save_as_docx(ft, path = path)
+      expect_true(file.exists(path))
+    }
+  }
+  none <- phw_flextable(data.frame(Group = NA_character_, Cases = 1))
+  expect_identical(phw_flextable_groups(none, Group), none)
+})
+
 test_that("table group colours match the chart's colours", {
   df <- data.frame(group = c("Group B", "Group A", "Group C", "Group A"), n = 1:4)
   chart <- phw_colour_key(c("Group A", "Group B", "Group C"))
