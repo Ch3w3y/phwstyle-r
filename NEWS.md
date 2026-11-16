@@ -271,6 +271,9 @@ says what to change.
   `neutral` argument names which groups those are.
 * `phw_contrast()`, `phw_text_on()` and `phw_cvd()` return `NA` for a missing
   colour instead of treating it as white, and accept palette names.
+* `show_phw_palettes()` picks each swatch's label colour with
+  `phw_text_on()`, so mid-tone swatches such as teal, orange and pink get
+  dark labels, which contrast more than white.
 * `phw_page_navbar(header_args = )` overrides the title and subtitle by name,
   so the logo link keeps its address.
 * `phw_bs_theme()` takes Bootstrap version 4 or 5 only.

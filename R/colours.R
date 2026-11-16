@@ -374,7 +374,7 @@ show_phw_palettes <- function(palettes = names(phw_palettes),
     data.frame(palette = p, i = seq_along(cols), hex = cols)
   }))
   df$palette <- factor(df$palette, levels = rev(palettes))
-  df$label_col <- ifelse(luminance(df$hex) > 0.4, phw_colours[["text"]], "#FFFFFF")
+  df$label_col <- phw_text_on(df$hex)
   ggplot2::ggplot(df, ggplot2::aes(.data$i, .data$palette)) +
     ggplot2::geom_tile(ggplot2::aes(fill = .data$hex), colour = "white",
                        linewidth = 1, width = 1, height = 0.9) +
@@ -389,8 +389,7 @@ show_phw_palettes <- function(palettes = names(phw_palettes),
 }
 
 luminance <- function(hex) {
-  rgb <- grDevices::col2rgb(hex) / 255
-  lin <- ifelse(rgb <= 0.04045, rgb / 12.92, ((rgb + 0.055) / 1.055)^2.4)
+  lin <- srgb_to_linear(grDevices::col2rgb(hex) / 255)
   as.numeric(0.2126 * lin[1, ] + 0.7152 * lin[2, ] + 0.0722 * lin[3, ])
 }
 
