@@ -216,6 +216,10 @@ says what to change.
 * `phw_pyramid()` shows every level of the `age` factor, so an age band
   with nobody in it stays on the axis as a gap. Before, it was dropped when
   `data` had one row per person, or no row for that band.
+* `phw_epicurve(average = )` repeats the average line in every panel when
+  the chart is faceted by `group`. It is the total of all groups, so it
+  belongs in each one. Before, it was drawn in the first group's panel
+  only, where it read as that group's own average.
 * `phw_epicurve(position = "dodge")` draws each period's bars inside the
   period, as stacked bars are, with the average line over their centre.
   Before, they were drawn half a period early.
