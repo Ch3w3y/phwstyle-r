@@ -231,6 +231,9 @@ says what to change.
 * `phw_flextable(flextable_args = list(col_keys = ))` can leave out or
   reorder the columns of a summary table, keeping the label columns first.
   Before, it failed inside flextable.
+* `phw_flextable(col_labels = )` relabels the bottom header row of a group
+  table with two or more column levels, as it does with one. Before, the
+  labels were dropped without a message.
 * `phw_gt()` tables carry the bundled Ubuntu web font, dates are
   left-aligned and subtotals are italic.
 * `phw_group_table(drop = FALSE)` keeps factor levels that have no records,
