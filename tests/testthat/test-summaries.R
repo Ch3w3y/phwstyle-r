@@ -248,3 +248,61 @@ test_that("the legacy rate table stops on a text count or population", {
   rd <- transform(rd, cases = c(3, 5), pop = c("100", "200"))
   expect_error(phw_rate_table(rd, age, cases, pop), "`population` must be a numeric column")
 })
+
+test_that("subsetting a summary table keeps its row styling on the rows kept", {
+  d <- data.frame(age = c("0-14", "15-44", "65+", "0-14"), sex = c("F", "M", "F", "M"),
+                  grp = c("A", "B", "A", "B"))
+  s <- phw_summary_table(d, by = grp, labels = list(age = "Age group", sex = "Sex"))
+  kept <- s[s$Characteristic != "15-44", ]
+  expect_equal(kept$Characteristic, c("Age group", "0-14", "65+", "Sex", "F", "M"))
+  expect_equal(attr(kept, "row_type"), c("variable", "level", "level", "variable", "level", "level"))
+  expect_output(print(kept), "Sex")
+  expect_equal(attr(s[3:1, ], "row_type"), attr(s, "row_type")[3:1])
+  expect_equal(attr(head(s, 2), "row_type"), c("variable", "level"))
+
+  skip_if_not_installed("flextable")
+  ft <- phw_flextable(kept)
+  expect_equal(unname(ft$body$styles$text$bold$data[, 1]), attr(kept, "row_type") == "variable")
+})
+
+test_that("dplyr verbs keep a summary table's styling in step", {
+  skip_if_not_installed("dplyr")
+  d <- data.frame(age = c("0-14", "15-44", "65+", "0-14"), sex = c("F", "M", "F", "M"),
+                  grp = c("A", "B", "A", "B"))
+  s <- phw_summary_table(d, by = grp, labels = list(age = "Age group", sex = "Sex"))
+  kept <- dplyr::filter(s, Characteristic != "15-44")
+  expect_equal(attr(kept, "row_type"), c("variable", "level", "level", "variable", "level", "level"))
+  expect_equal(attr(dplyr::slice(s, 5:7), "row_type"), c("variable", "level", "level"))
+  picked <- dplyr::select(s, Characteristic, `Total (n = 4)`)
+  expect_s3_class(picked, "phw_summary")
+  expect_equal(attr(picked, "row_type"), attr(s, "row_type"))
+  expect_equal(attr(picked, "spanner"), "grp")
+
+  skip_if_not_installed("reactable")
+  expect_true(inherits(phw_reactable(kept), c("htmlwidget", "shiny.tag.list")))
+  expect_true(inherits(phw_reactable(s[, 1:3]), c("htmlwidget", "shiny.tag.list")))
+})
+
+test_that("subsetting a group table keeps its column header and group starts in step", {
+  t3 <- phw_group_table(make_ops(), c("group", "type"), c("year", "q"), col_totals = c("group", "table"),
+                        totals = "none", separate = "line")
+  ch <- attr(t3, "col_header")
+  sub <- t3[-(1:4), c(1, 7, 8)]
+  expect_equal(attr(sub, "col_header"), ch[, 6:7, drop = FALSE])
+  expect_equal(attr(sub, "row_type"), attr(t3, "row_type")[-(1:4)])
+  expect_equal(attr(sub, "group_start"), setdiff(attr(t3, "group_start") - 4L, 1L))
+  expect_equal(attr(t3[-1, ], "group_start"), attr(t3, "group_start") - 1L)
+})
+
+test_that("a summary table loses its styling when its labels or rows can't be kept", {
+  s <- phw_summary_table(data.frame(sex = c("F", "M"), g = c("a", "b")), by = g)
+  expect_identical(class(s[, -1]), "data.frame")
+  expect_identical(class(s[c(1, 99), ]), "data.frame")
+  expect_null(attr(s[, -1], "row_type"))
+})
+
+test_that("a summary table whose row styling no longer fits its rows says how to fix it", {
+  s <- phw_summary_table(data.frame(sex = c("F", "M"), g = c("a", "b")), by = g)
+  expect_error(print(rbind(s, s)), "row styling is for 3")
+  expect_output(print(as.data.frame(rbind(s, s))), "sex")
+})
