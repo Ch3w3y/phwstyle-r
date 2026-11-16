@@ -336,6 +336,9 @@ says what to change.
   `phw_add_slide()` gives `text` the template's colour and size, and the
   source line is white only when the slide background is dark. Before, both
   were near-white on every such slide, so they vanished on a white one.
+* The title and `text` on a title slide or section header are in the PHW
+  font, the title is bold, and `title_size` applies when you give it.
+  Before, both used the template's font and size and the title was not bold.
 * Captions leave out a missing or empty source, date or note instead of
   printing "NA", and name a misspelt caption argument. A `caption_args`
   list without names stops with a message that asks for a named list.

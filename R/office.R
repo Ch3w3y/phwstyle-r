@@ -514,15 +514,13 @@ phw_add_slide <- function(x, title = NULL, plot = NULL, table = NULL, text = NUL
     if (!is.null(title)) {
       # Cover layouts set their own title colour and size, often for a dark
       # background, so the run leaves both to the placeholder.
-      title_props <- if (cover) {
-        officer::fp_text_lite(font.family = phw_font(), bold = TRUE,
-                              font.size = if (missing(title_size)) NA else title_size)
-      } else {
+      title_props <- if (!cover) {
         officer::fp_text(font.family = phw_font(), font.size = title_size, bold = TRUE,
                          color = phw_colours[["navy"]])
       }
       x <- officer::ph_with(x, officer::fpar(officer::ftext(title, title_props)),
                             location = officer::ph_location_type(title_type))
+      if (cover) x <- set_cover_runs(x, bold = TRUE, size = if (!missing(title_size)) title_size)
     }
     for (i in seq_along(values)) {
       shape_alt <- if (i == 1) alt
@@ -531,6 +529,7 @@ phw_add_slide <- function(x, title = NULL, plot = NULL, table = NULL, text = NUL
       } else {
         x <- officer::ph_with(x, values[[i]], location = areas[[i]]$location)
         if (names(values)[i] == "text" && isTRUE(areas[[i]]$free)) x <- set_slide_bullets(x)
+        if (names(values)[i] == "text" && cover) x <- set_cover_runs(x)
         x <- set_slide_alt(x, shape_alt)
       }
     }
@@ -680,8 +679,7 @@ slide_value <- function(value, kind, area, editable, plot_scale, table_fit, cove
     return(ft)
   }
   if (cover) {
-    props <- officer::fp_text_lite(font.family = phw_font())
-    return(do.call(officer::block_list, lapply(value, function(t) officer::fpar(officer::ftext(t, props)))))
+    return(do.call(officer::block_list, lapply(value, function(t) officer::fpar(officer::ftext(t)))))
   }
   props <- officer::fp_text(font.family = phw_font(), font.size = 20, color = phw_colours[["text"]])
   officer::unordered_list(str_list = value, level_list = rep(1L, length(value)), style = props)
@@ -819,6 +817,23 @@ set_slide_alt <- function(x, alt) {
   shapes <- xml2::xml_find_all(doc, "//p:spTree/*[p:nvSpPr or p:nvGrpSpPr or p:nvGraphicFramePr or p:nvPicPr]")
   last <- shapes[[length(shapes)]]
   xml2::xml_set_attr(xml2::xml_find_first(last, "*[1]/p:cNvPr"), "descr", alt)
+  x
+}
+
+# officer writes no run properties at all when the colour is left to the
+# template, so the runs of the cover shape just added get the PHW font, and
+# bold and a size when asked, here.
+set_cover_runs <- function(x, bold = FALSE, size = NULL) {
+  rlang::check_installed("xml2")
+  doc <- x$slide$get_slide(x$cursor)$get()
+  shapes <- xml2::xml_find_all(doc, "//p:spTree/p:sp")
+  font <- phw_font()
+  for (run in xml2::xml_find_all(shapes[[length(shapes)]], ".//a:r")) {
+    rpr <- xml2::xml_add_child(run, "a:rPr", .where = 0)
+    if (!is.null(size)) xml2::xml_set_attr(rpr, "sz", sprintf("%.0f", size * 100))
+    if (bold) xml2::xml_set_attr(rpr, "b", "1")
+    for (tag in c("a:latin", "a:ea", "a:cs")) xml2::xml_add_child(rpr, tag, typeface = font)
+  }
   x
 }
 

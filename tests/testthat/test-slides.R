@@ -130,6 +130,29 @@ test_that("text and source are readable on the title and section slides of any t
   }
 })
 
+test_that("title and section slide runs keep the PHW font and bold, and title_size when given", {
+  skip_if_not_installed("officer")
+  run_props <- function(xml, text) {
+    rpr <- xml2::xml_find_first(xml, sprintf("//a:r[a:t = '%s']/a:rPr", text))
+    font <- function(tag) xml2::xml_attr(xml2::xml_find_first(rpr, tag), "typeface")
+    list(b = xml2::xml_attr(rpr, "b"), sz = xml2::xml_attr(rpr, "sz"),
+         fonts = c(font("a:latin"), font("a:ea"), font("a:cs")))
+  }
+  light <- file.path(system.file(package = "officer"), "template", "template.pptx")
+  for (layout in c("Title Slide", "Section Header")) {
+    for (template in list(NULL, light)) {
+      xml <- deck_xml(phw_add_slide(phw_pptx(template), "Title", text = "Subtitle line",
+                                    layout = layout))
+      expect_identical(run_props(xml, "Title"), list(b = "1", sz = NA_character_, fonts = rep(phw_font(), 3)))
+      expect_identical(run_props(xml, "Subtitle line"), list(b = NA_character_, sz = NA_character_, fonts = rep(phw_font(), 3)))
+      xml <- deck_xml(phw_add_slide(phw_pptx(template), "Title", text = "Subtitle line",
+                                    layout = layout, title_size = 44))
+      expect_identical(run_props(xml, "Title")$sz, "4400")
+      expect_identical(run_props(xml, "Subtitle line")$sz, NA_character_)
+    }
+  }
+})
+
 test_that("a table too tall for the slide warns with how many rows fit", {
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
