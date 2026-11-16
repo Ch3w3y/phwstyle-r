@@ -718,19 +718,24 @@ scaled_text_theme <- function(theme, scale) {
 }
 
 # Grows a table's text so it fills the area, then widens its columns. A tall
-# table is bound by height, so it squeezes its vertical padding and sets row
-# heights from the text size and padding: the heights flextable measures are
-# larger than the text needs, and slides treat them as minimums. It never
-# shrinks the text.
+# table is bound by height, so it squeezes its vertical padding. Row heights
+# come from the text size, line count and padding, the same model that decides
+# how far the text can grow: the heights flextable measures are larger than
+# the text needs, and slides treat them as minimums. It never shrinks the text.
 fit_table_to_area <- function(ft, width, height, max_grow = 1.6, max_pad = 1.8,
                               line_height = 1.25, tight_pad = 1) {
   parts <- Filter(function(part) flextable::nrow_part(ft, part) > 0, c("header", "body", "footer"))
   sizes <- lapply(parts, function(part) apply(ft[[part]]$styles$text$font.size$data, 1, max))
+  lines <- lapply(parts, function(part) {
+    txt <- vapply(ft[[part]]$content$data, function(chunks) paste(chunks$txt, collapse = ""), "")
+    lines <- nchar(gsub("[^\n]", "", txt)) + 1
+    apply(matrix(lines, nrow = flextable::nrow_part(ft, part)), 1, max)
+  })
   pads <- lapply(parts, function(part) {
     pars <- ft[[part]]$styles$pars
     apply(pars$padding.top$data, 1, max) + apply(pars$padding.bottom$data, 1, max)
   })
-  text_pt <- sum(unlist(sizes)) * line_height
+  text_pt <- sum(unlist(sizes) * unlist(lines)) * line_height
   grow_for <- function(pad_pt) (height * 72 - pad_pt) / text_pt
   grow_w <- flextable::flextable_dim(ft)$widths
   grow_w <- width / grow_w
@@ -751,11 +756,11 @@ fit_table_to_area <- function(ft, width, height, max_grow = 1.6, max_pad = 1.8,
     }
     ft <- flextable::autofit(ft)
   }
-  if (tall) {
+  if (tall || grow > 1) {
     grow <- max(grow, 1)
     for (k in seq_along(parts)) {
       ft <- flextable::height(ft, i = seq_along(sizes[[k]]), part = parts[k], unit = "in",
-                              height = (sizes[[k]] * grow * line_height + pads[[k]]) / 72)
+                              height = (sizes[[k]] * lines[[k]] * grow * line_height + pads[[k]]) / 72)
     }
   }
   widths <- ft$body$colwidths
