@@ -207,6 +207,20 @@ test_that("subplot() panels take the PHW colours, and a group keeps its colour a
   expect_equal(tr[[7]]$colorscale[, 2], alone[, 2])
 })
 
+test_that("subplot() draws a missing group in grey, as each panel alone does", {
+  d <- data.frame(week = rep(1:2, 4), y = 1:8, g = rep(c("a", "b", "c", NA), each = 2))
+  lines <- plotly::plot_ly(d, x = ~week, y = ~y, color = ~g, type = "scatter", mode = "lines",
+                           fill = "tozeroy", alpha = 0.6)
+  bars <- plotly::plot_ly(d, x = ~week, y = ~y, color = ~g, type = "bar")
+  colours <- function(t) unlist(lapply(list(t$line$color, t$fillcolor, t$marker$color), unclass))
+  expect_no_warning(tr <- built(phw_plotly(plotly::subplot(lines, bars)))$data)
+  missing <- tr[vapply(tr, function(t) identical(t$name, "NA"), logical(1))]
+  expect_equal(colours(missing[[1]]), colours(built(phw_plotly(lines))$data[[4]]))
+  expect_equal(colours(missing[[2]]), colours(built(phw_plotly(bars))$data[[4]]))
+  grey <- phw_colours[["grey_light"]]
+  expect_equal(colours(missing[[1]])[1:2], c(plotly::toRGB(grey), plotly::toRGB(grey, 0.6)))
+})
+
 test_that("subplot() keeps colours a panel sets, and says how to colour the rest", {
   d <- data.frame(week = rep(1:3, 2), y = 1:6, g = rep(c("a", "b"), each = 3))
   own <- plotly::plot_ly(d, x = ~week, y = ~y, color = ~g, colors = c("red", "blue"), type = "bar")

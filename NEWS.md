@@ -125,6 +125,9 @@ says what to change.
   now has the same colour in every panel. If a panel sets its own colours,
   `phw_plotly()` keeps them and says how to give the other panels PHW
   colours.
+* `phw_plotly()` draws a missing group (`NA`) in grey in a figure combined
+  with `plotly::subplot()`, as it does in a single chart. Before, its lines,
+  bars and markers were invisible and its legend entry had no colour.
 * `phw_plotly()` draws rows with a missing group in grey when the chart
   sets `colors = phw_colour_key(...)`. Before, they were invisible: the
   legend showed "NA" with no line or markers. A key that gives `"NA"` its

@@ -642,9 +642,10 @@ colour_mapped <- function(p, palette) {
 # colours, which plotly marks with the classes "colorway" (a trace with no
 # colour mapping) and "plotly_default" (group colours and colour scales).
 # Give them PHW colours as colour_mapped() does before a build: the colorway
-# in trace order, a colour key by trace name and the PHW sequential scale.
-# Colours a panel set itself are marked "plotly_default" too, so when any
-# panel sets its own, groups and scales keep the colours they were built with.
+# in trace order, a colour key by trace name, grey for a missing group and
+# the PHW sequential scale. Colours a panel set itself are marked
+# "plotly_default" too, so when any panel sets its own, groups and scales
+# keep the colours they were built with.
 colour_built <- function(p, palette, colorway) {
   if (!length(p$x$data)) return(p)
   own <- any(vapply(p$x$attrs, sets_colours, logical(1)))
@@ -656,12 +657,18 @@ colour_built <- function(p, palette, colorway) {
   }
   colorway <- unname(colorway)
   grouped <- !own & vapply(p$x$data, function(t) any(rapply(t, is_group_colour, how = "unlist")), logical(1))
+  missing <- !own & vapply(p$x$data, function(t) any(rapply(t, is_missing_colour, how = "unlist")), logical(1))
+  panel <- vapply(p$x$data, function(t) paste(t$xaxis %||% "x", t$yaxis %||% "y"), "")
   trace_names <- vapply(p$x$data, function(t) t$name %||% NA_character_, "")
   lv <- unique(trace_names[grouped & !is.na(trace_names)])
   key <- if (length(lv)) group_colours(list(factor(lv, lv)), palette)
   at <- seq(0, 1, length.out = 25)
   scale <- matrix(c(at, plotly::toRGB(scales::col_numeric(palette_colours("blues"), c(0, 1))(at))), ncol = 2)
   p$x$data <- lapply(seq_along(p$x$data), function(i) {
+    if (missing[[i]]) {
+      like <- p$x$data[grouped & panel == panel[[i]]]
+      return(grey_missing(p$x$data[[i]], if (length(like)) like[[1]]))
+    }
     way <- colorway[[(i - 1) %% length(colorway) + 1]]
     group <- if (grouped[[i]]) if (is.na(trace_names[[i]])) way else key[[trace_names[[i]]]]
     rapply(p$x$data[[i]], function(x) {
@@ -697,6 +704,26 @@ is_default <- function(x) inherits(x, "plotly_default") && !inherits(x, "colorwa
 # missing group is "transparent", and other defaults are titles and numbers.
 is_group_colour <- function(x) {
   is_default(x) && is.character(x) && length(x) == 1 && startsWith(x, "rgba(")
+}
+
+is_missing_colour <- function(x) is_default(x) && identical(unclass(x), "transparent")
+
+# Grey for a missing group's "transparent" colours, each with the alpha a
+# group in the same panel has in the same slot, as plotly fills at a lower
+# alpha than it draws lines.
+grey_missing <- function(trace, like) {
+  alphas <- if (!is.null(like)) unlist(rapply(like, function(x) if (is_group_colour(x)) rgba_alpha(x), how = "list"))
+  walk <- function(x, path) {
+    if (is.list(x)) {
+      x[] <- Map(function(el, nm) walk(el, c(path, nm)), x, rlang::names2(x))
+      return(x)
+    }
+    if (!is_missing_colour(x)) return(x)
+    slot <- paste(path, collapse = ".")
+    alpha <- if (slot %in% names(alphas)) alphas[[slot]] else 1
+    structure(plotly::toRGB(phw_colours[["grey_light"]], alpha), class = oldClass(x))
+  }
+  walk(trace, NULL)
 }
 
 rgba_alpha <- function(x) as.numeric(sub(".*,\\s*([0-9.]+)\\)$", "\\1", x))
