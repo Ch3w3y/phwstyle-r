@@ -24,13 +24,13 @@ mkdir -p "$P/.noodle"
 
 Every `.noodle/` path below means `$P/.noodle/`, never the `.noodle/` of the worktree this session runs in.
 
-Read the round count from `$P/.noodle/sweep-rounds` (0 if missing) and add one. If this would be round 9 or more, do not sweep: write `$P/.noodle/converged.json` as `{"sha": "<SHA>", "reason": "round cap", "rounds": <n-1>}`, yield `round cap reached`, and stop. Otherwise write the new count back.
+Read the round count from `$P/.noodle/sweep-rounds` (0 if missing) and add one. If this would be round 41 or more, do not sweep: write `$P/.noodle/converged.json` as `{"sha": "<SHA>", "reason": "round cap", "rounds": <n-1>}`, yield `round cap reached`, and stop. Otherwise write the new count back.
 
 Read the phase from `$P/.noodle/sweep-phase`: `major`, `docs` or `deploy` (`major` if missing). Also read how many rounds this phase has run from `$P/.noodle/sweep-phase-rounds` (0 if missing), add one and write it back. Run that phase's section (2, 3 or 4), then the shared sections 5 to 8. Each phase ends by setting the next phase:
 
 | Phase | Files | Moves on when |
 |---|---|---|
-| `major` | major defects and cleanup | a round files no major defect, or after its 3rd round |
+| `major` | major defects and cleanup | a round files no major defect, or after its 30th round |
 | `docs` | documentation that is wrong, missing or out of date | always, after one round |
 | `deploy` | a deploy that failed or is out of date | the deploy is current, which converges the loop |
 
@@ -64,7 +64,7 @@ Severity must be high: the output is wrong, missing or crashes for an ordinary i
 
 **Cleanup.** Also file cleanup that makes the code simpler without changing what users see: dead or unused internal code, duplicated helpers that should use the shared ones in `R/checks.R`, stale comments, and files in the repo that nothing uses. Check each one is safe by finding every caller. Group cleanup into at most three issues, each titled `Cleanup: <area>`. Do not file renames, reformatting or style changes. Leave out the loop's own files (`.agents/`, `adapters/`, `.noodle.toml`, `brain/`), `data-raw/`, `dev/`, and the legacy `phw_rate_table()`, `phw_risk_table()` and `phw_poisson_ci()`, which get crash fixes only.
 
-**Next phase.** After filing (section 7), if this round filed no major defect (cleanup does not count), or this is the phase's 3rd round, move on to `docs`.
+**Next phase.** After filing (section 7), if this round filed no major defect (cleanup does not count), or this is the phase's 30th round, move on to `docs`.
 
 ## 3. Phase `docs`: documentation
 
