@@ -69,7 +69,8 @@ contributes:
       pdf-engine: xelatex
       documentclass: article
       fontsize: 11pt
-      geometry: [a4paper, top=3.2cm, bottom=2.6cm, left=2cm, right=2cm]
+      papersize: a4
+      geometry: [top=3.2cm, bottom=2.6cm, left=2cm, right=2cm]
       number-sections: true
       colorlinks: true
       include-in-header: phw-header.tex
