@@ -77,9 +77,7 @@ theme_phw <- function(base_size = 11,
                       accessible = FALSE) {
   grid <- rlang::arg_match(grid)
   strip <- rlang::arg_match(strip)
-  if (!(is.numeric(base_size) && length(base_size) == 1 && isTRUE(base_size > 0))) {
-    cli::cli_abort("{.arg base_size} must be one number of points, such as {.code 11}.")
-  }
+  check_positive_number(base_size)
   inside <- is.numeric(legend)
   if (inside && !(length(legend) == 2 && !anyNA(legend) && all(legend >= 0 & legend <= 1))) {
     cli::cli_abort("A numeric {.arg legend} must be two numbers from 0 to 1, {.code c(x, y)} inside the panel.")
