@@ -49,9 +49,6 @@ phw_arrange <- function(..., plots = NULL, ncol = NULL, nrow = NULL, widths = NU
     cli::cli_abort(c("Each plot must be a ggplot or a grob.",
                      x = "Plot {bad[1]} is {.cls {class(all[[bad[1]]])[1]}}."))
   }
-  if (!is.list(caption_args) || (length(caption_args) && !rlang::is_named(caption_args))) {
-    cli::cli_abort("{.arg caption_args} must be a named list, such as {.code list(source_prefix = \"Ffynhonnell: \")}.")
-  }
   out <- patchwork::wrap_plots(all, ncol = ncol, nrow = nrow, widths = widths,
                                heights = heights, design = design, guides = guides)
   ann_theme <- theme + ggplot2::theme(

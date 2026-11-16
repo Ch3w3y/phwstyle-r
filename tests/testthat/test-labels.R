@@ -32,7 +32,8 @@ test_that("a missing or empty source, date or note is left out of the caption", 
 
 test_that("caption_args with a misspelt name stops, naming it", {
   expect_error(caption_from("X", NULL, list(sorce_prefix = "D: ")), "sorce_prefix")
-  expect_error(caption_from("X", NULL, "note"), "must be a list")
+  expect_error(caption_from("X", NULL, "note"), "must be a named list")
+  expect_error(caption_from("X", NULL, list("Provisional")), "must be a named list")
   expect_equal(caption_from("X", NULL, list(source_prefix = "D: ")), "D: X")
 })
 
