@@ -341,6 +341,32 @@ test_that("phw_add_slide makes a tall table readable and keeps it inside the pla
   expect_gt(sum(xml_numbers(plain, '<a:tr h="[0-9]+"')) / 914400, area_height)
 })
 
+test_that("phw_add_slide keeps a table that fits inside the content area when it enlarges it", {
+  skip_if_not_installed("officer")
+  skip_if_not_installed("flextable")
+  area_height <- 4.9
+  areas <- c("Cardiff", "Swansea", "Newport", "Wrexham", "Bangor", "Bridgend", "Merthyr", "Newtown",
+             "Aberystwyth", "Carmarthen", "Rhyl", "Llanelli", "Neath", "Barry", "Caerphilly")
+  for (n in 9:15) {
+    df <- data.frame(area = areas[seq_len(n)], cases = seq_len(n) * 7)
+    expect_no_warning(xml <- slide_xml(phw_add_slide(phw_pptx(), "Areas", table = df, source = "S")))
+    expect_lte(sum(xml_numbers(xml, '<a:tr h="[0-9]+"')) / 914400, area_height + 0.001)
+    expect_gt(max(setdiff(xml_numbers(xml, 'sz="[0-9]+"'), 2800)) / 100, 10)
+  }
+  tab <- phw_summary_table(data.frame(age = rep(c("0-15", "16-64", "65+"), 4),
+                                      region = rep(c("North", "South", "East", "West"), 3),
+                                      sex = rep(c("Female", "Male"), 6)), by = sex)
+  expect_no_warning(xml <- slide_xml(phw_add_slide(phw_pptx(), "Summary", table = tab)))
+  expect_lte(sum(xml_numbers(xml, '<a:tr h="[0-9]+"')) / 914400, area_height + 0.001)
+
+  df <- data.frame(area = c("Cardiff\nand Vale", areas[2:10]), cases = 1:10)
+  xml <- slide_xml(phw_add_slide(phw_pptx(), "Two lines", table = df))
+  rows <- xml_numbers(xml, '<a:tr h="[0-9]+"') / 12700
+  size <- max(setdiff(xml_numbers(xml, 'sz="[0-9]+"'), 2800)) / 100
+  expect_gte(rows[2] - rows[3], 1.2 * size)
+  expect_lte(sum(rows) / 72, area_height + 0.001)
+})
+
 test_that("phw_add_slide leaves text on navy layouts to the template's light colour", {
   skip_if_not_installed("officer")
   deck <- phw_add_slide(phw_pptx(), "Part two", text = "What comes next", layout = "Section Header")

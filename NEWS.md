@@ -264,6 +264,11 @@ says what to change.
 * `phw_add_slide()` checks its arguments before it adds a slide, so a call
   that stops leaves the deck unchanged. It warns when a table has more rows
   than fit on the slide, and accepts a `phw_finalise()` chart as a picture.
+* `phw_add_slide(table_fit = TRUE)` no longer grows a table that fits the
+  slide until it runs off the bottom. Before, tables of about 10 to 12 rows
+  grew past the content area, and the warning asked you to split them. A
+  cell with more than one line now counts as that many lines when the table
+  is sized.
 * `phw_add_slide()` scales the text of a `phw_arrange()` figure as one: every
   panel, the figure title and the source line. Before, only the last panel
   was scaled.
