@@ -134,6 +134,12 @@ says what to change.
   now has the same colour in every panel. If a panel sets its own colours,
   `phw_plotly()` keeps them and says how to give the other panels PHW
   colours.
+* `phw_plotly()` gives the groups of ggplots combined with
+  `plotly::subplot()`, or converted with `plotly::ggplotly()`, the PHW
+  colours, with a group the same colour in every panel. Before, they kept
+  ggplot2's default colours, even after `use_phw_ggplot()`, and a group
+  could change colour from one panel to the next. A ggplot that sets its
+  own colours with a scale keeps them.
 * `phw_plotly()` draws a missing group (`NA`) in grey in a figure combined
   with `plotly::subplot()`, as it does in a single chart. Before, its lines,
   bars and markers were invisible and its legend entry had no colour.

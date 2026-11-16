@@ -264,6 +264,30 @@ test_that("subplot() draws a missing group in grey, as each panel alone does", {
   expect_equal(colours(missing[[1]])[1:2], c(plotly::toRGB(grey), plotly::toRGB(grey, 0.6)))
 })
 
+test_that("subplot() of ggplots gives groups the PHW colours, the same in every panel", {
+  skip_if_not_installed("ggplot2")
+  d <- data.frame(x = rep(1:3, 3), y = 1:9, g = rep(c("A", "B", "C"), each = 3))
+  lines <- ggplot2::ggplot(d, ggplot2::aes(x, y, colour = g)) + ggplot2::geom_line()
+  bars <- ggplot2::ggplot(d[d$g != "A", ], ggplot2::aes(x, y, fill = g)) + ggplot2::geom_col()
+  key <- phw_colour_key(c("A", "B", "C"))
+  key <- stats::setNames(plotly::toRGB(key), names(key))
+  colours <- function(tr) {
+    stats::setNames(vapply(tr, function(t) unclass(t$line$color %||% t$marker$color), ""),
+                    vapply(tr, function(t) t$name, ""))
+  }
+  tr <- built(phw_plotly(plotly::subplot(lines, bars)))$data
+  expect_equal(colours(tr), key[c("A", "B", "C", "B", "C")])
+  expect_equal(colours(built(phw_plotly(plotly::ggplotly(lines)))$data), key)
+
+  points <- ggplot2::ggplot(d, ggplot2::aes(x, y, colour = g, shape = factor(x))) + ggplot2::geom_point()
+  tr <- built(phw_plotly(plotly::subplot(points, lines)))$data
+  expect_equal(unname(colours(tr)), unname(key[c(rep(c("A", "B", "C"), each = 3), "A", "B", "C")]))
+
+  own <- lines + ggplot2::scale_colour_manual(values = c("red", "blue", "black"))
+  expect_equal(unname(colours(built(phw_plotly(plotly::subplot(own, bars)))$data)[1:3]),
+               c("rgba(255,0,0,1)", "rgba(0,0,255,1)", "rgba(0,0,0,1)"))
+})
+
 test_that("subplot() keeps colours a panel sets, and says how to colour the rest", {
   d <- data.frame(week = rep(1:3, 2), y = 1:6, g = rep(c("a", "b"), each = 3))
   own <- plotly::plot_ly(d, x = ~week, y = ~y, color = ~g, colors = c("red", "blue"), type = "bar")

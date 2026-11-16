@@ -247,7 +247,9 @@ wrap_widget <- function(widget, caption, cap, note = NULL) {
 #'   panel. If a panel sets its own colours with `colors` or `I()`, the group
 #'   colours and colour scales stay as each panel was built. To give the
 #'   other panels PHW colours, style each panel with `phw_plotly()` before
-#'   combining them.
+#'   combining them. Groups of a ggplot in ggplot2's default colours take
+#'   the PHW colours too; a ggplot that sets its own colours with a scale,
+#'   such as [ggplot2::scale_colour_manual()], keeps them.
 #'
 #'   For colours that stay with a group across charts, pass a colour
 #'   key to plotly yourself, e.g.
@@ -646,7 +648,8 @@ colour_mapped <- function(p, palette) {
 # in trace order, a colour key by trace name, grey for a missing group and
 # the PHW sequential scale. Colours a panel set itself are marked
 # "plotly_default" too, so when any panel sets its own, groups and scales
-# keep the colours they were built with.
+# keep the colours they were built with. A ggplot's groups come unmarked, in
+# ggplot2's default colours, and take the colour key too.
 colour_built <- function(p, palette, colorway) {
   if (!length(p$x$data)) return(p)
   own <- any(vapply(p$x$attrs, sets_colours, logical(1)))
@@ -661,7 +664,8 @@ colour_built <- function(p, palette, colorway) {
   missing <- !own & vapply(p$x$data, function(t) any(rapply(t, is_missing_colour, how = "unlist")), logical(1))
   panel <- vapply(p$x$data, function(t) paste(t$xaxis %||% "x", t$yaxis %||% "y"), "")
   trace_names <- vapply(p$x$data, function(t) t$name %||% NA_character_, "")
-  lv <- unique(trace_names[grouped & !is.na(trace_names)])
+  gg <- ggplot_groups(p$x$data, panel)
+  lv <- unique(c(trace_names[grouped & !is.na(trace_names)], gg))
   key <- if (length(lv)) group_colours(list(factor(lv, lv)), palette)
   at <- seq(0, 1, length.out = 25)
   scale <- matrix(c(at, plotly::toRGB(scales::col_numeric(phw_continuous_auto, c(0, 1))(at))), ncol = 2)
@@ -675,8 +679,10 @@ colour_built <- function(p, palette, colorway) {
     rapply(p$x$data[[i]], function(x) {
       new <- if (inherits(x, "colorway")) {
         plotly::toRGB(way, rgba_alpha(x))
-      } else if (!is.null(group) && is_group_colour(x)) {
+      } else if (!is.null(group) && !own && is_group_colour(x)) {
         plotly::toRGB(group, rgba_alpha(x))
+      } else if (is_plain_rgba(x) && !is.na(gg[paste(panel[[i]], rgb_of(x))])) {
+        plotly::toRGB(key[[gg[[paste(panel[[i]], rgb_of(x))]]]], rgba_alpha(x))
       } else if (!own && is_default(x) && is.matrix(x)) {
         scale
       }
@@ -708,6 +714,54 @@ is_group_colour <- function(x) {
 }
 
 is_missing_colour <- function(x) is_default(x) && identical(unclass(x), "transparent")
+
+# ggplotly() builds a ggplot without the palette its theme sets, so its
+# groups come out in ggplot2's default hue colours, with no class: plotly
+# marks only the colours it picks itself. The trace name is not the colour
+# group: a trace split by colour and shape is named "(A,1)". A panel holds
+# one ggplot, in which each hue colour is one colour level, so group by
+# panel and hue colour, and name the group by the part every one of its
+# trace names shares, for the same group in other panels to match. Returns
+# the group names, keyed by panel and hue colour.
+ggplot_groups <- function(traces, panel) {
+  plain <- lapply(traces, function(t) unique(rgb_of(unlist(rapply(t, function(x) if (is_plain_rgba(x)) unclass(x), how = "list")))))
+  hue <- ggplot_hue(length(unique(unlist(plain))))
+  rows <- do.call(rbind, Map(function(cols, pn, nm) {
+    cols <- intersect(cols, hue)
+    data.frame(id = paste(rep(pn, length(cols)), cols), panel = rep(pn, length(cols)), name = rep(nm, length(cols)))
+  }, plain, panel, vapply(traces, function(t) t$name %||% NA_character_, "")))
+  if (is.null(rows) || !nrow(rows)) return(character())
+  ids <- unique(rows$id)
+  labels <- vapply(ids, function(id) shared_name(rows$name[rows$id == id]), "")
+  pn <- rows$panel[match(ids, rows$id)]
+  clash <- !is.na(labels) & (duplicated(paste(pn, labels)) | duplicated(paste(pn, labels), fromLast = TRUE))
+  labels[is.na(labels) | clash] <- paste0("\u001f", ids[is.na(labels) | clash])
+  labels
+}
+
+# The one value all of a group's trace names share, where ggplotly() names a
+# trace split by more than one legend "(A,1)", or NA.
+shared_name <- function(names) {
+  names <- unique(names[!is.na(names)])
+  if (!length(names)) return(NA_character_)
+  tuple <- grepl("^\\(.*\\)$", names)
+  parts <- lapply(seq_along(names), function(j) {
+    if (tuple[[j]]) strsplit(substr(names[[j]], 2, nchar(names[[j]]) - 1), ",", fixed = TRUE)[[1]] else names[[j]]
+  })
+  common <- Reduce(intersect, parts)
+  if (length(common) == 1) common else NA_character_
+}
+
+# The colours ggplot2's default scale gives up to n groups.
+ggplot_hue <- function(n) {
+  unique(unlist(lapply(seq_len(n), function(k) rgb_of(plotly::toRGB(scales::hue_pal()(k))))))
+}
+
+is_plain_rgba <- function(x) {
+  is.character(x) && length(x) == 1 && is.null(oldClass(x)) && isTRUE(startsWith(x, "rgba("))
+}
+
+rgb_of <- function(x) sub(",[^,]*\\)$", "", x)
 
 # Grey for a missing group's "transparent" colours, each with the alpha a
 # group in the same panel has in the same slot, as plotly fills at a lower
