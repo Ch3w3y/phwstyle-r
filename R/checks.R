@@ -85,10 +85,11 @@ check_true_false <- function(x, arg = rlang::caller_arg(x), call = rlang::caller
   invisible(x)
 }
 
-check_one_string <- function(x, arg = rlang::caller_arg(x), allow_null = FALSE, call = rlang::caller_env()) {
+check_one_string <- function(x, arg = rlang::caller_arg(x), allow_null = FALSE, hint = NULL,
+                             call = rlang::caller_env()) {
   if (allow_null && is.null(x)) return(invisible(x))
   if (!is.character(x) || length(x) != 1 || is.na(x)) {
-    cli::cli_abort("{.arg {arg}} must be a single string, not {.obj_type_friendly {x}}.", call = call)
+    cli::cli_abort(c("{.arg {arg}} must be a single string, not {.obj_type_friendly {x}}.", i = hint), call = call)
   }
   invisible(x)
 }

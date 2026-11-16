@@ -506,8 +506,8 @@ phw_spc <- function(data, x, y, type = c("xmr", "run"), improvement = c("none", 
   v <- data[[y]]
   n <- length(v)
   base <- if (is.null(baseline)) seq_len(n) else seq_len(min(baseline, n))
-  centre <- if (type == "xmr") mean(v[base], na.rm = TRUE) else stats::median(v[base], na.rm = TRUE)
-  mr <- mean(abs(diff(v[base])), na.rm = TRUE)
+  centre <- if (type == "xmr") mean(v[base]) else stats::median(v[base])
+  mr <- mean(abs(diff(v[base])))
   ucl <- centre + 2.66 * mr
   lcl <- centre - 2.66 * mr
   high <- rep(FALSE, n); low <- rep(FALSE, n)

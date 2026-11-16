@@ -277,11 +277,7 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
   if (!inherits(p, c("plotly", "ggplot"))) {
     cli::cli_abort("{.arg p} must be a plotly chart or a ggplot, not {.obj_type_friendly {p}}.")
   }
-  bad <- setdiff(names(caption_args), names(formals(phw_caption)))
-  if (!is.list(caption_args) || length(bad) || (length(caption_args) && !rlang::is_named(caption_args))) {
-    cli::cli_abort(c("{.arg caption_args} must be a named list of {.fn phw_caption} arguments.",
-                     x = if (length(bad)) "Not {.fn phw_caption} argument{?s}: {.val {bad}}."))
-  }
+  cap <- caption_from(source, date, caption_args)
   if (inherits(p, "ggplot")) p <- ggplotly_phw(p)
   col <- phw_colours
   colorway <- plotly_colorway(p, palette)
@@ -289,7 +285,6 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
   axis <- list(gridcolor = col[["grey_border"]], zerolinecolor = col[["grey_mid"]],
                linecolor = col[["grey_mid"]], tickfont = list(color = col[["text_secondary"]]),
                title = list(font = list(color = col[["text_secondary"]])))
-  cap <- caption_from(source, date, caption_args)
   ann <- if (!is.null(cap)) list(list(
     text = paste0("<b>", gsub("\n", "<br>", cap), "</b>"), showarrow = FALSE,
     xref = "paper", yref = "paper", x = 1, y = 0, xanchor = "right", yanchor = "top",

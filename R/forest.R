@@ -49,7 +49,7 @@ phw_forest <- function(data, value, lower, upper, label, target = NULL, labels =
   data <- drop_missing(data, c(value, lower, upper))
   units <- data[[label]]
   if (anyNA(units)) cli::cli_abort("Every unit needs a {.arg label}: {.field {label}} has a missing value.")
-  if (any(data[[lower]] > data[[value]] | data[[value]] > data[[upper]], na.rm = TRUE)) {
+  if (any(data[[lower]] > data[[value]] | data[[value]] > data[[upper]])) {
     cli::cli_abort("Each {.arg value} must lie between its {.arg lower} and {.arg upper}.")
   }
   levs <- c("Higher", "Similar", "Lower")
