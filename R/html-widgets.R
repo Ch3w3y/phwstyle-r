@@ -26,8 +26,8 @@ phw_reactable_theme <- function(font_size = 14, header = c("booktabs", "navy", "
   col <- phw_colours
   col[["navy"]] <- accent
   header_style <- switch(header,
-    booktabs = list(color = col[["navy"]], borderTop = paste("2px solid", col[["navy"]]),
-                    borderBottom = paste("2px solid", col[["navy"]]), fontWeight = 700),
+    booktabs = list(color = col[["navy"]], borderBottom = paste("2px solid", col[["navy"]]),
+                    fontWeight = 700),
     navy = list(color = "#FFFFFF", background = col[["navy"]], fontWeight = 700,
                 borderBottom = paste("2px solid", col[["navy"]])),
     light = list(color = col[["text"]], background = col[["light_teal"]], fontWeight = 700,
@@ -45,7 +45,9 @@ phw_reactable_theme <- function(font_size = 14, header = c("booktabs", "navy", "
     cellPadding = "6px 10px",
     style = list(fontFamily = paste0(phw_font(), ", Arial, sans-serif"),
                  fontSize = paste0(font_size, "px")),
-    tableStyle = list(borderBottom = paste("2px solid", col[["navy"]])),
+    # The booktabs top rule sits on the table, so it stays above column groups.
+    tableStyle = c(if (header == "booktabs") list(borderTop = paste("2px solid", col[["navy"]])),
+                   list(borderBottom = paste("2px solid", col[["navy"]]))),
     groupHeaderStyle = c(group_style, list(fontSize = paste0(font_size, "px"))),
     headerStyle = c(header_style, list(fontSize = paste0(font_size, "px"),
                                        "&:hover[aria-sort]" = list(background = col[["grey_bg"]], color = col[["navy"]]),

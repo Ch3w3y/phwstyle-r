@@ -232,6 +232,12 @@ says what to change.
   `style = "header"` it is white on the navy band, with a white rule under
   it. Before, it was navy on navy and could not be read. It also follows
   `accent` and `header_colour`, and uses dark text with `style = "light"`.
+* On a summary, cross-tab or group table with a spanner, `phw_reactable()`
+  and `phw_flextable()` draw the navy top rule above the spanner and no navy
+  rule inside the header, as do `phw_gt()`, `phw_datatable()` and
+  `phw_write_xlsx()`. Before, `phw_reactable()` drew its top rule under the
+  spanner, and `phw_flextable()` drew a short rule over the label column
+  between the header rows.
 * `phw_flextable(flextable_args = list(col_keys = ))` can leave out or
   reorder the columns of a summary table, keeping the label columns first.
   Before, it failed inside flextable.
