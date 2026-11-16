@@ -188,6 +188,23 @@ test_that("a ggplot without a colour scale takes `palette`, as plot_ly() does", 
   expect_equal(drawn(own, "accessible", "line"), drawn(plotly_lines, "main", "line"))
 })
 
+test_that("ggplot groups named in `palette` take their own colour in plotly", {
+  df <- data.frame(x = rep(1:2, 3), y = 1:6, status = rep(c("Red", "Amber", "Green"), each = 2))
+  drawn <- function(p, palette, part) {
+    b <- built(phw_plotly(p, palette = palette))$data
+    stats::setNames(vapply(b, function(t) t[[part]]$color, ""), vapply(b, function(t) t$name, ""))
+  }
+  rag <- plotly::toRGB(phw_palettes$rag[c("red", "amber", "green")])
+  named <- c(Red = "#FF0000", Amber = "#FFBF00", Green = "#00FF00")
+  lines <- ggplot2::ggplot(df, ggplot2::aes(x, y, colour = status)) + ggplot2::geom_line()
+  bars <- ggplot2::ggplot(df, ggplot2::aes(x, y, fill = status)) + ggplot2::geom_col()
+  for (pal in list("rag", named)) {
+    want <- stats::setNames(if (identical(pal, "rag")) rag else plotly::toRGB(named), c("Red", "Amber", "Green"))
+    expect_equal(drawn(lines, pal, "line")[names(want)], want)
+    expect_equal(drawn(bars, pal, "marker")[names(want)], want)
+  }
+})
+
 test_that("subplot() panels take the PHW colours, and a group keeps its colour across panels", {
   d <- data.frame(week = rep(1:3, 3), y = 1:9, g = rep(c("a", "b", "c"), each = 3))
   s <- plotly::subplot(
