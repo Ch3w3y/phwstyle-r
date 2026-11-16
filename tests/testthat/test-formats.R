@@ -349,6 +349,15 @@ test_that("the LaTeX header prints a team name with LaTeX characters as written"
   expect_true(any(grepl("R\\&D 50\\% \\#1 a\\_b", tex, fixed = TRUE)))
 })
 
+test_that("a saved LaTeX header points at a band image kept beside it", {
+  dir <- withr::local_tempdir()
+  file <- file.path(dir, "phw-header.tex")
+  tex <- readLines(phw_latex_header(file))
+  band <- normalizePath(file.path(dir, "phw-header-band.png"), winslash = "/")
+  expect_true(file.exists(band))
+  expect_true(any(grepl(band, tex, fixed = TRUE)))
+})
+
 test_that("template writers check the folder and the extension", {
   expect_error(phw_latex_header(file.path("no-such-folder", "h.tex")), "folder not found")
   expect_error(phw_reference_docx(file.path("no-such-folder", "r.docx")), "folder not found")

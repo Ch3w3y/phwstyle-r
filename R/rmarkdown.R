@@ -208,7 +208,9 @@ phw_pdf_document <- function(..., toc = FALSE, number_sections = TRUE,
 #' [phw_pdf_document()] calls this for you. Use it directly to brand other
 #' LaTeX-based formats, e.g. `includes: in_header:` in bookdown.
 #'
-#' @param file Where to write the header.
+#' @param file Where to write the header. The page band image is written
+#'   beside it, with `-band.png` in place of the extension, so a header saved
+#'   for later keeps working in another R session.
 #' @param team Optional team line for the cover. Characters that LaTeX
 #'   treats as commands, such as `&` and `%`, are printed as written.
 #' @param cover Keep the full-page cover?
@@ -225,7 +227,7 @@ phw_latex_header <- function(file = tempfile(fileext = ".tex"), team = NULL, cov
   logo <- phw_logo("white", "png")
   paths <- list(
     fontdir = paste0(slash(phw_file("fonts")), "/"),
-    band = slash(band_with_logo()),
+    band = slash(band_with_logo(paste0(tools::file_path_sans_ext(file), "-band.png"))),
     cover = slash(phw_graphic("cover")),
     logo = if (is.null(logo)) "" else slash(logo),
     logo_ok = !is.null(logo)

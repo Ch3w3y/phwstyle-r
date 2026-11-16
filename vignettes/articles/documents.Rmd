@@ -227,7 +227,9 @@ for. Each takes a `file` path and returns it.
   [Excel, PowerPoint and Word](exporting.html#layouts) describes.
 - `phw_latex_header()` writes the LaTeX header behind `phw_pdf_document()`, with the font and
   logo paths filled in. `team` adds the cover line and `cover = FALSE` drops
-  the cover. Use it for another LaTeX format, such as bookdown.
+  the cover. Use it for another LaTeX format, such as bookdown. It also
+  writes the page band image beside the header, as `phw-header-band.png` for
+  `phw-header.tex`, and the header points at it.
 
 ```{r, eval = TRUE}
 library(phwstyle)
