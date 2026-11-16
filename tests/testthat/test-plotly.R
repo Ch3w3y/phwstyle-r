@@ -137,6 +137,19 @@ test_that("pie slices are coloured by group, as in the other charts", {
   expect_equal(tr$marker$colors[as.character(tr$labels) == "Alpha"], phw_colours[["navy"]])
 })
 
+test_that("pies in one figure give a label the same colour", {
+  a <- data.frame(g = c("Cardiff", "Aneurin", "Betsi", "Unknown"), n = c(10, 20, 30, 5))
+  b <- data.frame(g = c("Cardiff", "Betsi", NA), n = c(15, 25, 5))
+  p <- plotly::plot_ly() |>
+    plotly::add_pie(data = a, labels = ~g, values = ~n, domain = list(x = c(0, .45))) |>
+    plotly::add_pie(data = b, labels = ~g, values = ~n, domain = list(x = c(.55, 1)))
+  tr <- built(phw_plotly(p))$data
+  cols <- lapply(tr, function(t) stats::setNames(as.character(unlist(t$marker$colors)), t$labels))
+  key <- phw_colour_key(sort(a$g))
+  expect_equal(cols[[1]], key[a$g])
+  expect_equal(cols[[2]], c(key[c("Cardiff", "Betsi")], "NA" = phw_colours[["grey_light"]]))
+})
+
 test_that("traces with their own data share one set of group colours", {
   d1 <- data.frame(x = 1:2, y = 1:2, grp = c("A", "B"))
   d2 <- data.frame(x = 3:4, y = 3:4, grp = c("C", NA))
