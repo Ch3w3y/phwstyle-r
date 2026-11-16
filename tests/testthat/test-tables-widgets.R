@@ -495,6 +495,28 @@ test_that("phw_datatable rounds and styles columns renamed with a named colnames
   expect_equal(as.character(renamed), as.character(plain))
 })
 
+test_that("phw_datatable shows renamed columns in the header of a summary table", {
+  skip_if_not_installed("DT")
+  header <- function(w) {
+    cells <- regmatches(w, gregexpr("<th[^>]*>[^<]*</th>", w))[[1]]
+    sub("<th[^>]*>([^<]*)</th>", "\\1", cells)
+  }
+  shown <- function(...) header(as.character(phw_datatable(...)$x$container))
+  ct <- phw_crosstab(data.frame(a = c("x", "y", "x"), b = c("p", "q", "q")), a, b)
+  expect_equal(shown(ct, colnames = c(Row = "a", P = "p")), c("Row", "b", ".phw_row", "P", "q", "Total"))
+  expect_equal(shown(ct, colnames = c(Row = 1)), c("Row", "b", ".phw_row", "p", "q", "Total"))
+  expect_equal(shown(ct, colnames = c("R", "P", "Q", "All")), c("R", "b", ".phw_row", "P", "Q", "All"))
+  expect_error(phw_datatable(ct, colnames = c(Row = "zz")), '"zz", which is not a column')
+
+  q <- data.frame(g = c("A", "A", "B"), t = c("1", "2", "1"), y = c(2023, 2023, 2024), q = c("Q1", "Q2", "Q1"))
+  multi <- phw_group_table(q, c(g, t), cols = c(y, q))
+  expect_equal(tail(shown(multi, colnames = c(First = "2023 / Q1")), 4), c("First", "Q2", "Q1", "Total"))
+
+  d <- data.frame(label = c("Age", "0-14", "All"), n = c(NA, 12, 42), kind = c("variable", "level", "total"))
+  w <- phw_datatable(phw_as_summary(d, kind), colnames = c("Label", "N"))
+  expect_equal(header(as.character(w$x$container)), c("Label", "N", ".phw_row"))
+})
+
 test_that("the HTML tables show date-times at their local time, as phw_flextable does", {
   skip_if_not_installed("reactable")
   skip_if_not_installed("DT")
