@@ -1,0 +1,4 @@
+geometry: a4paper,top=3.2cm,bottom=2.6cm,left=2cm,right=2cm
+documentclass: article
+fontsize: 11pt
+colorlinks: true

@@ -318,7 +318,27 @@ test_that("format arguments in ... are merged with the PHW ones or refused", {
                           pandoc_args = c("--variable", "linestretch:1.2"))
   expect_equal(sum(pdf$pandoc$args == "--include-in-header"), 2)
   expect_true("mine.tex" %in% pdf$pandoc$args)
-  expect_true(all(c("fontsize:11pt", "linestretch:1.2") %in% pdf$pandoc$args))
+  expect_true("linestretch:1.2" %in% pdf$pandoc$args)
+})
+
+test_that("the YAML and pandoc_args replace the PHW page settings in a PDF", {
+  skip_if_not_installed("rmarkdown")
+  skip_if_not(rmarkdown::pandoc_available("2.3"))
+  dir <- withr::local_tempdir()
+  tex <- function(yaml = character(), ...) {
+    writeLines(c("---", "title: T", yaml, "---", "", "Hello"), file.path(dir, "t.Rmd"))
+    out <- rmarkdown::render(file.path(dir, "t.Rmd"), phw_pdf_document(style_plots = FALSE, ...),
+                             output_file = "t.tex", quiet = TRUE)
+    paste(readLines(out, warn = FALSE), collapse = " ")
+  }
+  default <- tex()
+  expect_match(default, "\\\\documentclass\\[\\s*11pt,\\s*\\]\\{article\\}")
+  expect_match(default, "\\usepackage[a4paper,top=3.2cm,bottom=2.6cm,left=2cm,right=2cm]{geometry}", fixed = TRUE)
+  yaml <- tex(c("fontsize: 12pt", "documentclass: report", "geometry: margin=1in"))
+  expect_match(yaml, "\\\\documentclass\\[\\s*12pt,\\s*\\]\\{report\\}")
+  expect_match(yaml, "\\usepackage[margin=1in]{geometry}", fixed = TRUE)
+  args <- tex(pandoc_args = c("-V", "fontsize=12pt"))
+  expect_match(args, "\\\\documentclass\\[\\s*12pt,\\s*\\]\\{article\\}")
 })
 
 test_that("an HTML document keeps the PHW style and adds your css and includes", {

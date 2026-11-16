@@ -84,7 +84,10 @@ tables and captions. Works offline because the fonts are embedded.
 headings, booktabs tables, a gradient band and logo header, and a
 "Page x of y" footer.
 \item \code{phw_pdf_document()}: XeLaTeX with Ubuntu, a full-page gradient cover,
-a running header band and a branded footer.
+a running header band and a branded footer. Pages are A4 with PHW
+margins, in an 11pt \code{article} with coloured links: set \code{geometry},
+\code{fontsize}, \code{documentclass} or \code{colorlinks} in the YAML header to
+change them.
 }
 
 All three call \code{\link[=use_phw_ggplot]{use_phw_ggplot()}} (and \code{\link[=use_phw_flextable]{use_phw_flextable()}} when
