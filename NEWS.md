@@ -120,6 +120,14 @@ says what to change.
   sets `colors = phw_colour_key(...)`. Before, they were invisible: the
   legend showed "NA" with no line or markers. A key that gives `"NA"` its
   own colour keeps it.
+* With `palette = "rag"` or `"rag_accessible"`, groups called "Red",
+  "Amber" and "Green" (in any case) take the red, amber and green colours,
+  whatever order they sort in. Before, they took the colours in sorted
+  order, so Red was drawn green, Amber red and Green amber. The same holds
+  for the named colours of `"strategy"` and for a named vector of colours,
+  in every chart, map and table, with `reverse = TRUE` too. A colour key
+  that had stored the wrong colour for such a group is corrected. Colours
+  pinned with `values` or `fixed` still win.
 
 ## Charts and maps
 

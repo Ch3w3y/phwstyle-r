@@ -181,3 +181,40 @@ test_that("phw_key_file checks the folder, takes an empty file and rejects bad c
   writeLines(c("key,level,colour", "k,a,notacolour"), bad)
   expect_error(phw_key_file(bad), "not colours")
 })
+
+test_that("groups named after a palette's colours take those colours in every renderer", {
+  rag <- phw_palettes$rag
+  df <- data.frame(a = c("A", "B", "C"), status = c("Red", "Amber", "Green"), v = 1:3)
+  want <- unname(rag[tolower(df$status)])
+  expect_equal(unname(phw_colour_key(df$status, palette = "rag")), want)
+  expect_equal(unname(phw_colour_key(c("green", "Pending", "RED"), palette = "rag_accessible")),
+               unname(phw_palettes$rag_accessible[c("green", "amber", "red")]))
+  expect_equal(phw_colour_key(c("Red", "Amber"), palette = "rag", fixed = c(Red = "#000000"))[["Red"]],
+               "#000000")
+
+  phw_key_reset("t_rag")
+  withr::defer(phw_key_reset("t_rag"))
+  phw_key_set("t_rag", c(Red = rag[["green"]]))
+  expect_equal(phw_colour_key("Red", "t_rag", palette = "rag")[["Red"]], rag[["red"]])
+
+  skip_if_not_installed("ggplot2")
+  fill <- function(scale) {
+    gg <- ggplot2::ggplot(df, ggplot2::aes(a, v, fill = status)) + ggplot2::geom_col() + scale
+    ggplot2::ggplot_build(gg)$data[[1]]$fill
+  }
+  expect_equal(fill(scale_fill_phw_d(palette = "rag")), want)
+  expect_equal(fill(scale_fill_phw_d(palette = "rag", reverse = TRUE)), want)
+
+  if (requireNamespace("leaflet", quietly = TRUE)) {
+    expect_equal(phw_leaflet_palette("rag", df$status, type = "factor")(df$status), want)
+  }
+  if (requireNamespace("reactable", quietly = TRUE)) {
+    tbl <- phw_reactable(df, group_col = status, palette = "rag")
+    expect_equal(vapply(tbl$x$tag$attribs$columns[[2]]$style, function(s) s$background, ""), want)
+  }
+  skip_if_not_installed("plotly")
+  p <- plotly::plot_ly(df, x = ~a, y = ~v, color = ~status, type = "bar")
+  traces <- plotly::plotly_build(phw_plotly(p, palette = "rag"))$x$data
+  cols <- stats::setNames(vapply(traces, function(t) t$marker$color, ""), vapply(traces, `[[`, "", "name"))
+  expect_equal(unname(cols[df$status]), plotly::toRGB(want))
+})
