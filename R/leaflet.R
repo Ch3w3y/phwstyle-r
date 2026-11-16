@@ -108,8 +108,7 @@ phw_leaflet_polygons <- function(map, data, fill = NULL, palette = NULL, bins = 
     } else {
       if (!is.null(bins)) cli::cli_warn("{.arg bins} is for a numeric fill, so it is not used with groups.")
       levels <- group_levels(v)
-      cols <- phw_colour_key(levels, name = key, palette = palette %||% phw_default_palette(),
-                             save = !is.null(key))
+      cols <- phw_colour_key(levels, name = key, palette = palette %||% phw_default_palette())
       pal_fun <- leaflet::colorFactor(unname(cols), levels = levels, ordered = TRUE,
                                       na.color = na_col)
       legend_values <- v
