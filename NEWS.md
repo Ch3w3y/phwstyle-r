@@ -79,6 +79,11 @@ says what to change.
   and more than twelve groups carry on with the warning the colour key
   gives instead of stopping. Before, "Unknown" took a palette colour and
   pushed the groups after it along by one.
+* `phw_leaflet_palette(type = "factor")` with no `palette` uses the
+  default palette for groups, as `phw_leaflet_polygons()` and
+  `phw_colour_key()` do, and follows `options(phwstyle.palette = )`.
+  Before, it used `"blues"`, so the first group was almost white. Numeric,
+  binned and quantile palettes still default to `"blues"`.
 * `phw_leaflet_polygons(bins = )` reads `bins` as `phw_map()` does: the
   bins run from the lowest to the highest value, rounded out to tidy
   numbers, and are split at the breaks you give, or at about that many tidy

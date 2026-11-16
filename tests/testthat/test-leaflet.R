@@ -70,6 +70,17 @@ test_that("a factor palette carries \"main\" on into \"extended\" and reverses a
   expect_equal(pal(c(lv[1:3], "Unknown")), c(phw_pal(3, reverse = TRUE), phw_colours[["grey_mid"]]))
 })
 
+test_that("with no palette, groups take the default palette and numbers take blues", {
+  areas <- c("Cardiff", "Swansea", "Wrexham")
+  pal <- phw_leaflet_palette(domain = areas, type = "factor")
+  expect_equal(pal(areas), unname(phw_colour_key(areas)))
+  withr::local_options(phwstyle.palette = "accessible")
+  pal <- phw_leaflet_palette(domain = areas, type = "factor")
+  expect_equal(pal(areas), unname(phw_palettes$accessible[1:3]))
+  expect_equal(phw_leaflet_palette(domain = 1:10)(c(1, 10)),
+               phw_leaflet_palette("blues", domain = 1:10)(c(1, 10)))
+})
+
 test_that("a factor palette spreads a sequential palette as phw_pal() does", {
   pal <- phw_leaflet_palette("blues", domain = c("a", "b", "c"), type = "factor")
   expect_equal(pal(c("a", "b", "c")), phw_pal(3, "blues"))

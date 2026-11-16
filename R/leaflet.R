@@ -199,11 +199,12 @@ leaflet_text <- function(quo, data, arg, call = rlang::caller_env()) {
 #' @param reverse Reverse the palette?
 #' @param na.color Colour for missing values.
 #' @export
-phw_leaflet_palette <- function(palette = "blues", domain, type = c("numeric", "bin", "quantile", "factor"),
+phw_leaflet_palette <- function(palette = NULL, domain, type = c("numeric", "bin", "quantile", "factor"),
                                 bins = 5, reverse = FALSE, na.color = phw_colours[["grey_light"]]) {
   rlang::check_installed("leaflet")
   type <- rlang::arg_match(type)
   check_true_false(reverse)
+  palette <- palette %||% if (type == "factor") phw_default_palette() else "blues"
   if (type != "factor") {
     check_ramp_palette(palette, "For groups use {.code type = \"factor\"}.")
     if (!is.numeric(domain)) cli::cli_abort("{.arg domain} must be numbers for {.code type = \"{type}\"}.")
