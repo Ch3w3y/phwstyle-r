@@ -97,12 +97,10 @@ phw_gt <- function(data, caption = NULL, subtitle = NULL, number = NULL, source 
   is_sum <- inherits(data, "phw_summary")
   df <- as.data.frame(unclass(data)[names(data)], check.names = FALSE)
   if (is_sum) {
-    ch <- attr(data, "col_header")
     nl <- attr(data, "label_cols") %||% 1L
     # gt needs unique, syntactic-enough ids; keep display names as labels.
     ids <- paste0("c", seq_along(df))
-    labels <- stats::setNames(as.list(names(df)), ids)
-    if (!is.null(ch)) labels[ids[-seq_len(nl)]] <- as.list(ch[nrow(ch), ])
+    labels <- stats::setNames(as.list(c(names(df)[seq_len(nl)], summary_header(data, nl)$bottom)), ids)
     gt_args <- gt_args_to_ids(gt_args, names(df), ids)
     names(df) <- ids
   }
@@ -188,10 +186,12 @@ style_summary_gt <- function(x, s, ids, labels, stub = NULL) {
   L <- length(hd$upper)
   for (l in seq_len(L)) {
     level <- hd$upper[[l]]
-    for (g in which(!level$total)) {
+    # A column moved inside a spanner splits it, so a spanner's id is its
+    # label made unique.
+    sp_ids <- if (multi) paste0("sp", l, "_", seq_len(nrow(level))) else make.unique(level$label)
+    for (g in which(!level$total & nzchar(level$label))) {
       columns <- gt_cols(data_ids[level$start[g] + seq_len(level$n[g]) - 1])
-      x <- gt::tab_spanner(x, label = level$label[g], columns = columns, level = L + 1 - l,
-                           id = if (multi) paste0("sp", l, "_", g) else level$label[g])
+      x <- gt::tab_spanner(x, label = level$label[g], columns = columns, level = L + 1 - l, id = sp_ids[g])
     }
   }
   note <- attr(s, "note")

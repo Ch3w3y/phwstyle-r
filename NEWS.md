@@ -331,6 +331,12 @@ says what to change.
   error. A table without its label columns becomes a plain data frame. A
   table whose rows no longer match its styling, for example after
   `rbind()`, stops with a message suggesting `as.data.frame()`.
+* A column added to a summary, cross-tab or group table, with dplyr's
+  `mutate()` or with `$<-`, shows in every renderer with an empty cell
+  above it. Before, `mutate()` and every renderer failed with "subscript
+  out of bounds" on a table with column levels, and on a table with one
+  spanner the new column sat under the spanner. Spanners and column
+  levels follow their columns when they are moved or renamed.
 * `phw_rate_table()` stops with a message naming the column when the count
   or population column is text, instead of failing inside `sum()`.
 * Table and column helpers give clear errors for duplicated column names,

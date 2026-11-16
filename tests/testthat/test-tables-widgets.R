@@ -335,6 +335,49 @@ test_that("phw_flextable draws no rule over the label column inside a spanner he
   }
 })
 
+test_that("a column added to a summary table has no upper header in any renderer", {
+  skip_if_not_installed("dplyr")
+  set.seed(1)
+  ll <- data.frame(area = sample(c("X", "Y"), 40, TRUE), year = sample(2023:2024, 40, TRUE),
+                   quarter = sample(c("Q1", "Q2"), 40, TRUE))
+  tabs <- list(phw_crosstab(ll, area, year), phw_group_table(ll, area, cols = c(year, quarter)))
+  for (tab in tabs) {
+    assigned <- tab
+    assigned$change <- 1
+    for (x in list(assigned, dplyr::mutate(tab, change = 1))) {
+      n <- ncol(x)
+      if (requireNamespace("gt", quietly = TRUE)) {
+        g <- phw_gt(x)
+        expect_false(paste0("c", n) %in% unlist(g[["_spanners"]]$vars))
+        expect_equal(g[["_boxhead"]]$column_label[[n]], "change")
+      }
+      if (requireNamespace("flextable", quietly = TRUE)) {
+        h <- phw_flextable(x)$header
+        expect_equal(h$dataset[-nrow(h$dataset), n], rep("", nrow(h$dataset) - 1))
+        expect_equal(h$dataset[nrow(h$dataset), n], "change")
+        expect_equal(unname(h$styles$cells$border.width.bottom$data[-nrow(h$dataset), n]), rep(0, nrow(h$dataset) - 1))
+      }
+      if (requireNamespace("reactable", quietly = TRUE)) {
+        groups <- phw_reactable(x)$x$tag$attribs$columnGroups
+        last <- Filter(function(gr) "change" %in% gr$columns, groups)[[1]]
+        expect_equal(last$name, "")
+      }
+      if (requireNamespace("DT", quietly = TRUE)) {
+        head <- as.character(phw_datatable(x)$x$container)
+        expect_match(head, '<th colspan="1" class="phw-blank"></th>', fixed = TRUE)
+        expect_match(head, "<th>change</th>", fixed = TRUE)
+      }
+      if (requireNamespace("openxlsx2", quietly = TRUE)) {
+        f <- withr::local_tempfile(fileext = ".xlsx")
+        phw_write_xlsx(x, f)
+        cells <- openxlsx2::read_xlsx(f, col_names = FALSE, skip_empty_rows = FALSE)
+        expect_equal(cells[[n]][length(cells[[n]]) - nrow(x)], "change")
+        expect_true(all(is.na(cells[[n]][seq_len(length(cells[[n]]) - nrow(x) - 1)])))
+      }
+    }
+  }
+})
+
 test_that("theme styles are checked when they are set", {
   skip_if_not_installed("flextable")
   skip_if_not_installed("gtsummary")

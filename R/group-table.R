@@ -270,14 +270,13 @@ phw_group_table <- function(data, rows, cols = NULL, value = NULL, fun = sum,
     row = "n (% of row total)", none = NULL)
   res <- new_phw_summary(df, types,
                          spanner = if (length(cols) == 1) var_label(data, cols, labels),
-                         note = note)
+                         note = note, label_cols = n_label)
   attr(res, "depth") <- depth
-  attr(res, "label_cols") <- n_label
   attr(res, "indent") <- layout == "indent"
   attr(res, "group_start") <- if (separate == "none") integer() else starts
   attr(res, "separate") <- separate
   attr(res, "highlight") <- highlight
   attr(res, "digits") <- digits
-  if (length(cols) > 1) attr(res, "col_header") <- col_header
+  if (length(cols) > 1) attr(res, "col_header") <- `colnames<-`(col_header, col_names)
   res
 }

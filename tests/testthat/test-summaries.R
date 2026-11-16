@@ -15,7 +15,7 @@ test_that("phw_summary_table counts and labels correctly", {
   expect_match(tab[tab[[1]] == "0-14", ncol(tab)], paste0("^", n_tot, " "))
   expect_true("Unknown" %in% tab[[1]])
   expect_match(names(tab)[ncol(tab)], "Total \\(n = 120\\)")
-  expect_equal(attr(tab, "spanner"), "grp")
+  expect_equal(summary_header(tab, 1)$upper[[1]]$label, "grp")
   tab2 <- phw_summary_table(ll, vars = "days", numeric = "mean_sd", n_in_header = FALSE)
   expect_match(tab2[1, 2], "^[0-9.]+ \\([0-9.]+\\)$")
   expect_output(print(tab), "Age group")
@@ -92,7 +92,7 @@ test_that("phw_group_table nests groups and totals add up", {
   gb <- which(t1[[1]] == "Group B")
   expect_equal(t1$Total[gb], sum(t1$Total[gb + 1:3]))
   expect_equal(attr(t1, "depth")[gb + 1], 1)
-  expect_equal(attr(t1, "spanner"), "year")
+  expect_equal(summary_header(t1, 1)$upper[[1]]$label, "year")
   expect_equal(attr(t1, "group_start"), which(types %in% c("variable", "total"))[-1])
 })
 
@@ -241,7 +241,7 @@ test_that("phw_crosstab says how many rows it leaves out when missing = NULL", {
 test_that("labels can be a named character vector", {
   ll <- data.frame(age = c("0-14", "15-44"), sex = c("F", "M"))
   expect_equal(phw_summary_table(ll, labels = c(sex = "Sex"))[[1]][4], "Sex")
-  expect_equal(attr(phw_crosstab(ll, age, sex, labels = c(sex = "Sex")), "spanner"), "Sex")
+  expect_equal(summary_header(phw_crosstab(ll, age, sex, labels = c(sex = "Sex")), 1)$upper[[1]]$label, "Sex")
   expect_match(names(phw_group_table(ll, c(age, sex), labels = c(age = "Age")))[1], "^Age")
   expect_error(phw_summary_table(ll, labels = "Sex"), "must give a name")
 })
@@ -288,7 +288,7 @@ test_that("dplyr verbs keep a summary table's styling in step", {
   picked <- dplyr::select(s, Characteristic, `Total (n = 4)`)
   expect_s3_class(picked, "phw_summary")
   expect_equal(attr(picked, "row_type"), attr(s, "row_type"))
-  expect_equal(attr(picked, "spanner"), "grp")
+  expect_equal(summary_header(picked, 1)$upper[[1]]$label, "grp")
 
   skip_if_not_installed("reactable")
   expect_true(inherits(phw_reactable(kept), c("htmlwidget", "shiny.tag.list")))
@@ -300,10 +300,23 @@ test_that("subsetting a group table keeps its column header and group starts in 
                         totals = "none", separate = "line")
   ch <- attr(t3, "col_header")
   sub <- t3[-(1:4), c(1, 7, 8)]
-  expect_equal(attr(sub, "col_header"), ch[, 6:7, drop = FALSE])
+  expect_equal(summary_header_levels(sub, 1), unname(ch[, 6:7]))
   expect_equal(attr(sub, "row_type"), attr(t3, "row_type")[-(1:4)])
   expect_equal(attr(sub, "group_start"), setdiff(attr(t3, "group_start") - 4L, 1L))
   expect_equal(attr(t3[-1, ], "group_start"), attr(t3, "group_start") - 1L)
+})
+
+test_that("a summary table's header follows its columns when they are moved or renamed", {
+  skip_if_not_installed("dplyr")
+  ct <- phw_crosstab(make_ops(), group, year)
+  moved <- dplyr::mutate(ct, change = `2024` - `2023`, .before = `2024`)
+  expect_equal(summary_header_levels(moved, 1),
+               rbind(c("year", "", "year", "year"), c("2023", "change", "2024", "Total")))
+  renamed <- dplyr::rename(ct, `Year 2023` = `2023`)
+  expect_equal(summary_header(renamed, 1)$upper[[1]]$label, "year")
+  t3 <- phw_group_table(make_ops(), group, c(year, q))
+  names(t3)[2] <- "first"
+  expect_equal(summary_header_levels(t3, 1)[, 1], c("2023", "Q1"))
 })
 
 test_that("a summary table loses its styling when its labels or rows can't be kept", {

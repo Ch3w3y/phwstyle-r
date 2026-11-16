@@ -75,34 +75,42 @@ summary_dt_parts <- function(x) {
        labels = seq_len(nl), container = summary_dt_header(x, nl))
 }
 
-# The header rows above the column names of a summary table: its spanner,
-# or the upper levels of a multi-level header (years above quarters), over
-# the data columns `cols` (positions after the label columns). Each level is
-# a data frame of runs, giving a label, its first column within `cols`, how
-# many columns it spans and whether it is a grand total column, which has
-# the same label at every level and so is shown once. `bottom` holds the
-# column names to show.
-summary_header <- function(x, nl, cols = seq_len(ncol(x) - nl)) {
+# The header levels of a summary table over its data columns `cols`
+# (positions after the label columns), as a matrix with one row per level
+# from the top and the names to show in the last row. The levels are looked
+# up by column name, so a column added after the table was made has empty
+# upper levels.
+summary_header_levels <- function(x, nl, cols = seq_len(ncol(x) - nl)) {
+  data_names <- names(x)[nl + cols]
   ch <- attr(x, "col_header")
   sp <- attr(x, "spanner")
-  data_names <- names(x)[nl + cols]
-  if (!length(data_names)) return(list(upper = list(), bottom = data_names))
-  if (is.null(ch)) {
-    upper <- if (!is.null(sp)) {
-      list(data.frame(label = sp, start = 1L, n = length(data_names), total = FALSE))
-    }
-    return(list(upper = upper, bottom = data_names))
-  }
-  ch <- ch[, cols, drop = FALSE]
-  L <- nrow(ch)
+  if (is.null(ch) && !is.null(sp)) ch <- rbind(sp, names(sp))
+  if (is.null(ch)) return(matrix(data_names, nrow = 1))
+  m <- rbind(matrix("", nrow(ch) - 1, length(data_names)), data_names, deparse.level = 0)
+  known <- match(data_names, colnames(ch))
+  m[, !is.na(known)] <- ch[, known[!is.na(known)]]
+  m
+}
+
+# The header rows above the column names of a summary table: its spanner,
+# or the upper levels of a multi-level header (years above quarters), over
+# the data columns `cols`. Each level is a data frame of runs, giving a
+# label (empty over a column added later), its first column within `cols`,
+# how many columns it spans and whether it is a grand total column, which
+# has the same label at every level and so is shown once. `bottom` holds the
+# column names to show.
+summary_header <- function(x, nl, cols = seq_len(ncol(x) - nl)) {
+  if (!length(cols)) return(list(upper = list(), bottom = character()))
+  m <- summary_header_levels(x, nl, cols)
+  L <- nrow(m)
   upper <- lapply(seq_len(L - 1), function(l) {
-    key <- apply(ch[seq_len(l), , drop = FALSE], 2, paste, collapse = "\r")
+    key <- apply(m[seq_len(l), , drop = FALSE], 2, paste, collapse = "\r")
     n <- rle(key)$lengths
     start <- cumsum(n) - n + 1
-    total <- vapply(seq_along(n), function(g) all(ch[, start[g] + seq_len(n[g]) - 1] == ch[L, start[g]]), logical(1))
-    data.frame(label = ch[l, start], start = start, n = n, total = total)
+    total <- vapply(seq_along(n), function(g) all(m[, start[g] + seq_len(n[g]) - 1] == m[L, start[g]]), logical(1))
+    data.frame(label = m[l, start], start = start, n = n, total = total)
   })
-  list(upper = upper, bottom = ch[L, ])
+  list(upper = upper, bottom = m[L, ])
 }
 
 summary_dt_header <- function(x, nl) {
