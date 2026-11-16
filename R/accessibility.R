@@ -48,8 +48,7 @@ phw_cvd <- function(colours, type = c("deutan", "protan", "tritan")) {
 }
 
 colour_distance <- function(colours) {
-  lab <- grDevices::convertColor(t(grDevices::col2rgb(colours) / 255), "sRGB", "Lab")
-  d <- as.matrix(stats::dist(lab))
+  d <- as.matrix(stats::dist(to_lab(colours)))
   diag(d) <- NA
   d
 }
