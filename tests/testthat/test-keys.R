@@ -198,6 +198,18 @@ test_that("groups named after a palette's colours take those colours in every re
   phw_key_set("t_rag", c(Red = rag[["green"]]))
   expect_equal(phw_colour_key("Red", "t_rag", palette = "rag")[["Red"]], rag[["red"]])
 
+  phw_key_reset("t_recolour")
+  withr::defer(phw_key_reset("t_recolour"))
+  phw_colour_key(factor(c("Red", "Amber", "Green", "Unknown")), "t_recolour")
+  r <- phw_key_recolour("t_recolour", "rag")
+  expect_equal(unname(r[c("Red", "Amber", "Green")]), want)
+  expect_equal(r[["Unknown"]], phw_colours[["grey_mid"]])
+  strategy <- phw_palettes$strategy
+  phw_colour_key(c("Other group", "Behaviours", "Services"), "t_recolour")
+  r <- phw_key_recolour("t_recolour", "strategy")
+  expect_equal(unname(r[c("Behaviours", "Services")]), unname(strategy[c("behaviours", "services")]))
+  expect_false(r[["Other group"]] %in% c(r[c("Behaviours", "Services")], want))
+
   skip_if_not_installed("ggplot2")
   fill <- function(scale) {
     gg <- ggplot2::ggplot(df, ggplot2::aes(a, v, fill = status)) + ggplot2::geom_col() + scale

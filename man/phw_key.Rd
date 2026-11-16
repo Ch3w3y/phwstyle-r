@@ -45,6 +45,8 @@ called \code{name@accessible} (see \code{\link[=phw_colour_key]{phw_colour_key()
 \item \code{phw_key_set()} adds or changes colours by hand.
 \item \code{phw_key_recolour()} reassigns a whole key from a new palette, keeping
 the group order and the colour of neutral groups such as "Other".
+Groups named after the palette's colours, as in \code{"rag"}, take those
+colours, as in \code{\link[=phw_colour_key]{phw_colour_key()}}.
 Use it on purpose, e.g. to move to the \code{"accessible"} palette, because
 every report after that changes.
 \item \code{phw_key_reset()} forgets a key (and its accessible copy), or all of

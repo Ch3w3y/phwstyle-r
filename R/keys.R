@@ -227,6 +227,8 @@ next_colour <- function(used, palette, neutral_colour, ramp = NULL) {
 #' * `phw_key_set()` adds or changes colours by hand.
 #' * `phw_key_recolour()` reassigns a whole key from a new palette, keeping
 #'   the group order and the colour of neutral groups such as "Other".
+#'   Groups named after the palette's colours, as in `"rag"`, take those
+#'   colours, as in [phw_colour_key()].
 #'   Use it on purpose, e.g. to move to the `"accessible"` palette, because
 #'   every report after that changes.
 #' * `phw_key_reset()` forgets a key (and its accessible copy), or all of
@@ -291,10 +293,13 @@ phw_key_recolour <- function(name, palette = "accessible", neutral = default_neu
   if (!length(old)) cli::cli_abort("No key called {.val {name}}.")
   keep <- toupper(old) == phw_colours[["grey_mid"]] | tolower(names(old)) %in% tolower(neutral)
   n <- sum(!keep)
+  by_name <- if (!is.function(palette)) palette_named(palette)
+  hit <- match(tolower(names(old)), tolower(names(by_name)))
+  named <- !keep & !is.na(hit)
   palette <- if (is.function(palette)) phw_pal(max(n, 1), palette) else spread_palette(palette_for(palette, n), n)
   vals <- old
-  fresh <- character()
-  for (l in names(old)[!keep]) {
+  fresh <- stats::setNames(unname(by_name[hit[named]]), names(old)[named])
+  for (l in names(old)[!keep & !named]) {
     fresh[[l]] <- next_colour(c(old[keep], fresh), palette, phw_colours[["grey_mid"]])
   }
   vals[names(fresh)] <- fresh
