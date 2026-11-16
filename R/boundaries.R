@@ -358,8 +358,6 @@ check_crs <- function(crs, call = rlang::caller_env()) {
   }
 }
 
-pick_boundary <- function(rows, detail) boundary_candidates(rows, detail)[1, ]
-
 boundary_host <- function(row) {
   if (row$source == "ons") "the ONS Open Geography Portal" else "DataMapWales"
 }
