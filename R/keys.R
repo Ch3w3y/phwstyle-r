@@ -236,7 +236,9 @@ next_colour <- function(used, palette, neutral_colour, ramp = NULL) {
 #' * `phw_key_file()` sets a CSV file that keys are read from and saved to,
 #'   so colours stay the same across sessions and reports. Call it at the
 #'   top of your script or in a setup chunk, or set
-#'   `options(phwstyle.key_file = "...")`.
+#'   `options(phwstyle.key_file = "...")`. Pointing it at another file, or
+#'   at `NULL`, forgets the keys read from the old file, so each project
+#'   keeps its own colours.
 #'
 #' @param name Key name.
 #' @param values Named vector of colours, e.g. `c("65+" = "#285087")`.
@@ -335,6 +337,14 @@ phw_key_file <- function(path) {
 
 load_key_file <- function(force = FALSE) {
   file <- getOption("phwstyle.key_file")
+  # Keys read from one file must not reach another. Keys made before any
+  # file was set stay.
+  src <- if (!is.null(file)) file.path(normalizePath(dirname(file), mustWork = FALSE), basename(file))
+  if (!is.null(phw_key_state$file) && !identical(src, phw_key_state$file)) {
+    rm(list = ls(phw_key_env), envir = phw_key_env)
+    phw_key_state$stamp <- NULL
+  }
+  phw_key_state$file <- src
   if (is.null(file) || !file.exists(file)) return(invisible())
   stamp <- paste(normalizePath(file), file.mtime(file))
   if (!force && identical(phw_key_state$stamp, stamp)) return(invisible())
