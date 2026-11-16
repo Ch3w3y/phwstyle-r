@@ -285,8 +285,8 @@ test_that("phw_gt takes a summary table's column names in gt_args", {
   html <- gt::as_raw_html(phw_gt(s, gt_args = list(rowname_col = "Characteristic")))
   expect_match(html, "gt_stub[^>]*text-indent: 14px;[^>]*>0-14<", perl = TRUE)
   expect_match(html, "color: #285087;[^>]*>Characteristic<", perl = TRUE)
-  g <- phw_gt(make_groups(layout = "columns"), gt_args = list(groupname_col = "group"))
-  expect_match(gt::as_raw_html(g), "gt_group_heading[^>]*>Group A<", perl = TRUE)
+  expect_error(phw_gt(make_groups(layout = "columns"), gt_args = list(groupname_col = "group")),
+               "groupname_col.*does not work on a summary table")
   expect_error(phw_gt(s, gt_args = list(rowname_col = "characteristic")),
                "No column called \"characteristic\".*\"Characteristic\" and \"All \\(n = 3\\)\"")
 })

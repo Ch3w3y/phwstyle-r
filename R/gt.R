@@ -83,9 +83,9 @@ as.tags.phw_gt <- function(x, ...) {
 #' @param digits Decimal places for non-integer numbers. Defaults to the
 #'   `digits` of a [phw_group_table()], or 1.
 #' @param gt_args List of arguments for [gt::gt()], e.g.
-#'   `list(groupname_col = "region")`. On a summary table, `rowname_col` and
-#'   `groupname_col` take the column names as they print, such as
-#'   `"Characteristic"`.
+#'   `list(groupname_col = "region")`. On a summary table, `rowname_col`
+#'   takes a column name as it prints, such as `"Characteristic"`, and
+#'   `groupname_col` is not allowed.
 #' @param theme_args List of arguments for `phw_gt_theme()`.
 #' @export
 phw_gt <- function(data, caption = NULL, subtitle = NULL, number = NULL, source = NULL, date = NULL,
@@ -128,20 +128,24 @@ phw_gt <- function(data, caption = NULL, subtitle = NULL, number = NULL, source 
   x
 }
 
-# A summary table reaches gt::gt() with ids for column names, so the names
-# given to gt's column arguments become ids too.
+# A summary table reaches gt::gt() with ids for column names, so the name
+# given as gt's `rowname_col` becomes an id too. A summary table's label
+# columns hold a group's name on its first row only, so gt would put the
+# other rows under a blank heading: `groupname_col` stops instead.
 gt_args_to_ids <- function(gt_args, cols, ids, call = rlang::caller_env()) {
-  for (arg in intersect(c("rowname_col", "groupname_col"), names(gt_args))) {
-    v <- gt_args[[arg]]
-    if (is.null(v)) next
-    bad <- if (is.character(v)) setdiff(v, cols) else v
-    if (length(bad)) {
-      cli::cli_abort(c("{.code gt_args${arg}} must name columns of the table.",
-                       x = "{cli::qty(length(bad))}No column{?s} called {.val {bad}}.",
-                       i = "The columns are {.val {cols}}."), call = call)
-    }
-    gt_args[[arg]] <- ids[match(v, cols)]
+  if (!is.null(gt_args$groupname_col)) {
+    cli::cli_abort(c("{.code gt_args$groupname_col} does not work on a summary table.",
+                     i = "Use gt row groups on a data frame, not on a summary table."), call = call)
   }
+  v <- gt_args$rowname_col
+  if (is.null(v)) return(gt_args)
+  bad <- if (is.character(v)) setdiff(v, cols) else v
+  if (length(bad)) {
+    cli::cli_abort(c("{.code gt_args$rowname_col} must name a column of the table.",
+                     x = "{cli::qty(length(bad))}No column{?s} called {.val {bad}}.",
+                     i = "The columns are {.val {cols}}."), call = call)
+  }
+  gt_args$rowname_col <- ids[match(v, cols)]
   gt_args
 }
 
