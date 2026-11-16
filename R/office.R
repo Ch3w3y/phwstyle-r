@@ -50,7 +50,8 @@ phw_datatable <- function(data, caption = NULL, source = NULL, date = NULL, digi
   if (!is.null(sm$container)) args$container <- sm$container
   args <- utils::modifyList(args, list(...))
   w <- do.call(DT::datatable, args)
-  num <- setdiff(names(data)[vapply(data, is.numeric, logical(1))], sm$helper)
+  # Columns go to DT by position: a rename in `colnames` changes the names.
+  num <- setdiff(which(vapply(data, is.numeric, logical(1))), sm$helper)
   is_int <- vapply(data[num], function(v) all(v == round(v), na.rm = TRUE), logical(1))
   if (any(is_int)) w <- DT::formatRound(w, num[is_int], digits = 0)
   if (any(!is_int)) w <- DT::formatRound(w, num[!is_int], digits = digits)
@@ -68,8 +69,8 @@ summary_dt_parts <- function(x) {
   df$.phw_row <- seq_len(nrow(df))
   defs <- list(list(visible = FALSE, targets = nc))
   if (nc > nl) defs <- c(defs, list(list(className = "dt-right", targets = seq(nl, nc - 1))))
-  list(data = df, rows = summary_rows(x), helper = ".phw_row", column_defs = defs,
-       labels = names(df)[seq_len(nl)], container = summary_dt_header(x, nl))
+  list(data = df, rows = summary_rows(x), helper = nc + 1L, column_defs = defs,
+       labels = seq_len(nl), container = summary_dt_header(x, nl))
 }
 
 # The header rows above the column names of a summary table: its spanner,
@@ -115,7 +116,7 @@ summary_dt_header <- function(x, nl) {
 style_summary_dt <- function(w, sm) {
   r <- sm$rows
   col <- phw_colours
-  all_cols <- setdiff(names(sm$data), sm$helper)
+  all_cols <- setdiff(seq_along(sm$data), sm$helper)
   style <- function(w, cols, rows, ...) {
     if (!length(rows)) return(w)
     css <- lapply(list(...), function(v) DT::styleEqual(rows, v))

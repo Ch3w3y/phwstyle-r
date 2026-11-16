@@ -380,6 +380,26 @@ test_that("every renderer stops on duplicated column names", {
   expect_error(phw_write_xlsx(d, withr::local_tempfile(fileext = ".xlsx")), "more than one column named")
 })
 
+test_that("phw_datatable rounds and styles columns renamed with a named colnames", {
+  skip_if_not_installed("DT")
+  renders <- function(w) {
+    defs <- Filter(function(d) !is.null(d$render), w$x$options$columnDefs)
+    stats::setNames(vapply(defs, function(d) sub(".*formatRound\\(data, (\\d+).*", "\\1", d$render), ""),
+                    vapply(defs, function(d) d$targets, numeric(1)))
+  }
+  df <- data.frame(area = c("A", "B"), cases = c(1.5, 2), n = 1:2)
+  w <- phw_datatable(df, colnames = c(Cases = "cases"))
+  expect_equal(attr(w$x, "colnames"), c("area", "Cases", "n"))
+  expect_equal(renders(w), c(`1` = "1", `2` = "0"))
+  expect_equal(renders(phw_datatable(df, rownames = TRUE)), c(`2` = "1", `3` = "0"))
+
+  d <- data.frame(label = c("Age", "0-14", "All"), n = c(NA, 12, 42), kind = c("variable", "level", "total"))
+  tab <- phw_as_summary(d, kind)
+  plain <- phw_datatable(tab)$x$options$rowCallback
+  renamed <- phw_datatable(tab, colnames = c(Age = "label"))$x$options$rowCallback
+  expect_equal(as.character(renamed), as.character(plain))
+})
+
 test_that("the HTML tables show date-times at their local time, as phw_flextable does", {
   skip_if_not_installed("reactable")
   skip_if_not_installed("DT")
