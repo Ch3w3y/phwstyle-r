@@ -344,6 +344,10 @@ says what to change.
   list without names stops with a message that asks for a named list.
 * The R Markdown formats add your own `css`, `includes` and `pandoc_args` to
   the PHW ones, and LaTeX characters in `team` print as typed.
+* `phw_latex_header(file)` writes the page band image beside `file`, as
+  `<name>-band.png`, and points the header at it. Before, the header pointed
+  at a temporary image that was gone in the next R session, so a saved
+  header stopped the PDF build with "File not found".
 * `phw_pdf_document()` keeps the `dev` you give it instead of always using
   `"ragg_png"`.
 * `phw_download_logos()` saves nothing when the reply isn't an SVG.

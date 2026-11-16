@@ -7,7 +7,9 @@
 phw_latex_header(file = tempfile(fileext = ".tex"), team = NULL, cover = TRUE)
 }
 \arguments{
-\item{file}{Where to write the header.}
+\item{file}{Where to write the header. The page band image is written
+beside it, with \code{-band.png} in place of the extension, so a header saved
+for later keeps working in another R session.}
 
 \item{team}{Optional team line for the cover. Characters that LaTeX
 treats as commands, such as \code{&} and \verb{\%}, are printed as written.}
