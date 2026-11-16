@@ -107,7 +107,7 @@ summary_header <- function(x, nl, cols = seq_len(ncol(x) - nl)) {
 
 summary_dt_header <- function(x, nl) {
   hd <- summary_header(x, nl)
-  if (!length(hd$upper) && identical(hd$bottom, names(x)[-seq_len(nl)])) return(NULL)
+  if (!length(hd$upper)) return(NULL)
   th <- htmltools::tags$th
   span <- length(hd$upper) + 1
   upper <- lapply(hd$upper, function(level) {
