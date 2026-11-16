@@ -306,6 +306,10 @@ says what to change.
 
 ## Slides and documents
 
+* A grey PNG logo with transparency now works like a colour one in
+  `phw_finalise()`, `phw_word_document()`, `phw_pdf_document()`,
+  `phw_latex_header()`, `phw_reference_docx()` and `use_phw_quarto()`.
+  Before, it stopped with "a raster array must have exactly 3 or 4 planes".
 * `phw_add_slide()` places content on every layout. Two Content fills the
   left side first, and Title Only and Blank place the chart, table or text
   in the free space.
