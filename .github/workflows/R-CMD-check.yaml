@@ -115,6 +115,10 @@ jobs:
       # Take packages from a dated snapshot of CRAN instead of the latest.
       # RSPM (Linux binaries) and CRAN (source) are the two repositories
       # that setup-r puts in options(repos), so both point at the snapshot.
+      # The snapshots do not serve CRAN's web area (web/packages/packages.rds),
+      # which --as-cran reads to look for orphaned dependencies. R before 4.4
+      # stops the whole check when it cannot read it, so R_CRAN_WEB points
+      # that one read at CRAN itself.
       - name: Use a CRAN snapshot
         if: matrix.config.snapshot
         shell: bash
@@ -122,6 +126,7 @@ jobs:
           codename=$(. /etc/os-release && echo "$VERSION_CODENAME")
           echo "RSPM=https://packagemanager.posit.co/cran/__linux__/${codename}/${{ matrix.config.snapshot }}" >> "$GITHUB_ENV"
           echo "CRAN=https://packagemanager.posit.co/cran/${{ matrix.config.snapshot }}" >> "$GITHUB_ENV"
+          echo "R_CRAN_WEB=https://cloud.r-project.org" >> "$GITHUB_ENV"
 
       - uses: r-lib/actions/setup-pandoc@v2
         with:
