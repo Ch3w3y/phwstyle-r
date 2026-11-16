@@ -25,7 +25,7 @@ phw_leaflet_polygons(
 )
 
 phw_leaflet_palette(
-  palette = "blues",
+  palette = NULL,
   domain,
   type = c("numeric", "bin", "quantile", "factor"),
   bins = 5,
