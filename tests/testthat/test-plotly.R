@@ -216,8 +216,24 @@ test_that("a bottom legend is stacked under the axis title, and the source under
   with_source <- hook(phw_plotly(p, source = "S", margin = list(b = 150)))
   expect_length(with_source, 1)
   expect_match(with_source[[1]]$code, "plotly_afterplot", fixed = TRUE)
-  expect_equal(with_source[[1]]$data, list(caption = TRUE, margin = 150))
-  expect_equal(hook(phw_plotly(p))[[1]]$data, list(caption = FALSE, margin = 0))
+  expect_equal(with_source[[1]]$data, list(margin = 150))
+  expect_equal(hook(phw_plotly(p))[[1]]$data, list(margin = 0))
   expect_null(hook(phw_plotly(p, source = "S", legend = "right")))
   expect_null(hook(phw_plotly(p, legend = "none")))
+})
+
+test_that("the source line is the one annotation the legend hook moves, wherever it lands", {
+  source_of <- function(w) {
+    anns <- built(w)$layout$annotations
+    vapply(Filter(function(a) identical(a$name, "phw_source"), anns), function(a) a$text, "")
+  }
+  note <- list(text = "Note", x = 2, y = 3, showarrow = FALSE)
+  earlier <- plotly::layout(plotly::plot_ly(groups_df, x = ~week, y = ~cases, color = ~group,
+                                            type = "scatter", mode = "lines"), annotations = list(note))
+  expect_equal(source_of(phw_plotly(earlier, source = "S")), "<b>Source: S</b>")
+  skip_if_not_installed("ggplot2")
+  faceted <- ggplot2::ggplot(groups_df, ggplot2::aes(week, cases, colour = group)) +
+    ggplot2::geom_line() + ggplot2::facet_wrap(~group)
+  expect_equal(source_of(phw_plotly(faceted, source = "S")), "<b>Source: S</b>")
+  expect_length(source_of(phw_plotly(faceted)), 0)
 })

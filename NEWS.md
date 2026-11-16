@@ -272,8 +272,9 @@ says what to change.
   axis title and the source line under the legend, however many rows the
   legend wraps to and whatever the chart's size. Before, a legend of seven
   health boards ran under the source line, and on a short chart it sat on
-  the axis title. A bottom margin you set with `margin = list(b = )` is
-  kept as the least space under the chart.
+  the axis title. Other annotations, including the axis titles of a
+  faceted ggplot, stay where they are. A bottom margin you set with
+  `margin = list(b = )` is kept as the least space under the chart.
 * `phw_leaflet_polygons()`, `phw_boundaries()`, `phw_plotly()` and the
   colour key functions check their input first. `phw_boundaries()` checks
   `crs` before downloading anything.
