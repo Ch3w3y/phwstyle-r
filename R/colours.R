@@ -227,7 +227,7 @@ phw_pal <- function(n = NULL, palette = phw_default_palette(), reverse = FALSE,
   } else {
     palette <- palette_for(palette, n %||% 0L)
     pal <- palette_colours(palette)
-    if (is.character(palette) && length(palette) == 1 && palette %in% names(phw_palettes)) {
+    if (is_palette_name(palette)) {
       type <- if (palette_type(palette) == "qualitative") "qualitative" else "sequential"
     }
     n <- n %||% length(pal)
@@ -248,7 +248,7 @@ phw_pal <- function(n = NULL, palette = phw_default_palette(), reverse = FALSE,
 }
 
 palette_colours <- function(palette) {
-  if (is.character(palette) && length(palette) == 1 && palette %in% names(phw_palettes)) {
+  if (is_palette_name(palette)) {
     return(unname(phw_palettes[[palette]]))
   }
   if (is.character(palette) && length(palette) == 1 && !is_colour(palette)) {
@@ -261,6 +261,8 @@ palette_colours <- function(palette) {
   unname(palette)
 }
 
+is_palette_name <- function(x) is.character(x) && length(x) == 1 && x %in% names(phw_palettes)
+
 is_colour <- function(x) {
   vapply(x, function(v) !inherits(try(grDevices::col2rgb(v), silent = TRUE), "try-error"), logical(1))
 }
@@ -268,7 +270,7 @@ is_colour <- function(x) {
 # Colours given to a colour tool: a palette name or a vector of colours.
 # With `na_ok`, NA passes through so the result can be NA in the same place.
 as_colours <- function(x, arg, na_ok = FALSE, call = rlang::caller_env()) {
-  if (is.character(x) && length(x) == 1 && x %in% names(phw_palettes)) return(unname(phw_palettes[[x]]))
+  if (is_palette_name(x)) return(unname(phw_palettes[[x]]))
   if (!is.atomic(x) || is.null(x)) {
     cli::cli_abort("{.arg {arg}} must be colours or a palette name, not {.obj_type_friendly {x}}.", call = call)
   }

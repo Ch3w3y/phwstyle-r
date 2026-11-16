@@ -119,8 +119,7 @@ reverse_key_palette <- function(palette, levels, neutral = default_neutral) {
 }
 
 is_ramp <- function(palette) {
-  is.character(palette) && length(palette) == 1 && palette %in% names(phw_palettes) &&
-    palette_type(palette) != "qualitative"
+  is_palette_name(palette) && palette_type(palette) != "qualitative"
 }
 
 # A sequential or diverging palette spreads over the `n` groups, as
