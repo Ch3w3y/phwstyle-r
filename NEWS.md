@@ -123,6 +123,12 @@ says what to change.
 
 ## Charts and maps
 
+* After `use_phw_ggplot()`, and so in every `phw_*_document()` format,
+  groups from an ordered factor (from `factor(..., ordered = TRUE)`,
+  `cut(..., ordered_result = TRUE)` or `lubridate::month(label = TRUE)`)
+  get the PHW palette, as unordered groups do. Before, they got ggplot2's
+  viridis colours. `theme_phw()` on its own still leaves them in viridis,
+  because ggplot2 does not take their colours from the theme.
 * Ready-made charts check their data first. Text where numbers are needed,
   negative counts and impossible settings (funnel limits, targets, SPC
   baseline, pyramid `left`) stop with a message that says what to change.

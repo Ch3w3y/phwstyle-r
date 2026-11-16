@@ -18,7 +18,10 @@
 #' on its own also gives groups the PHW palette. With ggplot2 3.5 it styles
 #' the text, gridlines and legend only, and groups keep the ggplot2 colours
 #' unless you add a PHW scale or call [use_phw_ggplot()], which works the
-#' same on both.
+#' same on both. On every version, groups from an ordered factor (such as
+#' `cut(..., ordered_result = TRUE)`) keep ggplot2's viridis colours with
+#' `theme_phw()` alone, because ggplot2 does not take their colours from the
+#' theme. [use_phw_ggplot()] gives them the PHW palette too.
 #'
 #' @param base_size Base font size in points. Reports use 11 for body text.
 #' @param base_family Font family. Defaults to [phw_font()] (Ubuntu).
@@ -448,8 +451,8 @@ scale_color_phw_div <- scale_colour_phw_div
 #' for you. It sets:
 #'
 #' * [theme_phw()] as the default theme
-#' * the PHW palette for groups (colour and fill), and PHW blues for
-#'   continuous and binned colours
+#' * the PHW palette for groups (colour and fill), including groups from an
+#'   ordered factor, and PHW blues for continuous and binned colours
 #' * default colours for layers that don't map a colour: navy bars, areas,
 #'   lines and points, with text and reference lines in the PHW text colour
 #' * the PHW font for text and labels
@@ -490,6 +493,12 @@ use_phw_ggplot <- function(..., palette = NULL) {
   phw_session$args <- list(...)
   phw_style_extensions()
   set_phw_geom_defaults(theme, accessible = isTRUE(list(...)[["accessible"]]))
+  # Ordered factors get ggplot2's ordinal scale, which no version of ggplot2
+  # takes from the theme, so it is set here on every version.
+  options(
+    ggplot2.ordinal.colour = function(...) phw_default_scale("colour", "ordinal", ...),
+    ggplot2.ordinal.fill = function(...) phw_default_scale("fill", "ordinal", ...)
+  )
   if (!ggplot2_v4()) {
     # Before ggplot2 4.0 themes can't carry palettes, so use the global
     # options instead. Each one has to return a scale. They are built to
@@ -508,15 +517,20 @@ use_phw_ggplot <- function(..., palette = NULL) {
 
 phw_session <- new.env(parent = emptyenv())
 
-# The default scales for ggplot2 before 4.0, where they come from options
-# rather than the theme. Arguments that belong to ggplot2's own default
-# scales, as in scale_fill_continuous(low = "white", high = "red"), still
-# get that scale, as they do from 4.0 on.
+# The default scales that come from options rather than the theme: all of
+# them before ggplot2 4.0, and the ordinal ones on every version. Arguments
+# that belong to ggplot2's own default scales, as in
+# scale_fill_continuous(low = "white", high = "red"), still get that scale,
+# as they do from 4.0 on.
 phw_default_scale <- function(aesthetic, type, ...) {
   args <- list(aesthetics = aesthetic, ...)
-  own <- if (type == "discrete") c("h", "c", "l", "h.start", "direction") else c("low", "high")
+  own <- switch(type,
+    discrete = c("h", "c", "l", "h.start", "direction"),
+    ordinal = c("alpha", "begin", "end", "direction", "option"),
+    c("low", "high"))
   if (any(names(args) %in% own)) {
     scale <- switch(type, discrete = ggplot2::scale_colour_hue,
+                    ordinal = ggplot2::scale_colour_viridis_d,
                     continuous = ggplot2::scale_colour_gradient,
                     binned = ggplot2::scale_colour_steps)
     return(rlang::exec(scale, !!!args))
@@ -524,7 +538,8 @@ phw_default_scale <- function(aesthetic, type, ...) {
   # rlang::exec() rather than do.call(), which would run the `call` that
   # ggplot2 passes along for its error messages.
   switch(type,
-    discrete = {
+    discrete = ,
+    ordinal = {
       args$na.value <- args$na.value %||% "grey50"
       rlang::exec(ggplot2::discrete_scale, !!!args, palette = phw_discrete_auto)
     },
