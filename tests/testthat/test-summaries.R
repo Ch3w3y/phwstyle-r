@@ -128,6 +128,24 @@ test_that("phw_group_table total options and layouts work", {
   expect_output(print(t3), "Group A")
 })
 
+test_that("columns layout puts the subgroup levels in the innermost column", {
+  d <- data.frame(board = c("Board A", "Board B", "Board A", "Board B"),
+                  sex = c("Female", "Male", "Male", "Female"),
+                  age = c("0-14", "65+", "15-64", "0-14"))
+  for (pos in c("bottom", "top")) {
+    g <- phw_group_table(d, c(board, sex, age), totals = c("subgroup", "table"),
+                         layout = "columns", total_position = pos)
+    head <- which(g$board == "Total by age")
+    lv <- head + 1:3
+    expect_equal(g$age[lv], c("0-14", "15-64", "65+"))
+    expect_equal(g$sex[lv], rep("", 3))
+    expect_equal(g$board[lv], rep("", 3))
+    expect_equal(g$n[lv], c(2, 1, 1))
+  }
+  ind <- phw_group_table(d, c(board, sex, age), totals = "subgroup")
+  expect_equal(attr(ind, "depth")[which(ind[[1]] == "Total by age") + 1:3], rep(1, 3))
+})
+
 test_that("phw_group_table(drop = FALSE) keeps unused factor levels as zeros", {
   d <- data.frame(
     age = factor(c("0-4", "0-4", "15+"), levels = c("0-4", "5-14", "15+")),

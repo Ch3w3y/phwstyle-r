@@ -207,7 +207,9 @@ phw_group_table <- function(data, rows, cols = NULL, value = NULL, fun = sum,
     heading <- gsub("{variable}", var_label(data, rows[k], labels), subgroup_label, fixed = TRUE)
     add(heading, 0, "variable",
         all_rows, all_rows, blank = TRUE)
-    for (lv in levels_in(g, all_rows)) add(lv, 1, "level", g == lv, all_rows)
+    # Indented one step under the heading, or in the innermost variable's column.
+    lv_depth <- if (layout == "columns") k - 1 else 1
+    for (lv in levels_in(g, all_rows)) add(lv, lv_depth, "level", g == lv, all_rows)
   }
   if ("table" %in% totals) add(total_label, 0, "total", all_rows, all_rows)
   extra <- out
@@ -263,7 +265,6 @@ phw_group_table <- function(data, rows, cols = NULL, value = NULL, fun = sum,
   } else {
     m <- matrix("", length(lab), k)
     m[cbind(seq_along(lab), pmin(depth + 1, k))] <- lab
-    # Subtotal rows and the subgroup block sit under their group's column.
     lab_df <- stats::setNames(as.data.frame(m, stringsAsFactors = FALSE), make.unique(row_labels))
     n_label <- k
   }
