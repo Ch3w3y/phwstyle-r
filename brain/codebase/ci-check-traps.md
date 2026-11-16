@@ -1,0 +1,5 @@
+# R CMD check traps on CI
+
+- **A halted check passes.** `check-r-package` (rcmdcheck) fails only on the ERROR, WARNING and NOTE lines it parses, or a timeout. It ignores the exit status. When R CMD check dies with "Execution halted" it prints none of those lines, so the step succeeds. The workflow's "Make sure R CMD check ran the tests and finished" step catches this: it needs `* checking tests` and a `Status:` line in `00check.log`.
+- **Snapshot cells and `--as-cran`.** `--as-cran` always sets `_R_CHECK_ORPHANED_=TRUE` (with `Sys.setenv`, so a job env var cannot turn it off). When an installed dependency or suggested package has no maintainer recorded, the check reads `web/packages/packages.rds` from `R_CRAN_WEB`, which falls back to the `CRAN` repository. Posit Package Manager snapshots do not serve that file. R 4.4 and later catch the error and print a warning. R 4.3 stops the check. The snapshot step sets `R_CRAN_WEB=https://cloud.r-project.org`.
+- `check-r-package` already sets `_R_CHECK_CRAN_INCOMING_=false`, so turning the incoming checks off changes nothing.

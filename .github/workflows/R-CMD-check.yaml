@@ -171,3 +171,20 @@ jobs:
           args: 'c("--no-manual", "--as-cran")'
           error-on: ${{ matrix.config.error-on || '"warning"' }}
           upload-snapshots: true
+
+      # check-r-package fails on the ERRORs, WARNINGs and NOTEs it finds in
+      # the output, but not when R CMD check stops early ("Execution halted"),
+      # which prints none of them. R CMD check writes its "Status:" line only
+      # when it reaches the end.
+      - name: Make sure R CMD check ran the tests and finished
+        shell: bash
+        run: |
+          log=check/phwstyle.Rcheck/00check.log
+          if ! grep -q '^\* checking tests' "$log"; then
+            echo "::error::R CMD check did not run the tests. See the output of the check step above."
+            exit 1
+          fi
+          if ! grep -q '^Status: ' "$log"; then
+            echo "::error::R CMD check stopped before the end. See the output of the check step above."
+            exit 1
+          fi
