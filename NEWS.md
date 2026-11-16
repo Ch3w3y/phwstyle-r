@@ -114,7 +114,9 @@ says what to change.
 * `phw_plotly()` gives a ggplot with no colour or fill scale of its own the
   colours the static chart has. Before, a continuous colour started from the
   palest blue, groups such as "Other" turned grey and `NA` was a lighter
-  grey than in the static chart.
+  grey than in the static chart. Its groups take their colours from
+  `palette`, as in a `plot_ly()` chart. Before, `palette` was ignored for a
+  ggplot and its groups always had the default palette.
 * `phw_plotly()` gives a figure combined with `plotly::subplot()` the PHW
   colours. Before, it kept plotly's default colours: groups, traces with no
   colour mapping and heatmaps all came out in plotly's palettes. A group

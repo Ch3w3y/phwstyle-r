@@ -226,7 +226,8 @@ wrap_widget <- function(widget, caption, cap, note = NULL) {
 #' @param palette Colours for traces that don't set their own: a palette
 #'   name, a vector of colours or a function of `n`, as in [phw_pal()]. A
 #'   trace that maps `color` to groups without giving `colors` takes them
-#'   from this palette too.
+#'   from this palette too, as do the groups of a ggplot with no colour or
+#'   fill scale of its own.
 #' @param font_size Base font size in px.
 #' @param caption_args List of other [phw_caption()] arguments.
 #' @param modebar Show the plotly tool bar?
@@ -283,7 +284,7 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
     cli::cli_abort("{.arg p} must be a plotly chart or a ggplot, not {.obj_type_friendly {p}}.")
   }
   cap <- caption_from(source, date, caption_args)
-  if (inherits(p, "ggplot")) p <- ggplotly_phw(p)
+  if (inherits(p, "ggplot")) p <- ggplotly_phw(p, palette)
   col <- phw_colours
   colorway <- plotly_colorway(p, palette)
   font <- list(family = paste0(phw_font(), ", Arial, sans-serif"), size = font_size, color = col[["text"]])
@@ -363,8 +364,9 @@ current_title <- function(p, axis = NULL) {
 
 # plotly::ggplotly() builds the plot itself and ignores palettes stored in
 # the theme (ggplot2 >= 4.0), so add the default scales use_phw_ggplot()
-# gives a static chart where the plot has none.
-ggplotly_phw <- function(p) {
+# gives a static chart where the plot has none, with groups taken from
+# `palette`.
+ggplotly_phw <- function(p, palette) {
   b <- ggplot2::ggplot_build(p)
   has <- vapply(c("colour", "fill"), function(a) !is.null(b$plot$scales$get_scales(a)), logical(1))
   user <- vapply(c("colour", "fill"), function(a) {
@@ -373,7 +375,11 @@ ggplotly_phw <- function(p) {
   for (a in c("colour", "fill")) {
     if (has[[a]] && !user[[a]]) {
       discrete <- b$plot$scales$get_scales(a)$is_discrete()
-      p <- p + phw_default_scale(a, if (discrete) "discrete" else "continuous")
+      p <- p + if (discrete) {
+        ggplot2::discrete_scale(a, palette = function(n) phw_discrete_auto(n, palette), na.value = "grey50")
+      } else {
+        phw_default_scale(a, "continuous")
+      }
     }
   }
   plotly::ggplotly(p)

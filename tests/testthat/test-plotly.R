@@ -160,6 +160,24 @@ test_that("a ggplot without a colour scale draws the same colours static and in 
   expect_equal(cols, static(bars, "fill")[names(cols)])
 })
 
+test_that("a ggplot without a colour scale takes `palette`, as plot_ly() does", {
+  df <- data.frame(x = rep(1:2, 5), y = 1:10, g = rep(LETTERS[1:5], each = 2))
+  drawn <- function(p, palette, part) {
+    vapply(built(phw_plotly(p, palette = palette))$data, function(t) t[[part]]$color, "")
+  }
+  lines <- ggplot2::ggplot(df, ggplot2::aes(x, y, colour = g)) + ggplot2::geom_line()
+  bars <- ggplot2::ggplot(df, ggplot2::aes(x, y, fill = g)) + ggplot2::geom_col()
+  plotly_lines <- plotly::plot_ly(df, x = ~x, y = ~y, color = ~g, type = "scatter", mode = "lines")
+  plotly_bars <- plotly::plot_ly(df, x = ~x, y = ~y, color = ~g, type = "bar")
+  for (pal in list("accessible", c("#000000", "#FF0000", "#00FF00", "#0000FF", "#FFFF00"))) {
+    expect_equal(drawn(lines, pal, "line"), drawn(plotly_lines, pal, "line"))
+    expect_equal(drawn(bars, pal, "marker"), drawn(plotly_bars, pal, "marker"))
+  }
+
+  own <- lines + scale_colour_phw_d(palette = "main")
+  expect_equal(drawn(own, "accessible", "line"), drawn(plotly_lines, "main", "line"))
+})
+
 test_that("subplot() panels take the PHW colours, and a group keeps its colour across panels", {
   d <- data.frame(week = rep(1:3, 3), y = 1:9, g = rep(c("a", "b", "c"), each = 3))
   s <- plotly::subplot(
