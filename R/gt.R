@@ -153,23 +153,16 @@ style_summary_gt <- function(x, s, ids, labels) {
   x <- rows_where(x, r$rule, gt::cell_borders(sides = "top", color = col[["navy"]], weight = gt::px(2)))
   x <- rows_where(x, r$line, gt::cell_borders(sides = "top", color = col[["grey_mid"]], weight = gt::px(1)))
   x <- rows_where(x, r$space, "padding-top: 14px;")
-  ch <- attr(s, "col_header")
-  sp <- attr(s, "spanner")
-  if (!is.null(ch) && nrow(ch) > 1) {
-    for (l in seq_len(nrow(ch) - 1)) {
-      key <- apply(ch[seq_len(l), , drop = FALSE], 2, paste, collapse = "\r")
-      r <- rle(key)
-      ends <- cumsum(r$lengths)
-      for (g in seq_along(ends)) {
-        idx <- (ends[g] - r$lengths[g] + 1):ends[g]
-        lab <- ch[l, idx[1]]
-        if (all(ch[, idx] == ch[nrow(ch), idx[1]])) next
-        x <- gt::tab_spanner(x, label = lab, columns = gt_cols(data_ids[idx]), level = nrow(ch) - l,
-                             id = paste0("sp", l, "_", g))
-      }
+  hd <- summary_header(s, nl)
+  multi <- !is.null(attr(s, "col_header"))
+  L <- length(hd$upper)
+  for (l in seq_len(L)) {
+    level <- hd$upper[[l]]
+    for (g in which(!level$total)) {
+      columns <- gt_cols(data_ids[level$start[g] + seq_len(level$n[g]) - 1])
+      x <- gt::tab_spanner(x, label = level$label[g], columns = columns, level = L + 1 - l,
+                           id = if (multi) paste0("sp", l, "_", g) else level$label[g])
     }
-  } else if (!is.null(sp) && length(data_ids)) {
-    x <- gt::tab_spanner(x, label = sp, columns = gt_cols(data_ids))
   }
   note <- attr(s, "note")
   if (!is.null(note)) x <- gt::tab_footnote(x, note)

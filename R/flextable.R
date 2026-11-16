@@ -381,34 +381,28 @@ style_summary_ft <- function(ft, x, relabelled = character()) {
   if (length(line)) ft <- flextable::hline(ft, i = line, border = grey, part = "body")
   # Numbers and statistics right-aligned, whatever their type.
   if (nd) ft <- flextable::align(ft, j = data_j, align = "right", part = "all")
-  ch <- attr(x, "col_header")
-  sp <- attr(x, "spanner")
+  multi <- !is.null(attr(x, "col_header"))
+  hd <- summary_header(x, nl, shown - nl)
   # Spanner rows copy the column labels' colours. On a dark header band
   # their rule is white so it stays visible.
   fill <- ft$header$styles$cells$background.color$data[1, data_j[1]]
   dark <- nd && fill != "transparent" && phw_text_on(fill) == "#FFFFFF"
   rule <- if (dark) officer::fp_border(color = "#FFFFFF", width = 0.75) else grey
-  if (!is.null(ch) && nd) {
-    ch <- ch[, shown - nl, drop = FALSE]
-    L <- nrow(ch)
-    labs <- stats::setNames(as.list(ch[L, ]), names(x)[shown])
-    labs <- labs[setdiff(names(labs), relabelled)]
-    if (length(labs)) ft <- do.call(flextable::set_header_labels, c(list(ft), labs))
-    for (l in rev(seq_len(L - 1))) {
-      key <- apply(ch[seq_len(l), , drop = FALSE], 2, paste, collapse = "\r")
-      r <- rle(key)
-      vals <- ch[l, cumsum(r$lengths)]
-      ft <- flextable::add_header_row(ft, values = c(rep("", nl), vals), colwidths = c(rep(1, nl), r$lengths))
+  if (length(hd$upper)) {
+    if (multi) {
+      labs <- stats::setNames(as.list(hd$bottom), names(x)[shown])
+      labs <- labs[setdiff(names(labs), relabelled)]
+      if (length(labs)) ft <- do.call(flextable::set_header_labels, c(list(ft), labs))
+    }
+    # A grand total keeps its label at every level, so merge_v() joins it
+    # into one cell.
+    for (level in rev(hd$upper)) {
+      ft <- flextable::add_header_row(ft, values = c(rep("", nl), level$label), colwidths = c(rep(1, nl), level$n))
       ft <- flextable::hline(ft, i = 1, j = data_j, border = rule, part = "header")
     }
-    ft <- flextable::merge_v(ft, j = data_j, part = "header")
-    ft <- flextable::align(ft, i = seq_len(L - 1), j = data_j, align = "center", part = "header")
+    if (multi) ft <- flextable::merge_v(ft, j = data_j, part = "header")
+    ft <- flextable::align(ft, i = seq_along(hd$upper), j = data_j, align = "center", part = "header")
     ft <- flextable::bold(ft, part = "header")
-  } else if (!is.null(sp) && nd) {
-    ft <- flextable::add_header_row(ft, values = c(rep("", nl), sp), colwidths = c(rep(1, nl), nd))
-    ft <- flextable::align(ft, i = 1, j = data_j, align = "center", part = "header")
-    ft <- flextable::bold(ft, part = "header")
-    ft <- flextable::hline(ft, i = 1, j = data_j, border = rule, part = "header")
   }
   note <- attr(x, "note")
   if (!is.null(note)) {

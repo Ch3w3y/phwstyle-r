@@ -1,7 +1,9 @@
 # Summary tables: build a data frame once, then render it with
-# phw_flextable() or phw_reactable(). The data frame carries row types
-# (variable headings, levels, totals) and an optional column spanner as
-# attributes, which the renderers turn into indents, bold rows and header
+# phw_flextable(), phw_gt(), phw_reactable(), phw_datatable() or
+# phw_write_xlsx(). The data frame carries row types (variable headings,
+# levels, totals) and an optional column spanner as attributes. Every
+# renderer reads the row styling from summary_rows() and the header levels
+# from summary_header(), and turns them into indents, bold rows and header
 # groups.
 
 new_phw_summary <- function(df, row_type, spanner = NULL, note = NULL) {
