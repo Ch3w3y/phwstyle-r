@@ -247,7 +247,9 @@ wrap_widget <- function(widget, caption, cap, note = NULL) {
 #'   panel. If a panel sets its own colours with `colors` or `I()`, the group
 #'   colours and colour scales stay as each panel was built. To give the
 #'   other panels PHW colours, style each panel with `phw_plotly()` before
-#'   combining them.
+#'   combining them. Groups of a ggplot in ggplot2's default colours take
+#'   the PHW colours too; a ggplot that sets its own colours with a scale,
+#'   such as [ggplot2::scale_colour_manual()], keeps them.
 #'
 #'   For colours that stay with a group across charts, pass a colour
 #'   key to plotly yourself, e.g.
@@ -646,7 +648,8 @@ colour_mapped <- function(p, palette) {
 # in trace order, a colour key by trace name, grey for a missing group and
 # the PHW sequential scale. Colours a panel set itself are marked
 # "plotly_default" too, so when any panel sets its own, groups and scales
-# keep the colours they were built with.
+# keep the colours they were built with. A ggplot's groups come unmarked, in
+# ggplot2's default colours, and take the colour key too.
 colour_built <- function(p, palette, colorway) {
   if (!length(p$x$data)) return(p)
   own <- any(vapply(p$x$attrs, sets_colours, logical(1)))
@@ -657,7 +660,9 @@ colour_built <- function(p, palette, colorway) {
     ))
   }
   colorway <- unname(colorway)
-  grouped <- !own & vapply(p$x$data, function(t) any(rapply(t, is_group_colour, how = "unlist")), logical(1))
+  hue <- ggplot_hue(length(p$x$data))
+  is_group <- function(x) (!own && is_group_colour(x)) || is_ggplot_hue(x, hue)
+  grouped <- vapply(p$x$data, function(t) any(rapply(t, is_group, how = "unlist")), logical(1))
   missing <- !own & vapply(p$x$data, function(t) any(rapply(t, is_missing_colour, how = "unlist")), logical(1))
   panel <- vapply(p$x$data, function(t) paste(t$xaxis %||% "x", t$yaxis %||% "y"), "")
   trace_names <- vapply(p$x$data, function(t) t$name %||% NA_character_, "")
@@ -675,7 +680,7 @@ colour_built <- function(p, palette, colorway) {
     rapply(p$x$data[[i]], function(x) {
       new <- if (inherits(x, "colorway")) {
         plotly::toRGB(way, rgba_alpha(x))
-      } else if (!is.null(group) && is_group_colour(x)) {
+      } else if (!is.null(group) && is_group(x)) {
         plotly::toRGB(group, rgba_alpha(x))
       } else if (!own && is_default(x) && is.matrix(x)) {
         scale
@@ -708,6 +713,20 @@ is_group_colour <- function(x) {
 }
 
 is_missing_colour <- function(x) is_default(x) && identical(unclass(x), "transparent")
+
+# The colours ggplot2's default scale gives up to n groups. ggplotly() builds
+# a ggplot without the palette its theme sets, so its groups come out in
+# these, with no class: plotly marks only the colours it picks itself. A
+# ggplot has no more groups than the figure has traces.
+ggplot_hue <- function(n) {
+  unique(unlist(lapply(seq_len(n), function(k) rgb_of(plotly::toRGB(scales::hue_pal()(k))))))
+}
+
+is_ggplot_hue <- function(x, hue) {
+  is.character(x) && length(x) == 1 && is.null(oldClass(x)) && startsWith(x, "rgba(") && rgb_of(x) %in% hue
+}
+
+rgb_of <- function(x) sub(",[^,]*\\)$", "", x)
 
 # Grey for a missing group's "transparent" colours, each with the alpha a
 # group in the same panel has in the same slot, as plotly fills at a lower

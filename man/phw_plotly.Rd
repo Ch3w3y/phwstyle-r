@@ -63,7 +63,9 @@ In a \code{\link[plotly:subplot]{plotly::subplot()}} figure, a group has the sam
 panel. If a panel sets its own colours with \code{colors} or \code{I()}, the group
 colours and colour scales stay as each panel was built. To give the
 other panels PHW colours, style each panel with \code{phw_plotly()} before
-combining them.
+combining them. Groups of a ggplot in ggplot2's default colours take
+the PHW colours too; a ggplot that sets its own colours with a scale,
+such as \code{\link[ggplot2:scale_colour_manual]{ggplot2::scale_colour_manual()}}, keeps them.
 
 For colours that stay with a group across charts, pass a colour
 key to plotly yourself, e.g.
