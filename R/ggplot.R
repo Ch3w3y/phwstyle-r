@@ -195,10 +195,9 @@ phw_theme_v4_defaults <- function(base_family, base_size, accessible = FALSE) {
 
 # Default colours for a chart with `n` groups and no scale of its own: the
 # same colours scale_*_phw_d() gives `n` ordinary groups.
-phw_discrete_auto <- function(n) {
-  pal <- phw_default_palette()
-  if (is.function(pal)) return(pal(n))
-  unname(phw_colour_key(as.character(seq_len(n)), palette = pal, neutral = character()))
+phw_discrete_auto <- function(n, palette = phw_default_palette()) {
+  if (is.function(palette)) return(palette(n))
+  unname(phw_colour_key(as.character(seq_len(n)), palette = palette, neutral = character()))
 }
 
 # Default colours for a continuous variable. The palest blue is left out

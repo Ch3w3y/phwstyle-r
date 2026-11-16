@@ -32,7 +32,8 @@ As in plotly, a chart with one trace has no legend; pass
 \item{palette}{Colours for traces that don't set their own: a palette
 name, a vector of colours or a function of \code{n}, as in \code{\link[=phw_pal]{phw_pal()}}. A
 trace that maps \code{color} to groups without giving \code{colors} takes them
-from this palette too.}
+from this palette too, as do the groups of a ggplot with no colour or
+fill scale of its own.}
 
 \item{font_size}{Base font size in px.}
 
