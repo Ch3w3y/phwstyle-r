@@ -137,7 +137,8 @@ align_by_type <- function(ft) {
 #'   e.g. `list(col_keys = c("area", "rate"))`. For a summary table,
 #'   `col_keys` must start with its label columns.
 #' @param style Passed to [phw_flextable_theme()].
-#' @param digits Decimal places for non-integer numbers.
+#' @param digits Decimal places for non-integer numbers. Defaults to the
+#'   `digits` of a [phw_group_table()], or 1.
 #' @param col_labels Optional named list of display names, as in
 #'   [flextable::set_header_labels()].
 #' @param autofit Fit column widths to their content?
@@ -154,6 +155,7 @@ phw_flextable <- function(data, caption = NULL, number = NULL, source = NULL,
                           caption_args = list(), flextable_args = list(), ...) {
   rlang::check_installed(c("flextable", "officer"))
   check_unique_names(data)
+  if (missing(digits)) digits <- attr(data, "digits") %||% digits
   if (inherits(data, "phw_summary")) check_summary_keys(data, flextable_args$col_keys)
   ft <- do.call(flextable::flextable, c(list(as.data.frame(data)), flextable_args))
   shown <- names(data) %in% ft$col_keys

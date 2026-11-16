@@ -101,7 +101,8 @@ Defaults to the row variable labels joined with " / ".}
 
 \item{drop}{Leave out categories that have no records in a group?}
 
-\item{digits}{Decimal places for percentages and non-integer values.}
+\item{digits}{Decimal places for percentages and non-integer values.
+The renderers use it unless you give them their own \code{digits}.}
 }
 \value{
 A \code{phw_summary} data frame. Without \code{percent}, value columns are

@@ -13,7 +13,8 @@
 #' @param caption Title shown above the table.
 #' @param source,date Passed to [phw_caption()] and shown under the table.
 #' @param caption_args List of other [phw_caption()] arguments.
-#' @param digits Decimal places for non-integer numbers.
+#' @param digits Decimal places for non-integer numbers. Defaults to the
+#'   `digits` of a [phw_group_table()], or 1.
 #' @param page_length Rows per page.
 #' @param options List of DataTables options, merged with the defaults.
 #' @param ... Passed to [DT::datatable()], e.g. `filter = "top"`.
@@ -29,6 +30,7 @@ phw_datatable <- function(data, caption = NULL, source = NULL, date = NULL, digi
                           page_length = 10, options = list(), caption_args = list(), ...) {
   rlang::check_installed("DT")
   check_unique_names(data)
+  if (missing(digits)) digits <- attr(data, "digits") %||% digits
   sm <- NULL
   note <- NULL
   if (inherits(data, "phw_summary")) {
@@ -176,7 +178,8 @@ phw_dt_css <- function() {
 #' @param source,date Passed to [phw_caption()] and written under each
 #'   table.
 #' @param caption_args List of other [phw_caption()] arguments.
-#' @param digits Decimal places for non-integer numbers.
+#' @param digits Decimal places for non-integer numbers. Defaults to the
+#'   `digits` of a [phw_group_table()], or 1.
 #' @param header_fill Header fill colour: a colour, or a name from
 #'   [phw_colours] such as `"navy"`.
 #' @param font Font name. Excel uses it if it is installed on the reader's
@@ -195,6 +198,7 @@ phw_write_xlsx <- function(x, file, title = NULL, source = NULL, date = NULL, ca
                            overwrite = TRUE) {
   rlang::check_installed("openxlsx2")
   x <- xlsx_sheets(x)
+  own_digits <- !missing(digits)
   if (is.character(header_fill) && length(header_fill) == 1 && header_fill %in% names(phw_colours)) {
     header_fill <- phw_colours[[header_fill]]
   }
@@ -212,6 +216,7 @@ phw_write_xlsx <- function(x, file, title = NULL, source = NULL, date = NULL, ca
     sheet <- names(x)[k]
     s <- x[[k]]
     is_sum <- inherits(s, "phw_summary")
+    places <- if (own_digits) digits else attr(s, "digits") %||% digits
     df <- as.data.frame(unclass(s)[names(s)], check.names = FALSE)
     nl <- if (is_sum) attr(s, "label_cols") %||% 1L else 0L
     hd <- if (is_sum) summary_header(s, nl) else list(upper = list(), bottom = names(df))
@@ -263,7 +268,7 @@ phw_write_xlsx <- function(x, file, title = NULL, source = NULL, date = NULL, ca
       for (j in seq_along(df)) {
         v <- df[[j]]
         fmt <- if (inherits(v, "POSIXt")) "yyyy-mm-dd hh:mm" else if (inherits(v, "Date")) "yyyy-mm-dd" else if (is.numeric(v)) {
-          if (digits == 0 || all(v == round(v), na.rm = TRUE)) "#,##0" else paste0("#,##0.", strrep("0", digits))
+          if (places == 0 || all(v == round(v), na.rm = TRUE)) "#,##0" else paste0("#,##0.", strrep("0", places))
         }
         if (!is.null(fmt)) wb <- openxlsx2::wb_add_numfmt(wb, sheet, openxlsx2::wb_dims(rows = head_row + seq_len(nr), cols = j), fmt)
       }

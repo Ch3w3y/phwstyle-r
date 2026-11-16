@@ -34,7 +34,8 @@ the group columns and a note on the statistics shown.}
 
 \item{style}{Passed to \code{\link[=phw_flextable_theme]{phw_flextable_theme()}}.}
 
-\item{digits}{Decimal places for non-integer numbers.}
+\item{digits}{Decimal places for non-integer numbers. Defaults to the
+\code{digits} of a \code{\link[=phw_group_table]{phw_group_table()}}, or 1.}
 
 \item{col_labels}{Optional named list of display names, as in
 \code{\link[flextable:set_header_labels]{flextable::set_header_labels()}}.}

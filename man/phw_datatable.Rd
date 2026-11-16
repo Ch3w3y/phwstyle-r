@@ -23,7 +23,8 @@ phw_datatable(
 
 \item{source, date}{Passed to \code{\link[=phw_caption]{phw_caption()}} and shown under the table.}
 
-\item{digits}{Decimal places for non-integer numbers.}
+\item{digits}{Decimal places for non-integer numbers. Defaults to the
+\code{digits} of a \code{\link[=phw_group_table]{phw_group_table()}}, or 1.}
 
 \item{page_length}{Rows per page.}
 

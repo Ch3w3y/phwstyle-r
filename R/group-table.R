@@ -62,6 +62,7 @@
 #' @param missing Label for missing grouping values, or `NULL` to drop them.
 #' @param drop Leave out categories that have no records in a group?
 #' @param digits Decimal places for percentages and non-integer values.
+#'   The renderers use it unless you give them their own `digits`.
 #' @return A `phw_summary` data frame. Without `percent`, value columns are
 #'   numeric (blank group rows are `NA`).
 #' @examples
@@ -278,6 +279,7 @@ phw_group_table <- function(data, rows, cols = NULL, value = NULL, fun = sum,
   attr(res, "group_start") <- if (separate == "none") integer() else starts
   attr(res, "separate") <- separate
   attr(res, "highlight") <- highlight
+  attr(res, "digits") <- digits
   if (length(cols) > 1) attr(res, "col_header") <- col_header
   res
 }
