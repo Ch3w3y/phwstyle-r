@@ -55,8 +55,8 @@ phw_gt_theme <- function(x, font_size = 14, accent = phw_colours[["navy"]], stri
     ...
   )
   x <- gt::tab_style(x, gt::cell_text(color = accent),
-                     locations = list(gt::cells_title(), gt::cells_column_labels(), gt::cells_column_spanners(),
-                                      gt::cells_row_groups()))
+                     locations = list(gt::cells_title(), gt::cells_stubhead(), gt::cells_column_labels(),
+                                      gt::cells_column_spanners(), gt::cells_row_groups()))
   x <- gt::tab_style(x, gt::cell_text(weight = "bold"), locations = gt::cells_title("title"))
   if (!inherits(x, "phw_gt")) class(x) <- c("phw_gt", class(x))
   x
@@ -83,7 +83,9 @@ as.tags.phw_gt <- function(x, ...) {
 #' @param digits Decimal places for non-integer numbers. Defaults to the
 #'   `digits` of a [phw_group_table()], or 1.
 #' @param gt_args List of arguments for [gt::gt()], e.g.
-#'   `list(groupname_col = "region")`.
+#'   `list(groupname_col = "region")`. On a summary table, `rowname_col`
+#'   takes a column name as it prints, such as `"Characteristic"`, and
+#'   `groupname_col` is not allowed.
 #' @param theme_args List of arguments for `phw_gt_theme()`.
 #' @export
 phw_gt <- function(data, caption = NULL, subtitle = NULL, number = NULL, source = NULL, date = NULL,
@@ -101,6 +103,7 @@ phw_gt <- function(data, caption = NULL, subtitle = NULL, number = NULL, source 
     ids <- paste0("c", seq_along(df))
     labels <- stats::setNames(as.list(names(df)), ids)
     if (!is.null(ch)) labels[ids[-seq_len(nl)]] <- as.list(ch[nrow(ch), ])
+    gt_args <- gt_args_to_ids(gt_args, names(df), ids)
     names(df) <- ids
   }
   x <- do.call(gt::gt, c(list(df), gt_args))
@@ -111,7 +114,7 @@ phw_gt <- function(data, caption = NULL, subtitle = NULL, number = NULL, source 
   dates <- names(df)[vapply(df, inherits, logical(1), c("Date", "POSIXt"))]
   if (length(dates)) x <- gt::cols_align(x, "left", columns = gt_cols(dates))
   x <- gt::sub_missing(x, missing_text = "")
-  if (is_sum) x <- style_summary_gt(x, data, ids, labels)
+  if (is_sum) x <- style_summary_gt(x, data, ids, labels, stub = gt_args$rowname_col)
   if (!is.null(caption) || !is.null(subtitle)) {
     title <- if (is.null(number) || is.null(caption)) caption else paste(number_prefix, number, caption)
     x <- gt::tab_header(x, title = title %||% "", subtitle = subtitle)
@@ -125,23 +128,50 @@ phw_gt <- function(data, caption = NULL, subtitle = NULL, number = NULL, source 
   x
 }
 
+# A summary table reaches gt::gt() with ids for column names, so the name
+# given as gt's `rowname_col` becomes an id too. A summary table's label
+# columns hold a group's name on its first row only, so gt would put the
+# other rows under a blank heading: `groupname_col` stops instead.
+gt_args_to_ids <- function(gt_args, cols, ids, call = rlang::caller_env()) {
+  if (!is.null(gt_args$groupname_col)) {
+    cli::cli_abort(c("{.code gt_args$groupname_col} does not work on a summary table.",
+                     i = "Use gt row groups on a data frame, not on a summary table."), call = call)
+  }
+  v <- gt_args$rowname_col
+  if (is.null(v)) return(gt_args)
+  bad <- if (is.character(v)) setdiff(v, cols) else v
+  if (length(bad)) {
+    cli::cli_abort(c("{.code gt_args$rowname_col} must name a column of the table.",
+                     x = "{cli::qty(length(bad))}No column{?s} called {.val {bad}}.",
+                     i = "The columns are {.val {cols}}."), call = call)
+  }
+  gt_args$rowname_col <- ids[match(v, cols)]
+  gt_args
+}
+
 # Column names for gt's `columns` arguments. gt only re-exports all_of()
 # from version 0.11.1, and a function call that returns the names selects
 # the same columns on every version.
 gt_cols <- function(x) x
 
-style_summary_gt <- function(x, s, ids, labels) {
+# A column given as gt's `rowname_col` becomes the stub, which cells_body()
+# and cols_label() leave alone.
+style_summary_gt <- function(x, s, ids, labels, stub = NULL) {
   r <- summary_rows(s)
   nl <- attr(s, "label_cols") %||% 1L
   col <- phw_colours
   lab_ids <- ids[seq_len(nl)]
   data_ids <- ids[-seq_len(nl)]
   x <- gt::cols_label(x, .list = labels)
+  if (length(stub)) x <- gt::tab_stubhead(x, labels[[stub]])
   x <- gt::cols_align(x, "left", columns = gt_cols(lab_ids))
   if (length(data_ids)) x <- gt::cols_align(x, "right", columns = gt_cols(data_ids))
   rows_where <- function(x, rows, style, columns = ids) {
     if (!any(rows)) return(x)
-    gt::tab_style(x, style, gt::cells_body(columns = gt_cols(columns), rows = which(rows)))
+    body <- setdiff(columns, stub)
+    loc <- if (length(body)) list(gt::cells_body(columns = gt_cols(body), rows = which(rows)))
+    if (any(stub %in% columns)) loc <- c(loc, list(gt::cells_stub(rows = which(rows))))
+    gt::tab_style(x, style, loc)
   }
   x <- rows_where(x, r$bold, gt::cell_text(weight = "bold"))
   x <- rows_where(x, r$navy, gt::cell_text(color = col[["navy"]]), lab_ids)

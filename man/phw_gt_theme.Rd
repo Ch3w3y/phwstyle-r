@@ -59,7 +59,9 @@ levels and header spanners, as in \code{\link[=phw_flextable]{phw_flextable()}}.
 \item{caption_args}{List of other \code{\link[=phw_caption]{phw_caption()}} arguments.}
 
 \item{gt_args}{List of arguments for \code{\link[gt:gt]{gt::gt()}}, e.g.
-\code{list(groupname_col = "region")}.}
+\code{list(groupname_col = "region")}. On a summary table, \code{rowname_col}
+takes a column name as it prints, such as \code{"Characteristic"}, and
+\code{groupname_col} is not allowed.}
 
 \item{theme_args}{List of arguments for \code{phw_gt_theme()}.}
 }

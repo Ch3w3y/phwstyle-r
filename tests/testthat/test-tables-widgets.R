@@ -279,6 +279,18 @@ test_that("phw_gt carries the Ubuntu web font and italic subtotals, and left-ali
   expect_match(html, "font-style: italic;[^>]*>Group A total", perl = TRUE)
 })
 
+test_that("phw_gt takes a summary table's column names in gt_args", {
+  skip_if_not_installed("gt")
+  s <- phw_summary_table(data.frame(age = c("0-14", "15-44", "0-14")))
+  html <- gt::as_raw_html(phw_gt(s, gt_args = list(rowname_col = "Characteristic")))
+  expect_match(html, "gt_stub[^>]*text-indent: 14px;[^>]*>0-14<", perl = TRUE)
+  expect_match(html, "color: #285087;[^>]*>Characteristic<", perl = TRUE)
+  expect_error(phw_gt(make_groups(layout = "columns"), gt_args = list(groupname_col = "group")),
+               "groupname_col.*does not work on a summary table")
+  expect_error(phw_gt(s, gt_args = list(rowname_col = "characteristic")),
+               "No column called \"characteristic\".*\"Characteristic\" and \"All \\(n = 3\\)\"")
+})
+
 test_that("use_phw_flextable() styles are not carried into another style", {
   skip_if_not_installed("flextable")
   old <- use_phw_flextable(style = "zebra")
