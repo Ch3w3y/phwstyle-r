@@ -29,10 +29,20 @@ test_that("user annotations are added after the caption", {
   expect_equal(one[[1]]$text, "note")
 })
 
-test_that("a sequential palette leaves out its near-white steps for traces", {
-  p <- plotly::plot_ly(groups_df, x = ~week, y = ~cases, type = "scatter", mode = "lines")
-  way <- unlist(built(phw_plotly(p, palette = "blues"))$layout$colorway)
-  expect_equal(way[1], phw_palettes$blues[2])
+test_that("traces without a colour mapping spread over a sequential or diverging palette without its near-white steps", {
+  d <- data.frame(week = rep(1:3, 3), cases = 1:9, g = rep(c("A", "B", "C"), each = 3))
+  split <- plotly::plot_ly(d, x = ~week, y = ~cases, split = ~g, type = "scatter", mode = "lines")
+  added <- plotly::plot_ly(d[1:3, ], x = ~week, y = ~cases, type = "scatter", mode = "lines") |>
+    plotly::add_lines(y = ~ cases * 2) |>
+    plotly::add_lines(y = ~ cases * 3)
+  visible <- list(blues = phw_palettes$blues[-1], orange_navy = phw_palettes$orange_navy[-4])
+  for (pal in names(visible)) {
+    want <- plotly::toRGB(phw_pal(3, visible[[pal]], type = "sequential"))
+    for (p in list(split, added, plotly::subplot(added))) {
+      cols <- vapply(built(phw_plotly(p, palette = pal))$data, function(t) unclass(t$line$color), "")
+      expect_equal(cols, want)
+    }
+  }
 })
 
 test_that("a missing pie label shows as NA in grey", {
