@@ -12,6 +12,48 @@ new_phw_summary <- function(df, row_type, spanner = NULL, note = NULL) {
             spanner = spanner, note = note)
 }
 
+# Subsetting keeps the row attributes (row types, depths, group starts) and
+# the multi-level column header in step with the rows and columns kept. A
+# result without its label columns in front, or with rows made up for an
+# out-of-range index, becomes a plain data frame.
+#' @export
+`[.phw_summary` <- function(x, i, j, drop) {
+  out <- NextMethod()
+  if (!is.data.frame(out)) return(out)
+  n_index <- nargs() - !missing(drop)
+  matrix_style <- n_index > 2
+  rows <- seq_len(nrow(x))
+  if (matrix_style && !missing(i)) {
+    rows <- data.frame(row = rows, row.names = row.names(x))[i, "row"]
+  }
+  cols <- structure(as.list(seq_along(x)), names = names(x), row.names = 1L, class = "data.frame")
+  cols <- if (!matrix_style) cols[i] else if (!missing(j)) cols[, j, drop = FALSE] else cols
+  cols <- unlist(cols, use.names = FALSE)
+  nl <- attr(x, "label_cols") %||% 1L
+  labels <- seq_len(nl)
+  base <- attributes(out)[c("names", "row.names")]
+  if (anyNA(rows) || !identical(cols[labels], labels) || any(cols[-labels] <= nl)) {
+    attributes(out) <- c(base, class = "data.frame")
+    return(out)
+  }
+  attributes(out) <- c(base, attributes(x)[setdiff(names(attributes(x)), names(base))])
+  attr(out, "row_type") <- attr(x, "row_type")[rows]
+  attr(out, "depth") <- attr(x, "depth")[rows]
+  if (!is.null(attr(x, "group_start"))) {
+    attr(out, "group_start") <- setdiff(which(rows %in% attr(x, "group_start")), 1L)
+  }
+  if (!is.null(attr(x, "col_header"))) {
+    attr(out, "col_header") <- attr(x, "col_header")[, cols[-labels] - nl, drop = FALSE]
+  }
+  out
+}
+
+# dplyr's filter(), slice() and arrange() bypass `[` unless told to use it.
+#' @exportS3Method dplyr::dplyr_row_slice
+dplyr_row_slice.phw_summary <- function(data, i, ...) {
+  data[i, , drop = FALSE]
+}
+
 #' Turn a table you built into a summary table
 #'
 #' Marks a data frame as a `phw_summary` so [phw_flextable()],
@@ -62,6 +104,12 @@ phw_as_summary <- function(data, row_type = NULL, note = NULL) {
 # rule above a total row; `line` and `space` separate the outermost groups.
 summary_rows <- function(x) {
   types <- attr(x, "row_type")
+  if (length(types) != nrow(x) || !length(attr(x, "depth")) %in% c(0L, nrow(x))) {
+    cli::cli_abort(c(
+      "The summary table has {nrow(x)} row{?s} but its row styling is for {length(types)}.",
+      i = "Filter or select its rows and columns with {.code [} or dplyr, or use {.fn as.data.frame} to render it as a plain table."),
+      call = NULL)
+  }
   depth <- attr(x, "depth") %||% as.integer(types == "level")
   sep <- attr(x, "separate") %||% "none"
   start <- seq_along(types) %in% (attr(x, "group_start") %||% integer()) & types != "total"
@@ -81,13 +129,9 @@ summary_rows <- function(x) {
 
 #' @export
 print.phw_summary <- function(x, ...) {
-  y <- x
-  types <- attr(x, "row_type")
-  depth <- attr(x, "depth") %||% as.integer(types == "level")
-  if (isTRUE(attr(x, "indent") %||% TRUE)) {
-    y[[1]] <- paste0(strrep("  ", depth), y[[1]])
-  }
-  print(as.data.frame(unclass(y)[names(y)], check.names = FALSE), row.names = FALSE, ...)
+  y <- as.data.frame(unclass(x)[names(x)], check.names = FALSE)
+  y[[1]] <- paste0(strrep("  ", summary_rows(x)$indent), y[[1]])
+  print(y, row.names = FALSE, ...)
   if (!is.null(attr(x, "note"))) cat(attr(x, "note"), "\n")
   invisible(x)
 }

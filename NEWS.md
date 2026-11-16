@@ -246,6 +246,14 @@ says what to change.
   with one decimal place.
 * `phw_summary_table()` shows a blank, not "( to )", when a statistic can't
   be calculated, and `labels` can be a named character vector.
+* Filtering the rows of a summary, cross-tab or group table, or selecting
+  some of its columns, with `[`, `head()`, `subset()` or dplyr's
+  `filter()`, `slice()`, `arrange()` and `select()`, keeps the bold
+  headings, indents, rules and column headers on the rows and columns
+  kept. Before, every renderer styled the wrong rows or stopped with an
+  error. A table without its label columns becomes a plain data frame. A
+  table whose rows no longer match its styling, for example after
+  `rbind()`, stops with a message suggesting `as.data.frame()`.
 * `phw_rate_table()` stops with a message naming the column when the count
   or population column is text, instead of failing inside `sum()`.
 * Table and column helpers give clear errors for duplicated column names,
