@@ -472,12 +472,8 @@ phw_add_slide <- function(x, title = NULL, plot = NULL, table = NULL, text = NUL
   check_one_string(master, allow_null = TRUE)
   check_true_false(editable)
   check_true_false(table_fit)
-  if (!is.numeric(plot_scale) || length(plot_scale) != 1 || is.na(plot_scale) || plot_scale <= 0) {
-    cli::cli_abort("{.arg plot_scale} must be a single positive number, not {.val {plot_scale}}.")
-  }
-  if (!is.numeric(title_size) || length(title_size) != 1 || is.na(title_size) || title_size <= 0) {
-    cli::cli_abort("{.arg title_size} must be a single positive number, not {.val {title_size}}.")
-  }
+  check_positive_number(plot_scale)
+  check_positive_number(title_size)
   contents <- slide_contents(plot, table, text)
   available <- officer::layout_summary(x)
   if (is.null(master)) {
