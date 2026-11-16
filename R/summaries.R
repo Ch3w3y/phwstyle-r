@@ -6,16 +6,22 @@
 # from summary_header(), and turns them into indents, bold rows and header
 # groups.
 
-new_phw_summary <- function(df, row_type, spanner = NULL, note = NULL) {
+# The spanner and the multi-level column header are kept by column name (see
+# summary_header_levels()), so they follow the columns through subsetting
+# and renaming, and a column added later has no upper header.
+new_phw_summary <- function(df, row_type, spanner = NULL, note = NULL, label_cols = 1L) {
   rownames(df) <- NULL
+  if (!is.null(spanner)) {
+    data_names <- names(df)[-seq_len(label_cols)]
+    spanner <- stats::setNames(rep(spanner, length(data_names)), data_names)
+  }
   structure(df, class = c("phw_summary", "data.frame"), row_type = row_type,
-            spanner = spanner, note = note)
+            spanner = spanner, note = note, label_cols = label_cols)
 }
 
-# Subsetting keeps the row attributes (row types, depths, group starts) and
-# the multi-level column header in step with the rows and columns kept. A
-# result without its label columns in front, or with rows made up for an
-# out-of-range index, becomes a plain data frame.
+# Subsetting keeps the row attributes (row types, depths, group starts) in
+# step with the rows kept. A result without its label columns in front, or
+# with rows made up for an out-of-range index, becomes a plain data frame.
 #' @export
 `[.phw_summary` <- function(x, i, j, drop) {
   out <- NextMethod()
@@ -42,10 +48,22 @@ new_phw_summary <- function(df, row_type, spanner = NULL, note = NULL) {
   if (!is.null(attr(x, "group_start"))) {
     attr(out, "group_start") <- setdiff(which(rows %in% attr(x, "group_start")), 1L)
   }
-  if (!is.null(attr(x, "col_header"))) {
-    attr(out, "col_header") <- attr(x, "col_header")[, cols[-labels] - nl, drop = FALSE]
-  }
   out
+}
+
+# Renaming a column renames its key in the header, so it keeps its spanner.
+#' @export
+`names<-.phw_summary` <- function(x, value) {
+  old <- names(x)
+  x <- NextMethod()
+  rekey <- function(keys) {
+    i <- match(keys, old)
+    keys[!is.na(i)] <- names(x)[i[!is.na(i)]]
+    keys
+  }
+  if (!is.null(attr(x, "spanner"))) names(attr(x, "spanner")) <- rekey(names(attr(x, "spanner")))
+  if (!is.null(attr(x, "col_header"))) colnames(attr(x, "col_header")) <- rekey(colnames(attr(x, "col_header")))
+  x
 }
 
 # dplyr's filter(), slice() and arrange() bypass `[` unless told to use it.

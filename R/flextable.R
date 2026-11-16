@@ -412,9 +412,13 @@ style_summary_ft <- function(ft, x, relabelled = character()) {
       ft <- flextable::hline(ft, i = 1, j = data_j, border = rule, part = "header")
     }
     # add_header_row() copies the label row's rules into the new rows, so
-    # clear them over the label columns: the table's top rule stays on top.
-    ft <- flextable::hline(ft, i = seq_along(hd$upper), j = lab_j,
-                           border = officer::fp_border(width = 0), part = "header")
+    # clear them over the label columns and under empty cells (a column
+    # added to the table): the table's top rule stays on top.
+    for (l in seq_along(hd$upper)) {
+      blank <- data_j[!nzchar(rep(hd$upper[[l]]$label, hd$upper[[l]]$n))]
+      ft <- flextable::hline(ft, i = l, j = c(lab_j, blank),
+                             border = officer::fp_border(width = 0), part = "header")
+    }
     if (multi) ft <- flextable::merge_v(ft, j = data_j, part = "header")
     ft <- flextable::align(ft, i = seq_along(hd$upper), j = data_j, align = "center", part = "header")
     ft <- flextable::bold(ft, part = "header")

@@ -410,7 +410,7 @@ summary_reactable_args <- function(x) {
   for (i in seq_along(data_cols)) {
     cols[[data_cols[i]]] <- reactable::colDef(align = "right", na = "", name = hd$bottom[i])
   }
-  ch <- attr(x, "col_header")
+  levels <- summary_header_levels(x, nl)
   groups <- NULL
   if (length(hd$upper)) {
     # reactable has one level of column groups: group by the lowest upper
@@ -418,7 +418,7 @@ summary_reactable_args <- function(x) {
     level <- hd$upper[[length(hd$upper)]]
     groups <- lapply(seq_len(nrow(level)), function(g) {
       idx <- level$start[g] + seq_len(level$n[g]) - 1
-      name <- if (level$total[g]) "" else if (is.null(ch)) level$label[g] else paste(ch[-nrow(ch), idx[1]], collapse = " \u00b7 ")
+      name <- if (level$total[g]) "" else paste(Filter(nzchar, levels[-nrow(levels), idx[1]]), collapse = " \u00b7 ")
       reactable::colGroup(name = name, columns = data_cols[idx])
     })
   }
