@@ -446,9 +446,11 @@ phw_pptx <- function(template = NULL) {
 #'   with it, by up to 1.6 times, and a narrow table is widened by at most
 #'   another 80% (more for a table with more columns). A tall table tightens
 #'   its row spacing so the text can grow. `FALSE` keeps the table at the size [phw_flextable()] gives
-#'   it. A flextable you pass in is never resized. The text never shrinks,
-#'   so a table with too many rows for the slide gives a warning that says
-#'   how many fit.
+#'   it. A flextable you pass in is never resized. A table too wide for the
+#'   area shrinks its text, down to 8 points, rather than narrowing its
+#'   columns. One still too wide at 8 points keeps its column widths and
+#'   gives a warning. The text never shrinks for height, so a table with too
+#'   many rows for the slide gives a warning that says how many fit.
 #' @param title_size Title font size. On a title slide or section header the
 #'   template sets the size and colour, and this applies only when you give it.
 #' @param caption_args List of other [phw_caption()] arguments.
@@ -743,9 +745,12 @@ scaled_text_theme <- function(theme, scale) {
 # table is bound by height, so it squeezes its vertical padding. Row heights
 # come from the text size, line count and padding, the same model that decides
 # how far the text can grow: the heights flextable measures are larger than
-# the text needs, and slides treat them as minimums. It never shrinks the text.
+# the text needs, and slides treat them as minimums. A table too wide for the
+# area shrinks its text instead of its columns, down to `min_size` points for
+# the largest text. Column widths are close to linear in the text size, so the
+# size that fits is read off the widths at full and smallest size.
 fit_table_to_area <- function(ft, width, height, max_grow = 1.6, max_pad = 1.8,
-                              line_height = 1.25, tight_pad = 1) {
+                              line_height = 1.25, tight_pad = 1, min_size = 8) {
   parts <- Filter(function(part) flextable::nrow_part(ft, part) > 0, c("header", "body", "footer"))
   sizes <- lapply(parts, function(part) apply(ft[[part]]$styles$text$font.size$data, 1, max))
   lines <- lapply(parts, function(part) {
@@ -769,23 +774,37 @@ fit_table_to_area <- function(ft, width, height, max_grow = 1.6, max_pad = 1.8,
     pad_pt <- sum(unlist(pads))
     ft <- flextable::padding(ft, padding.top = tight_pad, padding.bottom = tight_pad, part = "all")
   }
-  grow <- min(wanted, grow_for(pad_pt))
-  if (grow > 1) {
+  resize <- function(ft, scale) {
     for (k in seq_along(parts)) {
       for (i in seq_along(sizes[[k]])) {
-        ft <- flextable::fontsize(ft, i = i, size = sizes[[k]][i] * grow, part = parts[k])
+        ft <- flextable::fontsize(ft, i = i, size = sizes[[k]][i] * scale, part = parts[k])
       }
     }
-    ft <- flextable::autofit(ft)
+    flextable::autofit(ft)
   }
-  if (tall || grow > 1) {
-    grow <- max(grow, 1)
+  too_wide <- FALSE
+  if (grow_w < 1) {
+    full <- sum(ft$body$colwidths)
+    least <- min(min_size / max(unlist(sizes)), 1)
+    smallest <- sum(resize(ft, least)$body$colwidths)
+    too_wide <- smallest > width
+    grow <- if (too_wide) least else 1 - (1 - least) * (full - width) / (full - smallest)
+  } else {
+    grow <- max(min(wanted, grow_for(pad_pt)), 1)
+  }
+  if (grow != 1) ft <- resize(ft, grow)
+  if (tall || grow != 1) {
     for (k in seq_along(parts)) {
       ft <- flextable::height(ft, i = seq_along(sizes[[k]]), part = parts[k], unit = "in",
                               height = (sizes[[k]] * lines[[k]] * grow * line_height + pads[[k]]) / 72)
     }
   }
   widths <- ft$body$colwidths
+  if (too_wide) {
+    cli::cli_warn(c("The table's {length(widths)} columns are too wide for the slide's content area, even with {min_size} pt text, so the table runs past it.",
+                    i = "Split the columns over more slides, or show fewer columns."))
+    return(ft)
+  }
   max_pad <- max_pad + 0.3 * max(length(widths) - 2, 0)
   pad <- min(width / sum(widths), max_pad)
   flextable::width(ft, j = seq_along(widths), width = widths * pad)
