@@ -99,6 +99,7 @@ phw_header <- function(title = NULL, subtitle = NULL, href = "https://phw.nhs.wa
   }
   htmltools::tagList(
     phw_font_dependency(),
+    phw_header_dependency(),
     htmltools::tags$header(
       class = "phw-header",
       htmltools::tags$a(href = href, class = "phw-header-logo", brand),
@@ -106,6 +107,16 @@ phw_header <- function(title = NULL, subtitle = NULL, href = "https://phw.nhs.wa
         if (!is.null(title)) htmltools::div(class = "phw-header-title", title),
         if (!is.null(subtitle)) htmltools::div(class = "phw-header-subtitle", subtitle))
     )
+  )
+}
+
+phw_header_dependency <- function() {
+  htmltools::htmlDependency(
+    name = "phw-header",
+    version = as.character(utils::packageVersion("phwstyle")),
+    src = c(file = phw_file("css")),
+    stylesheet = "phw-header.css",
+    all_files = FALSE
   )
 }
 

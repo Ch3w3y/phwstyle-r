@@ -20,3 +20,11 @@ test_that("phw_header needs one line of text", {
   expect_error(phw_header(NA), "one line of text")
   expect_error(phw_header("T", subtitle = NA), "`subtitle`")
 })
+
+test_that("phw_header brings its own styles to a page without phw_bs_theme()", {
+  deps <- htmltools::findDependencies(phw_header("T"))
+  dep <- deps[[match("phw-header", vapply(deps, `[[`, "", "name"))]]
+  css <- readLines(file.path(dep$src$file, dep$stylesheet), warn = FALSE)
+  expect_true(any(grepl(".phw-header {", css, fixed = TRUE)))
+  expect_true(any(grepl("linear-gradient", css, fixed = TRUE)))
+})
