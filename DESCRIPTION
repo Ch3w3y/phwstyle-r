@@ -61,7 +61,7 @@ Suggests:
     knitr (>= 1.47),
     leaflet (>= 2.2.2),
     lubridate,
-    officer (>= 0.6.6),
+    officer (>= 0.6.7),
     openxlsx2 (>= 1.7),
     patchwork (>= 1.2.0),
     plotly (>= 4.10.4),

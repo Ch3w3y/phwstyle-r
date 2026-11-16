@@ -115,6 +115,10 @@ jobs:
       # Take packages from a dated snapshot of CRAN instead of the latest.
       # RSPM (Linux binaries) and CRAN (source) are the two repositories
       # that setup-r puts in options(repos), so both point at the snapshot.
+      # The snapshots do not serve CRAN's web area (web/packages/packages.rds),
+      # which --as-cran reads to look for orphaned dependencies. R before 4.4
+      # stops the whole check when it cannot read it, so R_CRAN_WEB points
+      # that one read at CRAN itself.
       - name: Use a CRAN snapshot
         if: matrix.config.snapshot
         shell: bash
@@ -122,6 +126,7 @@ jobs:
           codename=$(. /etc/os-release && echo "$VERSION_CODENAME")
           echo "RSPM=https://packagemanager.posit.co/cran/__linux__/${codename}/${{ matrix.config.snapshot }}" >> "$GITHUB_ENV"
           echo "CRAN=https://packagemanager.posit.co/cran/${{ matrix.config.snapshot }}" >> "$GITHUB_ENV"
+          echo "R_CRAN_WEB=https://cloud.r-project.org" >> "$GITHUB_ENV"
 
       - uses: r-lib/actions/setup-pandoc@v2
         with:
@@ -166,3 +171,20 @@ jobs:
           args: 'c("--no-manual", "--as-cran")'
           error-on: ${{ matrix.config.error-on || '"warning"' }}
           upload-snapshots: true
+
+      # check-r-package fails on the ERRORs, WARNINGs and NOTEs it finds in
+      # the output, but not when R CMD check stops early ("Execution halted"),
+      # which prints none of them. R CMD check writes its "Status:" line only
+      # when it reaches the end.
+      - name: Make sure R CMD check ran the tests and finished
+        shell: bash
+        run: |
+          log=check/phwstyle.Rcheck/00check.log
+          if ! grep -q '^\* checking tests' "$log"; then
+            echo "::error::R CMD check did not run the tests. See the output of the check step above."
+            exit 1
+          fi
+          if ! grep -q '^Status: ' "$log"; then
+            echo "::error::R CMD check stopped before the end. See the output of the check step above."
+            exit 1
+          fi

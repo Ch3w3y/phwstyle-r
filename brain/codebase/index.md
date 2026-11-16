@@ -6,3 +6,4 @@
 - [[codebase/noodle-runtime-quirks]]
 - [[codebase/grid-measured-heights]]
 - [[codebase/plotly-attrs-traps]]
+- [[codebase/ci-check-traps]]

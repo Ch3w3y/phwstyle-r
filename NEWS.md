@@ -286,6 +286,13 @@ says what to change.
   MSOA. The charts now look as they do on real outputs. Help-page examples
   and the package vignette stay small.
 
+## Requirements
+
+* PowerPoint slides need officer 0.6.7 or later (was 0.6.6).
+  `phw_add_slide()` places content in the layout's own placeholders, which
+  needs `officer::ph_location_id()`. With officer 0.6.6 it stopped with
+  "'ph_location_id' is not an exported object".
+
 # phwstyle 0.3.0
 
 ## New charts and maps
