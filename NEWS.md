@@ -233,6 +233,9 @@ says what to change.
   Before, it failed inside flextable.
 * `phw_gt()` tables carry the bundled Ubuntu web font, dates are
   left-aligned and subtotals are italic.
+* `phw_group_table(drop = FALSE)` keeps factor levels that have no records,
+  such as an empty age band or year, as rows and columns of zeros, as
+  `phw_crosstab()` does. Before, it left them out.
 * `phw_summary_table()` shows a blank, not "( to )", when a statistic can't
   be calculated, and `labels` can be a named character vector.
 * `phw_rate_table()` stops with a message naming the column when the count

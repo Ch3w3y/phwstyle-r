@@ -121,7 +121,7 @@ phw_group_table <- function(data, rows, cols = NULL, value = NULL, fun = sum,
   grp <- lapply(c(rows, cols), function(v) as_levels(data[[v]], missing))
   names(grp) <- c(rows, cols)
   keep <- Reduce(`&`, lapply(grp, function(g) !is.na(g)), rep(TRUE, nrow(data)))
-  grp <- lapply(grp, function(g) droplevels(g[keep]))
+  grp <- lapply(grp, function(g) if (drop) droplevels(g[keep]) else g[keep])
   x <- x[keep]
   n <- length(x)
   all_rows <- rep(TRUE, n)
