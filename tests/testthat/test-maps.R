@@ -21,6 +21,25 @@ test_that("a numeric fill gives a continuous scale and keeps the joined data", {
   expect_equal(plot_labs(p)$fill, "rate")
 })
 
+test_that("maps follow the settings given to use_phw_ggplot() and keep their own legend and gridlines", {
+  library(ggplot2)
+  local_ggplot_state()
+  areas <- tiny_areas()
+  d <- data.frame(area = areas$code, rate = 1:4)
+  expect_equal(phw_map(d, area, rate, areas)$theme$text$size, 11)
+  use_phw_ggplot(base_size = 16, accessible = TRUE, strip = "navy", grid = "xy", legend = "bottom")
+  th <- phw_map(d, area, rate, areas)$theme
+  expect_equal(th$text$size, 16)
+  expect_equal(th$strip.background$fill, phw_colours[["navy"]])
+  expect_equal(th$legend.position, "right")
+  expect_s3_class(th$legend.title, "element_text")
+  expect_s3_class(th$panel.grid, "element_blank")
+  expect_s3_class(th$panel.grid.major.x, "element_blank")
+  expect_s3_class(th$axis.text, "element_blank")
+  theme_set(theme_grey())
+  expect_equal(phw_map(d, area, rate, areas)$theme$text$size, 11)
+})
+
 test_that("bins give a binned scale with those breaks", {
   areas <- tiny_areas()
   d <- data.frame(area = areas$code, rate = c(5, 15, 25, 35))
