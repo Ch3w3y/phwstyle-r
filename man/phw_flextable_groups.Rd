@@ -28,7 +28,7 @@ a position works too.}
 \item{rows}{Colour the whole row (\code{TRUE}) or only column \code{j}?}
 }
 \value{
-A flextable.
+A flextable. Rows with a missing (\code{NA}) group are left uncoloured.
 }
 \description{
 Colours cells by the group they contain, using the same colours as your
