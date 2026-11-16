@@ -409,28 +409,43 @@ scale_fill_phw_b <- function(palette = "blues", reverse = FALSE, aesthetics = "f
 #' @export
 scale_color_phw_b <- scale_colour_phw_b
 
-mid_rescaler <- function(midpoint) {
-  force(midpoint)
-  function(x, to = c(0, 1), from = range(x, na.rm = TRUE)) {
-    scales::rescale_mid(x, to = to, from = from, mid = midpoint)
+# `midpoint` is on the data scale, as in ggplot2::scale_fill_gradient2(), so
+# it goes through the scale's transformation before rescaling.
+centre_on_midpoint <- function(scale, midpoint, call = rlang::caller_env()) {
+  if (!is.numeric(midpoint) || length(midpoint) != 1 || is.na(midpoint)) {
+    cli::cli_abort("{.arg midpoint} must be a single number, not {.obj_type_friendly {midpoint}}.", call = call)
   }
+  transformation <- scale$get_transformation()
+  mid <- suppressWarnings(transformation$transform(midpoint))
+  if (!is.finite(mid)) {
+    cli::cli_abort(c("{.arg midpoint} = {.val {midpoint}} is outside the {.val {transformation$name}} scale.",
+                     i = "Give {.arg midpoint} in the units of the data, such as {.code midpoint = 1} for a ratio."),
+                   call = call)
+  }
+  scale$rescaler <- function(x, to = c(0, 1), from = range(x, na.rm = TRUE)) {
+    scales::rescale_mid(x, to = to, from = from, mid = mid)
+  }
+  scale
 }
 
 #' @rdname phw_scales
-#' @param midpoint Value at the centre of a diverging scale.
+#' @param midpoint Value at the centre of a diverging scale, in the units of
+#'   the data. On a log scale, `midpoint = 1` puts the neutral colour on 1.
 #' @export
 scale_fill_phw_div <- function(midpoint = 0, palette = "orange_navy", reverse = FALSE,
                                aesthetics = "fill", na.value = phw_colours[["grey_light"]], ...) {
-  ggplot2::scale_fill_gradientn(colours = seq_cols(palette, reverse), rescaler = mid_rescaler(midpoint),
-                                aesthetics = aesthetics, na.value = na.value, ...)
+  scale <- ggplot2::scale_fill_gradientn(colours = seq_cols(palette, reverse),
+                                         aesthetics = aesthetics, na.value = na.value, ...)
+  centre_on_midpoint(scale, midpoint)
 }
 
 #' @rdname phw_scales
 #' @export
 scale_colour_phw_div <- function(midpoint = 0, palette = "orange_navy", reverse = FALSE,
                                  aesthetics = "colour", na.value = phw_colours[["grey_light"]], ...) {
-  ggplot2::scale_colour_gradientn(colours = seq_cols(palette, reverse), rescaler = mid_rescaler(midpoint),
-                                  aesthetics = aesthetics, na.value = na.value, ...)
+  scale <- ggplot2::scale_colour_gradientn(colours = seq_cols(palette, reverse),
+                                           aesthetics = aesthetics, na.value = na.value, ...)
+  centre_on_midpoint(scale, midpoint)
 }
 
 #' @rdname phw_scales

@@ -27,6 +27,21 @@ test_that("PHW scales work", {
   expect_error(scale_fill_phw_c("main"), "qualitative")
 })
 
+test_that("diverging scales take midpoint in data units on a log scale", {
+  library(ggplot2)
+  r <- data.frame(x = 1:5, rr = c(0.25, 0.5, 1, 2, 4))
+  logged <- layer_data(ggplot(r, aes(x, 1, fill = log10(rr))) + geom_tile() +
+                         scale_fill_phw_div(midpoint = 0))$fill
+  fill <- layer_data(ggplot(r, aes(x, 1, fill = rr)) + geom_tile() +
+                       scale_fill_phw_div(midpoint = 1, transform = "log10"))$fill
+  colour <- layer_data(ggplot(r, aes(x, 1, colour = rr)) + geom_point() +
+                         scale_colour_phw_div(midpoint = 1, transform = "log2"))$colour
+  expect_equal(fill, logged)
+  expect_equal(colour, logged)
+  expect_error(scale_fill_phw_div(transform = "log10"), "outside")
+  expect_error(scale_colour_phw_div(midpoint = c(0, 1)), "single number")
+})
+
 test_that("phw_finalise adds a footer and saves", {
   skip_if_not_installed("png")
   library(ggplot2)

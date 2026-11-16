@@ -144,7 +144,8 @@ charts and reports.}
 
 \item{...}{Passed to the underlying ggplot2 scale constructor.}
 
-\item{midpoint}{Value at the centre of a diverging scale.}
+\item{midpoint}{Value at the centre of a diverging scale, in the units of
+the data. On a log scale, \code{midpoint = 1} puts the neutral colour on 1.}
 }
 \value{
 A ggplot2 scale.

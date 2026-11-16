@@ -53,6 +53,13 @@ says what to change.
   `#24A2B5`, `#285087` instead of `#F43882`, `#FF5D0C`, `#24A2B5`.
   `"main"` also carries on into `"extended"`, so more than four groups no
   longer take colours from other palettes with a warning.
+* `scale_fill_phw_div()` and `scale_colour_phw_div()` take `midpoint` in the
+  units of the data, as `ggplot2::scale_fill_gradient2()` does. With
+  `transform = "log10"`, `midpoint = 1` now puts the neutral colour on 1, so
+  a rate ratio chart shows values below and above 1 in different colours.
+  Before, the midpoint was read on the log scale, so most charts came out
+  in one colour. A `midpoint` the scale cannot show, such as the default 0
+  on a log scale, now stops with a message.
 * A sequential or diverging palette given to groups is spread over them,
   as `phw_pal()` does. This applies to `scale_*_phw_d()`, `phw_map()` with
   a text or factor `fill`, `phw_epicurve(palette = )`,
