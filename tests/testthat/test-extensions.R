@@ -35,6 +35,22 @@ test_that("phw_arrange builds a patchwork with a PHW caption", {
   expect_true(file.exists(out))
 })
 
+test_that("phw_arrange figure text follows the settings given to use_phw_ggplot()", {
+  skip_if_not_installed("patchwork")
+  library(ggplot2)
+  local_ggplot_state()
+  p <- ggplot(mpg, aes(drv)) + geom_bar()
+  ann_size <- function(...) phw_arrange(p, p, title = "T", source = "S", ...)$patches$annotation$theme$text$size
+  expect_equal(ann_size(), 11)
+  use_phw_ggplot(base_size = 16)
+  expect_equal(ann_size(), 16)
+  use_phw_ggplot(accessible = TRUE)
+  expect_equal(ann_size(), 13)
+  expect_equal(ann_size(theme = theme_phw(base_size = 9)), 9)
+  theme_set(theme_grey())
+  expect_equal(ann_size(), 11)
+})
+
 test_that("phw_save bg sets the background of a phw_arrange figure", {
   skip_if_not_installed("patchwork")
   skip_if_not_installed("png")

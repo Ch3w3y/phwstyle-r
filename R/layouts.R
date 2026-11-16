@@ -23,7 +23,9 @@
 #'   `"right"`, `"left"` or `"none"`.
 #' @param tag_levels Panel tags, e.g. `"A"` for A, B, C or `"1"`. `NULL` for
 #'   none.
-#' @param theme The theme used for the figure title and source line.
+#' @param theme The theme used for the figure title and source line. The
+#'   default, `NULL`, is [theme_phw()] with the settings given to
+#'   [use_phw_ggplot()], so the figure text matches the charts.
 #' @return A patchwork object. Add [phw_finalise()] for the logo footer, or
 #'   save with [phw_save()].
 #' @examples
@@ -38,7 +40,7 @@ phw_arrange <- function(..., plots = NULL, ncol = NULL, nrow = NULL, widths = NU
                         heights = NULL, design = NULL, title = NULL, subtitle = NULL,
                         source = NULL, date = NULL, caption_args = list(),
                         guides = c("collect", "keep"), legend = "bottom",
-                        tag_levels = NULL, theme = theme_phw()) {
+                        tag_levels = NULL, theme = NULL) {
   rlang::check_installed("patchwork", "to arrange plots")
   guides <- rlang::arg_match(guides)
   legend <- rlang::arg_match(legend, c("bottom", "top", "right", "left", "none"))
@@ -51,7 +53,7 @@ phw_arrange <- function(..., plots = NULL, ncol = NULL, nrow = NULL, widths = NU
   }
   out <- patchwork::wrap_plots(all, ncol = ncol, nrow = nrow, widths = widths,
                                heights = heights, design = design, guides = guides)
-  ann_theme <- theme + ggplot2::theme(
+  ann_theme <- (theme %||% chart_theme()) + ggplot2::theme(
     plot.tag = ggplot2::element_text(face = "bold", colour = phw_colours[["navy"]]))
   out <- out + patchwork::plot_annotation(
     title = title, subtitle = subtitle,

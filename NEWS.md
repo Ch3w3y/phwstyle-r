@@ -183,6 +183,10 @@ says what to change.
   do. Before, maps always used the `theme_phw_map()` defaults, so in a report
   set up for larger text they had smaller text than every other chart. Maps
   keep their legend on the right and have no gridlines.
+* `phw_arrange()` draws the figure title, subtitle and source line with
+  the settings given to `use_phw_ggplot()`, such as `base_size = 16` or
+  `accessible = TRUE`. Before, they kept the `theme_phw()` defaults, so the
+  figure title could be smaller than the panel titles under it.
 * After `use_phw_ggplot()`, and so in every `phw_*_document()` format,
   groups from an ordered factor (from `factor(..., ordered = TRUE)`,
   `cut(..., ordered_result = TRUE)` or `lubridate::month(label = TRUE)`)
