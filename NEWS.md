@@ -306,6 +306,10 @@ says what to change.
   labels were dropped without a message.
 * `phw_gt()` tables carry the bundled Ubuntu web font, dates are
   left-aligned and subtotals are italic.
+* `phw_gt_theme(...)` and `phw_gt(theme_args = )` can change a setting
+  phwstyle already sets, such as `heading.align` or `data_row.padding`.
+  Your value replaces the PHW one. Before, these stopped with "matched by
+  multiple actual arguments".
 * `phw_gt(gt_args = list(rowname_col = ))` takes a summary, cross-tab or
   group table's column name as it prints, such as `"Characteristic"`, and a
   label column used as row names keeps its indents, bold headings and navy
