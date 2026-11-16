@@ -175,6 +175,15 @@ map_fill_scale <- function(v, bins, palette, key) {
 # `bins` tidy breaks when `bins` is one number.
 bin_edges <- function(v, bins) {
   lims <- range(pretty(range(v[is.finite(v)])))
-  inner <- if (length(bins) == 1) scales::extended_breaks(n = bins)(lims) else bins
-  c(lims[1], sort(unique(inner[inner > lims[1] & inner < lims[2]])), lims[2])
+  inside <- function(x) sort(unique(x[x > lims[1] & x < lims[2]]))
+  if (length(bins) > 1) return(c(lims[1], inside(bins), lims[2]))
+  inner <- inside(scales::extended_breaks(n = bins)(lims))
+  # For small `bins` the tidy breaks can all land on the ends of the range.
+  # Then ask for a few more and split once, at the one nearest the middle.
+  for (n in bins + seq_len(3)) {
+    if (length(inner)) break
+    more <- inside(scales::extended_breaks(n = n)(lims))
+    inner <- more[which.min(abs(more - mean(lims)))]
+  }
+  c(lims[1], inner, lims[2])
 }
