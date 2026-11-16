@@ -332,13 +332,15 @@ test_that("the YAML and pandoc_args replace the PHW page settings in a PDF", {
     paste(readLines(out, warn = FALSE), collapse = " ")
   }
   default <- tex()
-  expect_match(default, "\\\\documentclass\\[\\s*11pt,\\s*\\]\\{article\\}")
-  expect_match(default, "\\usepackage[a4paper,top=3.2cm,bottom=2.6cm,left=2cm,right=2cm]{geometry}", fixed = TRUE)
+  expect_match(default, "\\\\documentclass\\[\\s*11pt,\\s*a4paper,\\s*\\]\\{article\\}")
+  expect_match(default, "\\usepackage[top=3.2cm,bottom=2.6cm,left=2cm,right=2cm]{geometry}", fixed = TRUE)
   yaml <- tex(c("fontsize: 12pt", "documentclass: report", "geometry: margin=1in"))
-  expect_match(yaml, "\\\\documentclass\\[\\s*12pt,\\s*\\]\\{report\\}")
+  expect_match(yaml, "\\\\documentclass\\[\\s*12pt,\\s*a4paper,\\s*\\]\\{report\\}")
   expect_match(yaml, "\\usepackage[margin=1in]{geometry}", fixed = TRUE)
+  letter <- tex("papersize: letter")
+  expect_match(letter, "\\\\documentclass\\[\\s*11pt,\\s*letterpaper,\\s*\\]\\{article\\}")
   args <- tex(pandoc_args = c("-V", "fontsize=12pt"))
-  expect_match(args, "\\\\documentclass\\[\\s*12pt,\\s*\\]\\{article\\}")
+  expect_match(args, "\\\\documentclass\\[\\s*12pt,\\s*a4paper,\\s*\\]\\{article\\}")
 })
 
 test_that("an HTML document keeps the PHW style and adds your css and includes", {

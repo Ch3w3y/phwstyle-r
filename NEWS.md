@@ -425,6 +425,8 @@ says what to change.
   `colorlinks` from the YAML header or from `pandoc_args` in place of the PHW
   ones. Before, the PHW values silently won, and a `fontsize` in
   `pandoc_args` gave LaTeX an option it doesn't know, so the text was 10pt.
+  A `geometry` that sets only the margins keeps A4 pages: set `papersize` to
+  change the paper. The Quarto `phw-pdf` format works the same way.
 * `phw_download_logos()` saves nothing when the reply isn't an SVG.
 
 ## Interactive outputs and colours
