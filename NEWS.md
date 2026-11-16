@@ -458,6 +458,10 @@ says what to change.
   groups, as `phw_colour_key()` does. It keeps the colour of neutral groups
   such as "Other", including one set with `neutral_colour`. Its new
   `neutral` argument names which groups those are.
+* Pointing `phw_key_file()` at another file, or at `NULL`, forgets the keys
+  read from the old file. Before, a second report rendered in the same
+  session used the first report's colours and saved them into its own key
+  file. Keys made before any key file was set are kept.
 * `phw_contrast()`, `phw_text_on()` and `phw_cvd()` return `NA` for a missing
   colour instead of treating it as white, and accept palette names.
 * `show_phw_palettes()` picks each swatch's label colour with

@@ -116,6 +116,22 @@ test_that("keys persist to a CSV file", {
   expect_false("t_file" %in% utils::read.csv(f)$key)
 })
 
+test_that("switching key file drops the keys read from the old one", {
+  withr::defer(phw_key_file(NULL))
+  dir <- withr::local_tempdir()
+  a <- file.path(dir, "a.csv")
+  b <- file.path(dir, "b.csv")
+  phw_key_file(a)
+  phw_key_set("t_switch", c(x = "#FF0000"))
+  phw_key_file(b)
+  expect_length(phw_key("t_switch"), 0)
+  phw_colour_key(c("F", "M"), "t_other")
+  expect_equal(unique(utils::read.csv(b)$key), "t_other")
+  expect_equal(utils::read.csv(a)$key, "t_switch")
+  phw_key_file(NULL)
+  expect_length(phw_key("t_other"), 0)
+})
+
 test_that("CVD simulation and colour checks work", {
   expect_length(phw_cvd(phw_pal(4), "deutan"), 4)
   expect_equal(phw_cvd("#000000", "protan"), "#000000")

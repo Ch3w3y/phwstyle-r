@@ -54,7 +54,9 @@ them.
 \item \code{phw_key_file()} sets a CSV file that keys are read from and saved to,
 so colours stay the same across sessions and reports. Call it at the
 top of your script or in a setup chunk, or set
-\code{options(phwstyle.key_file = "...")}.
+\code{options(phwstyle.key_file = "...")}. Pointing it at another file, or
+at \code{NULL}, forgets the keys read from the old file, so each project
+keeps its own colours.
 }
 }
 \examples{
