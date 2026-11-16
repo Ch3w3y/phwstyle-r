@@ -95,21 +95,35 @@ test_that("one value gives a single legend swatch", {
   expect_equal(legend_args(m)$labels, "5", ignore_attr = TRUE)
 })
 
-test_that("bins split the areas into the classes phw_map() gives, with no value drawn as missing", {
+test_that("bins give each area the class and colour phw_map() gives, with no value drawn as missing", {
   skip_if_not_installed("ggplot2")
   sq <- squares(4)
   sq$code <- paste0("A", 1:4)
   sq$rate <- c(10, 25, 35, 40)
-  classes <- function(cols) match(cols, unique(cols))
   for (bins in list(c(20, 30, 40), c(0, 20, 30, 100), 5)) {
     m <- expect_no_warning(phw_leaflet() |> phw_leaflet_polygons(sq, fill = rate, bins = bins))
     p <- phw_map(sf::st_drop_geometry(sq), by = code, fill = rate, level = sq, bins = bins)
     expect_false(any(polygon_fill(m) == phw_colours[["grey_light"]]))
-    expect_equal(classes(polygon_fill(m)), classes(ggplot2::layer_data(p, 2)$fill))
+    expect_equal(polygon_fill(m), ggplot2::layer_data(p, 2)$fill)
     expect_equal(gsub("&ndash;", "-", legend_args(m)$labels), c("10 - 20", "20 - 30", "30 - 40"),
                  ignore_attr = TRUE)
   }
   expect_message(phw_leaflet() |> phw_leaflet_polygons(sq, fill = rate, bins = c(50, 60)), "inside the data")
+})
+
+test_that("an area on a break is in the same class and colour as on phw_map()", {
+  skip_if_not_installed("ggplot2")
+  sq <- squares(7)
+  sq$code <- paste0("A", 1:7)
+  sq$rate <- c(0, 5, 10, 15, 19, 20, 3)
+  for (bins in list(c(0, 5, 10, 15, 20), c(0, 1, 10, 20), 4)) {
+    m <- phw_leaflet() |> phw_leaflet_polygons(sq, fill = rate, bins = bins, palette = "greens")
+    p <- phw_map(sf::st_drop_geometry(sq), by = code, fill = rate, level = sq, bins = bins, palette = "greens")
+    expect_equal(polygon_fill(m), ggplot2::layer_data(p, 2)$fill)
+  }
+  fills <- polygon_fill(phw_leaflet() |> phw_leaflet_polygons(sq, fill = rate, bins = c(0, 5, 10, 15, 20)))
+  expect_equal(fills[2], fills[1])
+  expect_equal(fills[6], fills[5])
 })
 
 test_that("quantile bins over tied values stop with a clear error", {

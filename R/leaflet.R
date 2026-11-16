@@ -229,9 +229,19 @@ phw_leaflet_palette <- function(palette = "blues", domain, type = c("numeric", "
     return(leaflet::colorFactor(unname(cols), levels = levels, ordered = TRUE, na.color = na.color))
   }
   cols <- phw_pal(9, palette = palette, reverse = reverse, type = "sequential")
+  if (type == "bin") {
+    # As scale_fill_phw_b() does: bins closed on the right, each coloured at
+    # its midpoint along the palette, so phw_map() and a leaflet map put an
+    # area in the same class with the same shade.
+    bins <- bins %||% 5
+    edges <- if (length(bins) == 1) pretty(domain, n = bins) else sort(unique(bins))
+    at <- scales::rescale(edges)
+    ramp <- if (is.function(palette)) cols else seq_cols(palette, reverse)
+    cols <- scales::pal_gradient_n(ramp)(at[-1] - diff(at) / 2)
+    return(leaflet::colorBin(cols, domain = domain, bins = edges, right = TRUE, na.color = na.color))
+  }
   switch(type,
     numeric = leaflet::colorNumeric(cols, domain = domain, na.color = na.color),
-    bin = leaflet::colorBin(cols, domain = domain, bins = bins %||% 5, na.color = na.color),
     quantile = leaflet::colorQuantile(cols, domain = domain, n = if (length(bins) == 1) bins else 5,
                                       na.color = na.color))
 }

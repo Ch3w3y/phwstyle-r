@@ -85,7 +85,12 @@ says what to change.
   above the last was drawn grey as if it had no data and was left out of
   the legend, and `bins = 5` gave 6 classes on a leaflet map and 3 in
   `phw_map()`. Binned leaflet maps change colour and legend.
-  `phw_leaflet_palette(type = "bin")` is unchanged.
+* `phw_leaflet_polygons(bins = )` and `phw_leaflet_palette(type = "bin")`
+  put an area in the same class, with the same colour, as `phw_map()` and
+  `scale_fill_phw_b()`: a value on a break is in the class below it, and
+  each class takes the shade the binned scale gives it. Before, a rate of
+  exactly 5 with `bins = c(0, 5, 10, 15, 20)` was in the first class on
+  `phw_map()` and the second on the leaflet map, and the shades differed.
 * `phw_map(bins = )` no longer draws an area grey as missing when a break
   lies outside the data, as in `bins = c(0, 20, 100)` for rates of 5 to 35.
 * `phw_plotly()` colours the groups of a `plot_ly()` chart as the PHW
