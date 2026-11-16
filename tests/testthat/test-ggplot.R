@@ -200,6 +200,29 @@ test_that("use_phw_ggplot sets PHW default scales on every ggplot2", {
   expect_equal(plot_colours(named), phw_pal(3))
 })
 
+test_that("use_phw_ggplot gives ordered factors the PHW palette on every ggplot2", {
+  library(ggplot2)
+  local_ggplot_state()
+  d <- data.frame(g = factor(c("0-14", "15-64", "65+", NA)), v = 1:4)
+  ordered <- transform(d, g = factor(g, ordered = TRUE))
+  same_as_unordered <- function(aesthetic, geom) {
+    draw <- function(data) {
+      plot_colours(ggplot(data, aes(g, v, !!rlang::sym(aesthetic) := g)) + geom(), aesthetic)
+    }
+    expect_equal(draw(ordered), draw(d))
+  }
+  use_phw_ggplot()
+  expect_equal(plot_colours(ggplot(ordered, aes(g, v, fill = g)) + geom_col())[1:3], phw_pal(3))
+  same_as_unordered("fill", geom_col)
+  same_as_unordered("colour", geom_point)
+  use_phw_ggplot(palette = "accessible")
+  same_as_unordered("fill", geom_col)
+  # ggplot2's own ordinal scale still answers to its own arguments.
+  magma <- ggplot(ordered, aes(g, v, fill = g)) + geom_col()
+  expect_equal(plot_colours(magma + scale_fill_ordinal(option = "magma")),
+               plot_colours(magma + scale_fill_viridis_d(option = "magma")))
+})
+
 test_that("accessible = TRUE makes lines, points and text bigger on every ggplot2", {
   library(ggplot2)
   local_ggplot_state()

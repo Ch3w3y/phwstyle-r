@@ -90,7 +90,10 @@ A theme can only carry colours from ggplot2 4.0 on. There, \code{theme_phw()}
 on its own also gives groups the PHW palette. With ggplot2 3.5 it styles
 the text, gridlines and legend only, and groups keep the ggplot2 colours
 unless you add a PHW scale or call \code{\link[=use_phw_ggplot]{use_phw_ggplot()}}, which works the
-same on both.
+same on both. On every version, groups from an ordered factor (such as
+\code{cut(..., ordered_result = TRUE)}) keep ggplot2's viridis colours with
+\code{theme_phw()} alone, because ggplot2 does not take their colours from the
+theme. \code{\link[=use_phw_ggplot]{use_phw_ggplot()}} gives them the PHW palette too.
 }
 \examples{
 library(ggplot2)

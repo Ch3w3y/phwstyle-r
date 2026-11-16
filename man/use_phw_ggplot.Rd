@@ -27,8 +27,8 @@ for you. It sets:
 \details{
 \itemize{
 \item \code{\link[=theme_phw]{theme_phw()}} as the default theme
-\item the PHW palette for groups (colour and fill), and PHW blues for
-continuous and binned colours
+\item the PHW palette for groups (colour and fill), including groups from an
+ordered factor, and PHW blues for continuous and binned colours
 \item default colours for layers that don't map a colour: navy bars, areas,
 lines and points, with text and reference lines in the PHW text colour
 \item the PHW font for text and labels

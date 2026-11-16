@@ -5,7 +5,7 @@ local_ggplot_state <- function(env = parent.frame()) {
   old_theme <- ggplot2::theme_get()
   opts <- c("ggplot2.discrete.colour", "ggplot2.discrete.fill", "ggplot2.continuous.colour",
             "ggplot2.continuous.fill", "ggplot2.binned.colour", "ggplot2.binned.fill",
-            "phwstyle.palette")
+            "ggplot2.ordinal.colour", "ggplot2.ordinal.fill", "phwstyle.palette")
   old_opts <- options(stats::setNames(vector("list", length(opts)), opts))
   ns <- asNamespace("ggplot2")
   geoms <- Filter(function(g) inherits(g, "Geom"), mget(ls(ns, pattern = "^Geom"), envir = ns))
