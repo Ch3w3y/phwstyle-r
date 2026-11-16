@@ -24,8 +24,9 @@ says what to change.
   also stops on a numeric date column.
 * Rows with a missing date, count, value, estimate or code are left out with
   one message saying how many. Before, they could turn a whole period into 0
-  or blank a chart. `phw_crosstab(missing = NULL)` now also says how many
-  rows it leaves out for a missing row or column value. `phw_rate_table()` and
+  or blank a chart. `phw_crosstab(missing = NULL)` and
+  `phw_group_table(missing = NULL)` now also say how many rows they leave out
+  for a missing row or column value. `phw_rate_table()` and
   `phw_risk_table()` handle missing values as before.
 * `phw_reactable()` rows are no longer striped by default, to match the
   other tables. Pass `striped = TRUE` to stripe them.

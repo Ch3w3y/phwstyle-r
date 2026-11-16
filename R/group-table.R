@@ -112,18 +112,16 @@ phw_group_table <- function(data, rows, cols = NULL, value = NULL, fun = sum,
   labels <- check_labels(labels)
   data <- as.data.frame(data)
   if (!length(rows)) cli::cli_abort("{.arg rows} needs at least one column.")
-  if (!is.null(value)) {
-    check_numeric_col(data, value, "value")
-    data <- drop_missing(data, value)
-  }
+  if (!is.null(value)) check_numeric_col(data, value, "value")
+  # Missing grouping values: relabel them, or leave the records out.
+  data <- drop_missing(data, c(value, if (is.null(missing)) c(rows, cols)))
   x <- if (is.null(value)) rep(1, nrow(data)) else data[[value]]
 
-  # Missing grouping values: relabel, or drop the records.
-  grp <- lapply(c(rows, cols), function(v) as_levels(data[[v]], missing))
+  grp <- lapply(c(rows, cols), function(v) {
+    g <- as_levels(data[[v]], missing)
+    if (drop) droplevels(g) else g
+  })
   names(grp) <- c(rows, cols)
-  keep <- Reduce(`&`, lapply(grp, function(g) !is.na(g)), rep(TRUE, nrow(data)))
-  grp <- lapply(grp, function(g) if (drop) droplevels(g[keep]) else g[keep])
-  x <- x[keep]
   n <- length(x)
   all_rows <- rep(TRUE, n)
   cell <- function(idx) {
