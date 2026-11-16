@@ -86,8 +86,9 @@ summary_header <- function(x, nl, cols = seq_len(ncol(x) - nl)) {
   ch <- attr(x, "col_header")
   sp <- attr(x, "spanner")
   data_names <- names(x)[nl + cols]
+  if (!length(data_names)) return(list(upper = list(), bottom = data_names))
   if (is.null(ch)) {
-    upper <- if (!is.null(sp) && length(data_names)) {
+    upper <- if (!is.null(sp)) {
       list(data.frame(label = sp, start = 1L, n = length(data_names), total = FALSE))
     }
     return(list(upper = upper, bottom = data_names))
