@@ -279,6 +279,10 @@ test_that("subplot() of ggplots gives groups the PHW colours, the same in every 
   expect_equal(colours(tr), key[c("A", "B", "C", "B", "C")])
   expect_equal(colours(built(phw_plotly(plotly::ggplotly(lines)))$data), key)
 
+  points <- ggplot2::ggplot(d, ggplot2::aes(x, y, colour = g, shape = factor(x))) + ggplot2::geom_point()
+  tr <- built(phw_plotly(plotly::subplot(points, lines)))$data
+  expect_equal(unname(colours(tr)), unname(key[c(rep(c("A", "B", "C"), each = 3), "A", "B", "C")]))
+
   own <- lines + ggplot2::scale_colour_manual(values = c("red", "blue", "black"))
   expect_equal(unname(colours(built(phw_plotly(plotly::subplot(own, bars)))$data)[1:3]),
                c("rgba(255,0,0,1)", "rgba(0,0,255,1)", "rgba(0,0,0,1)"))
