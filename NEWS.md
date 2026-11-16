@@ -109,8 +109,9 @@ says what to change.
 * `phw_map(bins = )` no longer draws an area grey as missing when a break
   lies outside the data, as in `bins = c(0, 20, 100)` for rates of 5 to 35.
 * `phw_map(bins = 2)` and `phw_leaflet_polygons(bins = 2)` split the areas
-  into two classes at a tidy break near the middle of the data. Before,
-  they drew every area in one colour.
+  into two classes at the tidy number nearest the median that leaves an
+  area in each class. Before, they could draw every area in one colour, or
+  put almost every area in one class when the data were skewed.
 * `phw_plotly()` colours the groups of a `plot_ly()` chart as the PHW
   ggplot2 scales do: unused levels are left out, `NA` is grey instead of
   invisible, groups such as "Unknown" are grey, and every group gets its own
