@@ -138,6 +138,21 @@ test_that("a table too tall for the slide warns with how many rows fit", {
   expect_no_warning(phw_add_slide(phw_pptx(), "Short", table = head(tall)))
 })
 
+test_that("a flextable's caption shows above the table on the slide", {
+  skip_if_not_installed("officer")
+  skip_if_not_installed("flextable")
+  skip_if_not_installed("xml2")
+  first_cells <- function(table) {
+    xml <- deck_xml(phw_add_slide(phw_pptx(), "Cases", table = table))
+    xml2::xml_text(xml2::xml_find_all(xml, "//a:tr/a:tc[1]"))
+  }
+  d <- data.frame(area = c("Cardiff", "Swansea"), cases = c(95, 75))
+  ft <- phw_flextable(d, caption = "Cases by area, 2026", number = 1, source = "Example")
+  expect_equal(first_cells(ft)[1:2], c("Table 1 Cases by area, 2026", "area"))
+  expect_equal(first_cells(flextable::set_caption(flextable::flextable(d), "My caption"))[1], "My caption")
+  expect_equal(first_cells(phw_flextable(d))[1], "area")
+})
+
 test_that("an empty table stops", {
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")

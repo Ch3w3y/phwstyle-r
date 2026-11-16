@@ -272,6 +272,9 @@ says what to change.
 * `phw_add_slide()` scales the text of a `phw_arrange()` figure as one: every
   panel, the figure title and the source line. Before, only the last panel
   was scaled.
+* A flextable's caption, such as "Table 1 ..." from `phw_flextable()`, now
+  shows on a `phw_add_slide()` slide, in a row at the top of the table.
+  Before, PowerPoint left it out without a word.
 * On the title slide and section header of your own template,
   `phw_add_slide()` gives `text` the template's colour and size, and the
   source line is white only when the slide background is dark. Before, both
