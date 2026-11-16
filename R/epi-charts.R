@@ -128,10 +128,7 @@ phw_epicurve <- function(data, date, group = NULL, count = NULL,
                          range = NULL, average = NULL, average_label = NULL, ...) {
   interval <- rlang::arg_match(interval)
   position <- rlang::arg_match(position)
-  if (!is.null(average) &&
-      !(is.numeric(average) && length(average) == 1 && !is.na(average) && average >= 1 && average == round(average))) {
-    cli::cli_abort("{.arg average} must be a whole number of periods, 1 or more.")
-  }
+  if (!is.null(average)) check_whole_number(average, 1)
   date <- pick_col(rlang::enquo(date), data, "date")
   group <- pick_col(rlang::enquo(group), data, "group", null_ok = TRUE)
   count <- pick_col(rlang::enquo(count), data, "count", null_ok = TRUE)
@@ -500,10 +497,7 @@ phw_spc <- function(data, x, y, type = c("xmr", "run"), improvement = c("none", 
                      i = "Convert it first, for example with {.fn as.Date}."))
   }
   check_numeric_col(data, y, "y")
-  if (!is.null(baseline) &&
-      !(is.numeric(baseline) && length(baseline) == 1 && isTRUE(baseline >= 2) && baseline == round(baseline))) {
-    cli::cli_abort("{.arg baseline} must be a whole number of points, 2 or more.")
-  }
+  if (!is.null(baseline)) check_whole_number(baseline, 2)
   data <- drop_missing(data, c(x, y))
   if (nrow(data) < 2) cli::cli_abort("An SPC chart needs at least 2 points, not {nrow(data)}.")
   data <- data[order(data[[x]]), , drop = FALSE]

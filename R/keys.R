@@ -320,7 +320,7 @@ phw_key_file <- function(path) {
     options(phwstyle.key_file = NULL)
     return(invisible(NULL))
   }
-  if (!rlang::is_string(path) || !nzchar(path)) cli::cli_abort("{.arg path} must be a file path or {.code NULL}.")
+  check_one_string(path, allow_empty = FALSE, hint = "Give a file path, or {.code NULL} to stop using a key file.")
   if (dir.exists(path)) cli::cli_abort("{.arg path} is a folder: give a CSV file in it, such as {.file {file.path(path, 'keys.csv')}}.")
   if (!dir.exists(dirname(path))) cli::cli_abort("The folder {.file {dirname(path)}} does not exist. Create it first.")
   options(phwstyle.key_file = path)
