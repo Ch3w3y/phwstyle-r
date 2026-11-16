@@ -12,11 +12,24 @@ test_that("a trace that maps color to groups takes the palette", {
   expect_equal(fn, c("rgba(0,0,0,1)", "rgba(255,0,0,1)"))
 })
 
-test_that("heatmaps get the PHW sequential scale unless one is set", {
+test_that("heatmaps get the PHW continuous colours unless a scale is set", {
   hm <- built(phw_plotly(plotly::plot_ly(z = volcano, type = "heatmap")))$data[[1]]$colorscale
-  expect_equal(hm[1, 2], "rgba(232,237,244,1)")
+  expect_equal(hm[c(1, nrow(hm)), 2], plotly::toRGB(phw_continuous_auto[c(1, 5)]))
   own <- built(phw_plotly(plotly::plot_ly(z = volcano, type = "heatmap", colorscale = "Greys")))$data[[1]]
   expect_equal(own$colorscale, "Greys")
+})
+
+test_that("plot_ly charts coloured by a number start at the blue ggplot charts use", {
+  d <- data.frame(x = 1:4, y = 1:4, v = c(0, 10, 50, 100))
+  gg <- built(phw_plotly(ggplot2::ggplot(d, ggplot2::aes(x, y, colour = v)) + ggplot2::geom_point()))
+  start <- gg$data[[1]]$marker$color[[1]]
+  pts <- plotly::plot_ly(d, x = ~x, y = ~y, color = ~v, type = "scatter", mode = "markers")
+  expect_equal(built(phw_plotly(pts))$data[[1]]$marker$colorscale[1, 2], start)
+  both <- built(phw_plotly(plotly::subplot(pts, plotly::plot_ly(d, x = ~x, y = ~y, type = "bar"))))
+  expect_equal(both$data[[1]]$marker$colorscale[1, 2], start)
+  own <- plotly::plot_ly(d, x = ~x, y = ~y, marker = list(color = ~v), type = "scatter", mode = "markers")
+  first <- built(phw_plotly(own))$layout$colorscale$sequential[[1]][[2]]
+  expect_lte(max(abs(grDevices::col2rgb(first) - grDevices::col2rgb(phw_continuous_auto[[1]]))), 1)
 })
 
 test_that("user annotations are added after the caption", {

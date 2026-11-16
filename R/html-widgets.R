@@ -238,8 +238,8 @@ wrap_widget <- function(widget, caption, cap, note = NULL) {
 #' @details Any plotly chart type works: scatter and lines, bars, pies and
 #'   donuts (given the PHW colours and white slice borders), box and violin plots, histograms,
 #'   heatmaps, contours and choropleth maps, and markers coloured by a number
-#'   (which pick up the PHW sequential colour scale unless you set
-#'   `colorscale` or `colors`), and figures combined with
+#'   (which start at the same blue as the ggplot2 charts, not the palest
+#'   one, unless you set `colorscale` or `colors`), and figures combined with
 #'   [plotly::subplot()]. Use [phw_plotly_colorscale()] to set a PHW scale on
 #'   a trace yourself.
 #'
@@ -306,8 +306,8 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
   base <- list(
     font = font,
     colorway = unname(colorway),
-    colorscale = list(sequential = phw_plotly_colorscale("blues"),
-                      sequentialminus = phw_plotly_colorscale("blues"),
+    colorscale = list(sequential = phw_plotly_colorscale(phw_continuous_auto),
+                      sequentialminus = phw_plotly_colorscale(phw_continuous_auto),
                       diverging = phw_plotly_colorscale("orange_navy")),
     paper_bgcolor = "#FFFFFF", plot_bgcolor = "#FFFFFF",
     title = c(if (!is.null(title) && !is.list(title)) list(text = title),
@@ -600,14 +600,14 @@ plotly_colorway <- function(p, palette) {
 plotly_scale_types <- c("heatmap", "contour", "histogram2d", "histogram2dcontour", "choropleth")
 
 # A trace that maps `color` without `colors` gets plotly's own palette, so
-# give it PHW colours: a colour key for groups, and the PHW sequential scale
-# for numbers and for heatmaps, contours and choropleths. Every trace takes
-# the same key, as plotly colours all traces from the first one's `colors`.
+# give it PHW colours: a colour key for groups, and the continuous colours of
+# the ggplot2 charts for numbers and for heatmaps, contours and choropleths.
+# Every trace takes the same key, as plotly colours all traces from the first
+# one's `colors`.
 # A trace with its own key, such as one from phw_colour_key(), keeps it, with
 # "NA" added in grey when a value is missing.
 colour_mapped <- function(p, palette) {
   if (is.null(p$x$attrs)) return(p)
-  seq <- palette_colours("blues")
   values <- Map(function(a, id) {
     if (is.null(a$colorscale) && !is.null(a$color)) mapped_values(a$color, p, id)
   }, p$x$attrs, rlang::names2(p$x$attrs))
@@ -624,12 +624,12 @@ colour_mapped <- function(p, palette) {
     }
     if (!is.null(a$colors) || !is.null(a$colorscale)) return(a)
     if (is.null(a$color)) {
-      if (isTRUE(a$type %in% plotly_scale_types)) a$colors <- seq
+      if (isTRUE(a$type %in% plotly_scale_types)) a$colors <- phw_continuous_auto
       return(a)
     }
     if (is.null(v)) return(a)
     if (is.numeric(v)) {
-      a$colors <- seq
+      a$colors <- phw_continuous_auto
     } else {
       a$colors <- key
       if (anyNA(v)) a$color <- na_as_group(a$color)
@@ -664,7 +664,7 @@ colour_built <- function(p, palette, colorway) {
   lv <- unique(trace_names[grouped & !is.na(trace_names)])
   key <- if (length(lv)) group_colours(list(factor(lv, lv)), palette)
   at <- seq(0, 1, length.out = 25)
-  scale <- matrix(c(at, plotly::toRGB(scales::col_numeric(palette_colours("blues"), c(0, 1))(at))), ncol = 2)
+  scale <- matrix(c(at, plotly::toRGB(scales::col_numeric(phw_continuous_auto, c(0, 1))(at))), ncol = 2)
   p$x$data <- lapply(seq_along(p$x$data), function(i) {
     if (missing[[i]]) {
       like <- p$x$data[grouped & panel == panel[[i]]]
