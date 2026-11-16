@@ -318,12 +318,7 @@ NULL
 phw_discrete_scale <- function(aesthetics, palette, reverse, key, values, neutral, na.value, ...,
                                call = rlang::caller_env()) {
   if (!is.function(palette)) palette_colours(palette)
-  if (length(values)) {
-    if (!rlang::is_named(values)) {
-      cli::cli_abort("{.arg values} must be a named vector of colours, such as {.code c(Wales = \"#285087\")}.", call = call)
-    }
-    check_colours(values, "values", call = call)
-  }
+  if (length(values)) check_named_colours(values, "values", call = call)
   sc <- ggplot2::discrete_scale(aesthetics, palette = phw_discrete_auto, na.value = na.value, ...)
   ggplot2::ggproto(NULL, sc,
     phw_args = list(palette = palette, reverse = reverse, key = key, values = values, neutral = neutral),
