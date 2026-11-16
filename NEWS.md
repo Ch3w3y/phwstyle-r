@@ -167,6 +167,11 @@ says what to change.
   use Ubuntu once it is installed with `phw_install_fonts()`. On macOS
   they need XQuartz, and without it `phw_save()` says so.
 
+* `phw_number(big.mark = )` and `phw_percent(big.mark = )` change the
+  thousands separator, so `phw_number(big.mark = "")` labels years as
+  `2024`. Before, `big.mark` stopped with "matched by multiple actual
+  arguments".
+
 ## Tables
 
 * Summary and group tables look the same in `phw_flextable()`, `phw_gt()`,

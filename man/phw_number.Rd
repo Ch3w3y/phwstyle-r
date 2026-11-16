@@ -5,12 +5,15 @@
 \alias{phw_percent}
 \title{Number formatting in PHW style}
 \usage{
-phw_number(accuracy = 1, ...)
+phw_number(accuracy = 1, big.mark = ",", ...)
 
-phw_percent(accuracy = 0.1, ...)
+phw_percent(accuracy = 0.1, big.mark = ",", ...)
 }
 \arguments{
 \item{accuracy}{Rounding, as in \code{\link[scales:label_number]{scales::label_number()}}.}
+
+\item{big.mark}{Thousands separator. Use \code{""} for none, for example for
+years on an axis.}
 
 \item{...}{Passed to \code{\link[scales:label_number]{scales::label_number()}} or \code{\link[scales:label_percent]{scales::label_percent()}}.}
 }
@@ -23,4 +26,5 @@ Thousands separated with commas and a fixed number of decimals.
 \examples{
 phw_number()(c(1234.5, 98765))
 phw_percent()(0.432)
+phw_number(big.mark = "")(2024)
 }
