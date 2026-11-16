@@ -456,6 +456,10 @@ check_summary_keys <- function(x, keys, call = rlang::caller_env()) {
 #' value in the column, so readers can compare sizes at a glance (as in
 #' many PHW summary tables).
 #'
+#' On a summary table from [phw_flextable()], only the level rows get bars.
+#' Headings, subtotals and totals show the number only and do not count
+#' towards the scale, so a total does not shrink every other bar.
+#'
 #' @param x A flextable.
 #' @param j Columns, chosen as in [dplyr::select()]: unquoted names,
 #'   positions or strings.
@@ -475,13 +479,16 @@ phw_flextable_bars <- function(x, j, colour = phw_colours[["light_teal"]], width
   check_flextable(x)
   data <- x$body$dataset
   j <- pick_cols(rlang::enquo(j), data, "j")
-  j <- value_cols(data, j, "j")
-  for (col in j) check_bar_values(data[[col]], col, "j")
+  rows <- heat_rows(data)
+  j <- value_cols(data[rows, , drop = FALSE], j, "j")
+  for (col in j) check_bar_values(data[[col]][rows], col, "j")
   for (col in j) {
     v <- data[[col]]
-    mx <- max(v, na.rm = TRUE)
+    mx <- max(v[rows], na.rm = TRUE)
+    # Rows without a bar get an empty one, so their numbers line up.
+    bar <- ifelse(is.na(v) | !seq_along(v) %in% rows, 0, v)
     x <- flextable::compose(x, j = col, part = "body", value = flextable::as_paragraph(
-      flextable::minibar(value = ifelse(is.na(v), 0, v), max = mx, barcol = colour,
+      flextable::minibar(value = bar, max = mx, barcol = colour,
                          bg = "transparent", width = width, height = height),
       " ", flextable::as_chunk(ifelse(is.na(v), "", fmt_num(v, digits)))))
     x <- flextable::align(x, j = col, align = "left", part = "all")

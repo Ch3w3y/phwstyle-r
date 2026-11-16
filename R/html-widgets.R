@@ -444,7 +444,9 @@ summary_reactable_args <- function(x) {
 #' in `columns = list(...)` of [phw_reactable()] or [reactable::reactable()].
 #'
 #' * `phw_col_bar()`: the value with a horizontal bar behind it, scaled to
-#'   the column's largest value. Good for counts and rates.
+#'   the column's largest value. Good for counts and rates. On a summary
+#'   table, only the level rows get bars: headings, subtotals and totals
+#'   show the number only and stay out of the scale.
 #' * `phw_col_heat()`: cell background from a sequential or diverging
 #'   palette, with readable text. On a summary table, only the level rows
 #'   are coloured: headings, subtotals and totals keep their own styling and
@@ -484,14 +486,15 @@ NULL
 phw_col_bar <- function(data, column, colour = phw_colours[["light_teal"]], digits = 0, ...) {
   rlang::check_installed("reactable")
   column <- pick_col(rlang::enquo(column), data, "column")
-  if (!length(value_cols(data, column, "column"))) return(reactable::colDef(align = "right", ...))
-  check_bar_values(data[[column]], column, "column")
-  mx <- max(data[[column]], na.rm = TRUE)
+  rows <- heat_rows(data)
+  if (!length(value_cols(data[rows, , drop = FALSE], column, "column"))) return(reactable::colDef(align = "right", ...))
+  check_bar_values(data[[column]][rows], column, "column")
+  mx <- max(data[[column]][rows], na.rm = TRUE)
   reactable::colDef(
     align = "left",
-    cell = function(value) {
+    cell = function(value, index) {
       if (is.na(value)) return("")
-      w <- if (mx > 0) paste0(round(100 * value / mx, 1), "%") else "0%"
+      w <- if (mx > 0 && index %in% rows) paste0(round(100 * value / mx, 1), "%") else "0%"
       htmltools::div(
         style = "display:flex;align-items:center;gap:6px;",
         htmltools::div(style = "flex:1 1 auto;background:transparent;",
