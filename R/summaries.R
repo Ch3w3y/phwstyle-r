@@ -4,10 +4,10 @@
 # attributes, which the renderers turn into indents, bold rows and header
 # groups.
 
-new_phw_summary <- function(df, row_type, spanner = NULL, note = NULL, first_col = names(df)[1]) {
+new_phw_summary <- function(df, row_type, spanner = NULL, note = NULL) {
   rownames(df) <- NULL
   structure(df, class = c("phw_summary", "data.frame"), row_type = row_type,
-            spanner = spanner, note = note, first_col = first_col)
+            spanner = spanner, note = note)
 }
 
 #' Turn a table you built into a summary table

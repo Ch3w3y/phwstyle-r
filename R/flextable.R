@@ -66,7 +66,7 @@ phw_flextable_theme <- function(x, style = c("booktabs", "header", "light", "zeb
 
   navy <- officer::fp_border(color = col[["navy"]], width = 1.5)
   thin <- officer::fp_border(color = col[["grey_border"]], width = 0.75)
-  nb <- nrow_part(ft, "body")
+  nb <- flextable::nrow_part(ft, "body")
 
   if (style %in% c("booktabs", "zebra")) {
     ft <- flextable::hline_top(ft, border = navy, part = "header")
@@ -100,10 +100,6 @@ phw_flextable_theme <- function(x, style = c("booktabs", "header", "light", "zeb
   if (!is.null(header_colour)) ft <- flextable::color(ft, color = header_colour, part = "header")
   if (align) ft <- align_by_type(ft)
   ft
-}
-
-nrow_part <- function(ft, part) {
-  ft[[part]]$content$nrow %||% nrow(ft[[part]]$dataset)
 }
 
 `%||%` <- function(x, y) if (is.null(x)) y else x

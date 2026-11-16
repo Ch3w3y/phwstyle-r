@@ -13,9 +13,9 @@ test_that("boundary registry lists every level with valid fields", {
 test_that("the nearest level of detail is used", {
   reg <- boundary_registry()
   hb <- reg[reg$level == "health_board", ]
-  expect_equal(pick_boundary(hb, "generalised")$detail, "generalised")
+  expect_equal(boundary_candidates(hb, "generalised")[1, ]$detail, "generalised")
   gp <- reg[reg$level == "gp_cluster", ]
-  expect_equal(pick_boundary(gp, "ultra")$detail, "full")
+  expect_equal(boundary_candidates(gp, "ultra")[1, ]$detail, "full")
   url <- ons_query_url(hb[1, ], 0, 10)
   expect_match(url, "LIKE%20%27W11%25%27")
 })
@@ -52,7 +52,7 @@ test_that("a failed download gives a clear error, or falls back to the cache", {
   expect_error(phw_boundaries("health_board", quiet = TRUE), "Could not download")
   # With a cached copy, refresh = TRUE warns and keeps the cache.
   reg <- boundary_registry()
-  row <- pick_boundary(reg[reg$level == "health_board", ], "generalised")
+  row <- boundary_candidates(reg[reg$level == "health_board", ], "generalised")[1, ]
   gj <- '{"type":"FeatureCollection","features":[{"type":"Feature","properties":{"LHB23CD":"W11000001","LHB23NM":"A","LHB23NMW":"A"},"geometry":{"type":"Point","coordinates":[-3.5,52]}}]}'
   f <- file.path(dir, sprintf("health_board_%s.geojson", gsub("[^A-Za-z0-9]+", "_", row$layer)))
   writeLines(sub("LHB23", substr(row$code_field, 1, 5), gj, fixed = TRUE), f)
@@ -90,8 +90,8 @@ test_that("a level with two sources tries them in order", {
   }
   # A level with one source keeps choosing the closest detail.
   hb <- reg[reg$level == "health_board", ]
-  expect_equal(pick_boundary(hb, "generalised")$detail, "generalised")
-  expect_equal(pick_boundary(hb, "super")$detail, "generalised")
+  expect_equal(boundary_candidates(hb, "generalised")[1, ]$detail, "generalised")
+  expect_equal(boundary_candidates(hb, "super")[1, ]$detail, "generalised")
 })
 
 test_that("when the first source fails the next is used, with a warning", {

@@ -1,5 +1,4 @@
 phw_org <- "Public Health Wales"
-phw_cdsc <- "Communicable Disease Surveillance Centre"
 
 #' Format a date the PHW way
 #'

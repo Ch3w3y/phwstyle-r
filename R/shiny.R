@@ -168,7 +168,7 @@ phw_page_navbar <- function(..., title = NULL, subtitle = NULL, footer = NULL,
   page <- do.call(bslib::page_navbar, args)
   if (!is.list(header_args)) cli::cli_abort("{.arg header_args} must be a list of {.fn phw_header} arguments.")
   header <- utils::modifyList(list(title = title, subtitle = subtitle), header_args)
-  prepend_header(page, do.call(phw_header, header))
+  htmltools::tagList(do.call(phw_header, header), page)
 }
 
 # One line of text (or HTML tags) for the header band.
@@ -177,8 +177,4 @@ check_header_text <- function(x, arg, call = rlang::caller_env()) {
   if (!rlang::is_string(x)) {
     cli::cli_abort("{.arg {arg}} must be one line of text, not {.obj_type_friendly {x}}.", call = call)
   }
-}
-
-prepend_header <- function(page, header) {
-  htmltools::tagList(header, page)
 }
