@@ -20,7 +20,7 @@ phw_arrange(
   guides = c("collect", "keep"),
   legend = "bottom",
   tag_levels = NULL,
-  theme = theme_phw()
+  theme = NULL
 )
 }
 \arguments{
@@ -45,7 +45,9 @@ one, at \code{legend}; \code{"keep"} leaves each legend with its plot.}
 \item{tag_levels}{Panel tags, e.g. \code{"A"} for A, B, C or \code{"1"}. \code{NULL} for
 none.}
 
-\item{theme}{The theme used for the figure title and source line.}
+\item{theme}{The theme used for the figure title and source line. The
+default, \code{NULL}, is \code{\link[=theme_phw]{theme_phw()}} with the settings given to
+\code{\link[=use_phw_ggplot]{use_phw_ggplot()}}, so the figure text matches the charts.}
 }
 \value{
 A patchwork object. Add \code{\link[=phw_finalise]{phw_finalise()}} for the logo footer, or
