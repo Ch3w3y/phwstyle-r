@@ -80,6 +80,22 @@ test_that("plot_ly groups take the colours the ggplot2 scales give them", {
   expect_equal(cols[["High"]], plotly::toRGB(phw_colours[["teal"]]))
 })
 
+test_that("a sequential or diverging palette spreads over plot_ly groups, as in the ggplot2 scales", {
+  d <- data.frame(x = 1:3, y = 1:3, g = c("a", "b", "c"))
+  for (pal in c("blues", "orange_navy")) {
+    gg <- ggplot2::ggplot(d, ggplot2::aes(g, y, fill = g)) + ggplot2::geom_col() + scale_fill_phw_d(palette = pal)
+    want <- plotly::toRGB(ggplot2::layer_data(gg)$fill)
+    expect_equal(want, plotly::toRGB(phw_pal(3, pal)))
+    bars <- plotly::plot_ly(d, x = ~x, y = ~y, color = ~g, type = "bar")
+    tr <- built(phw_plotly(bars, palette = pal))$data
+    expect_equal(vapply(tr, function(t) t$marker$color, ""), want)
+    tr <- built(phw_plotly(plotly::subplot(bars), palette = pal))$data
+    expect_equal(vapply(tr, function(t) unclass(t$marker$color), ""), want)
+    pie <- built(phw_plotly(plotly::plot_ly(d, labels = ~g, values = ~y, type = "pie"), palette = pal))$data[[1]]
+    expect_equal(plotly::toRGB(pie$marker$colors), want)
+  }
+})
+
 test_that("a colour key keeps missing groups visible in grey", {
   na <- data.frame(x = 1:4, y = 1:4, grp = c("A", "B", NA, "A"))
   key <- phw_colour_key(na$grp, "grp")

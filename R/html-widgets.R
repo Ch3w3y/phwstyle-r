@@ -332,7 +332,7 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
   }
   p <- colour_built(p, palette, colorway)
   p <- colour_pies(p, palette, unname(colorway))
-  p <- colour_mapped(p, palette, colorway)
+  p <- colour_mapped(p, palette)
   p <- do.call(plotly::layout, c(list(p), base))
   p <- plotly::config(p, displaylogo = FALSE, displayModeBar = modebar,
                       modeBarButtonsToRemove = c("lasso2d", "select2d", "autoScale2d",
@@ -599,7 +599,7 @@ plotly_scale_types <- c("heatmap", "contour", "histogram2d", "histogram2dcontour
 # the same key, as plotly colours all traces from the first one's `colors`.
 # A trace with its own key, such as one from phw_colour_key(), keeps it, with
 # "NA" added in grey when a value is missing.
-colour_mapped <- function(p, palette, colorway) {
+colour_mapped <- function(p, palette) {
   if (is.null(p$x$attrs)) return(p)
   seq <- palette_colours("blues")
   values <- Map(function(a, id) {
@@ -609,7 +609,7 @@ colour_mapped <- function(p, palette, colorway) {
   keyed <- vapply(p$x$attrs, function(a) is.character(a$colors) && rlang::is_named(a$colors), logical(1))
   missing <- vapply(values, function(v) !is.numeric(v) && anyNA(v), logical(1))
   groups <- Filter(function(v) !is.null(v) && !is.numeric(v), values[!own])
-  key <- if (length(groups)) group_colours(groups, palette, colorway)
+  key <- if (length(groups)) group_colours(groups, palette)
   keyed_na <- any(keyed & missing)
   p$x$attrs <- Map(function(a, v, keyed) {
     if (keyed && keyed_na) {
@@ -653,7 +653,7 @@ colour_built <- function(p, palette, colorway) {
   grouped <- !own & vapply(p$x$data, function(t) any(rapply(t, is_group_colour, how = "unlist")), logical(1))
   trace_names <- vapply(p$x$data, function(t) t$name %||% NA_character_, "")
   lv <- unique(trace_names[grouped & !is.na(trace_names)])
-  key <- if (length(lv)) group_colours(list(factor(lv, lv)), palette, colorway)
+  key <- if (length(lv)) group_colours(list(factor(lv, lv)), palette)
   at <- seq(0, 1, length.out = 25)
   scale <- matrix(c(at, plotly::toRGB(scales::col_numeric(palette_colours("blues"), c(0, 1))(at))), ncol = 2)
   p$x$data <- lapply(seq_along(p$x$data), function(i) {
@@ -699,9 +699,9 @@ rgba_alpha <- function(x) as.numeric(sub(".*,\\s*([0-9.]+)\\)$", "\\1", x))
 # Colours for groups, named by group, as the PHW ggplot2 scales give them:
 # the groups in use, in order, each with its own colour from
 # phw_colour_key(), and "NA" in grey when a value is missing.
-group_colours <- function(values, palette, colorway) {
+group_colours <- function(values, palette) {
   lv <- unique(unlist(lapply(values, group_levels)))
-  key <- phw_colour_key(lv, palette = if (is.function(palette)) palette else colorway)
+  key <- phw_colour_key(lv, palette = palette)
   if (any(vapply(values, anyNA, logical(1)))) key[["NA"]] <- phw_colours[["grey_light"]]
   key
 }
@@ -740,7 +740,7 @@ colour_pies <- function(p, palette, colorway) {
       lab <- mapped_values(a$labels, p, id)
       slices <- colorway
       if (!is.null(lab)) {
-        key <- group_colours(list(lab), palette, colorway)
+        key <- group_colours(list(lab), palette)
         if (anyNA(lab)) a$labels <- lab <- as.character(na_group(lab))
         slices <- unname(key[as.character(lab)])
       }
