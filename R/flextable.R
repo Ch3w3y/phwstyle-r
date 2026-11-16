@@ -107,9 +107,7 @@ phw_flextable_theme <- function(x, style = c("booktabs", "header", "light", "zeb
 align_by_type <- function(ft) {
   data <- ft$body$dataset
   keys <- ft$col_keys
-  num <- keys[keys %in% names(data) & vapply(keys, function(k) {
-    k %in% names(data) && is.numeric(data[[k]])
-  }, logical(1))]
+  num <- keys[vapply(keys, function(k) k %in% names(data) && is.numeric(data[[k]]), logical(1))]
   txt <- setdiff(keys, num)
   if (length(num)) ft <- flextable::align(ft, j = num, align = "right", part = "all")
   if (length(txt)) ft <- flextable::align(ft, j = txt, align = "left", part = "all")
