@@ -262,6 +262,12 @@ says what to change.
 * `phw_plotly()` colours traces that map `color` with the PHW palette, gives
   heatmaps and contours the PHW sequential scale, and keeps your own
   `annotations`.
+* `phw_plotly()` keeps the chart title and axis titles of a `plot_ly()`
+  chart, whether set with `layout()` or taken from the columns, and styles
+  them in the PHW font and colours. Before, it removed them. A chart with
+  one trace no longer gets a legend reading "trace 0": `legend` now sets
+  where a legend goes, and only `legend = "none"` decides whether there is
+  one.
 * `phw_leaflet_polygons()`, `phw_boundaries()`, `phw_plotly()` and the
   colour key functions check their input first. `phw_boundaries()` checks
   `crs` before downloading anything.
