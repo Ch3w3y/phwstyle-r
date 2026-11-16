@@ -45,7 +45,7 @@ test_that("a missing pie label shows as NA in grey", {
 test_that("p and caption_args are checked at entry", {
   p <- plotly::plot_ly(groups_df, x = ~week, y = ~cases, type = "scatter", mode = "lines")
   expect_error(phw_plotly(data.frame()), "must be a plotly chart or a ggplot")
-  expect_error(phw_plotly(p, caption_args = list(nope = 1)), "Not `phw_caption\\(\\)` argument")
+  expect_error(phw_plotly(p, caption_args = list(nope = 1)), "unknown name")
 })
 
 test_that("phw_plotly_colorscale takes a function and checks n", {
