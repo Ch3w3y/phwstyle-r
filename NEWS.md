@@ -205,6 +205,10 @@ says what to change.
   column in `columns` now keeps the group colours.
 * `phw_datatable()` keeps the `columnDefs` you give in `options` for a
   summary table. Before, the table's own column settings replaced them.
+* `phw_datatable()` accepts columns renamed with a named `colnames`, such as
+  `colnames = c(Cases = "cases")`, and still rounds the numbers and styles
+  a summary table's renamed columns. Before, it stopped with an error from
+  DT, or a summary table lost the styling of a renamed column.
 * `phw_reactable()` and `phw_datatable()` show date-times at the clock time
   of their own time zone, as `2026-07-01 10:00:00`, like `phw_flextable()`.
   Before, they showed them in UTC.
