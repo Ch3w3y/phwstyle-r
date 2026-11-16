@@ -376,7 +376,8 @@ ggplotly_phw <- function(p, palette) {
     if (has[[a]] && !user[[a]]) {
       discrete <- b$plot$scales$get_scales(a)$is_discrete()
       p <- p + if (discrete) {
-        ggplot2::discrete_scale(a, palette = function(n) phw_discrete_auto(n, palette), na.value = "grey50")
+        phw_discrete_scale(a, palette, reverse = FALSE, key = NULL, values = NULL,
+                           neutral = character(), na.value = "grey50")
       } else {
         phw_default_scale(a, "continuous")
       }
