@@ -119,3 +119,14 @@ check_whole_number <- function(x, min, arg = rlang::caller_arg(x), call = rlang:
   }
   invisible(x)
 }
+
+# `bins` for phw_map() and phw_leaflet_polygons(): NULL, a number of bins
+# (2 or more), or a vector of breaks.
+check_bins <- function(bins, call = rlang::caller_env()) {
+  if (is.null(bins)) return(invisible())
+  if (!is.numeric(bins) || length(bins) == 0 || anyNA(bins) ||
+      (length(bins) == 1 && !(is.finite(bins) && bins >= 2))) {
+    cli::cli_abort("{.arg bins} must be a number of bins (2 or more) or a vector of breaks.", call = call)
+  }
+  invisible()
+}

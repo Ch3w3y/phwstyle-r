@@ -63,6 +63,7 @@ phw_map <- function(data, by, fill, level, bins = NULL, palette = NULL, key = NU
   fill <- pick_col(rlang::enquo(fill), data, "fill")
   quo_label <- rlang::enquo(label)
   check_has_rows(data)
+  check_bins(bins)
   bounds <- map_boundaries(level, detail)
   if (all(is.na(data[[fill]]))) cli::cli_abort("Every value in {.field {fill}} is missing, so there is nothing to map.")
 

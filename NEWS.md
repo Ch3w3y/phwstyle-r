@@ -112,6 +112,9 @@ says what to change.
   into two classes at the tidy number nearest the median that leaves an
   area in each class. Before, they could draw every area in one colour, or
   put almost every area in one class when the data were skewed.
+* `phw_map()` checks `bins` as `phw_leaflet_polygons()` does: a single
+  number below 2 stops with a clear error. Before, `bins = 1` gave an
+  error from another package and `bins = 0` never returned.
 * `phw_plotly()` colours the groups of a `plot_ly()` chart as the PHW
   ggplot2 scales do: unused levels are left out, `NA` is grey instead of
   invisible, groups such as "Unknown" are grey, and every group gets its own
