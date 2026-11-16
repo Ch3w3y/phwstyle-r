@@ -150,6 +150,11 @@ says what to change.
 
 ## Charts and maps
 
+* `phw_map()` follows the settings given to `use_phw_ggplot()`, such as
+  `base_size = 14` or `accessible = TRUE`, as the other ready-made charts
+  do. Before, maps always used the `theme_phw_map()` defaults, so in a report
+  set up for larger text they had smaller text than every other chart. Maps
+  keep their legend on the right and have no gridlines.
 * After `use_phw_ggplot()`, and so in every `phw_*_document()` format,
   groups from an ordered factor (from `factor(..., ordered = TRUE)`,
   `cut(..., ordered_result = TRUE)` or `lubridate::month(label = TRUE)`)

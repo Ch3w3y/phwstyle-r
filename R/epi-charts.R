@@ -5,11 +5,15 @@
 # setup. When use_phw_ggplot() has set the session theme, they follow the
 # settings it was given (say `base_size = 14` or `accessible = TRUE`)
 # rather than going back to the defaults.
-chart_theme <- function(...) {
+chart_theme <- function(...) do.call(theme_phw, session_theme_args(...))
+
+# The use_phw_ggplot() arguments while its theme is the session theme, with
+# the chart's own settings in `...` laid over them.
+session_theme_args <- function(...) {
   args <- if (identical(ggplot2::theme_get(), phw_session$theme)) phw_session$args else list()
   new <- list(...)
   args[names(new)] <- new
-  do.call(theme_phw, args)
+  args
 }
 
 floor_period <- function(x, interval, week_start = 1) {

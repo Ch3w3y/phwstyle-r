@@ -94,7 +94,7 @@ phw_map <- function(data, by, fill, level, bins = NULL, palette = NULL, key = NU
   p <- p + do.call(ggplot2::geom_sf, c(list(mapping = areas, stat = StatPhwMapAreas), geom_args)) +
     scale +
     ggplot2::labs(x = NULL, y = NULL, caption = wrap_caption(attr(bounds, "attribution"))) +
-    theme_phw_map()
+    map_theme()
 
   text <- pick_text(quo_label, joined)
   if (!is.null(text)) {
@@ -186,4 +186,12 @@ bin_edges <- function(v, bins) {
     inner <- more[which.min(abs(more - mean(lims)))]
   }
   c(lims[1], inner, lims[2])
+}
+
+# A map follows the use_phw_ggplot() settings as the other ready-made charts
+# do, but keeps its legend on the right with a title, and has no gridlines.
+map_theme <- function() {
+  args <- session_theme_args(legend = "right", legend_title = TRUE)
+  args$grid <- NULL
+  do.call(theme_phw_map, args)
 }
