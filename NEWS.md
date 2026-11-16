@@ -55,7 +55,8 @@ says what to change.
 * A sequential or diverging palette given to groups is spread over them,
   as `phw_pal()` does. This applies to `scale_*_phw_d()`, `phw_map()` with
   a text or factor `fill`, `phw_epicurve(palette = )`,
-  `phw_leaflet_palette(type = "factor")` and `phw_colour_key()`. Before,
+  `phw_leaflet_palette(type = "factor")`, `phw_colour_key()` and the groups
+  of a `plot_ly()` chart in `phw_plotly()`. Before,
   groups took the first colours of the palette: three groups in `"blues"`
   were its three palest, `"orange_navy"` showed only its orange half, and
   ten deciles ran out of blues and took other PHW colours with a warning.
