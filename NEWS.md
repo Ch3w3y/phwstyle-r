@@ -165,6 +165,12 @@ says what to change.
   in every chart, map and table, with `reverse = TRUE` too. A colour key
   that had stored the wrong colour for such a group is corrected. Colours
   pinned with `values` or `fixed` still win.
+* The same name matching now applies to the default colours after
+  `use_phw_ggplot(palette = "rag")`, so a chart with no colour scale of
+  its own draws Red, Amber and Green in their own colours, as
+  `phw_plotly()` does for the same chart. It also applies to
+  `phw_key_recolour(name, "rag")` and `phw_key_recolour(name, "strategy")`.
+  Before, both handed out colours in the groups' sorted order.
 
 ## Charts and maps
 

@@ -282,8 +282,8 @@ theme_phw_map <- function(base_size = 11, base_family = phw_font(), legend = "ri
 #' get the next free colour and old ones never move (see
 #' [phw_colour_key()]). You can also pin colours with `values`, a named
 #' vector such as `c(Wales = "#285087")`. Groups named "Other" or "Unknown"
-#' are drawn in grey. (Only these scales know the group names, so a plot
-#' left on the default colours gives "Other" an ordinary colour.)
+#' are drawn in grey. (A plot left on the default colours gives "Other" an
+#' ordinary colour.)
 #'
 #' **Colour-blind readers.** Use `palette = "accessible"` for one chart, or
 #' switch every chart, table and widget at once: see
@@ -502,9 +502,13 @@ use_phw_ggplot <- function(..., palette = NULL) {
   phw_session$args <- list(...)
   phw_style_extensions()
   set_phw_geom_defaults(theme, accessible = isTRUE(list(...)[["accessible"]]))
-  # Ordered factors get ggplot2's ordinal scale, which no version of ggplot2
-  # takes from the theme, so it is set here on every version.
+  # Discrete scales come from options on every version: a theme palette is
+  # only told how many groups there are, and groups named after the
+  # palette's colours (as in "rag") need their names. Ordered factors get
+  # ggplot2's ordinal scale, which no version takes from the theme.
   options(
+    ggplot2.discrete.colour = function(...) phw_default_scale("colour", "discrete", ...),
+    ggplot2.discrete.fill = function(...) phw_default_scale("fill", "discrete", ...),
     ggplot2.ordinal.colour = function(...) phw_default_scale("colour", "ordinal", ...),
     ggplot2.ordinal.fill = function(...) phw_default_scale("fill", "ordinal", ...)
   )
@@ -513,8 +517,6 @@ use_phw_ggplot <- function(..., palette = NULL) {
     # options instead. Each one has to return a scale. They are built to
     # match what the theme does from 4.0 on.
     options(
-      ggplot2.discrete.colour = function(...) phw_default_scale("colour", "discrete", ...),
-      ggplot2.discrete.fill = function(...) phw_default_scale("fill", "discrete", ...),
       ggplot2.continuous.colour = function(...) phw_default_scale("colour", "continuous", ...),
       ggplot2.continuous.fill = function(...) phw_default_scale("fill", "continuous", ...),
       ggplot2.binned.colour = function(...) phw_default_scale("colour", "binned", ...),
@@ -527,7 +529,7 @@ use_phw_ggplot <- function(..., palette = NULL) {
 phw_session <- new.env(parent = emptyenv())
 
 # The default scales that come from options rather than the theme: all of
-# them before ggplot2 4.0, and the ordinal ones on every version. Arguments
+# them before ggplot2 4.0, and the discrete ones on every version. Arguments
 # that belong to ggplot2's own default scales, as in
 # scale_fill_continuous(low = "white", high = "red"), still get that scale,
 # as they do from 4.0 on.
@@ -550,7 +552,8 @@ phw_default_scale <- function(aesthetic, type, ...) {
     discrete = ,
     ordinal = {
       args$na.value <- args$na.value %||% "grey50"
-      rlang::exec(ggplot2::discrete_scale, !!!args, palette = phw_discrete_auto)
+      rlang::exec(phw_discrete_scale, palette = phw_default_palette(), reverse = FALSE,
+                  key = NULL, values = NULL, neutral = character(), !!!args)
     },
     continuous = rlang::exec(ggplot2::scale_colour_gradientn, !!!args, colours = phw_continuous_auto),
     binned = rlang::exec(ggplot2::scale_colour_stepsn, !!!args, colours = phw_continuous_auto))

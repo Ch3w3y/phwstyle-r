@@ -186,8 +186,8 @@ chart and every report, give a \code{key}, e.g. \code{key = "age_group"}. New gr
 get the next free colour and old ones never move (see
 \code{\link[=phw_colour_key]{phw_colour_key()}}). You can also pin colours with \code{values}, a named
 vector such as \code{c(Wales = "#285087")}. Groups named "Other" or "Unknown"
-are drawn in grey. (Only these scales know the group names, so a plot
-left on the default colours gives "Other" an ordinary colour.)
+are drawn in grey. (A plot left on the default colours gives "Other" an
+ordinary colour.)
 
 \strong{Colour-blind readers.} Use \code{palette = "accessible"} for one chart, or
 switch every chart, table and widget at once: see

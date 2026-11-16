@@ -238,6 +238,18 @@ test_that("use_phw_ggplot gives ordered factors the PHW palette on every ggplot2
                plot_colours(magma + scale_fill_viridis_d(option = "magma")))
 })
 
+test_that("use_phw_ggplot default scales give groups named after the palette's colours those colours", {
+  library(ggplot2)
+  local_ggplot_state()
+  use_phw_ggplot(palette = "rag")
+  d <- data.frame(x = 1:3, y = 1:3, status = c("Red", "Amber", "Green"))
+  want <- unname(phw_palettes$rag[c("red", "amber", "green")])
+  expect_equal(plot_colours(ggplot(d, aes(x, y, colour = status)) + geom_point(), "colour"), want)
+  expect_equal(plot_colours(ggplot(d, aes(x, y, fill = status)) + geom_point(shape = 21)), want)
+  ordered <- transform(d, status = factor(status, levels = c("Green", "Amber", "Red"), ordered = TRUE))
+  expect_equal(plot_colours(ggplot(ordered, aes(x, y, fill = status)) + geom_point(shape = 21)), want)
+})
+
 test_that("accessible = TRUE makes lines, points and text bigger on every ggplot2", {
   library(ggplot2)
   local_ggplot_state()
