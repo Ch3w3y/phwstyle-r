@@ -134,6 +134,10 @@ says what to change.
   panel is drawn in the missing-value colour instead of being left out.
 * `scale_shape_phw()` and `scale_linetype_phw()` keep missing groups on the
   chart (new `na.value`). Past eight groups they stop with a clear message.
+* `scale_fill_phw_d(na.translate = FALSE)` and
+  `scale_colour_phw_d(na.translate = FALSE)` leave missing groups off the
+  chart, as ggplot2's own scales do. Before, they were still drawn in grey,
+  with no legend entry.
 * `reverse = TRUE` now works when the palette is a function, and a palette
   function gives groups its colours in its own order.
 * `width` and other bar settings passed through `...` work in

@@ -338,7 +338,7 @@ phw_discrete_scale <- function(aesthetics, palette, reverse, key, values, neutra
                          parent = e, call = NULL)
         })
       out <- unname(cols[as.character(x)])
-      out[is.na(out)] <- self$na.value
+      if (self$na.translate) out[is.na(out)] <- self$na.value
       out
     })
 }

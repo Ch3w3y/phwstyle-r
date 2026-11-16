@@ -307,6 +307,18 @@ test_that("scale_shape_phw and scale_linetype_phw keep a missing group on the ch
   expect_equal(unique(ggplot2::layer_data(p)$linetype), c("solid", "16"))
 })
 
+test_that("na.translate = FALSE leaves missing groups off the chart", {
+  d <- data.frame(x = c("A", "B", NA), y = 1:3)
+  p <- ggplot2::ggplot(d, ggplot2::aes(x, y, fill = x)) + ggplot2::geom_col()
+  expect_equal(ggplot2::layer_data(p + scale_fill_phw_d())$fill[3], phw_colours[["grey_light"]])
+  p <- p + scale_fill_phw_d(na.translate = FALSE)
+  expect_equal(ggplot2::layer_data(p)$fill, c(unname(phw_pal(2)), NA))
+  p <- ggplot2::ggplot(d, ggplot2::aes(y, y, colour = x)) + ggplot2::geom_point() +
+    scale_colour_phw_d(na.translate = FALSE)
+  expect_equal(ggplot2::layer_data(p)$colour, c(unname(phw_pal(2)), NA))
+  expect_warning(ggplot2::ggplotGrob(p), "Removed 1 row")
+})
+
 test_that("scale_*_phw_d checks palette and values when it is made", {
   expect_error(scale_colour_phw_d(values = c("red", "blue")), "values.*named")
   expect_error(scale_colour_phw_d(values = c(A = "notacolour")), "notacolour")
