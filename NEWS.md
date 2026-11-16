@@ -269,6 +269,11 @@ says what to change.
   `colnames = c(Cases = "cases")`, and still rounds the numbers and styles
   a summary table's renamed columns. Before, it stopped with an error from
   DT, or a summary table lost the styling of a renamed column.
+* `phw_datatable()` shows the names you give in `colnames` in the header of
+  a summary table with a spanner or a multi-level header, such as a
+  `phw_crosstab()`. An unnamed `colnames` now renames a summary table's
+  columns in order. Before, a spanner table kept its old names, and an
+  unnamed `colnames` moved every name one column to the right.
 * `phw_reactable()` and `phw_datatable()` show date-times at the clock time
   of their own time zone, as `2026-07-01 10:00:00`, like `phw_flextable()`.
   Before, they showed them in UTC.

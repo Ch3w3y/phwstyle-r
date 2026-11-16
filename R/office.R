@@ -31,10 +31,11 @@ phw_datatable <- function(data, caption = NULL, source = NULL, date = NULL, digi
   rlang::check_installed("DT")
   check_unique_names(data)
   if (missing(digits)) digits <- attr(data, "digits") %||% digits
+  dots <- list(...)
   sm <- NULL
   note <- NULL
   if (inherits(data, "phw_summary")) {
-    sm <- summary_dt_parts(data)
+    sm <- summary_dt_parts(data, dots$colnames)
     note <- attr(data, "note")
     data <- sm$data
   }
@@ -50,7 +51,9 @@ phw_datatable <- function(data, caption = NULL, source = NULL, date = NULL, digi
   opts <- utils::modifyList(c(defaults, list(autoWidth = FALSE, language = list(search = "Search:"))), options)
   args <- list(data = data, rownames = FALSE, class = "phw-dt compact hover", options = opts, style = "default")
   if (!is.null(sm$container)) args$container <- sm$container
-  args <- utils::modifyList(args, list(...))
+  args <- utils::modifyList(args, dots)
+  # Every name, the hidden helper's too, so DT neither pads nor shifts them.
+  if (!is.null(sm)) args$colnames <- c(sm$shown, ".phw_row")
   w <- do.call(DT::datatable, args)
   # Columns go to DT by position: a rename in `colnames` changes the names.
   num <- setdiff(which(vapply(data, is.numeric, logical(1))), sm$helper)
@@ -64,15 +67,36 @@ phw_datatable <- function(data, caption = NULL, source = NULL, date = NULL, digi
 
 # Each row is styled through a hidden column holding its row number, which
 # formatStyle() reads, so the styles stay with their rows when sorted.
-summary_dt_parts <- function(x) {
+summary_dt_parts <- function(x, colnames = NULL, call = rlang::caller_env()) {
   nl <- attr(x, "label_cols") %||% 1L
+  shown <- dt_shown_names(names(x), colnames, call)
   df <- as.data.frame(unclass(x)[names(x)], check.names = FALSE)
   nc <- ncol(df)
   df$.phw_row <- seq_len(nrow(df))
   defs <- list(list(visible = FALSE, targets = nc))
   if (nc > nl) defs <- c(defs, list(list(className = "dt-right", targets = seq(nl, nc - 1))))
   list(data = df, rows = summary_rows(x), helper = nc + 1L, column_defs = defs,
-       labels = seq_len(nl), container = summary_dt_header(x, nl))
+       labels = seq_len(nl), shown = shown, container = summary_dt_header(x, nl, shown))
+}
+
+# The column names DT shows for `colnames`, as DT reads it: a named vector
+# renames the columns it gives by name or position, an unnamed one renames
+# columns in order from the first.
+dt_shown_names <- function(cn, colnames, call = rlang::caller_env()) {
+  if (is.null(colnames)) return(cn)
+  if (is.null(names(colnames))) {
+    n <- min(length(colnames), length(cn))
+    cn[seq_len(n)] <- colnames[seq_len(n)]
+    return(cn)
+  }
+  i <- if (is.character(colnames)) match(colnames, cn) else colnames
+  bad <- is.na(i) | !i %in% seq_along(cn)
+  if (any(bad)) {
+    cli::cli_abort("{.arg colnames} renames {.val {as.character(colnames[bad])}}, which {?is/are} not {?a column/columns} of the table.",
+                   call = call)
+  }
+  cn[i] <- names(colnames)
+  cn
 }
 
 # The header levels of a summary table over its data columns `cols`
@@ -113,7 +137,9 @@ summary_header <- function(x, nl, cols = seq_len(ncol(x) - nl)) {
   list(upper = upper, bottom = m[L, ])
 }
 
-summary_dt_header <- function(x, nl) {
+# `shown` holds the column names to show, after any renaming. A renamed
+# column shows its new name in place of its lowest header level.
+summary_dt_header <- function(x, nl, shown) {
   hd <- summary_header(x, nl)
   if (!length(hd$upper)) return(NULL)
   th <- htmltools::tags$th
@@ -124,9 +150,11 @@ summary_dt_header <- function(x, nl) {
       th(label, colspan = level$n[g], class = if (nzchar(label)) "phw-spanner" else "phw-blank")
     })
   })
-  labels <- lapply(names(x)[seq_len(nl)], th, rowspan = span, class = "phw-label")
+  labels <- lapply(shown[seq_len(nl)], th, rowspan = span, class = "phw-label")
+  data_cols <- nl + seq_along(hd$bottom)
+  bottom <- ifelse(shown[data_cols] == names(x)[data_cols], hd$bottom, shown[data_cols])
   rows <- c(list(c(labels, upper[[1]], list(th(".phw_row", rowspan = span)))), upper[-1],
-            list(lapply(hd$bottom, th)))
+            list(lapply(bottom, th)))
   htmltools::tags$table(htmltools::tags$thead(lapply(rows, htmltools::tags$tr)))
 }
 
