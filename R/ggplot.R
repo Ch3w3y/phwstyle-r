@@ -366,12 +366,7 @@ scale_fill_phw_d <- function(palette = phw_default_palette(), reverse = FALSE, k
 scale_color_phw_d <- scale_colour_phw_d
 
 seq_cols <- function(palette, reverse, call = rlang::caller_env()) {
-  if (is.character(palette) && length(palette) == 1 && palette %in% names(phw_palettes) &&
-      palette_type(palette) == "qualitative") {
-    cli::cli_abort(c("{.val {palette}} is a qualitative palette, for groups.",
-                     i = "For numbers use a sequential palette such as {.val blues}, or {.val orange_navy} to diverge.",
-                     i = "For groups use a {.code _d} scale."), call = call)
-  }
+  check_ramp_palette(palette, call = call)
   cols <- palette_colours(palette)
   if (reverse) cols <- rev(cols)
   cols

@@ -205,11 +205,7 @@ phw_leaflet_palette <- function(palette = "blues", domain, type = c("numeric", "
   type <- rlang::arg_match(type)
   check_true_false(reverse)
   if (type != "factor") {
-    if (is.character(palette) && length(palette) == 1 && palette %in% names(phw_palettes) &&
-        palette_type(palette) == "qualitative") {
-      cli::cli_abort(c("{.val {palette}} is a palette for groups, not for numbers.",
-                       i = "Use a sequential palette such as {.val blues}, or {.code type = \"factor\"}."))
-    }
+    check_ramp_palette(palette, "For groups use {.code type = \"factor\"}.")
     if (!is.numeric(domain)) cli::cli_abort("{.arg domain} must be numbers for {.code type = \"{type}\"}.")
     domain <- domain[is.finite(domain)]
     if (!length(domain)) cli::cli_abort("{.arg domain} has no values that are not missing.")

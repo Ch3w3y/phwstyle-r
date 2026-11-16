@@ -85,6 +85,16 @@ check_true_false <- function(x, arg = rlang::caller_arg(x), call = rlang::caller
   invisible(x)
 }
 
+check_ramp_palette <- function(palette, groups_hint = "For groups use a {.code _d} scale.",
+                               call = rlang::caller_env()) {
+  if (is_palette_name(palette) && palette_type(palette) == "qualitative") {
+    cli::cli_abort(c("{.val {palette}} is a qualitative palette for groups, not for numbers.",
+                     i = "For numbers use a sequential palette such as {.val blues}, or {.val orange_navy} to diverge.",
+                     i = groups_hint), call = call)
+  }
+  invisible(palette)
+}
+
 check_one_string <- function(x, arg = rlang::caller_arg(x), allow_null = FALSE, hint = NULL,
                              call = rlang::caller_env()) {
   if (allow_null && is.null(x)) return(invisible(x))

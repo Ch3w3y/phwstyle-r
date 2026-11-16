@@ -584,8 +584,7 @@ plotly_colorway <- function(p, palette) {
     return(phw_pal(max(length(plotly::plotly_build(p)$x$data), 1), palette))
   }
   cols <- palette_colours(palette_for(palette, Inf))
-  if (is.character(palette) && length(palette) == 1 && palette %in% names(phw_palettes) &&
-      palette_type(palette) != "qualitative") {
+  if (is_ramp(palette)) {
     cols <- cols[phw_contrast(cols) >= 1.3]
   }
   cols
