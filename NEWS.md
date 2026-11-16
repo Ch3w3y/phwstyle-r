@@ -145,6 +145,12 @@ says what to change.
   sets `colors = phw_colour_key(...)`. Before, they were invisible: the
   legend showed "NA" with no line or markers. A key that gives `"NA"` its
   own colour keeps it.
+* `phw_plotly()` colours a `plot_ly()` chart by a number with the same
+  blues as a ggplot2 chart, starting at `#C9D3E1`. This covers markers,
+  lines, heatmaps, contours and choropleths, alone or combined with
+  `plotly::subplot()`. Before, the scale started at the palest blue, so the
+  lowest values almost vanished on white and the same data looked
+  different in the two kinds of chart.
 * With `palette = "rag"` or `"rag_accessible"`, groups called "Red",
   "Amber" and "Green" (in any case) take the red, amber and green colours,
   whatever order they sort in. Before, they took the colours in sorted

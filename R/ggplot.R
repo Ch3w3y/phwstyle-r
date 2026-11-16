@@ -201,8 +201,9 @@ phw_discrete_auto <- function(n) {
   unname(phw_colour_key(as.character(seq_len(n)), palette = pal, neutral = character()))
 }
 
-# Default colours for a continuous variable. The palest blue is left out
-# because points and lines in it disappear on a white background.
+# Default colours for a continuous variable, in ggplot2 charts and in
+# phw_plotly(). The palest blue is left out because points and lines in it
+# disappear on a white background.
 phw_continuous_auto <- phw_palettes$blues[2:6]
 
 #' PHW map theme
