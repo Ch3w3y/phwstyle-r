@@ -217,7 +217,9 @@ wrap_widget <- function(widget, caption, cap, note = NULL) {
 #'
 #' @param p A plotly object or a ggplot.
 #' @param source,date Passed to [phw_caption()] and shown under the chart.
-#' @param legend `"bottom"`, `"right"` or `"none"`.
+#' @param legend Where the legend goes: `"bottom"`, `"right"` or `"none"`.
+#'   As in plotly, a chart with one trace has no legend; pass
+#'   `showlegend = TRUE` to show one.
 #' @param palette Colours for traces that don't set their own: a palette
 #'   name, a vector of colours or a function of `n`, as in [phw_pal()]. A
 #'   trace that maps `color` to groups without giving `colors` takes them
@@ -282,9 +284,17 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
   col <- phw_colours
   colorway <- plotly_colorway(p, palette)
   font <- list(family = paste0(phw_font(), ", Arial, sans-serif"), size = font_size, color = col[["text"]])
-  axis <- list(gridcolor = col[["grey_border"]], zerolinecolor = col[["grey_mid"]],
-               linecolor = col[["grey_mid"]], tickfont = list(color = col[["text_secondary"]]),
-               title = list(font = list(color = col[["text_secondary"]])))
+  # An axis `color` colours its title and tick labels without replacing the
+  # title text, which a list title would do when plotly merges layouts.
+  axis <- list(color = col[["text_secondary"]], gridcolor = col[["grey_border"]],
+               zerolinecolor = col[["grey_mid"]], linecolor = col[["grey_mid"]],
+               tickfont = list(color = col[["text_secondary"]]))
+  axes <- lapply(c(xaxis = "xaxis", yaxis = "yaxis"), function(a) {
+    # ggplotly() gives its axis titles a font colour of their own.
+    if (is.list(current_title(p, a))) axis$title <- list(font = list(color = col[["text_secondary"]]))
+    axis
+  })
+  title <- current_title(p)
   ann <- if (!is.null(cap)) list(list(
     text = paste0("<b>", gsub("\n", "<br>", cap), "</b>"), showarrow = FALSE,
     xref = "paper", yref = "paper", x = 1, y = 0, xanchor = "right", yanchor = "top",
@@ -296,9 +306,9 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
                       sequentialminus = phw_plotly_colorscale("blues"),
                       diverging = phw_plotly_colorscale("orange_navy")),
     paper_bgcolor = "#FFFFFF", plot_bgcolor = "#FFFFFF",
-    title = list(font = list(color = col[["navy"]], size = 17), x = 0, xanchor = "left"),
-    xaxis = axis, yaxis = axis,
-    showlegend = legend != "none",
+    title = c(if (!is.null(title) && !is.list(title)) list(text = title),
+              list(font = list(color = col[["navy"]], size = 17), x = 0, xanchor = "left")),
+    xaxis = axes$xaxis, yaxis = axes$yaxis,
     legend = if (legend == "bottom") list(orientation = "h", x = 0, y = -0.15, xanchor = "left",
                                           yanchor = "top", title = list(text = ""))
              else list(orientation = "v", title = list(text = "")),
@@ -307,6 +317,7 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
     margin = list(b = if (!is.null(cap)) 110 else 60, t = 50),
     annotations = ann
   )
+  if (legend == "none") base$showlegend <- FALSE
   extra <- list(...)
   for (nm in names(extra)) {
     base[[nm]] <- if (nm == "annotations") {
@@ -329,6 +340,18 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
                       toImageButtonOptions = list(format = "png", scale = 2))
   p$dependencies <- c(p$dependencies, list(phw_font_dependency()))
   p
+}
+
+# The last title set on the chart, or on one axis, before phw_plotly():
+# plotly merges p$x$layout and then each layout() call in turn. Only whether
+# it is text or a list matters here, and the last one decides that.
+current_title <- function(p, axis = NULL) {
+  out <- NULL
+  for (l in c(list(p$x$layout), p$x$layoutAttrs)) {
+    t <- if (is.null(axis)) l[["title"]] else l[[axis]][["title"]]
+    if (!is.null(t)) out <- t
+  }
+  out
 }
 
 # plotly::ggplotly() builds the plot itself and ignores palettes stored in

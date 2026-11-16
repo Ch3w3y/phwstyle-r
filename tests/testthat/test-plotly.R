@@ -174,3 +174,38 @@ test_that("subplot() keeps colours a panel sets, and says how to colour the rest
   expect_equal(vapply(styled[3:4], function(t) t$marker$color, ""),
                unname(plotly::toRGB(phw_colour_key(c("a", "b")))))
 })
+
+title_text <- function(t) unclass(if (is.list(t)) t$text else t)
+
+test_that("plot_ly titles keep their text and take the PHW style", {
+  p <- plotly::plot_ly(data.frame(week = 1:10, cases = 1:10), x = ~week, y = ~cases, type = "bar")
+  titled <- plotly::layout(p, title = "Cases by week", xaxis = list(title = "Week of onset"),
+                           yaxis = list(title = "Cases"))
+  l <- built(phw_plotly(titled))$layout
+  expect_equal(title_text(l$title), "Cases by week")
+  expect_equal(l$title$font$color, phw_colours[["navy"]])
+  expect_equal(title_text(l$xaxis$title), "Week of onset")
+  expect_equal(title_text(l$yaxis$title), "Cases")
+  expect_equal(l$xaxis$color, phw_colours[["text_secondary"]])
+  auto <- built(phw_plotly(p))$layout
+  expect_equal(title_text(auto$xaxis$title), "week")
+  expect_equal(title_text(auto$yaxis$title), "cases")
+})
+
+test_that("ggplot axis titles keep their text in the PHW colour", {
+  g <- ggplot2::ggplot(groups_df, ggplot2::aes(week, cases, colour = group)) +
+    ggplot2::geom_line() + ggplot2::labs(title = "Cases", x = "Week")
+  l <- built(phw_plotly(g))$layout
+  expect_equal(title_text(l$title), "Cases")
+  expect_equal(l$title$font$color, phw_colours[["navy"]])
+  expect_equal(l$xaxis$title$text, "Week")
+  expect_equal(l$xaxis$title$font$color, phw_colours[["text_secondary"]])
+})
+
+test_that("legend sets where a legend goes, not whether one trace gets one", {
+  one <- plotly::plot_ly(groups_df, x = ~week, y = ~cases, type = "bar")
+  expect_false(built(phw_plotly(one))$layout$showlegend)
+  two <- plotly::plot_ly(groups_df, x = ~week, y = ~cases, color = ~group, type = "bar")
+  expect_true(built(phw_plotly(two))$layout$showlegend)
+  expect_false(built(phw_plotly(two, legend = "none"))$layout$showlegend)
+})

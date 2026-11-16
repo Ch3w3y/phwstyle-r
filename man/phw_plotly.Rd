@@ -25,7 +25,9 @@ phw_plotly(
 defaults; lists are merged, so \code{title = list(text = "My title")} keeps
 the PHW title style. \code{annotations} are added after the caption.}
 
-\item{legend}{\code{"bottom"}, \code{"right"} or \code{"none"}.}
+\item{legend}{Where the legend goes: \code{"bottom"}, \code{"right"} or \code{"none"}.
+As in plotly, a chart with one trace has no legend; pass
+\code{showlegend = TRUE} to show one.}
 
 \item{palette}{Colours for traces that don't set their own: a palette
 name, a vector of colours or a function of \code{n}, as in \code{\link[=phw_pal]{phw_pal()}}. A
