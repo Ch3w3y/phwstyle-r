@@ -19,9 +19,7 @@ phw_org <- "Public Health Wales"
 #' phw_date(as.Date("03/11/2026", format = "%d/%m/%Y"))
 #' @export
 phw_date <- function(x, style = "short") {
-  if (!is.character(style) || length(style) != 1 || is.na(style)) {
-    cli::cli_abort('{.arg style} must be {.val short}, {.val long} or a {.fn format} string such as {.val %B %Y}.')
-  }
+  check_one_string(style, hint = 'Use {.val short}, {.val long} or a {.fn format} string such as {.val %B %Y}.')
   x <- as_date_value(x, arg = "x")
   if (identical(style, "short")) return(format(x, "%d/%m/%Y"))
   if (identical(style, "long")) {
