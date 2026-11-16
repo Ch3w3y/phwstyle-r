@@ -37,7 +37,9 @@ template. \code{NULL} uses the PHW template from \code{\link[=phw_reference_pptx
 result. A grob goes on the slide as a picture.}
 
 \item{table}{A data frame, flextable or summary table (rendered with
-\code{\link[=phw_flextable]{phw_flextable()}}). It must have at least one row.}
+\code{\link[=phw_flextable]{phw_flextable()}}). It must have at least one row. A flextable's
+caption, such as the one \code{\link[=phw_flextable]{phw_flextable()}} adds, goes in a row at the
+top of the table, because PowerPoint does not show table captions.}
 
 \item{text}{Character vector of bullet points. On a title slide or
 section header it is plain lines in the template's own colour and size.}

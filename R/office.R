@@ -397,7 +397,9 @@ phw_pptx <- function(template = NULL) {
 #' @param plot A ggplot, or a grob or gtable such as a [phw_finalise()]
 #'   result. A grob goes on the slide as a picture.
 #' @param table A data frame, flextable or summary table (rendered with
-#'   [phw_flextable()]). It must have at least one row.
+#'   [phw_flextable()]). It must have at least one row. A flextable's
+#'   caption, such as the one [phw_flextable()] adds, goes in a row at the
+#'   top of the table, because PowerPoint does not show table captions.
 #' @param text Character vector of bullet points. On a title slide or
 #'   section header it is plain lines in the template's own colour and size.
 #' @param source,date Passed to [phw_caption()] and shown at the bottom, in
@@ -659,7 +661,7 @@ slide_value <- function(value, kind, area, editable, plot_scale, table_fit, cove
   }
   if (kind == "table") {
     ft <- if (inherits(value, "flextable")) {
-      value
+      caption_as_header(value)
     } else {
       built <- phw_flextable(value)
       if (table_fit) fit_table_to_area(built, area$width, area$height) else built
@@ -678,6 +680,23 @@ slide_value <- function(value, kind, area, editable, plot_scale, table_fit, cove
   }
   props <- officer::fp_text(font.family = phw_font(), font.size = 20, color = phw_colours[["text"]])
   officer::unordered_list(str_list = value, level_list = rep(1L, length(value)), style = props)
+}
+
+# PowerPoint does not draw a flextable caption, so it becomes the table's top
+# row, in the caption style of phw_flextable().
+caption_as_header <- function(ft) {
+  caption <- ft$caption$value
+  text <- if (is.character(caption)) caption else paste(caption$txt, collapse = "")
+  if (!length(text) || !nzchar(text)) return(ft)
+  ft <- flextable::add_header_lines(ft, values = text)
+  ft <- flextable::style(
+    ft, i = 1, part = "header",
+    pr_t = officer::fp_text(font.family = phw_font(), bold = TRUE,
+                            color = phw_colours[["navy"]], font.size = 11),
+    pr_c = officer::fp_cell(background.color = "transparent",
+                            border = officer::fp_border(width = 0)))
+  ft <- flextable::align(ft, i = 1, align = "left", part = "header")
+  flextable::padding(ft, i = 1, padding.bottom = 4, part = "header")
 }
 
 # Slides treat row heights as minimums, so the set heights tell how far down
