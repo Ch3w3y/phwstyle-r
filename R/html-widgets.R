@@ -764,23 +764,26 @@ mapped_values <- function(x, p, id) {
 }
 
 # Pie traces ignore colorway, so give them PHW colours unless they set their
-# own, by group as in the other charts. A missing label would show as
+# own, by group as in the other charts. All pies in a figure share one key,
+# so a label has one colour in every pie. A missing label would show as
 # "null", so it shows as "NA" in grey, as missing groups do in the charts.
 colour_pies <- function(p, palette, colorway) {
   if (is.null(p$x$attrs)) return(p)
-  p$x$attrs <- Map(function(a, id) {
-    if (identical(a$type, "pie") && is.null(a$marker$colors)) {
-      lab <- mapped_values(a$labels, p, id)
-      slices <- colorway
-      if (!is.null(lab)) {
-        key <- group_colours(list(lab), palette)
-        if (anyNA(lab)) a$labels <- lab <- as.character(na_group(lab))
-        slices <- unname(key[as.character(lab)])
-      }
-      a$marker <- utils::modifyList(a$marker %||% list(),
-                                    list(colors = slices, line = list(color = "#FFFFFF", width = 1.5)))
+  pie <- vapply(p$x$attrs, function(a) identical(a$type, "pie") && is.null(a$marker$colors), logical(1))
+  labels <- Map(function(a, id, pie) if (pie) mapped_values(a$labels, p, id),
+                p$x$attrs, rlang::names2(p$x$attrs), pie)
+  used <- Filter(Negate(is.null), labels)
+  key <- if (length(used)) group_colours(used, palette)
+  p$x$attrs <- Map(function(a, lab, pie) {
+    if (!pie) return(a)
+    slices <- colorway
+    if (!is.null(lab)) {
+      if (anyNA(lab)) a$labels <- lab <- as.character(na_group(lab))
+      slices <- unname(key[as.character(lab)])
     }
+    a$marker <- utils::modifyList(a$marker %||% list(),
+                                  list(colors = slices, line = list(color = "#FFFFFF", width = 1.5)))
     a
-  }, p$x$attrs, rlang::names2(p$x$attrs))
+  }, p$x$attrs, labels, pie)
   p
 }

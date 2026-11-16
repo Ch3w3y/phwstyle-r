@@ -137,6 +137,10 @@ says what to change.
 * `phw_plotly()` draws a missing group (`NA`) in grey in a figure combined
   with `plotly::subplot()`, as it does in a single chart. Before, its lines,
   bars and markers were invisible and its legend entry had no colour.
+* `phw_plotly()` gives a label the same colour in every pie of a figure.
+  Before, each pie took its colours from its own labels, so a label could
+  be orange in one pie and teal in the next, and the shared legend showed
+  the wrong colour for it.
 * `phw_plotly()` draws rows with a missing group in grey when the chart
   sets `colors = phw_colour_key(...)`. Before, they were invisible: the
   legend showed "NA" with no line or markers. A key that gives `"NA"` its
