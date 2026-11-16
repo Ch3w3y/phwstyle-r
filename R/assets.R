@@ -146,7 +146,7 @@ cover_wide_with_logo <- function(file) {
   on.exit(grDevices::dev.off(), add = TRUE)
   grid::grid.raster(jpeg::readJPEG(phw_graphic("cover_wide")),
                     width = grid::unit(1, "npc"), height = grid::unit(1, "npc"))
-  img <- png::readPNG(logo)
+  img <- read_logo_png(logo)
   h <- 150 / 1080
   w <- h * (dim(img)[2] / dim(img)[1]) * (1080 / 1920)
   grid::grid.raster(img, x = grid::unit(110 / 1920, "npc"), y = grid::unit(1 - 90 / 1080, "npc"),

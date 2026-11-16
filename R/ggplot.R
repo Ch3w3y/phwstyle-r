@@ -698,7 +698,7 @@ phw_finalise <- function(plot, source = NULL, date = NULL, logo = "blue",
                                      col = phw_colours[["navy"]]))
     } else {
       rlang::check_installed("png", "to draw a logo")
-      grid::rasterGrob(png::readPNG(path), height = grid::unit(logo_height, "cm"),
+      grid::rasterGrob(read_logo_png(path), height = grid::unit(logo_height, "cm"),
                        x = at, hjust = if (left) 0 else 1, interpolate = TRUE, name = "logo")
     }
     kids <- c(kids, list(lg))

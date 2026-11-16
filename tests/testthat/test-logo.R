@@ -76,3 +76,22 @@ test_that("phw_save needs a ggplot or a grob", {
   expect_error(phw_save(NULL, f), "`plot` must be a ggplot or a grob")
   expect_false(file.exists(f))
 })
+
+test_that("a grey + alpha PNG logo draws like an RGBA one", {
+  skip_if_not_installed("png")
+  skip_if_not_installed("ragg")
+  dir <- withr::local_tempdir()
+  for (v in c("blue", "white", "black")) {
+    png::writePNG(array(c(rep(0.2, 4800), rep(1, 4800)), c(40, 120, 2)),
+                  file.path(dir, sprintf("phw-logo-%s.png", v)))
+  }
+  withr::local_options(phwstyle.logo_dir = dir)
+  p <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) + ggplot2::geom_point()
+  f <- withr::local_tempfile(fileext = ".png")
+  expect_no_error(phw_save(phw_finalise(p, logo = "black"), f, width = 16, height = 10))
+  expect_true(file.exists(f))
+  band <- png::readPNG(band_with_logo(withr::local_tempfile(fileext = ".png")))
+  expect_equal(dim(band)[1:2], c(260, 2480))
+  # The logo is drawn in its own grey, not dropped.
+  expect_true(any(abs(band[130, 211:400, 1] - 0.2) < 0.02))
+})

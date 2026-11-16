@@ -166,12 +166,22 @@ band_with_logo <- function(file = tempfile(fileext = ".png")) {
   ragg::agg_png(file, width = 2480, height = 260, background = "transparent")
   on.exit(grDevices::dev.off(), add = TRUE)
   grid::grid.raster(png::readPNG(band), width = grid::unit(1, "npc"), height = grid::unit(1, "npc"))
-  img <- png::readPNG(logo)
+  img <- read_logo_png(logo)
   h <- 0.62
   w <- h * (dim(img)[2] / dim(img)[1]) * (260 / 2480)
   grid::grid.raster(img, x = grid::unit(0.085, "npc"), y = 0.5, hjust = 0,
                     width = grid::unit(w, "npc"), height = grid::unit(h, "npc"), interpolate = TRUE)
   file
+}
+
+# A PNG logo as an array grid can draw. A grey + alpha PNG reads as two
+# planes, which grid does not accept, so it is expanded to RGBA.
+read_logo_png <- function(path) {
+  img <- png::readPNG(path)
+  if (length(dim(img)) == 3 && dim(img)[3] == 2) {
+    img <- array(c(img[, , 1], img[, , 1], img[, , 1], img[, , 2]), c(dim(img)[1:2], 4))
+  }
+  img
 }
 
 logo_data_uri <- function(variant = "white") {
