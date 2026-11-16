@@ -43,7 +43,9 @@ default_neutral <- c("Other", "Others", "Unknown", "Not known", "Not stated", "M
 #' @param name Key name, e.g. `"age_group"`. `NULL` gives colours in order
 #'   with no memory.
 #' @param palette Palette for new groups: a name from [phw_palettes], or a
-#'   vector of colours.
+#'   vector of colours. A sequential or diverging palette is spread over the
+#'   groups, as in [phw_pal()]. Groups a key gains later take the colours of
+#'   the palette furthest from the ones the key already uses.
 #' @param fixed Named vector of colours to pin, e.g.
 #'   `c(Wales = "#285087")`. Pinned colours replace any stored colour.
 #' @param neutral Group names to draw in `neutral_colour`. Matching ignores
@@ -76,6 +78,8 @@ phw_colour_key <- function(levels, name = NULL, palette = phw_default_palette(),
   # A palette function is asked once for every group, so its colours stay
   # in its own order.
   if (is.function(palette) && length(lv)) palette <- phw_pal(length(lv), palette)
+  ramp <- if (is_ramp(palette)) palette
+  palette <- spread_palette(palette, sum(!tolower(lv) %in% tolower(neutral)))
   # "main" is the start of "extended", so groups past the sixth carry on
   # into it. A key grows over time, so it can't wait to see how many groups
   # there are.
@@ -94,7 +98,12 @@ phw_colour_key <- function(levels, name = NULL, palette = phw_default_palette(),
   is_neutral <- tolower(new) %in% tolower(neutral)
   vals[new[is_neutral]] <- neutral_colour
   todo <- new[!is_neutral]
-  for (l in todo) vals[[l]] <- next_colour(vals, palette, neutral_colour)
+  # A key that grows was spread over other groups before, so this call's
+  # spread can land next to colours it already uses.
+  if (!is.null(ramp) && length(todo)) {
+    palette <- palette[colour_gap(palette, setdiff(vals, neutral_colour)) >= ramp_gap(ramp)]
+  }
+  for (l in todo) vals[[l]] <- next_colour(vals, palette, neutral_colour, ramp)
   if (!is.null(id) && save && !identical(vals, old)) key_store(id, vals)
   vals[lv]
 }
@@ -105,8 +114,36 @@ phw_colour_key <- function(levels, name = NULL, palette = phw_default_palette(),
 reverse_key_palette <- function(palette, levels, neutral = default_neutral) {
   if (is.function(palette)) return(function(n) rev(palette(n)))
   n <- sum(!tolower(levels) %in% tolower(neutral))
-  pal <- palette_colours(palette_for(palette, n))
+  pal <- palette_colours(spread_palette(palette_for(palette, n), n))
   rev(pal[seq_len(min(n, length(pal)))])
+}
+
+is_ramp <- function(palette) {
+  is.character(palette) && length(palette) == 1 && palette %in% names(phw_palettes) &&
+    palette_type(palette) != "qualitative"
+}
+
+# A sequential or diverging palette spreads over the `n` groups, as
+# phw_pal() does, so groups run from light to dark (or from one side to the
+# other) rather than taking the palest steps.
+spread_palette <- function(palette, n) {
+  if (n < 1 || !is_ramp(palette)) return(palette)
+  phw_pal(n, palette)
+}
+
+to_lab <- function(x) grDevices::convertColor(t(grDevices::col2rgb(x)) / 255, from = "sRGB", to = "Lab")
+
+# Distance in CIELAB from each colour in `x` to the nearest one in `to`.
+colour_gap <- function(x, to) {
+  if (!length(to)) return(rep(Inf, length(x)))
+  to <- to_lab(to)
+  apply(to_lab(x), 1, function(p) sqrt(min(colSums((t(to) - p)^2))))
+}
+
+# Groups closer than this are too alike to share a key: Delta E 10, or the
+# palette's own closest neighbours where those are closer still.
+ramp_gap <- function(ramp) {
+  min(10, sqrt(rowSums(diff(to_lab(palette_colours(ramp)))^2)))
 }
 
 # The accessible palette keeps its own copy of each key, so switching a
@@ -134,13 +171,21 @@ key_mirror <- function(default, palette, neutral_colour) {
   out
 }
 
-next_colour <- function(used, palette, neutral_colour) {
+next_colour <- function(used, palette, neutral_colour, ramp = NULL) {
   pal <- palette_colours(palette)
   pool <- unique(toupper(c(pal, phw_palettes$accessible, phw_palettes$extended)))
   taken <- toupper(c(used, neutral_colour))
   free <- setdiff(pool, taken)
   first_extra <- setdiff(pool, toupper(pal))
   if (length(free) && !(free[1] %in% first_extra)) return(free[1])
+  # Past the spread, a growing key takes the colour of its palette furthest
+  # from every colour it already uses.
+  if (!is.null(ramp)) {
+    steps <- phw_pal(41, ramp)
+    gap <- colour_gap(steps, taken)
+    if (max(gap) >= ramp_gap(ramp)) return(steps[which.max(gap)])
+    free <- free[colour_gap(free, taken) >= ramp_gap(ramp)]
+  }
   if (length(free)) {
     cli::cli_warn(c("The palette has run out, so new groups take colours from other PHW palettes.",
                     i = "With this many groups, add facets, direct labels or {.fn scale_shape_phw}."),
@@ -232,7 +277,7 @@ phw_key_recolour <- function(name, palette = "accessible", neutral = default_neu
   if (!length(old)) cli::cli_abort("No key called {.val {name}}.")
   keep <- toupper(old) == phw_colours[["grey_mid"]] | tolower(names(old)) %in% tolower(neutral)
   n <- sum(!keep)
-  palette <- if (is.function(palette)) phw_pal(max(n, 1), palette) else palette_for(palette, n)
+  palette <- if (is.function(palette)) phw_pal(max(n, 1), palette) else spread_palette(palette_for(palette, n), n)
   vals <- old
   fresh <- character()
   for (l in names(old)[!keep]) {

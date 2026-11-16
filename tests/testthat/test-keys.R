@@ -19,6 +19,49 @@ test_that("keys switch palette only for new groups, and recolour on request", {
   expect_equal(unname(r), phw_palettes$accessible[1:3])
 })
 
+test_that("a key spreads a sequential palette over its groups", {
+  phw_key_reset("t_seq")
+  withr::defer(phw_key_reset("t_seq"))
+  expect_equal(unname(phw_colour_key(c("a", "b", "c"), "t_seq", palette = "blues")), phw_pal(3, "blues"))
+  r <- phw_key_recolour("t_seq", "orange_navy")
+  expect_equal(unname(r), phw_pal(3, "orange_navy"))
+})
+
+test_that("a key that grows gives every group a colour of its own", {
+  closest_pair <- function(cols) {
+    lab <- grDevices::convertColor(t(grDevices::col2rgb(cols)) / 255, from = "sRGB", to = "Lab")
+    min(stats::dist(lab))
+  }
+  withr::local_options(rlib_warning_verbosity = "verbose")
+  phw_key_reset("t_grow")
+  withr::defer(phw_key_reset("t_grow"))
+  first <- phw_colour_key(c("a", "b", "c"), "t_grow", palette = "blues")
+  expect_no_warning(phw_colour_key(c("d", "e", "f"), "t_grow", palette = "blues"))
+  expect_equal(unname(first), phw_pal(3, "blues"))
+  expect_gt(closest_pair(phw_key("t_grow")), 10)
+
+  ages <- c("0-4", "5-14", "15-44", "45-64", "65+")
+  phw_key_reset("t_grow")
+  phw_colour_key(ages, "t_grow", palette = "blues")
+  grown <- phw_colour_key(c(ages, "Unknown", "85+"), "t_grow", palette = "blues")
+  expect_gt(closest_pair(grown[names(grown) != "Unknown"]), 10)
+
+  phw_key_reset("t_grow")
+  phw_colour_key(1:5, "t_grow", palette = "blues")
+  expect_no_warning(phw_colour_key(c("x", "y"), "t_grow", palette = "blues"))
+  expect_gt(closest_pair(phw_key("t_grow")), 10)
+  expect_warning(phw_colour_key(c("p", "q", "r", "s"), "t_grow", palette = "blues"), "run out")
+  expect_gt(closest_pair(phw_key("t_grow")), 10)
+})
+
+test_that("a sequential key with no colourable groups draws them in grey", {
+  grey <- phw_colours[["grey_mid"]]
+  expect_equal(unname(phw_colour_key("Unknown", palette = "blues")), grey)
+  expect_length(phw_colour_key(character(), palette = "blues"), 0)
+  pal <- phw_leaflet_palette("blues", domain = "Unknown", type = "factor")
+  expect_equal(pal("Unknown"), grey)
+})
+
 test_that("recolouring to \"main\" carries on into \"extended\"", {
   phw_key_reset("t_big")
   withr::defer(phw_key_reset("t_big"))

@@ -70,6 +70,13 @@ test_that("a factor palette carries \"main\" on into \"extended\" and reverses a
   expect_equal(pal(c(lv[1:3], "Unknown")), c(phw_pal(3, reverse = TRUE), phw_colours[["grey_mid"]]))
 })
 
+test_that("a factor palette spreads a sequential palette as phw_pal() does", {
+  pal <- phw_leaflet_palette("blues", domain = c("a", "b", "c"), type = "factor")
+  expect_equal(pal(c("a", "b", "c")), phw_pal(3, "blues"))
+  pal <- phw_leaflet_palette("blues", domain = c("a", "b", "c"), type = "factor", reverse = TRUE)
+  expect_equal(pal(c("a", "b", "c")), phw_pal(3, "blues", reverse = TRUE))
+})
+
 test_that("a numeric fill with no usable values draws every area as missing, with one message", {
   sq <- squares()
   sq$rate <- c(NA, Inf, NA)

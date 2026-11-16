@@ -49,10 +49,20 @@ says what to change.
   palette and then reverses them, giving the same colours as
   `phw_pal(n, reverse = TRUE)`. Reversed charts with fewer groups than the
   palette has colours change colour: with 3 groups, `"main"` gives `#FF5D0C`,
-  `#24A2B5`, `#285087` instead of `#F43882`, `#FF5D0C`, `#24A2B5`, and
-  `"blues"` gives its palest three colours instead of its darkest three.
+  `#24A2B5`, `#285087` instead of `#F43882`, `#FF5D0C`, `#24A2B5`.
   `"main"` also carries on into `"extended"`, so more than four groups no
   longer take colours from other palettes with a warning.
+* A sequential or diverging palette given to groups is spread over them,
+  as `phw_pal()` does. This applies to `scale_*_phw_d()`, `phw_map()` with
+  a text or factor `fill`, `phw_epicurve(palette = )`,
+  `phw_leaflet_palette(type = "factor")` and `phw_colour_key()`. Before,
+  groups took the first colours of the palette: three groups in `"blues"`
+  were its three palest, `"orange_navy"` showed only its orange half, and
+  ten deciles ran out of blues and took other PHW colours with a warning.
+  Charts and maps of groups in these palettes change colour. A saved colour
+  key keeps the colours it already gave its groups, and groups it gains
+  later take the colours of the same palette furthest from the ones it
+  already uses, so no two groups end up looking alike.
 * `phw_leaflet_polygons()` and `phw_leaflet_palette(type = "factor")` order
   groups as the PHW ggplot2 scales do: text sorted, factor levels in their
   order, with unused levels and `NA` left out. A group now has the same
