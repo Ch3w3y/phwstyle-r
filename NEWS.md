@@ -247,6 +247,12 @@ says what to change.
   labels were dropped without a message.
 * `phw_gt()` tables carry the bundled Ubuntu web font, dates are
   left-aligned and subtotals are italic.
+* `phw_gt(gt_args = list(rowname_col = , groupname_col = ))` takes a
+  summary, cross-tab or group table's column names as they print, such as
+  `"Characteristic"`, and a label column used as row names keeps its
+  indents, bold headings and navy header. A name that is not a column stops
+  with a message listing the columns. Before, any column name failed inside
+  gt with a list of columns the table does not show.
 * `phw_group_table(drop = FALSE)` keeps factor levels that have no records,
   such as an empty age band or year, as rows and columns of zeros, as
   `phw_crosstab()` does. Before, it left them out.
