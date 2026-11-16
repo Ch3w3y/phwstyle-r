@@ -120,6 +120,21 @@ test_that("phw_group_table total options and layouts work", {
   expect_output(print(t3), "Group A")
 })
 
+test_that("phw_group_table(drop = FALSE) keeps unused factor levels as zeros", {
+  d <- data.frame(
+    age = factor(c("0-4", "0-4", "15+"), levels = c("0-4", "5-14", "15+")),
+    year = factor(c(2023, 2024, 2024), levels = c(2023, 2024, 2025))
+  )
+  kept <- phw_group_table(d, rows = age, cols = year, drop = FALSE)
+  expect_equal(kept$age, c("0-4", "5-14", "15+", "Total"))
+  expect_equal(names(kept), c("age", "2023", "2024", "2025", "Total"))
+  expect_equal(kept[["2025"]], c(0, 0, 0, 0))
+  expect_equal(kept$Total, c(2, 0, 1, 3))
+  dropped <- phw_group_table(d, rows = age, cols = year)
+  expect_equal(dropped$age, c("0-4", "15+", "Total"))
+  expect_equal(names(dropped), c("age", "2023", "2024", "Total"))
+})
+
 test_that("grouped tables render with flextable and reactable", {
   skip_if_not_installed("flextable")
   skip_if_not_installed("reactable")

@@ -80,7 +80,8 @@ as.tags.phw_gt <- function(x, ...) {
 #' @param number_prefix Word before the number.
 #' @param source,date Passed to [phw_caption()] and shown under the table.
 #' @param caption_args List of other [phw_caption()] arguments.
-#' @param digits Decimal places for non-integer numbers.
+#' @param digits Decimal places for non-integer numbers. Defaults to the
+#'   `digits` of a [phw_group_table()], or 1.
 #' @param gt_args List of arguments for [gt::gt()], e.g.
 #'   `list(groupname_col = "region")`.
 #' @param theme_args List of arguments for `phw_gt_theme()`.
@@ -90,6 +91,7 @@ phw_gt <- function(data, caption = NULL, subtitle = NULL, number = NULL, source 
                    theme_args = list()) {
   rlang::check_installed("gt")
   check_unique_names(data)
+  if (missing(digits)) digits <- attr(data, "digits") %||% digits
   is_sum <- inherits(data, "phw_summary")
   df <- as.data.frame(unclass(data)[names(data)], check.names = FALSE)
   if (is_sum) {

@@ -33,7 +33,8 @@ table.}
 
 \item{caption_args}{List of other \code{\link[=phw_caption]{phw_caption()}} arguments.}
 
-\item{digits}{Decimal places for non-integer numbers.}
+\item{digits}{Decimal places for non-integer numbers. Defaults to the
+\code{digits} of a \code{\link[=phw_group_table]{phw_group_table()}}, or 1.}
 
 \item{header_fill}{Header fill colour: a colour, or a name from
 \link{phw_colours} such as \code{"navy"}.}
