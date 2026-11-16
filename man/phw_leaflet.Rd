@@ -53,8 +53,11 @@ get distinct colours.}
 \item{palette}{Palette name or colours, as in \code{\link[=phw_pal]{phw_pal()}}. Defaults to
 \code{"blues"} for numbers and the default palette for groups.}
 
-\item{bins}{Number of bins, or a vector of breaks, for numeric \code{fill}.
-\code{NULL} gives a continuous scale.}
+\item{bins}{Breaks for numeric \code{fill}, or a single number of bins, as in
+\code{\link[=phw_map]{phw_map()}}: the bins run from the lowest to the highest value, rounded
+out to tidy numbers. \code{NULL} gives a continuous scale. For
+\code{phw_leaflet_palette()}, a number of bins or the full set of breaks,
+as in \code{\link[leaflet:colorBin]{leaflet::colorBin()}}.}
 
 \item{label, popup}{What to show on hover and on click: a column of
 \code{data}, unquoted, or an expression built from its columns such as
