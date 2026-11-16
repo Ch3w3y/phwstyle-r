@@ -147,6 +147,21 @@ test_that("grouped tables render with flextable and reactable", {
   expect_s3_class(phw_reactable(t3), "htmlwidget")
 })
 
+test_that("col_labels relabel the bottom header of a nested group table", {
+  skip_if_not_installed("flextable")
+  x <- phw_group_table(data.frame(group = c("A", "B"), year = c(2023, 2024), q = c("Q1", "Q2")),
+                       rows = group, cols = c(year, q))
+  bottom <- function(ft) {
+    i <- flextable::information_data_chunk(ft)
+    i$txt[i$.part == "header" & i$.row_id == 2]
+  }
+  ft <- phw_flextable(x, col_labels = list(group = "Board", `2023 / Q1` = "First quarter",
+                                           `Total / Total` = "All"))
+  expect_equal(bottom(ft), c("Board", "First quarter", "Q2", "All"))
+  ft <- phw_flextable(x, col_labels = list(`2023 / Q1` = "a", `2024 / Q2` = "b", `Total / Total` = "c"))
+  expect_equal(bottom(ft), c("group", "a", "b", "c"))
+})
+
 test_that("phw_as_summary makes a hand-built table render like a built one", {
   skip_if_not_installed("flextable")
   skip_if_not_installed("reactable")

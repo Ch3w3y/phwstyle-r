@@ -165,7 +165,7 @@ phw_flextable <- function(data, caption = NULL, number = NULL, source = NULL,
   if (any(is_dbl)) ft <- flextable::colformat_double(ft, j = names(data)[is_dbl], digits = digits, big.mark = ",", na_str = "")
   if (!is.null(col_labels)) ft <- do.call(flextable::set_header_labels, c(list(ft), col_labels))
   ft <- phw_flextable_theme(ft, style = style, ...)
-  if (inherits(data, "phw_summary")) ft <- style_summary_ft(ft, data)
+  if (inherits(data, "phw_summary")) ft <- style_summary_ft(ft, data, names(col_labels))
 
   if (!is.null(caption)) {
     title <- if (is.null(number)) caption else paste(number_prefix, number, caption)
@@ -355,7 +355,7 @@ phw_flextable_groups <- function(x, j, key = NULL, palette = phw_default_palette
   x
 }
 
-style_summary_ft <- function(ft, x) {
+style_summary_ft <- function(ft, x, relabelled = character()) {
   r <- summary_rows(x)
   nl <- attr(x, "label_cols") %||% 1L
   shown <- match(ft$col_keys[-seq_len(nl)], names(x))
@@ -392,7 +392,8 @@ style_summary_ft <- function(ft, x) {
     ch <- ch[, shown - nl, drop = FALSE]
     L <- nrow(ch)
     labs <- stats::setNames(as.list(ch[L, ]), names(x)[shown])
-    ft <- do.call(flextable::set_header_labels, c(list(ft), labs))
+    labs <- labs[setdiff(names(labs), relabelled)]
+    if (length(labs)) ft <- do.call(flextable::set_header_labels, c(list(ft), labs))
     for (l in rev(seq_len(L - 1))) {
       key <- apply(ch[seq_len(l), , drop = FALSE], 2, paste, collapse = "\r")
       r <- rle(key)
