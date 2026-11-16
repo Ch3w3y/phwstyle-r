@@ -54,8 +54,11 @@ phw_leaflet_css <- function() {
 #'   get distinct colours.
 #' @param palette Palette name or colours, as in [phw_pal()]. Defaults to
 #'   `"blues"` for numbers and the default palette for groups.
-#' @param bins Number of bins, or a vector of breaks, for numeric `fill`.
-#'   `NULL` gives a continuous scale.
+#' @param bins Breaks for numeric `fill`, or a single number of bins, as in
+#'   [phw_map()]: the bins run from the lowest to the highest value, rounded
+#'   out to tidy numbers. `NULL` gives a continuous scale. For
+#'   `phw_leaflet_palette()`, a number of bins or the full set of breaks,
+#'   as in [leaflet::colorBin()].
 #' @param label,popup What to show on hover and on click: a column of
 #'   `data`, unquoted, or an expression built from its columns such as
 #'   `paste(name, rate)`. A string naming a column, or a vector with one
@@ -93,8 +96,12 @@ phw_leaflet_polygons <- function(map, data, fill = NULL, palette = NULL, bins = 
         fill_col <- na_col
       } else {
         legend_values <- ifelse(ok, v, NA)
+        edges <- if (!is.null(bins)) bin_edges(v[ok], bins)
+        if (length(bins) > 1 && length(edges) == 2) {
+          cli::cli_inform("No value of {.arg bins} falls inside the data ({edges[1]} to {edges[2]}), so every area has one colour.")
+        }
         pal_fun <- phw_leaflet_palette(palette %||% "blues", domain = v[ok],
-                                       type = if (is.null(bins)) "numeric" else "bin", bins = bins,
+                                       type = if (is.null(bins)) "numeric" else "bin", bins = edges,
                                        na.color = na_col)
         fill_col <- pal_fun(legend_values)
       }

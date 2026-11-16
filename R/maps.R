@@ -159,13 +159,22 @@ map_fill_scale <- function(v, bins, palette, key) {
     if (!is.null(key)) cli::cli_inform("phw_map(): {.arg key} is for groups, so it is not used for a numeric {.arg fill}.")
     palette <- palette %||% "blues"
     if (is.null(bins)) return(scale_fill_phw_c(palette))
-    lims <- range(pretty(range(v[is.finite(v)])))
-    if (length(bins) > 1 && !any(bins > lims[1] & bins < lims[2])) {
-      cli::cli_inform("phw_map(): No value of {.arg bins} falls inside the data ({lims[1]} to {lims[2]}), so every area has one colour.")
+    edges <- bin_edges(v, bins)
+    if (length(bins) > 1 && length(edges) == 2) {
+      cli::cli_inform("phw_map(): No value of {.arg bins} falls inside the data ({edges[1]} to {edges[2]}), so every area has one colour.")
     }
-    if (length(bins) == 1) return(scale_fill_phw_b(palette, n.breaks = bins, limits = lims, show.limits = TRUE))
-    return(scale_fill_phw_b(palette, breaks = bins, limits = lims, show.limits = TRUE))
+    return(scale_fill_phw_b(palette, breaks = edges, limits = range(edges), show.limits = TRUE))
   }
   if (!is.null(bins)) cli::cli_inform("phw_map(): {.arg bins} is for numbers, so it is not used for a text or factor {.arg fill}.")
   scale_fill_phw_d(palette %||% phw_default_palette(), key = key)
+}
+
+# Edges of the bins for a numeric fill, shared by phw_map() and
+# phw_leaflet_polygons() so both draw the same classes: the data range
+# rounded out to tidy numbers, split at the breaks inside it, or at about
+# `bins` tidy breaks when `bins` is one number.
+bin_edges <- function(v, bins) {
+  lims <- range(pretty(range(v[is.finite(v)])))
+  inner <- if (length(bins) == 1) scales::extended_breaks(n = bins)(lims) else bins
+  c(lims[1], sort(unique(inner[inner > lims[1] & inner < lims[2]])), lims[2])
 }

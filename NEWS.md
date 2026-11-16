@@ -77,6 +77,16 @@ says what to change.
   and more than twelve groups carry on with the warning the colour key
   gives instead of stopping. Before, "Unknown" took a palette colour and
   pushed the groups after it along by one.
+* `phw_leaflet_polygons(bins = )` reads `bins` as `phw_map()` does: the
+  bins run from the lowest to the highest value, rounded out to tidy
+  numbers, and are split at the breaks you give, or at about that many tidy
+  breaks for a single number. Before, an area below the first break or
+  above the last was drawn grey as if it had no data and was left out of
+  the legend, and `bins = 5` gave 6 classes on a leaflet map and 3 in
+  `phw_map()`. Binned leaflet maps change colour and legend.
+  `phw_leaflet_palette(type = "bin")` is unchanged.
+* `phw_map(bins = )` no longer draws an area grey as missing when a break
+  lies outside the data, as in `bins = c(0, 20, 100)` for rates of 5 to 35.
 * `phw_plotly()` colours the groups of a `plot_ly()` chart as the PHW
   ggplot2 scales do: unused levels are left out, `NA` is grey instead of
   invisible, groups such as "Unknown" are grey, and every group gets its own

@@ -95,6 +95,23 @@ test_that("one value gives a single legend swatch", {
   expect_equal(legend_args(m)$labels, "5", ignore_attr = TRUE)
 })
 
+test_that("bins split the areas into the classes phw_map() gives, with no value drawn as missing", {
+  skip_if_not_installed("ggplot2")
+  sq <- squares(4)
+  sq$code <- paste0("A", 1:4)
+  sq$rate <- c(10, 25, 35, 40)
+  classes <- function(cols) match(cols, unique(cols))
+  for (bins in list(c(20, 30, 40), c(0, 20, 30, 100), 5)) {
+    m <- expect_no_warning(phw_leaflet() |> phw_leaflet_polygons(sq, fill = rate, bins = bins))
+    p <- phw_map(sf::st_drop_geometry(sq), by = code, fill = rate, level = sq, bins = bins)
+    expect_false(any(polygon_fill(m) == phw_colours[["grey_light"]]))
+    expect_equal(classes(polygon_fill(m)), classes(ggplot2::layer_data(p, 2)$fill))
+    expect_equal(gsub("&ndash;", "-", legend_args(m)$labels), c("10 - 20", "20 - 30", "30 - 40"),
+                 ignore_attr = TRUE)
+  }
+  expect_message(phw_leaflet() |> phw_leaflet_polygons(sq, fill = rate, bins = c(50, 60)), "inside the data")
+})
+
 test_that("quantile bins over tied values stop with a clear error", {
   expect_error(phw_leaflet_palette("blues", c(1, 1, 1, 2), type = "quantile"), "too few different values")
 })
