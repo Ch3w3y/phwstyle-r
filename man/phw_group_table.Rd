@@ -23,6 +23,7 @@ phw_group_table(
   label_header = NULL,
   total_label = "Total",
   subtotal_label = "{group} total",
+  subgroup_label = "Total by {variable}",
   missing = "Unknown",
   drop = TRUE,
   digits = 1
@@ -96,6 +97,10 @@ Defaults to the row variable labels joined with " / ".}
 
 \item{subtotal_label}{Label for group totals below the group, with
 \code{{group}} replaced by the group name.}
+
+\item{subgroup_label}{Heading of the \code{"subgroup"} block, with
+\code{{variable}} replaced by the label of the innermost row variable, as
+given in \code{labels}.}
 
 \item{missing}{Label for missing grouping values, or \code{NULL} to drop them.}
 

@@ -322,6 +322,12 @@ says what to change.
   columns. `groupname_col` stops with a message on these tables, because
   their label columns name a group on its first row only. Before, any column name failed inside gt
   with a list of columns the table does not show.
+* `phw_group_table(totals = "subgroup")` heads the subgroup block with the
+  variable label as you gave it, so "MRSA or MSSA (NHS lab)" is no longer
+  printed as "mrsa or mssa (nhs lab)". The new `subgroup_label` sets the
+  heading, with `{variable}` for the label (default `"Total by {variable}"`),
+  so all its words can be replaced, for example in Welsh. It no longer uses
+  `total_label`.
 * `phw_group_table(drop = FALSE)` keeps factor levels that have no records,
   such as an empty age band or year, as rows and columns of zeros, as
   `phw_crosstab()` does. Before, it left them out.

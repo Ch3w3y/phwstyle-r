@@ -105,6 +105,14 @@ test_that("phw_group_table total options and layouts work", {
   expect_equal(attr(t2, "row_type")[1], "total")
   expect_true("Group B total" %in% t2$group)
   expect_true("Total by type" %in% t2$group)
+  d <- data.frame(board = c("Board 1", "Board 2", "Board 1"), org = c("MRSA", "MSSA", "MRSA"))
+  lab <- list(org = "MRSA or MSSA (NHS lab)")
+  t_sub <- phw_group_table(d, c(board, org), totals = "subgroup", labels = lab)
+  expect_true("Total by MRSA or MSSA (NHS lab)" %in% t_sub$board)
+  t_cy <- phw_group_table(d, c(board, org), totals = "subgroup", labels = lab,
+                          subgroup_label = "Cyfanswm fesul {variable}")
+  expect_true("Cyfanswm fesul MRSA or MSSA (NHS lab)" %in% t_cy$board)
+  expect_error(phw_group_table(d, c(board, org), subgroup_label = c("a", "b")), "single string")
   expect_true(all(t2$n[t2$group %in% c("Group B", "Group A", "Group C")] == ""))
   expect_match(t2$n[1], "100.0%")
   t3 <- phw_group_table(dat, c("group", "type"), c("year", "q"), col_totals = c("group", "table"),

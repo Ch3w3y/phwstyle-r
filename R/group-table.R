@@ -59,6 +59,9 @@
 #' @param total_label Label for total rows and columns.
 #' @param subtotal_label Label for group totals below the group, with
 #'   `{group}` replaced by the group name.
+#' @param subgroup_label Heading of the `"subgroup"` block, with
+#'   `{variable}` replaced by the label of the innermost row variable, as
+#'   given in `labels`.
 #' @param missing Label for missing grouping values, or `NULL` to drop them.
 #' @param drop Leave out categories that have no records in a group?
 #' @param digits Decimal places for percentages and non-integer values.
@@ -93,12 +96,14 @@ phw_group_table <- function(data, rows, cols = NULL, value = NULL, fun = sum,
                             separate = c("space", "line", "both", "none"),
                             highlight = TRUE, labels = list(), value_label = NULL,
                             label_header = NULL, total_label = "Total",
-                            subtotal_label = "{group} total", missing = "Unknown",
+                            subtotal_label = "{group} total",
+                            subgroup_label = "Total by {variable}", missing = "Unknown",
                             drop = TRUE, digits = 1) {
   total_position <- rlang::arg_match(total_position)
   subtotal_position <- rlang::arg_match(subtotal_position)
   percent <- rlang::arg_match(percent)
   layout <- rlang::arg_match(layout)
+  check_one_string(subgroup_label)
   separate <- rlang::arg_match(separate)
   totals <- setdiff(totals, "none")
   bad <- setdiff(totals, c("group", "subgroup", "table"))
@@ -199,7 +204,8 @@ phw_group_table <- function(data, rows, cols = NULL, value = NULL, fun = sum,
   body <- out; out <- list()
   if ("subgroup" %in% totals && k > 1) {
     g <- grp[[rows[k]]]
-    add(paste(total_label, "by", tolower(var_label(data, rows[k], labels))), 0, "variable",
+    heading <- gsub("{variable}", var_label(data, rows[k], labels), subgroup_label, fixed = TRUE)
+    add(heading, 0, "variable",
         all_rows, all_rows, blank = TRUE)
     for (lv in levels_in(g, all_rows)) add(lv, 1, "level", g == lv, all_rows)
   }
