@@ -458,3 +458,34 @@ test_that("renderers show phw_group_table(digits = ) unless given their own", {
   styles <- paste(readLines(file.path(ex, "xl", "styles.xml"), warn = FALSE), collapse = "")
   expect_match(styles, 'formatCode="#,##0.000"', fixed = TRUE)
 })
+
+test_that("heat colours only the level rows of a summary table", {
+  skip_if_not_installed("flextable")
+  dat <- data.frame(group = rep(c("A", "B", "C"), times = c(10, 20, 30)),
+                    type = rep(c("x", "y"), 30))
+  ft <- phw_crosstab(dat, group, type) |> phw_flextable() |> phw_flextable_heat(j = 2:3)
+  bg <- ft$body$styles$cells$background.color$data
+  # The largest level cell takes the darkest colour, not the total.
+  expect_equal(unname(bg[3, "x"]), toupper(utils::tail(seq_cols("teals", FALSE), 1)))
+  expect_equal(bg[4, c("x", "y")], c(x = "transparent", y = "transparent"))
+
+  grouped <- phw_group_table(data.frame(a = rep(c("x", "y"), 50), b = rep(c("p", "q", "r", "s"), 25)),
+                             c(a, b), subtotal_position = "below")
+  types <- attr(grouped, "row_type")
+  plain <- phw_flextable(grouped)$body$styles$cells$background.color$data
+  heated <- phw_flextable(grouped) |> phw_flextable_heat(n)
+  bg <- heated$body$styles$cells$background.color$data
+  expect_identical(bg[types != "level", ], plain[types != "level", ])
+  expect_true(all(bg[types == "level", "n"] != "transparent"))
+})
+
+test_that("phw_col_heat colours only the level rows of a summary table", {
+  skip_if_not_installed("reactable")
+  dat <- data.frame(group = rep(c("A", "B", "C"), times = c(10, 20, 30)),
+                    type = rep(c("x", "y"), 30))
+  ct <- phw_crosstab(dat, group, type)
+  style <- phw_col_heat(ct, x)$style
+  expect_null(style(ct$x[4], 4))
+  top <- utils::tail(seq_cols("teals", FALSE), 1)
+  expect_equal(toupper(style(ct$x[3], 3)$background), toupper(top))
+})
