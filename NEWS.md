@@ -387,6 +387,9 @@ says what to change.
 * `phw_page_navbar(header_args = )` overrides the title and subtitle by name,
   so the logo link keeps its address.
 * `phw_bs_theme()` takes Bootstrap version 4 or 5 only.
+* `phw_header()` brings its own styles, so the gradient band, white logo and
+  Ubuntu titles show on any page. Before, they showed only on a page themed
+  with `phw_bs_theme()`, and elsewhere the white logo was invisible.
 
 ## Documentation
 
