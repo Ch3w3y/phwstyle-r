@@ -223,6 +223,10 @@ says what to change.
   Before, the second table was written over the first sheet.
 * `phw_flextable_heat(symbols = TRUE)` keeps the table's number format, so
   `phw_flextable(digits = 1)` shows "▼ 92.3", not "▼ 92.34568".
+* On a summary, cross-tab or group table, `phw_flextable_heat()` and
+  `phw_col_heat()` colour only the level rows. Before, totals and subtotals
+  were coloured too and set the top of the scale, so every other cell came
+  out pale, and headings lost their grey band in the coloured columns.
 * In `phw_flextable()`, the spanner above a summary, cross-tab or group
   table's columns takes the same colour as the column labels below it. With
   `style = "header"` it is white on the navy band, with a white rule under

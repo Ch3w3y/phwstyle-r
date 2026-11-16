@@ -45,7 +45,8 @@ range).}
 
 \item{palette}{Palette name or vector of colours.}
 
-\item{domain}{Range for the heat colours. Defaults to the column range.}
+\item{domain}{Range for the heat colours. Defaults to the range of the
+coloured cells.}
 
 \item{breaks, higher_is_better}{See \code{\link[=phw_flextable_heat]{phw_flextable_heat()}}.}
 
@@ -63,7 +64,9 @@ in \code{columns = list(...)} of \code{\link[=phw_reactable]{phw_reactable()}} o
 \item \code{phw_col_bar()}: the value with a horizontal bar behind it, scaled to
 the column's largest value. Good for counts and rates.
 \item \code{phw_col_heat()}: cell background from a sequential or diverging
-palette, with readable text.
+palette, with readable text. On a summary table, only the level rows
+are coloured: headings, subtotals and totals keep their own styling and
+stay out of the colour scale.
 \item \code{phw_col_rag()}: red, amber or green cells with a shape, so status
 doesn't rely on colour alone.
 \item \code{phw_col_number()} and \code{phw_col_percent()}: thousands separators and

@@ -24,7 +24,7 @@ names such as \code{c(rate, cases)}, positions such as \code{2:5}, or strings.}
 colours, \code{"rag"} or \code{"rag_accessible"} (navy instead of green).}
 
 \item{domain}{Range of values the palette spans. Defaults to the range of
-the selected columns.}
+the coloured cells.}
 
 \item{breaks}{For \code{palette = "rag"}: two cut points (red below the first,
 green at or above the second).}
@@ -46,6 +46,11 @@ stay readable.
 For \code{palette = "rag"}, colour alone doesn't work for colour-blind
 readers or in black-and-white print, so \code{symbols = TRUE} (the default)
 adds a shape before each value as well.
+
+On a summary table from \code{\link[=phw_flextable]{phw_flextable()}}, only the level rows are
+coloured. Headings, subtotals and totals keep their own styling and do
+not count towards the colour scale, so a total does not make every other
+cell pale.
 }
 \examples{
 if (requireNamespace("flextable", quietly = TRUE)) {

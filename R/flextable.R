@@ -235,13 +235,18 @@ use_phw_flextable <- function(style = "booktabs", font_size = 10, ...) {
 #' readers or in black-and-white print, so `symbols = TRUE` (the default)
 #' adds a shape before each value as well.
 #'
+#' On a summary table from [phw_flextable()], only the level rows are
+#' coloured. Headings, subtotals and totals keep their own styling and do
+#' not count towards the colour scale, so a total does not make every other
+#' cell pale.
+#'
 #' @param x A flextable.
 #' @param j Columns to colour, chosen as in [dplyr::select()]: unquoted
 #'   names such as `c(rate, cases)`, positions such as `2:5`, or strings.
 #' @param palette A sequential or diverging palette name, a vector of
 #'   colours, `"rag"` or `"rag_accessible"` (navy instead of green).
 #' @param domain Range of values the palette spans. Defaults to the range of
-#'   the selected columns.
+#'   the coloured cells.
 #' @param breaks For `palette = "rag"`: two cut points (red below the first,
 #'   green at or above the second).
 #' @param higher_is_better For `"rag"`: is a high value good (green)?
@@ -269,9 +274,10 @@ phw_flextable_heat <- function(x, j, palette = "teals", domain = NULL, breaks = 
   check_flextable(x)
   data <- x$body$dataset
   j <- pick_cols(rlang::enquo(j), data, "j")
-  j <- value_cols(data, j, "j")
+  rows <- heat_rows(data)
+  j <- value_cols(data[rows, , drop = FALSE], j, "j")
   if (!length(j)) return(x)
-  vals <- unlist(data[j])
+  vals <- unlist(data[rows, j])
   rag <- identical(palette, "rag") || identical(palette, "rag_accessible")
   if (rag) {
     check_breaks(breaks)
@@ -286,16 +292,16 @@ phw_flextable_heat <- function(x, j, palette = "teals", domain = NULL, breaks = 
   }
   shapes <- c(red = "\u25BC", amber = "\u25A0", green = "\u25B2")
   for (col in j) {
-    v <- data[[col]]
+    v <- data[[col]][rows]
     fills <- fill_fun(v)
-    x <- flextable::bg(x, j = col, bg = fills, part = "body")
+    x <- flextable::bg(x, i = rows, j = col, bg = fills, part = "body")
     txt <- ifelse(fills == "transparent", phw_colours[["text"]], phw_text_on(sub("transparent", "#FFFFFF", fills)))
-    x <- flextable::color(x, j = col, color = txt, part = "body")
+    x <- flextable::color(x, i = rows, j = col, color = txt, part = "body")
     if (rag && symbols) {
-      i <- which(!is.na(v))
+      i <- rows[!is.na(v)]
       if (length(i)) {
         x <- flextable::prepend_chunks(x, i = i, j = col, part = "body",
-                                       flextable::as_chunk(paste0(shapes[rag_status(v[i], breaks, higher_is_better)], " ")))
+                                       flextable::as_chunk(paste0(shapes[rag_status(v[!is.na(v)], breaks, higher_is_better)], " ")))
       }
     }
   }

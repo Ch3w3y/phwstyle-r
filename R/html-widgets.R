@@ -435,7 +435,9 @@ summary_reactable_args <- function(x) {
 #' * `phw_col_bar()`: the value with a horizontal bar behind it, scaled to
 #'   the column's largest value. Good for counts and rates.
 #' * `phw_col_heat()`: cell background from a sequential or diverging
-#'   palette, with readable text.
+#'   palette, with readable text. On a summary table, only the level rows
+#'   are coloured: headings, subtotals and totals keep their own styling and
+#'   stay out of the colour scale.
 #' * `phw_col_rag()`: red, amber or green cells with a shape, so status
 #'   doesn't rely on colour alone.
 #' * `phw_col_number()` and `phw_col_percent()`: thousands separators and
@@ -446,7 +448,8 @@ summary_reactable_args <- function(x) {
 #' @param column The column, unquoted as in dplyr. A string works too.
 #' @param colour Bar colour.
 #' @param palette Palette name or vector of colours.
-#' @param domain Range for the heat colours. Defaults to the column range.
+#' @param domain Range for the heat colours. Defaults to the range of the
+#'   coloured cells.
 #' @param breaks,higher_is_better See [phw_flextable_heat()].
 #' @param rag_palette `"rag"` or `"rag_accessible"`.
 #' @param digits Decimal places.
@@ -493,13 +496,14 @@ phw_col_heat <- function(data, column, palette = "teals", domain = NULL, digits 
   rlang::check_installed("reactable")
   column <- pick_col(rlang::enquo(column), data, "column")
   fmt <- reactable::colFormat(separators = TRUE, digits = digits)
-  if (!length(value_cols(data, column, "column"))) return(reactable::colDef(format = fmt, ...))
-  domain <- domain %||% range(data[[column]], na.rm = TRUE)
+  rows <- heat_rows(data)
+  if (!length(value_cols(data[rows, , drop = FALSE], column, "column"))) return(reactable::colDef(format = fmt, ...))
+  domain <- domain %||% range(data[[column]][rows], na.rm = TRUE)
   fill <- scales::col_numeric(seq_cols(palette, FALSE), domain = domain, na.color = "transparent")
   reactable::colDef(
     format = fmt,
-    style = function(value) {
-      if (is.na(value)) return(NULL)
+    style = function(value, index) {
+      if (is.na(value) || !index %in% rows) return(NULL)
       bg <- fill(value)
       list(background = bg, color = phw_text_on(bg))
     }, ...)
