@@ -248,6 +248,14 @@ test_that("use_phw_ggplot default scales give groups named after the palette's c
   expect_equal(plot_colours(ggplot(d, aes(x, y, fill = status)) + geom_point(shape = 21)), want)
   ordered <- transform(d, status = factor(status, levels = c("Green", "Amber", "Red"), ordered = TRUE))
   expect_equal(plot_colours(ggplot(ordered, aes(x, y, fill = status)) + geom_point(shape = 21)), want)
+  # The same with a theme_phw() of the plot's own, with no warnings.
+  themed <- ggplot(d, aes(x, y, colour = status)) + geom_point() + theme_phw(grid = "x")
+  expect_no_warning(expect_equal(plot_colours(themed, "colour"), want))
+  expect_no_warning(ggplotGrob(themed))
+  skip_if_not(ggplot2_v4(), "Theme palettes need ggplot2 4.0")
+  own <- c("#111111", "#222222", "#333333")
+  expect_no_warning(mine <- themed + theme(palette.colour.discrete = own))
+  expect_equal(plot_colours(mine, "colour"), own[rank(d$status)])
 })
 
 test_that("accessible = TRUE makes lines, points and text bigger on every ggplot2", {
