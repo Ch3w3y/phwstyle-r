@@ -279,6 +279,16 @@ test_that("phw_gt carries the Ubuntu web font and italic subtotals, and left-ali
   expect_match(html, "font-style: italic;[^>]*>Group A total", perl = TRUE)
 })
 
+test_that("phw_gt_theme(...) replaces a PHW setting", {
+  skip_if_not_installed("gt")
+  css <- function(g) gt::as_raw_html(g, inline_css = FALSE)
+  g <- gt::tab_header(gt::gt(head(iris)), "Iris")
+  expect_match(css(phw_gt_theme(g)), "\\.gt_heading \\{[^}]*text-align: left;")
+  expect_match(css(phw_gt_theme(g, heading.align = "center")), "\\.gt_heading \\{[^}]*text-align: center;")
+  g <- phw_gt(head(iris), theme_args = list(data_row.padding = gt::px(2)))
+  expect_match(css(g), "\\.gt_row \\{[^}]*padding-top: 2px;")
+})
+
 test_that("phw_gt takes a summary table's column names in gt_args", {
   skip_if_not_installed("gt")
   s <- phw_summary_table(data.frame(age = c("0-14", "15-44", "0-14")))

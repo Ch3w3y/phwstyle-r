@@ -22,8 +22,7 @@ phw_gt_theme <- function(x, font_size = 14, accent = phw_colours[["navy"]], stri
   rlang::check_installed("gt")
   col <- phw_colours
   x <- gt::opt_table_font(x, font = c(phw_font(), "Arial", "sans-serif"))
-  x <- gt::tab_options(
-    x,
+  args <- list(
     table.font.size = gt::px(font_size),
     table.font.color = col[["text"]],
     table.border.top.color = accent,
@@ -51,9 +50,11 @@ phw_gt_theme <- function(x, font_size = 14, accent = phw_colours[["navy"]], stri
     footnotes.font.size = gt::px(font_size - 2),
     row.striping.include_table_body = stripe,
     row.striping.background_color = col[["grey_bg"]],
-    data_row.padding = gt::px(5),
-    ...
+    data_row.padding = gt::px(5)
   )
+  dots <- list(...)
+  args[names(dots)] <- dots
+  x <- do.call(gt::tab_options, c(list(x), args))
   x <- gt::tab_style(x, gt::cell_text(color = accent),
                      locations = list(gt::cells_title(), gt::cells_stubhead(), gt::cells_column_labels(),
                                       gt::cells_column_spanners(), gt::cells_row_groups()))
