@@ -17,6 +17,11 @@ test_that("number formatters work", {
   expect_equal(phw_percent()(0.432), "43.2%")
 })
 
+test_that("big.mark replaces the comma", {
+  expect_equal(phw_number(big.mark = "")(2024), "2024")
+  expect_equal(phw_percent(big.mark = " ", accuracy = 1)(12.345), "1 234%")
+})
+
 test_that("a missing or empty source, date or note is left out of the caption", {
   expect_null(phw_caption(NA))
   expect_null(phw_caption(""))

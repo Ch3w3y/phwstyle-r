@@ -83,20 +83,23 @@ has_text <- function(x) length(x) > 0 && !all(is.na(x) | (is.character(x) & !nzc
 #' Thousands separated with commas and a fixed number of decimals.
 #'
 #' @param accuracy Rounding, as in [scales::label_number()].
+#' @param big.mark Thousands separator. Use `""` for none, for example for
+#'   years on an axis.
 #' @param ... Passed to [scales::label_number()] or [scales::label_percent()].
 #' @return A labelling function.
 #' @examples
 #' phw_number()(c(1234.5, 98765))
 #' phw_percent()(0.432)
+#' phw_number(big.mark = "")(2024)
 #' @export
-phw_number <- function(accuracy = 1, ...) {
-  scales::label_number(accuracy = accuracy, big.mark = ",", ...)
+phw_number <- function(accuracy = 1, big.mark = ",", ...) {
+  scales::label_number(accuracy = accuracy, big.mark = big.mark, ...)
 }
 
 #' @rdname phw_number
 #' @export
-phw_percent <- function(accuracy = 0.1, ...) {
-  scales::label_percent(accuracy = accuracy, big.mark = ",", ...)
+phw_percent <- function(accuracy = 0.1, big.mark = ",", ...) {
+  scales::label_percent(accuracy = accuracy, big.mark = big.mark, ...)
 }
 
 # Build the caption a wrapper shows, from its source, date and caption_args.
