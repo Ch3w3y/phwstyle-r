@@ -179,6 +179,14 @@ test_that("a qualitative palette or a plain data frame level gives an error nami
                "sf data frame")
 })
 
+test_that("bins must be a number of bins (2 or more) or a vector of breaks", {
+  areas <- tiny_areas()
+  d <- data.frame(area = areas$code, rate = c(-3, -1, 0, 5))
+  for (bins in list(1, 0, -2, Inf, NA_real_, numeric(0), "5")) {
+    expect_error(phw_map(d, by = area, fill = rate, level = areas, bins = bins), "`bins` must be")
+  }
+})
+
 test_that("phw_map says when bins or key do not apply to the fill", {
   areas <- tiny_areas()
   d <- data.frame(area = areas$code, rate = 1:4, band = c("a", "b", "a", "b"))

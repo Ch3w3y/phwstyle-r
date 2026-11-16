@@ -17,7 +17,8 @@
 #' @param level A boundary level for [phw_boundaries()] such as
 #'   `"local_authority"`, or an sf data frame with `code` and `name` columns
 #'   that you have already loaded.
-#' @param bins Breaks for numeric `fill`, or a single number of bins. Not
+#' @param bins Breaks for numeric `fill`, or a single number of bins (2 or
+#'   more). `bins = 2` splits the areas at a tidy number near the median. Not
 #'   used for text or factor `fill`.
 #'   `NULL` gives a continuous scale. The legend also shows the lowest and
 #'   highest values, rounded out to tidy numbers.
@@ -62,6 +63,7 @@ phw_map <- function(data, by, fill, level, bins = NULL, palette = NULL, key = NU
   fill <- pick_col(rlang::enquo(fill), data, "fill")
   quo_label <- rlang::enquo(label)
   check_has_rows(data)
+  check_bins(bins)
   bounds <- map_boundaries(level, detail)
   if (all(is.na(data[[fill]]))) cli::cli_abort("Every value in {.field {fill}} is missing, so there is nothing to map.")
 
@@ -172,20 +174,21 @@ map_fill_scale <- function(v, bins, palette, key) {
 # Edges of the bins for a numeric fill, shared by phw_map() and
 # phw_leaflet_polygons() so both draw the same classes: the data range
 # rounded out to tidy numbers, split at the breaks inside it, or at about
-# `bins` tidy breaks when `bins` is one number.
+# `bins` tidy breaks when `bins` is one number. `bins = 2` splits at the tidy
+# break nearest the median that leaves a value in each class.
 bin_edges <- function(v, bins) {
-  lims <- range(pretty(range(v[is.finite(v)])))
+  v <- v[is.finite(v)]
+  lims <- range(pretty(range(v)))
   inside <- function(x) sort(unique(x[x > lims[1] & x < lims[2]]))
   if (length(bins) > 1) return(c(lims[1], inside(bins), lims[2]))
-  inner <- inside(scales::extended_breaks(n = bins)(lims))
-  # For small `bins` the tidy breaks can all land on the ends of the range.
-  # Then ask for a few more and split once, at the one nearest the middle.
-  for (n in bins + seq_len(3)) {
-    if (length(inner)) break
-    more <- inside(scales::extended_breaks(n = n)(lims))
-    inner <- more[which.min(abs(more - mean(lims)))]
+  if (bins == 2) {
+    for (n in c(5, 10, 20)) {
+      splits <- inside(scales::extended_breaks(n = n)(lims))
+      splits <- splits[splits >= min(v) & splits < max(v)]
+      if (length(splits)) return(c(lims[1], splits[which.min(abs(splits - stats::median(v)))], lims[2]))
+    }
   }
-  c(lims[1], inner, lims[2])
+  c(lims[1], inside(scales::extended_breaks(n = bins)(lims)), lims[2])
 }
 
 # A map follows the use_phw_ggplot() settings as the other ready-made charts

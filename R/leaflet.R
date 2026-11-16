@@ -146,10 +146,7 @@ check_leaflet_polygons <- function(map, data, bins, polygon_args, call = rlang::
                      i = "Use {.fn phw_boundaries}, or convert with {.fn sf::st_as_sf}."), call = call)
   }
   check_has_rows(data, call = call)
-  if (!is.null(bins) && (!is.numeric(bins) || anyNA(bins) ||
-                         (length(bins) == 1 && bins < 2) || length(bins) == 0)) {
-    cli::cli_abort("{.arg bins} must be a number of bins (2 or more) or a vector of breaks.", call = call)
-  }
+  check_bins(bins, call = call)
   if (!is.list(polygon_args) || (length(polygon_args) && !rlang::is_named(polygon_args))) {
     cli::cli_abort("{.arg polygon_args} must be a named list, e.g. {.code list(smoothFactor = 0.5)}.", call = call)
   }

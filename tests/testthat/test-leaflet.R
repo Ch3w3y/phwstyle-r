@@ -126,7 +126,8 @@ test_that("bins = 2 splits the areas into two classes on both maps", {
   skip_if_not_installed("ggplot2")
   sq <- squares(7)
   sq$code <- paste0("A", 1:7)
-  for (rate in list(c(12.3, 18, 24.5, 31.2, 37.9, 42, 48.9), c(2, 9, 15, 30, 55, 70, 70))) {
+  for (rate in list(c(12.3, 18, 24.5, 31.2, 37.9, 42, 48.9), c(2, 9, 15, 30, 55, 70, 70),
+                    c(-3, -1.2, 0.4, 1.1, 2.3, 3.6, 4.9), c(-12, -3, -1, 0, 2, 5, 30))) {
     sq$rate <- rate
     m <- phw_leaflet() |> phw_leaflet_polygons(sq, fill = rate, bins = 2)
     p <- phw_map(sf::st_drop_geometry(sq), by = code, fill = rate, level = sq, bins = 2)
