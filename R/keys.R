@@ -45,9 +45,14 @@ default_neutral <- c("Other", "Others", "Unknown", "Not known", "Not stated", "M
 #' @param palette Palette for new groups: a name from [phw_palettes], or a
 #'   vector of colours. A sequential or diverging palette is spread over the
 #'   groups, as in [phw_pal()]. Groups a key gains later take the colours of
-#'   the palette furthest from the ones the key already uses.
+#'   the palette furthest from the ones the key already uses. Where the
+#'   palette's colours have names, as in `"rag"` (`red`, `amber`, `green`)
+#'   and `"strategy"`, a group with one of those names takes that colour
+#'   whatever its order, and keeps it if the key had stored another.
+#'   Matching ignores case. Other groups take the remaining colours in order.
 #' @param fixed Named vector of colours to pin, e.g.
-#'   `c(Wales = "#285087")`. Pinned colours replace any stored colour.
+#'   `c(Wales = "#285087")`. Pinned colours replace any stored colour, and
+#'   any colour the palette gives a group by name.
 #' @param neutral Group names to draw in `neutral_colour`. Matching ignores
 #'   case.
 #' @param neutral_colour Colour for neutral groups.
@@ -75,6 +80,8 @@ phw_colour_key <- function(levels, name = NULL, palette = phw_default_palette(),
   }
   check_colours(neutral_colour, "neutral_colour")
   if (length(neutral_colour) != 1) cli::cli_abort("{.arg neutral_colour} must be one colour.")
+  by_name <- if (!is.function(palette)) palette_named(palette)
+  hit <- match(tolower(lv), tolower(names(by_name)))
   # A palette function is asked once for every group, so its colours stay
   # in its own order.
   if (is.function(palette) && length(lv)) palette <- phw_pal(length(lv), palette)
@@ -90,6 +97,7 @@ phw_colour_key <- function(levels, name = NULL, palette = phw_default_palette(),
   if (!length(vals) && !identical(id, name)) {
     vals <- key_mirror(phw_key(name), palette, neutral_colour)
   }
+  vals[lv[!is.na(hit)]] <- unname(by_name[hit[!is.na(hit)]])
   if (length(fixed)) {
     check_named_colours(fixed, "fixed")
     vals[names(fixed)] <- unname(fixed)
@@ -114,8 +122,15 @@ phw_colour_key <- function(levels, name = NULL, palette = phw_default_palette(),
 reverse_key_palette <- function(palette, levels, neutral = default_neutral) {
   if (is.function(palette)) return(function(n) rev(palette(n)))
   n <- sum(!tolower(levels) %in% tolower(neutral))
-  pal <- palette_colours(spread_palette(palette_for(palette, n), n))
+  pal <- palette_named(spread_palette(palette_for(palette, n), n))
   rev(pal[seq_len(min(n, length(pal)))])
+}
+
+# palette_colours(), keeping names such as "red" in "rag" so that groups
+# with those names can take them.
+palette_named <- function(palette) {
+  nm <- names(if (is_palette_name(palette)) phw_palettes[[palette]] else palette)
+  stats::setNames(palette_colours(palette), nm)
 }
 
 is_ramp <- function(palette) {

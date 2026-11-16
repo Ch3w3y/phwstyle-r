@@ -24,10 +24,15 @@ with no memory.}
 \item{palette}{Palette for new groups: a name from \link{phw_palettes}, or a
 vector of colours. A sequential or diverging palette is spread over the
 groups, as in \code{\link[=phw_pal]{phw_pal()}}. Groups a key gains later take the colours of
-the palette furthest from the ones the key already uses.}
+the palette furthest from the ones the key already uses. Where the
+palette's colours have names, as in \code{"rag"} (\code{red}, \code{amber}, \code{green})
+and \code{"strategy"}, a group with one of those names takes that colour
+whatever its order, and keeps it if the key had stored another.
+Matching ignores case. Other groups take the remaining colours in order.}
 
 \item{fixed}{Named vector of colours to pin, e.g.
-\code{c(Wales = "#285087")}. Pinned colours replace any stored colour.}
+\code{c(Wales = "#285087")}. Pinned colours replace any stored colour, and
+any colour the palette gives a group by name.}
 
 \item{neutral}{Group names to draw in \code{neutral_colour}. Matching ignores
 case.}
