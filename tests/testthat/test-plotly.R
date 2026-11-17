@@ -54,6 +54,37 @@ test_that("a missing number is drawn in grey, alone or in a subplot", {
   }
 })
 
+test_that("a missing heat map cell is drawn in grey, not left white", {
+  d <- expand.grid(week = 1:4, age = c("0-14", "15-64", "65+"))
+  d$rate <- c(5, 8, NA, 12, 6, 9, 11, 15, 7, NA, 10, 14)
+  grey <- phw_colours[["grey_light"]]
+  # Each heat map has a grey heat map under it, covering only its missing cells.
+  check <- function(tr) {
+    heat <- which(vapply(tr, function(t) identical(t$type, "heatmap"), logical(1)))
+    expect_length(heat, 2)
+    under <- tr[[heat[1]]]
+    expect_equal(as.vector(!is.na(under$z)), as.vector(is.na(tr[[heat[2]]]$z)))
+    expect_equal(unlist(under$colorscale), c("0", grey, "1", grey), ignore_attr = TRUE)
+    expect_false(under$showscale)
+    expect_equal(under$hoverinfo, "skip")
+    expect_equal(under[c("x", "y")], tr[[heat[2]]][c("x", "y")])
+  }
+  check(built(phw_plotly(plotly::plot_ly(d, x = ~week, y = ~age, z = ~rate, type = "heatmap")))$data)
+  skip_if_not_installed("ggplot2")
+  for (geom in list(ggplot2::geom_tile(), ggplot2::geom_raster())) {
+    g <- ggplot2::ggplot(d, ggplot2::aes(week, age, fill = rate)) + geom + scale_fill_phw_c()
+    check(built(phw_plotly(g))$data)
+  }
+  # Styling a subplot() of styled heat maps again keeps one grey layer each.
+  tr <- built(suppressMessages(phw_plotly(plotly::subplot(phw_plotly(g), phw_plotly(g)))))$data
+  under <- Filter(function(t) identical(t$name, "phw_missing"), tr)
+  expect_equal(vapply(under, function(t) t$xaxis, ""), c("x", "x2"))
+  full <- d
+  full$rate[is.na(full$rate)] <- 1
+  tr <- built(phw_plotly(plotly::plot_ly(full, x = ~week, y = ~age, z = ~rate, type = "heatmap")))$data
+  expect_length(tr, 1)
+})
+
 test_that("user annotations are added after the caption", {
   p <- plotly::plot_ly(groups_df, x = ~week, y = ~cases, type = "scatter", mode = "lines")
   note <- list(text = "note", x = 1, y = 1, showarrow = FALSE)

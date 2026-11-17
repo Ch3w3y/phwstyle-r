@@ -399,18 +399,39 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
 # Only built traces hold that array, so a chart coloured by a number with a
 # missing value is built here, and built traces, such as a subplot()'s, are
 # greyed. The chart stays a plain plotly widget, which htmlwidgets names by
-# its first class.
+# its first class. A missing heat map cell is a gap that shows the white
+# background, which reads as the lowest value, so a grey heat map of the
+# missing cells goes under it. The grey layers are made afresh each time, so
+# a subplot() of styled charts gets one per heat map, on its new axes.
 grey_missing_numbers <- function(p) {
   ids <- rlang::names2(p$x$attrs)
   unbuilt <- vapply(seq_along(p$x$attrs), function(i) {
     a <- p$x$attrs[[i]]
     if (inherits(a, "plotly_eval")) return(FALSE)
-    v <- mapped_values(a$color, p, ids[[i]])
-    is.numeric(v) && anyNA(v)
+    any(vapply(list(a$color, a[["z"]]), function(x) {
+      v <- mapped_values(x, p, ids[[i]])
+      is.numeric(v) && anyNA(v)
+    }, logical(1)))
   }, logical(1))
   if (any(unbuilt)) p <- plotly::plotly_build(p)
-  if (length(p$x$data)) p$x$data <- lapply(p$x$data, grey_missing_number)
+  if (length(p$x$data)) {
+    data <- Filter(function(t) !identical(t$name, "phw_missing"), p$x$data)
+    p$x$data <- unlist(lapply(data, function(t) c(missing_cells(t), list(grey_missing_number(t)))),
+                       recursive = FALSE)
+  }
   p
+}
+
+# A heat map trace, in grey, of the cells `trace` leaves missing, or none.
+missing_cells <- function(trace) {
+  z <- trace[["z"]]
+  if (!identical(trace$type, "heatmap") || !is.numeric(z) || !anyNA(z)) return(list())
+  place <- c("x", "y", "x0", "dx", "y0", "dy", "transpose", "xgap", "ygap", "xaxis", "yaxis")
+  grey <- phw_colours[["grey_light"]]
+  list(c(trace[intersect(place, names(trace))],
+         list(type = "heatmap", name = "phw_missing", z = ifelse(is.na(z), 1, NA),
+              colorscale = list(list(0, grey), list(1, grey)), showscale = FALSE,
+              showlegend = FALSE, hoverinfo = "skip")))
 }
 
 grey_missing_number <- function(trace) {
