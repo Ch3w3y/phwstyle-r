@@ -357,7 +357,9 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
                    pad = list(t = if (title_lines > 1) 26 else 14))),
     legend = if (legend == "bottom") list(orientation = "h", x = 0, y = -0.15, xanchor = "left",
                                           yanchor = "top")
-             else list(orientation = "v"),
+             # ggplotly() places the legend from the theme, so every
+             # position field is set, not only the orientation.
+             else list(orientation = "v", x = 1.02, y = 1, xanchor = "left", yanchor = "top"),
     hoverlabel = list(bgcolor = col[["navy"]], bordercolor = col[["navy"]],
                       font = list(color = "#FFFFFF", family = font$family)),
     margin = list(b = if (!is.null(cap)) 110 else 60, t = 28 + 22 * title_lines + strip),

@@ -487,6 +487,16 @@ test_that("legend sets where a legend goes, not whether one trace gets one", {
   expect_false(built(phw_plotly(two, legend = "none"))$layout$showlegend)
 })
 
+test_that("a right legend sits to the right of the plot, for a ggplot too", {
+  where <- function(w) built(phw_plotly(w, legend = "right"))$layout$legend[c("orientation", "x", "y", "xanchor", "yanchor")]
+  right <- list(orientation = "v", x = 1.02, y = 1, xanchor = "left", yanchor = "top")
+  p <- plotly::plot_ly(groups_df, x = ~week, y = ~cases, color = ~group, type = "scatter", mode = "lines")
+  expect_equal(where(p), right)
+  skip_if_not_installed("ggplot2")
+  g <- ggplot2::ggplot(groups_df, ggplot2::aes(week, cases, colour = group)) + ggplot2::geom_line()
+  expect_equal(where(g + theme_phw()), right)
+})
+
 test_that("the legend has a title only where the chart sets or shows one", {
   title_of <- function(w) built(w)$layout$legend$title$text
   p <- plotly::plot_ly(groups_df, x = ~week, y = ~cases, color = ~group, type = "scatter", mode = "lines")
