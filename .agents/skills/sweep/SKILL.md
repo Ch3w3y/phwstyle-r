@@ -62,15 +62,17 @@ Do not file:
 
 Severity must be high: the output is wrong, missing or crashes for an ordinary input, a check fails, or the package or website does not build. Leave out anything cosmetic.
 
-**Normal use only.** The maintainer asked that the loop fix only defects a general user hits in normal use. Before filing, ask: would a typical public health analyst hit this in an ordinary report, using typical data (counts, rates, dates, factors, area codes in a data frame or sf object) and the function's default or documented arguments? File it only if the answer is clearly yes. List everything else as minor in the yield message. These are edge cases, so do not file them:
+**Normal use only.** The maintainer asked that the loop fix only defects a general user hits in normal use. Before filing a defect in the user's output, ask: would a typical public health analyst hit this in an ordinary report, using typical data (counts, rates, dates, durations, factors, area codes and missing values, in a data frame, a `table()` or an sf object) and the function's default or documented arguments, alone or together? File it only if the answer is clearly yes. List everything else as minor in the yield message. These are edge cases, so do not file them:
 - a column whose name clashes with a name phwstyle uses inside the function;
-- an unusual column or object class, such as `units`, `difftime`, `table`, `matrix` or `integer64`;
-- `NaN`, `Inf`, empty data or extreme sizes;
-- several optional arguments combined in a way the help pages do not show;
+- an unusual class, such as `units` or `integer64`;
+- `NaN`, `Inf`, or a data frame with no rows;
+- arguments combined in a way that contradicts the help pages or relies on undocumented behaviour;
 - global settings changed outside phwstyle, such as `theme_update()` or `options()`;
 - input that has to be built by hand to show the problem.
 
-**Priority.** Rank the defects you will file by how many users would hit them, most first, and file them in that order. The loop fixes the lowest issue number first, so the most common defects are fixed first.
+This bar does not apply to a failing check, or to a package or website that does not build. File those whatever the input.
+
+**Priority.** Rank the defects you will file by how many users would hit them, most first, and file them in that order, before any cleanup issue. The loop fixes the lowest issue number first, so the most common defects are fixed first.
 
 **Cleanup.** Also file cleanup that makes the code simpler without changing what users see: dead or unused internal code, duplicated helpers that should use the shared ones in `R/checks.R`, stale comments, and files in the repo that nothing uses. Check each one is safe by finding every caller. Group cleanup into at most three issues, each titled `Cleanup: <area>`. Do not file renames, reformatting or style changes. Leave out the loop's own files (`.agents/`, `adapters/`, `.noodle.toml`, `brain/`), `data-raw/`, `dev/`, and the legacy `phw_rate_table()`, `phw_risk_table()` and `phw_poisson_ci()`, which get crash fixes only.
 
