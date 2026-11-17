@@ -456,12 +456,36 @@ ggplotly_phw <- function(p, palette) {
   keys <- unlist(lapply(b$plot$scales$scales, function(s) {
     if (s$is_discrete() && !any(c("x", "y") %in% s$aesthetics)) as.character(s$get_limits())
   }))
-  w <- plain_legend(plotly::ggplotly(p), keys)
+  w <- plain_legend(plotly::ggplotly(unrepel(p)), keys)
   # ggplotly() gives the legend a title even when the theme blanks it.
   if (inherits(ggplot2::calc_element("legend.title", ggplot2::theme_get() + p$theme), "element_blank")) {
     w$x$layout$legend$title <- NULL
   }
   w
+}
+
+# plotly drops ggrepel labels with a warning of its own, and it has no
+# geom_label() either, so draw them as plain text. Copies of the layers keep
+# the user's plot as it was.
+unrepel <- function(p) {
+  p$layers <- lapply(p$layers, function(l) {
+    if (!inherits(l$geom, c("GeomTextRepel", "GeomLabelRepel"))) return(l)
+    ggplot2::ggproto(NULL, l, geom = GeomPhwPlotlyText)
+  })
+  p
+}
+
+GeomPhwPlotlyText <- ggplot2::ggproto("GeomPhwPlotlyText", ggplot2::GeomText)
+
+# plotly centres text on its point whatever its hjust and vjust, which would
+# put a label such as phw_funnel()'s over its marker.
+#' @exportS3Method plotly::geom2trace
+geom2trace.GeomPhwPlotlyText <- function(data, params, p) {
+  class(data)[1] <- "GeomText"
+  trace <- plotly::geom2trace(data, params, p)
+  trace$textposition <- paste(ifelse(data$vjust < 0.5, "top", ifelse(data$vjust > 0.5, "bottom", "middle")),
+                              ifelse(data$hjust < 0.5, "right", ifelse(data$hjust > 0.5, "left", "center")))
+  trace
 }
 
 # ggplotly() names a trace by every discrete legend scale of the plot. A

@@ -161,6 +161,10 @@ says what to change.
   its data when a colour column shares its name with an object or a
   function, such as `class`. Before, it stopped with an error, or warned
   that the palette had run out.
+* `phw_plotly()` shows the labels of `phw_funnel()` and `phw_map()`, and
+  of any `ggrepel::geom_text_repel()` or `ggrepel::geom_label_repel()`
+  layer, as plain text placed by its `hjust` and `vjust`. Before, plotly
+  dropped them with a warning that this geom was not implemented.
 * `phw_plotly()` gives a label the same colour in every pie of a figure.
   Before, each pie took its colours from its own labels, so a label could
   be orange in one pie and teal in the next, and the shared legend showed

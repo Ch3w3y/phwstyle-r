@@ -205,3 +205,16 @@ test_that("phw_map says when bins or key do not apply to the fill", {
   expect_message(phw_map(d, by = area, fill = band, level = areas, bins = 3), "bins")
   expect_message(phw_map(d, by = area, fill = rate, level = areas, key = "k"), "key")
 })
+
+test_that("map labels show in plotly, in the text colour of their area", {
+  skip_if_not_installed("plotly")
+  skip_if_not_installed("ggrepel")
+  areas <- tiny_areas()
+  d <- data.frame(area = areas$code, rate = c(1, 2, 3, 40))
+  expect_no_warning(w <- phw_plotly(phw_map(d, by = area, fill = rate, level = areas, label = paste(name, rate))))
+  lab <- Filter(function(t) identical(t$mode, "text"), plotly::plotly_build(w)$x$data)
+  text <- unlist(lapply(lab, function(t) as.vector(t$text)))
+  colour <- unlist(lapply(lab, function(t) rep_len(t$textfont$color, length(t$text))))
+  expect_setequal(text, paste(areas$name, d$rate))
+  expect_equal(text[colour == "rgba(255,255,255,1)"], "Area 4 40")
+})
