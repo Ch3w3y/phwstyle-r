@@ -51,7 +51,7 @@ default: none for whole numbers, otherwise the summary table's own
 \item{palette}{Palette name or vector of colours.}
 
 \item{domain}{Range for the heat colours. Defaults to the range of the
-coloured cells.}
+coloured cells. Values beyond it take the colour at the nearer end.}
 
 \item{breaks, higher_is_better}{See \code{\link[=phw_flextable_heat]{phw_flextable_heat()}}.}
 

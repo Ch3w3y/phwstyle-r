@@ -261,7 +261,8 @@ use_phw_flextable <- function(style = "booktabs", font_size = 10, ...) {
 #' @param palette A sequential or diverging palette name, a vector of
 #'   colours, `"rag"` or `"rag_accessible"` (navy instead of green).
 #' @param domain Range of values the palette spans. Defaults to the range of
-#'   the coloured cells.
+#'   the coloured cells. Set it to keep one scale across several tables:
+#'   values beyond it take the colour at the nearer end.
 #' @param breaks For `palette = "rag"`: two cut points (red below the first,
 #'   green at or above the second).
 #' @param higher_is_better For `"rag"`: is a high value good (green)?
@@ -302,8 +303,7 @@ phw_flextable_heat <- function(x, j, palette = "teals", domain = NULL, breaks = 
       out
     }
   } else {
-    domain <- domain %||% range(vals, na.rm = TRUE)
-    fill_fun <- scales::col_numeric(seq_cols(palette, FALSE), domain = domain, na.color = "transparent")
+    fill_fun <- heat_fill(palette, domain %||% range(vals, na.rm = TRUE))
   }
   shapes <- c(red = "\u25BC", amber = "\u25A0", green = "\u25B2")
   for (col in j) {
@@ -329,6 +329,16 @@ rag_status <- function(v, breaks, higher_is_better) {
   band <- ifelse(v < breaks[1], 1L, ifelse(v < breaks[2], 2L, 3L))
   status <- if (higher_is_better) c("red", "amber", "green") else c("green", "amber", "red")
   status[band]
+}
+
+# Colour function for a heat scale over the range of `domain`, in any order
+# or pooled from several tables. Values beyond it take the end colour, as on
+# a chart with `oob = scales::squish`, so a fixed domain shared across tables
+# never leaves a cell blank.
+heat_fill <- function(palette, domain) {
+  domain <- range(domain, na.rm = TRUE)
+  pal <- scales::col_numeric(seq_cols(palette, FALSE), domain = domain, na.color = "transparent")
+  function(v) pal(scales::oob_squish(v, domain))
 }
 
 #' Colour flextable cells by group
