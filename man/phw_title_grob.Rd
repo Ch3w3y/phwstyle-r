@@ -4,14 +4,17 @@
 \alias{phw_title_grob}
 \title{PHW title for gridExtra and cowplot layouts}
 \usage{
-phw_title_grob(title, subtitle = NULL, size = 14, margin = 3)
+phw_title_grob(title, subtitle = NULL, size = NULL, margin = 3)
 }
 \arguments{
 \item{title}{Title text.}
 
 \item{subtitle}{Optional subtitle.}
 
-\item{size}{Title size in points. The subtitle is a little smaller.}
+\item{size}{Title size in points. The subtitle is a little smaller. The
+default, \code{NULL}, is 14 pt, scaled up with the \code{base_size} or
+\code{accessible} setting given to \code{\link[=use_phw_ggplot]{use_phw_ggplot()}} so the figure title is
+no smaller than the chart titles under it.}
 
 \item{margin}{Left margin in mm.}
 }

@@ -195,6 +195,12 @@ says what to change.
   the settings given to `use_phw_ggplot()`, such as `base_size = 16` or
   `accessible = TRUE`. Before, they kept the `theme_phw()` defaults, so the
   figure title could be smaller than the panel titles under it.
+* The source line added by `phw_finalise()` and the figure title from
+  `phw_title_grob()` follow the settings given to `use_phw_ggplot()`, such
+  as `base_size = 16` or `accessible = TRUE`. Before, they were always
+  8.5 pt and 14 pt, so finalising an accessible chart made its source text
+  smaller, and a figure title could be smaller than the panel titles under
+  it. Give `text_size` or `size` to set the size yourself.
 * After `use_phw_ggplot()`, and so in every `phw_*_document()` format,
   groups from an ordered factor (from `factor(..., ordered = TRUE)`,
   `cut(..., ordered_result = TRUE)` or `lubridate::month(label = TRUE)`)
