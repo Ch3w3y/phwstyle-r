@@ -87,7 +87,7 @@
     \AtPageLowerLeft{\hspace*{1.8cm}\raisebox{9cm}{\parbox[b]{15.5cm}{\raggedright\color{white}%
       {\fontsize{30}{36}\selectfont\bfseries \@title\par}%
       \vspace{18pt}{\large %%ORG%%\par}%
-      {\normalsize \@author\par}%
+      {\normalsize\def\and{\\}\@author\par}% one author per line
       \vspace{6pt}{\normalsize \@date\par}}}}%
   }%
   \null\newpage
