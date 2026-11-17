@@ -293,6 +293,26 @@ test_that("labels can be a named character vector", {
   expect_error(phw_summary_table(ll, labels = "Sex"), "must give a name")
 })
 
+test_that("label attributes survive rows left out for a missing value", {
+  d <- data.frame(hb = c("North", "North", "South", "South"), yr = c(2023, 2024, 2023, 2024),
+                  n = c(5, NA, 7, 9))
+  attr(d$hb, "label") <- "Health board"
+  attr(d$yr, "label") <- "Year of onset"
+  expect_message(tab <- phw_group_table(d, hb, yr, value = n), "Left out 1 row")
+  expect_equal(names(tab)[1], "Health board")
+  expect_equal(summary_header(tab, 1)$upper[[1]]$label, "Year of onset")
+  expect_message(tab <- phw_crosstab(d, hb, yr, count = n), "Left out 1 row")
+  expect_equal(names(tab)[1], "Health board")
+  expect_equal(summary_header(tab, 1)$upper[[1]]$label, "Year of onset")
+
+  ll <- data.frame(age = 1:4, grp = c("a", "b", NA, "a"))
+  attr(ll$age, "label") <- "Age in years"
+  attr(ll$grp, "label") <- "Group"
+  expect_message(tab <- phw_summary_table(ll, by = grp, missing = NULL), "Left out 1 row")
+  expect_equal(tab[[1]][1], "Age in years")
+  expect_equal(summary_header(tab, 1)$upper[[1]]$label, "Group")
+})
+
 test_that("the legacy rate and risk tables stop clearly with no rows to use", {
   rd <- data.frame(a = "x", cases = 1, pop = 10)
   expect_error(phw_rate_table(rd[0, ], a, cases, pop), "has no rows")
