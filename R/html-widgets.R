@@ -303,11 +303,14 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
   }
   cap <- caption_from(source, date, caption_args)
   subtitle <- NULL
+  strip <- 0
   if (inherits(p, "ggplot")) {
     # ggplotly() leaves out the subtitle and the caption.
     cap <- cap %||% label_text(p$labels$caption)
     subtitle <- label_text(p$labels$subtitle)
     p <- ggplotly_phw(p, palette)
+    # ggplotly() draws the facet strips above the top panels in pixels.
+    strip <- max(0, unlist(lapply(p$x$layout$shapes, function(s) if (identical(s$ysizemode, "pixel")) s$y1)))
   }
   col <- phw_colours
   colorway <- plotly_colorway(p, palette)
@@ -331,6 +334,10 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
                                          col[["text_secondary"]], gsub("\n", "<br>", subtitle))),
                    collapse = "<br>")
   }
+  # The title is pinned to the top and the plot starts below its last line
+  # and the facet strips. A line of the 17px title font takes 22px.
+  title_text <- if (is.list(title)) title$text else title
+  title_lines <- if (has_text(title_text)) sum(gregexpr("<br|\n", title_text)[[1]] > 0) + 1 else 1
   ann <- if (!is.null(cap)) list(list(
     name = "phw_source", text = paste0("<b>", gsub("\n", "<br>", cap), "</b>"), showarrow = FALSE,
     xref = "paper", yref = "paper", x = 1, y = 0, xanchor = "right", yanchor = "top",
@@ -343,13 +350,17 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
                       diverging = phw_plotly_colorscale("orange_navy")),
     paper_bgcolor = "#FFFFFF", plot_bgcolor = "#FFFFFF",
     title = c(if (!is.null(title) && !is.list(title)) list(text = title),
-              list(font = list(color = col[["navy"]], size = 17), x = 0, xanchor = "left")),
+              list(font = list(color = col[["navy"]], size = 17), x = 0, xanchor = "left",
+                   # plotly.js drops the cap height shift of a title on more
+                   # than one line, so its first line needs the 12px back.
+                   y = 1, yref = "container", yanchor = "top",
+                   pad = list(t = if (title_lines > 1) 26 else 14))),
     legend = if (legend == "bottom") list(orientation = "h", x = 0, y = -0.15, xanchor = "left",
                                           yanchor = "top")
              else list(orientation = "v"),
     hoverlabel = list(bgcolor = col[["navy"]], bordercolor = col[["navy"]],
                       font = list(color = "#FFFFFF", family = font$family)),
-    margin = list(b = if (!is.null(cap)) 110 else 60, t = if (is.null(subtitle)) 50 else 75),
+    margin = list(b = if (!is.null(cap)) 110 else 60, t = 28 + 22 * title_lines + strip),
     annotations = ann
   )
   base <- c(base, axes)

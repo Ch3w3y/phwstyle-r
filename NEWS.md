@@ -594,6 +594,10 @@ says what to change.
   caption, as the source line under the chart. Before, both were dropped,
   so a chart captioned with `labs(caption = phw_caption(...))` lost its
   source. A `source` or `date` you pass still replaces the caption.
+* `phw_plotly()` makes room above the plot for every line of the title and
+  subtitle and for the facet strips of a ggplot. Before, the strips were
+  drawn over the subtitle, and a subtitle on more than one line ran into
+  the plot.
 * `phw_plotly()` shows each bar of `phw_pyramid()` on hover by its sex, age
   band and value, formatted as on the axis: "Female, 0-4: 240,000" or
   "Female, 0-4: 25.5%". Before, the left-hand sex read as a negative,
