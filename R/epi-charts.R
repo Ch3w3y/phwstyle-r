@@ -16,6 +16,10 @@ session_theme_args <- function(...) {
   args
 }
 
+# How much larger the use_phw_ggplot() text is than the theme_phw()
+# default of 11 pt, for text drawn outside the ggplot (footer, title grob).
+session_text_scale <- function() chart_theme()$text$size / 11
+
 floor_period <- function(x, interval, week_start = 1) {
   x <- as.Date(x)
   switch(interval,

@@ -51,6 +51,29 @@ test_that("phw_arrange figure text follows the settings given to use_phw_ggplot(
   expect_equal(ann_size(), 11)
 })
 
+test_that("phw_finalise and phw_title_grob text follow the settings given to use_phw_ggplot()", {
+  library(ggplot2)
+  local_ggplot_state()
+  p <- ggplot(mpg, aes(class)) + geom_bar() + labs(title = "Panel")
+  footer_size <- function(...) {
+    fp <- phw_finalise(p, source = "mpg", logo = FALSE, ...)
+    fp$grobs[[which(fp$layout$name == "phw-footer")]]$children$text$gp$fontsize
+  }
+  title_size <- function(...) phw_title_grob("Figure", "Sub", ...)$grobs[[1]]$children[[1]]$gp$fontsize
+  expect_equal(footer_size(), 8.5)
+  expect_equal(title_size(), 14)
+  use_phw_ggplot(base_size = 16, accessible = TRUE)
+  expect_equal(footer_size(), 8.5 * 16 / 11)
+  expect_gte(title_size(), calc_element("plot.title", theme_get())$size)
+  use_phw_ggplot(accessible = TRUE)
+  expect_equal(footer_size(), 8.5 * 13 / 11)
+  expect_equal(footer_size(text_size = 9), 9)
+  expect_equal(title_size(size = 12), 12)
+  theme_set(theme_grey())
+  expect_equal(footer_size(), 8.5)
+  expect_equal(title_size(), 14)
+})
+
 test_that("phw_save bg sets the background of a phw_arrange figure", {
   skip_if_not_installed("patchwork")
   skip_if_not_installed("png")

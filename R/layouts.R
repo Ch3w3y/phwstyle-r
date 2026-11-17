@@ -76,7 +76,10 @@ phw_arrange <- function(..., plots = NULL, ncol = NULL, nrow = NULL, widths = NU
 #'
 #' @param title Title text.
 #' @param subtitle Optional subtitle.
-#' @param size Title size in points. The subtitle is a little smaller.
+#' @param size Title size in points. The subtitle is a little smaller. The
+#'   default, `NULL`, is 14 pt, scaled up with the `base_size` or
+#'   `accessible` setting given to [use_phw_ggplot()] so the figure title is
+#'   no smaller than the chart titles under it.
 #' @param margin Left margin in mm.
 #' @return A grob.
 #' @examples
@@ -86,7 +89,8 @@ phw_arrange <- function(..., plots = NULL, ncol = NULL, nrow = NULL, widths = NU
 #'   gridExtra::grid.arrange(p, p, ncol = 2, top = phw_title_grob("Two charts", "Same data twice"))
 #' }
 #' @export
-phw_title_grob <- function(title, subtitle = NULL, size = 14, margin = 3) {
+phw_title_grob <- function(title, subtitle = NULL, size = NULL, margin = 3) {
+  size <- size %||% (14 * session_text_scale())
   fam <- phw_font()
   x <- grid::unit(margin, "mm")
   gap <- grid::unit(size * 0.7, "pt")

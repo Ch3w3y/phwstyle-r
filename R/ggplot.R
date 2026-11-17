@@ -629,7 +629,9 @@ set_geom_defaults <- function(geoms, new) {
 #' @param logo_height Logo height in cm.
 #' @param logo_position `"left"` or `"right"`. The text goes on the other
 #'   side, or above the logo, wrapped, when the chart is too narrow for both.
-#' @param text_size Footer text size in points.
+#' @param text_size Footer text size in points. The default, `NULL`, is 8.5
+#'   pt, scaled up with the `base_size` or `accessible` setting given to
+#'   [use_phw_ggplot()] so the footer grows with the chart text.
 #' @param text_colour,rule_colour Colours of the footer text and rule.
 #' @param rule Draw the rule above the footer?
 #' @param margin Space at each side, in mm.
@@ -653,7 +655,7 @@ set_geom_defaults <- function(geoms, new) {
 #' @export
 phw_finalise <- function(plot, source = NULL, date = NULL, logo = "blue",
                          team = NULL, logo_height = 1.1,
-                         logo_position = c("left", "right"), text_size = 8.5,
+                         logo_position = c("left", "right"), text_size = NULL,
                          text_colour = phw_colours[["text"]],
                          rule_colour = phw_colours[["navy"]], rule = TRUE,
                          margin = 4, org = phw_org, ...) {
@@ -672,6 +674,7 @@ phw_finalise <- function(plot, source = NULL, date = NULL, logo = "blue",
     }
   }
   check_one_string(org)
+  text_size <- text_size %||% (8.5 * session_text_scale())
   caption <- caption_from(source, date, list(...), arg = "...")
   if (inherits(plot, "patchwork")) {
     if (is.null(caption)) caption <- plot$patches$annotation$caption

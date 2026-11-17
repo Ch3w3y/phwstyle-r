@@ -12,7 +12,7 @@ phw_finalise(
   team = NULL,
   logo_height = 1.1,
   logo_position = c("left", "right"),
-  text_size = 8.5,
+  text_size = NULL,
   text_colour = phw_colours[["text"]],
   rule_colour = phw_colours[["navy"]],
   rule = TRUE,
@@ -40,7 +40,9 @@ place.}
 \item{logo_position}{\code{"left"} or \code{"right"}. The text goes on the other
 side, or above the logo, wrapped, when the chart is too narrow for both.}
 
-\item{text_size}{Footer text size in points.}
+\item{text_size}{Footer text size in points. The default, \code{NULL}, is 8.5
+pt, scaled up with the \code{base_size} or \code{accessible} setting given to
+\code{\link[=use_phw_ggplot]{use_phw_ggplot()}} so the footer grows with the chart text.}
 
 \item{text_colour, rule_colour}{Colours of the footer text and rule.}
 
