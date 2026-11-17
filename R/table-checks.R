@@ -2,19 +2,21 @@
 # of the shared ones in checks.R.
 
 # A data frame with one name per column. A table() or a matrix stops here,
-# since the renderers would each fail on it in their own way.
+# since the renderers would each fail on it in their own way. The geometry of
+# an sf object is dropped, as a table shows its attributes only.
 check_table_data <- function(data, arg = "data", call = rlang::caller_env()) {
   if (!is.data.frame(data)) {
     cli::cli_abort(c("{.arg {arg}} must be a data frame, not {.obj_type_friendly {data}}.",
                      i = as_data_frame_hint), call = call)
   }
+  if (inherits(data, "sf")) data <- sf::st_drop_geometry(data)
   nms <- names(data)
   dup <- unique(nms[duplicated(nms)])
   if (length(dup)) {
     cli::cli_abort(c("{.arg {arg}} has more than one column named {.val {dup}}.",
                      i = "Give each column its own name."), call = call)
   }
-  invisible(data)
+  data
 }
 
 # NaN and Inf show as blank cells, as NA does. Left to each renderer, they

@@ -33,7 +33,7 @@
 phw_datatable <- function(data, caption = NULL, source = NULL, date = NULL, digits = 1,
                           page_length = 10, options = list(), caption_args = list(), ...) {
   rlang::check_installed("DT")
-  check_table_data(data)
+  data <- check_table_data(data)
   data <- blank_non_finite(data)
   if (missing(digits)) digits <- attr(data, "digits") %||% digits
   dots <- list(...)
@@ -388,8 +388,7 @@ xlsx_sheets <- function(x, call = rlang::caller_env()) {
                    call = call)
   }
   names(x) <- sheets
-  for (s in x) check_table_data(s, arg = "x", call = call)
-  x
+  lapply(x, check_table_data, arg = "x", call = call)
 }
 
 style_summary_xlsx <- function(wb, sheet, s, head_row, nl, nc, add_font, colour) {

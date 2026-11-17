@@ -803,3 +803,23 @@ test_that("every renderer shows NaN and Inf as blank cells, as NA", {
   expect_false(grepl("NaN|Inf", rt))
   expect_identical(d$rate[2], Inf)
 })
+
+test_that("every renderer leaves out the geometry of a map's data", {
+  skip_if_not_installed("sf")
+  sq <- function(x) sf::st_polygon(list(rbind(c(x, 0), c(x + 1, 0), c(x + 1, 1), c(x, 1), c(x, 0))))
+  s <- sf::st_sf(area = c("A", "B"), cases = c(10, 20), geometry = sf::st_sfc(lapply(0:1, sq)))
+  shown <- c("area", "cases")
+  skip_if_not_installed("flextable")
+  expect_equal(phw_flextable(s)$col_keys, shown)
+  skip_if_not_installed("gt")
+  expect_equal(names(gt::extract_body(phw_gt(s))), shown)
+  skip_if_not_installed("reactable")
+  cols <- phw_reactable(s)$x$tag$attribs$columns
+  expect_equal(vapply(cols, function(c) c$id, ""), shown)
+  skip_if_not_installed("DT")
+  expect_equal(names(phw_datatable(s)$x$data), shown)
+  skip_if_not_installed("openxlsx2")
+  f <- withr::local_tempfile(fileext = ".xlsx")
+  expect_no_warning(phw_write_xlsx(list(map = s, plain = sf::st_drop_geometry(s)), f))
+  expect_equal(names(openxlsx2::read_xlsx(f, sheet = "map")), shown)
+})
