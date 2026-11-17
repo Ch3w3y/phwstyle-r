@@ -223,7 +223,8 @@ as_levels <- function(x, missing) {
 #' @param percent For categorical variables, percentages of each `"column"`
 #'   (the default), of each `"row"`, or `"none"`.
 #' @param numeric How to summarise numeric variables: `"median_iqr"` or
-#'   `"mean_sd"`.
+#'   `"mean_sd"`. A `difftime` column, such as a length of stay made by
+#'   subtracting two dates, counts as numeric, in its own units.
 #' @param total Add a total column when `by` is given?
 #' @param missing Label for missing values, or `NULL` to leave them out.
 #' @param digits Decimal places for percentages and statistics.
@@ -271,6 +272,7 @@ phw_summary_table <- function(data, vars = NULL, by = NULL, labels = list(),
   rows <- list(); types <- character()
   for (v in vars) {
     x <- data[[v]]
+    if (inherits(x, "difftime")) x <- as.numeric(x)
     lab <- var_label(data, v, labels)
     if (is.numeric(x) && !is.factor(x)) {
       stat <- vapply(groups, function(i) {

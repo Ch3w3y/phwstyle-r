@@ -36,7 +36,8 @@ otherwise.}
 (the default), of each \code{"row"}, or \code{"none"}.}
 
 \item{numeric}{How to summarise numeric variables: \code{"median_iqr"} or
-\code{"mean_sd"}.}
+\code{"mean_sd"}. A \code{difftime} column, such as a length of stay made by
+subtracting two dates, counts as numeric, in its own units.}
 
 \item{total}{Add a total column when \code{by} is given?}
 
