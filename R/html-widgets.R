@@ -176,8 +176,7 @@ local_times <- function(data) {
 with_number_formats <- function(columns, data, digits) {
   columns <- columns %||% list()
   for (nm in names(data)[vapply(data, is.numeric, logical(1))]) {
-    v <- data[[nm]]
-    places <- if (all(v == round(v), na.rm = TRUE)) 0 else digits
+    places <- col_digits(data[[nm]], digits)
     def <- columns[[nm]] %||% reactable::colDef()
     if (is.null(def$format)) {
       fmt <- reactable::colFormat(separators = TRUE, digits = places)
@@ -186,6 +185,12 @@ with_number_formats <- function(columns, data, digits) {
     columns[[nm]] <- def
   }
   columns
+}
+
+# Decimal places for a column, as the renderers show it: none for whole
+# numbers, `digits` otherwise.
+col_digits <- function(v, digits) {
+  if (is.numeric(v) && all(v == round(v), na.rm = TRUE)) 0 else digits
 }
 
 # The title above, then the table, a summary table's note on the statistics
@@ -522,12 +527,16 @@ summary_reactable_args <- function(x) {
 #'   are coloured: headings, subtotals and totals keep their own styling and
 #'   stay out of the colour scale.
 #' * `phw_col_rag()`: red, amber or green cells with a shape, so status
-#'   doesn't rely on colour alone.
+#'   doesn't rely on colour alone. Give it the table as `data` and, on a
+#'   summary table, only the level rows are coloured, as with the heat
+#'   column.
 #' * `phw_col_number()` and `phw_col_percent()`: thousands separators and
 #'   fixed decimals.
 #'
-#' @param data The data frame (bar and heat columns need it to find the
-#'   range).
+#' @param data The data frame. Bar and heat columns need it to find the
+#'   range. `phw_col_rag()` uses it, when given, to leave the headings,
+#'   subtotals and totals of a summary table uncoloured and to pick the
+#'   decimal places.
 #' @param column The column, unquoted as in dplyr. A string works too.
 #' @param colour Bar colour.
 #' @param palette Palette name or vector of colours.
@@ -535,7 +544,9 @@ summary_reactable_args <- function(x) {
 #'   coloured cells.
 #' @param breaks,higher_is_better See [phw_flextable_heat()].
 #' @param rag_palette `"rag"` or `"rag_accessible"`.
-#' @param digits Decimal places.
+#' @param digits Decimal places. Heat and RAG columns follow the table by
+#'   default: none for whole numbers, otherwise the summary table's own
+#'   `digits`, or 1.
 #' @param ... Other [reactable::colDef()] arguments, e.g. `name`.
 #' @return A [reactable::colDef()].
 #' @examples
@@ -579,6 +590,7 @@ phw_col_bar <- function(data, column, colour = phw_colours[["light_teal"]], digi
 phw_col_heat <- function(data, column, palette = "teals", domain = NULL, digits = 1, ...) {
   rlang::check_installed("reactable")
   column <- pick_col(rlang::enquo(column), data, "column")
+  if (missing(digits)) digits <- col_digits(data[[column]], attr(data, "digits") %||% digits)
   fmt <- reactable::colFormat(separators = TRUE, digits = digits)
   rows <- heat_rows(data)
   if (!length(value_cols(data[rows, , drop = FALSE], column, "column"))) return(reactable::colDef(format = fmt, ...))
@@ -596,19 +608,34 @@ phw_col_heat <- function(data, column, palette = "teals", domain = NULL, digits 
 #' @rdname phw_reactable_columns
 #' @export
 phw_col_rag <- function(breaks, higher_is_better = TRUE, rag_palette = "rag_accessible",
-                        digits = 1, ...) {
+                        digits = 1, data = NULL, ...) {
   rlang::check_installed("reactable")
   if (missing(breaks)) breaks <- NULL
   check_breaks(breaks)
   rag_palette <- rlang::arg_match(rag_palette, c("rag_accessible", "rag"))
+  if (!is.null(data) && !is.data.frame(data)) {
+    cli::cli_abort("{.arg data} must be a data frame, not {.obj_type_friendly {data}}.")
+  }
   pal <- phw_palettes[[rag_palette]]
   shapes <- c(red = "\u25BC", amber = "\u25A0", green = "\u25B2")
   status <- function(v) rag_status(v, breaks, higher_is_better)
+  rows <- if (is.null(data)) NULL else heat_rows(data)
+  coloured <- function(value, index) !is.na(value) && (is.null(rows) || index %in% rows)
+  # reactable passes each cell its column name, so the places can follow
+  # that column of `data`.
+  places <- function(name) digits
+  if (missing(digits) && !is.null(data)) {
+    digits <- attr(data, "digits") %||% digits
+    places <- function(name) col_digits(data[[name]], digits)
+  }
   reactable::colDef(
     align = "right",
-    cell = function(value) if (is.na(value)) "" else paste(shapes[[status(value)]], fmt_num(value, digits)),
-    style = function(value) {
-      if (is.na(value)) return(NULL)
+    cell = function(value, index, name) {
+      txt <- fmt_num(value, places(name))
+      if (coloured(value, index)) paste(shapes[[status(value)]], txt) else txt
+    },
+    style = function(value, index) {
+      if (!coloured(value, index)) return(NULL)
       bg <- pal[[status(value)]]
       list(background = bg, color = phw_text_on(bg), fontWeight = 500)
     }, ...)

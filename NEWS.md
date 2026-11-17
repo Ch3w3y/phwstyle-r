@@ -306,6 +306,12 @@ says what to change.
   `phw_crosstab()`. An unnamed `colnames` now renames a summary table's
   columns in order. Before, a spanner table kept its old names, and an
   unnamed `colnames` moved every name one column to the right.
+* `phw_col_heat()` shows whole-number columns, such as counts and totals,
+  without decimals, and otherwise the `digits` of a summary table. Before,
+  it showed every value with one decimal, as `61.0`. `phw_col_rag()` takes
+  the table as `data`. Given it, only the level rows of a summary table get
+  a colour and a shape, and whole numbers show without decimals, as in
+  `phw_flextable_heat()`.
 * `phw_reactable()` and `phw_datatable()` show date-times at the clock time
   of their own time zone, as `2026-07-01 10:00:00`, like `phw_flextable()`.
   Before, they showed them in UTC.
