@@ -181,6 +181,7 @@ phw_flextable <- function(data, caption = NULL, number = NULL, source = NULL,
                                  color = phw_colours[["navy"]], font.size = 11))),
       fp_p = officer::fp_par(text.align = "left", padding.bottom = 4),
       align_with_table = FALSE)
+    class(ft) <- c("phw_flextable", class(ft))
   }
   cap <- caption_from(source, date, caption_args)
   if (!is.null(cap)) {
@@ -193,6 +194,15 @@ phw_flextable <- function(data, caption = NULL, number = NULL, source = NULL,
   }
   if (autofit) ft <- flextable::autofit(ft)
   ft
+}
+
+# The caption text already holds any table number, so in LaTeX it goes in an
+# unnumbered \caption* rather than one LaTeX labels "Table N." again.
+#' @exportS3Method knitr::knit_print
+knit_print.phw_flextable <- function(x, ...) {
+  out <- NextMethod()
+  if (knitr::is_latex_output()) out[] <- gsub("\\\\caption(\\[\\])?\\{", "\\\\caption*{", out)
+  out
 }
 
 #' Set PHW defaults for every new flextable

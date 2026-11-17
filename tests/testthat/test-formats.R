@@ -267,6 +267,30 @@ test_that("a PDF document renders with XeLaTeX", {
   expect_report_colours(gsub("\\\\#", "#", tex), "main")
 })
 
+test_that("a phw_flextable caption in a PDF document is numbered once", {
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("flextable")
+  skip_if_not(rmarkdown::pandoc_available(), "pandoc is not available")
+  local_ggplot_state()
+  dir <- withr::local_tempdir()
+  rmd <- file.path(dir, "report.Rmd")
+  writeLines(c("---", "title: Tables", "---", "",
+               "```{r, echo = FALSE}",
+               "phwstyle::phw_flextable(head(mtcars[, 1:4]), caption = 'Counts by board', number = 1)",
+               "```", "",
+               "```{r, echo = FALSE}",
+               "phwstyle::phw_flextable(head(mtcars[, 1:3]), caption = 'No number')",
+               "```"), rmd)
+  tex <- readLines(rmarkdown::render(rmd, phw_pdf_document(), output_file = "report.tex",
+                                     quiet = TRUE), warn = FALSE)
+  captions <- grep("\\\\caption\\*?(\\[\\])?\\{", tex, value = TRUE)
+  expect_length(grep("Table\\ 1\\ Counts", captions, fixed = TRUE), 2)
+  expect_length(grep("No\\ number", captions, fixed = TRUE), 2)
+  # LaTeX adds its own "Table N." label to every \caption{} but not to \caption*{}.
+  expect_false(any(grepl("\\caption{", tex, fixed = TRUE) | grepl("\\caption[]{", tex, fixed = TRUE)))
+})
+
 test_that("a Quarto PDF colours its links in PHW navy and blue", {
   skip_on_cran()
   quarto <- Sys.which("quarto")
