@@ -227,6 +227,9 @@ as_levels <- function(x, missing) {
 #' @param numeric How to summarise numeric variables: `"median_iqr"` or
 #'   `"mean_sd"`. A `difftime` column, such as a length of stay made by
 #'   subtracting two dates, counts as numeric, in its own units.
+#'   A date or date-time column, such as an onset date, is summarised
+#'   the same way and shown as dates (dd/mm/yyyy); its standard deviation
+#'   is in days.
 #' @param total Add a total column when `by` is given?
 #' @param missing Label for missing values, or `NULL` to leave them out.
 #' @param digits Decimal places for percentages and statistics.
@@ -274,7 +277,10 @@ phw_summary_table <- function(data, vars = NULL, by = NULL, labels = list(),
   rows <- list(); types <- character()
   for (v in vars) {
     x <- data[[v]]
+    is_date <- inherits(x, c("Date", "POSIXt"))
+    if (is_date) x <- as.numeric(as_date_value(x))
     if (inherits(x, "difftime")) x <- as.numeric(x)
+    fmt_stat <- if (is_date) function(s) phw_date(as.Date(floor(s + 0.5))) else function(s) fmt_num(s, digits)
     lab <- var_label(data, v, labels)
     if (is.numeric(x) && !is.factor(x)) {
       stat <- vapply(groups, function(i) {
@@ -282,10 +288,10 @@ phw_summary_table <- function(data, vars = NULL, by = NULL, labels = list(),
         if (all(is.na(xi))) return("")
         if (numeric == "median_iqr") {
           q <- stats::quantile(xi, c(.5, .25, .75), na.rm = TRUE, names = FALSE)
-          sprintf("%s (%s to %s)", fmt_num(q[1], digits), fmt_num(q[2], digits), fmt_num(q[3], digits))
+          sprintf("%s (%s to %s)", fmt_stat(q[1]), fmt_stat(q[2]), fmt_stat(q[3]))
         } else {
           s <- stats::sd(xi, na.rm = TRUE)
-          sprintf("%s (%s)", fmt_num(mean(xi, na.rm = TRUE), digits), if (is.na(s)) "-" else fmt_num(s, digits))
+          sprintf("%s (%s)", fmt_stat(mean(xi, na.rm = TRUE)), if (is.na(s)) "-" else fmt_num(s, digits))
         }
       }, "")
       rows[[length(rows) + 1]] <- c(lab, stat); types <- c(types, "stat")

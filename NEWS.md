@@ -468,6 +468,10 @@ says what to change.
 * `phw_summary_table()` summarises a `difftime` column, such as a length of
   stay made by subtracting two dates, as a number in its own units: one
   median (IQR) or mean (SD) row. Before, each value became its own row.
+* `phw_summary_table()` summarises a date or date-time column, such as an
+  onset date, as one median (IQR) or mean (SD) row shown as dates
+  (dd/mm/yyyy). Before, each date became its own row, so a line list with a
+  date column gave a table of hundreds of rows.
 * Filtering the rows of a summary, cross-tab or group table, or selecting
   some of its columns, with `[`, `head()`, `subset()` or dplyr's
   `filter()`, `slice()`, `arrange()` and `select()`, keeps the bold
