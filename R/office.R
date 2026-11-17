@@ -306,7 +306,7 @@ phw_write_xlsx <- function(x, file, title = NULL, source = NULL, date = NULL, ca
     }
     head_row <- row
     if (is_sum && isTRUE(attr(s, "indent") %||% TRUE)) {
-      df[[1]] <- paste0(strrep("    ", summary_rows(s)$indent), df[[1]])
+      df[[1]] <- ifelse(is.na(df[[1]]), NA, paste0(strrep("    ", summary_rows(s)$indent), df[[1]]))
     }
     # Header written separately so repeated labels (Q1 under each year) stay as they are.
     wb <- openxlsx2::wb_add_data(wb, sheet, as.data.frame(t(header)), start_row = head_row, col_names = FALSE)
