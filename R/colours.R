@@ -117,8 +117,8 @@ phw_col <- function(..., names = TRUE) {
 #'   same reason as black in `extended`. It is never used unless you ask
 #'   for it: see [phw_default_palette()] for how to switch a whole script or
 #'   document to it.
-#' * `highlight` (qualitative, 2): navy for the focus series, light grey for
-#'   everything else.
+#' * `highlight` (qualitative): navy for the focus series, light grey for
+#'   every other series, however many there are.
 #' * `rag` (qualitative, 3): red / amber / green (RAG) status colours that
 #'   keep 3:1 contrast on white. These were chosen for phwstyle, not taken from a PHW source.
 #' * `rag_accessible` (qualitative, 3): like `rag`, but "good" is navy
@@ -183,6 +183,9 @@ palette_for <- function(palette, n) {
   if (identical(palette, "main") && n > length(phw_palettes$main)) "extended" else palette
 }
 
+# "highlight" has one focus colour, then light grey for every other group.
+highlight_pal <- function(n) phw_palettes$highlight[pmin(seq_len(n), 2L)]
+
 palette_type <- function(name) {
   if (name %in% c("main", "extended", "accessible", "highlight", "rag", "rag_accessible", "strategy")) return("qualitative")
   if (name %in% c("orange_navy")) return("diverging")
@@ -192,7 +195,8 @@ palette_type <- function(name) {
 #' Get a vector of colours from a PHW palette
 #'
 #' Qualitative palettes return their colours in order (and refuse to make up
-#' extra ones). Sequential and diverging palettes are interpolated to any
+#' extra ones). `"highlight"` gives navy, then light grey for any number of
+#' further colours. Sequential and diverging palettes are interpolated to any
 #' length. Asking `"main"` for more than six colours carries on into
 #' `"extended"`, as the charts do.
 #'
@@ -229,7 +233,9 @@ phw_pal <- function(n = NULL, palette = phw_default_palette(), reverse = FALSE,
       type <- if (palette_type(palette) == "qualitative") "qualitative" else "sequential"
     }
     n <- n %||% length(pal)
-    if (type == "qualitative") {
+    if (identical(palette, "highlight")) {
+      out <- highlight_pal(n)
+    } else if (type == "qualitative") {
       if (n > length(pal)) {
         cli::cli_abort(c(
           "The palette has {length(pal)} colours but {n} were requested.",

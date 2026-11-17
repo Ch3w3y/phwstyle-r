@@ -27,7 +27,8 @@ A character vector of hex colours.
 }
 \description{
 Qualitative palettes return their colours in order (and refuse to make up
-extra ones). Sequential and diverging palettes are interpolated to any
+extra ones). \code{"highlight"} gives navy, then light grey for any number of
+further colours. Sequential and diverging palettes are interpolated to any
 length. Asking \code{"main"} for more than six colours carries on into
 \code{"extended"}, as the charts do.
 }

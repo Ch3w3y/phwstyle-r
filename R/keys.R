@@ -122,6 +122,7 @@ phw_colour_key <- function(levels, name = NULL, palette = phw_default_palette(),
 reverse_key_palette <- function(palette, levels, neutral = default_neutral) {
   if (is.function(palette)) return(function(n) rev(palette(n)))
   n <- sum(!tolower(levels) %in% tolower(neutral))
+  if (identical(palette, "highlight")) return(rev(highlight_pal(n)))
   pal <- palette_named(spread_palette(palette_for(palette, n), n))
   rev(pal[seq_len(min(n, length(pal)))])
 }
@@ -204,12 +205,18 @@ mirror_set <- function(acc, values) {
 }
 
 next_colour <- function(used, palette, neutral_colour, ramp = NULL) {
-  pal <- palette_colours(palette)
+  pal <- if (identical(palette, "highlight")) highlight_pal(length(used) + 1) else palette_colours(palette)
   pool <- unique(toupper(c(pal, phw_palettes$accessible, phw_palettes$extended)))
   taken <- toupper(c(used, neutral_colour))
+  # A palette can repeat a colour, as "highlight" does, so each group in a
+  # colour uses up one of its places.
+  left <- toupper(pal)[toupper(pal) != toupper(neutral_colour)]
+  for (u in toupper(used)) {
+    i <- match(u, left)
+    if (!is.na(i)) left <- left[-i]
+  }
+  if (length(left)) return(left[1])
   free <- setdiff(pool, taken)
-  first_extra <- setdiff(pool, toupper(pal))
-  if (length(free) && !(free[1] %in% first_extra)) return(free[1])
   # Past the spread, a growing key takes the colour of its palette furthest
   # from every colour it already uses.
   if (!is.null(ramp)) {
