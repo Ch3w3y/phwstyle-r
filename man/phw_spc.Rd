@@ -18,7 +18,9 @@ phw_spc(
 )
 }
 \arguments{
-\item{data}{A data frame with one row per time point.}
+\item{data}{A data frame with one row per time point. For several series,
+such as areas, draw one chart per series and combine them with
+\code{\link[=phw_arrange]{phw_arrange()}}.}
 
 \item{x, y}{The time column (a date, date-time or number, not text) and
 the measure, unquoted as in dplyr (strings work too). Rows with a

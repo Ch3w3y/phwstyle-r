@@ -37,6 +37,11 @@ says what to change.
 * A group with an empty name (`""`) stops `phw_colour_key()` and the PHW
   colour scales. Give it a label, or make it `NA` to show it as missing.
 * `phw_map()` stops when every fill value is missing.
+* `phw_spc()` stops when a time point has more than one row, as when `data`
+  holds several areas, and says to filter to one series or to draw one
+  chart per series and combine them with `phw_arrange()`. Before, it pooled
+  the series into one centre line and one set of limits, so a shift in one
+  area could show as common cause variation.
 * `phw_boundaries("community")` returns every community as its own row,
   coded with its ONS code (`W04...`), with Welsh names in `name_cy`. Before,
   `code` was the community name, so communities that share a name, such as

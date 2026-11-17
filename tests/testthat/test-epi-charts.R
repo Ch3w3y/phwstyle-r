@@ -377,6 +377,19 @@ test_that("phw_spc needs dates or numbers for x", {
   expect_s3_class(phw_spc(transform(d, m = as.Date("2023-01-01") + 0:2), m, v), "ggplot")
 })
 
+test_that("phw_spc stops when several series share one time column", {
+  m <- seq(as.Date("2023-01-01"), by = "month", length.out = 24)
+  d <- rbind(data.frame(area = "North", month = m, value = 20),
+             data.frame(area = "South", month = m, value = 80))
+  expect_error(phw_spc(d, month, value), "one row per time point")
+  expect_error(phw_spc(d, month, value), "24 values")
+  expect_error(phw_spc(d, month, value), "phw_arrange")
+  expect_s3_class(phw_spc(d[d$area == "North", ], month, value), "ggplot")
+  # A duplicate left out for a missing value is not counted.
+  one <- data.frame(t = c(1, 2, 2, 3), v = c(1, 2, NA, 3))
+  expect_s3_class(suppressMessages(phw_spc(one, t, v)), "ggplot")
+})
+
 test_that("phw_spc leaves out missing values and needs at least two points", {
   d <- data.frame(t = 1:10, v = c(5, NA, 6, 5, Inf, 6, 5, 6, 5, 6))
   expect_message(p <- phw_spc(d, t, v), "Left out 2 rows")
