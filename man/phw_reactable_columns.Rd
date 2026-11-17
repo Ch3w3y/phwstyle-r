@@ -24,6 +24,7 @@ phw_col_rag(
   higher_is_better = TRUE,
   rag_palette = "rag_accessible",
   digits = 1,
+  data = NULL,
   ...
 )
 
@@ -32,14 +33,18 @@ phw_col_number(digits = 0, ...)
 phw_col_percent(digits = 1, ...)
 }
 \arguments{
-\item{data}{The data frame (bar and heat columns need it to find the
-range).}
+\item{data}{The data frame. Bar and heat columns need it to find the
+range. \code{phw_col_rag()} uses it, when given, to leave the headings,
+subtotals and totals of a summary table uncoloured and to pick the
+decimal places.}
 
 \item{column}{The column, unquoted as in dplyr. A string works too.}
 
 \item{colour}{Bar colour.}
 
-\item{digits}{Decimal places.}
+\item{digits}{Decimal places. Heat and RAG columns follow the table by
+default: none for whole numbers, otherwise the summary table's own
+\code{digits}, or 1.}
 
 \item{...}{Other \code{\link[reactable:colDef]{reactable::colDef()}} arguments, e.g. \code{name}.}
 
@@ -70,7 +75,9 @@ palette, with readable text. On a summary table, only the level rows
 are coloured: headings, subtotals and totals keep their own styling and
 stay out of the colour scale.
 \item \code{phw_col_rag()}: red, amber or green cells with a shape, so status
-doesn't rely on colour alone.
+doesn't rely on colour alone. Give it the table as \code{data} and, on a
+summary table, only the level rows are coloured, as with the heat
+column.
 \item \code{phw_col_number()} and \code{phw_col_percent()}: thousands separators and
 fixed decimals.
 }

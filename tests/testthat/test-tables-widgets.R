@@ -644,6 +644,44 @@ test_that("phw_col_heat colours only the level rows of a summary table", {
   expect_equal(toupper(style(ct$x[3], 3)$background), toupper(top))
 })
 
+test_that("phw_col_heat follows the table's decimal places", {
+  skip_if_not_installed("reactable")
+  dat <- data.frame(group = rep(c("A", "B", "C"), times = c(10, 20, 30)),
+                    type = rep(c("x", "y"), 30))
+  ct <- phw_crosstab(dat, group, type)
+  expect_equal(phw_col_heat(ct, x)$format$cell$digits, 0)
+  expect_equal(phw_col_heat(ct, x, digits = 2)$format$cell$digits, 2)
+  rates <- data.frame(area = c("A", "B"), rate = c(1.25, 2.5))
+  expect_equal(phw_col_heat(rates, rate)$format$cell$digits, 1)
+  attr(rates, "digits") <- 2
+  expect_equal(phw_col_heat(rates, rate)$format$cell$digits, 2)
+})
+
+test_that("phw_col_rag with data colours only the level rows of a summary table", {
+  skip_if_not_installed("reactable")
+  dat <- data.frame(group = rep(c("A", "B", "C"), times = c(10, 20, 30)),
+                    type = rep(c("x", "y"), 30))
+  ct <- phw_crosstab(dat, group, type)
+  rag <- phw_col_rag(breaks = c(12, 25), data = ct)
+  shown <- vapply(seq_len(nrow(ct)), function(i) rag$cell(ct$Total[i], i, "Total"), "")
+  expect_equal(shown, c("\u25BC 10", "\u25A0 20", "\u25B2 30", "60"))
+  expect_null(rag$style(ct$Total[4], 4))
+  expect_equal(rag$style(ct$Total[3], 3)$background, phw_palettes$rag_accessible[["green"]])
+  expect_equal(phw_col_rag(breaks = c(12, 25))$cell(60, 4, "Total"), "\u25B2 60.0")
+  expect_equal(phw_col_rag(breaks = c(12, 25), digits = 2, data = ct)$cell(60, 4, "Total"), "60.00")
+  expect_error(phw_col_rag(breaks = c(12, 25), data = 1:3), "must be a data frame")
+})
+
+test_that("phw_col_rag shows a missing value as a blank cell", {
+  skip_if_not_installed("reactable")
+  rag <- phw_col_rag(breaks = c(3, 6))
+  expect_equal(rag$cell(NA, 1, "v"), "")
+  expect_equal(rag$cell(NA_real_, 1, "v"), "")
+  expect_null(rag$style(NA, 1))
+  df <- data.frame(a = c("x", "y"), v = c(NA, NA))
+  expect_s3_class(phw_reactable(df, columns = list(v = phw_col_rag(breaks = c(3, 6)))), "htmlwidget")
+})
+
 test_that("bars cover only the level rows of a summary table", {
   skip_if_not_installed("flextable")
   dat <- data.frame(group = rep(c("A", "B", "C"), times = c(10, 20, 30)),
