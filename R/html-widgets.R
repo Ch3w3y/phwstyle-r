@@ -122,7 +122,7 @@ phw_reactable <- function(data, ..., caption = NULL, source = NULL, date = NULL,
                           caption_args = list(), digits = 1, group_col = NULL, key = NULL,
                           palette = phw_default_palette()) {
   rlang::check_installed("reactable")
-  check_unique_names(data)
+  check_table_data(data)
   if (missing(digits)) digits <- attr(data, "digits") %||% digits
   group_col <- pick_col(rlang::enquo(group_col), data, "group_col", null_ok = TRUE)
   args <- list(...)

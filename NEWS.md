@@ -456,6 +456,12 @@ says what to change.
 * Table and column helpers give clear errors for duplicated column names,
   negative bar values, a data frame where a flextable is needed, or an
   unknown style.
+* `phw_flextable()`, `phw_gt()`, `phw_reactable()`, `phw_datatable()` and
+  `phw_write_xlsx()` stop when given a `table()` or a matrix and suggest
+  converting it with `as.data.frame()`. Before, flextable and reactable
+  failed with "subscript out of bounds" and `phw_gt()` drew an empty
+  table. `phw_datatable()`, which converted them itself, now stops the
+  same way.
 
 ## Slides and documents
 

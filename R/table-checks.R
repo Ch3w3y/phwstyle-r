@@ -1,7 +1,13 @@
 # Entry checks for the table renderers and the cell colouring helpers, on top
 # of the shared ones in checks.R.
 
-check_unique_names <- function(data, arg = "data", call = rlang::caller_env()) {
+# A data frame with one name per column. A table() or a matrix stops here,
+# since the renderers would each fail on it in their own way.
+check_table_data <- function(data, arg = "data", call = rlang::caller_env()) {
+  if (!is.data.frame(data)) {
+    cli::cli_abort(c("{.arg {arg}} must be a data frame, not {.obj_type_friendly {data}}.",
+                     i = as_data_frame_hint), call = call)
+  }
   nms <- names(data)
   dup <- unique(nms[duplicated(nms)])
   if (length(dup)) {
@@ -10,6 +16,8 @@ check_unique_names <- function(data, arg = "data", call = rlang::caller_env()) {
   }
   invisible(data)
 }
+
+as_data_frame_hint <- "Convert a {.fn table} or a matrix with {.fn as.data.frame} first."
 
 check_flextable <- function(x, call = rlang::caller_env()) {
   if (!inherits(x, "flextable")) {

@@ -33,7 +33,7 @@
 phw_datatable <- function(data, caption = NULL, source = NULL, date = NULL, digits = 1,
                           page_length = 10, options = list(), caption_args = list(), ...) {
   rlang::check_installed("DT")
-  check_unique_names(data)
+  check_table_data(data)
   if (missing(digits)) digits <- attr(data, "digits") %||% digits
   dots <- list(...)
   sm <- NULL
@@ -372,7 +372,7 @@ xlsx_sheets <- function(x, call = rlang::caller_env()) {
   if (!ok) {
     bad <- if (is.list(x) && length(x)) x[!vapply(x, is.data.frame, logical(1))][[1]] else x
     cli::cli_abort(c("{.arg x} must be a data frame or a list of data frames.",
-                     x = "It has {.obj_type_friendly {bad}}."), call = call)
+                     x = "It has {.obj_type_friendly {bad}}.", i = as_data_frame_hint), call = call)
   }
   nms <- names(x) %||% rep("", length(x))
   blank <- is.na(nms) | !nzchar(nms)
@@ -387,7 +387,7 @@ xlsx_sheets <- function(x, call = rlang::caller_env()) {
                    call = call)
   }
   names(x) <- sheets
-  for (s in x) check_unique_names(s, arg = "x", call = call)
+  for (s in x) check_table_data(s, arg = "x", call = call)
   x
 }
 
