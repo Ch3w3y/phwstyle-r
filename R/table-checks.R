@@ -3,10 +3,15 @@
 
 # A data frame with one name per column. A table() or a matrix stops here,
 # since the renderers would each fail on it in their own way. The geometry of
-# an sf object is dropped, as a table shows its attributes only.
+# an sf object is dropped, as a table shows its attributes only. A difftime,
+# such as a length of stay, becomes a plain number in its own units so every
+# renderer formats and aligns it as one; hms times of day keep their class.
 check_table_data <- function(data, arg = "data", call = rlang::caller_env()) {
   check_data_frame(data, as_data_frame_hint, arg, call)
   if (inherits(data, "sf")) data <- sf::st_drop_geometry(data)
+  for (j in which(vapply(data, function(v) inherits(v, "difftime") && !inherits(v, "hms"), logical(1)))) {
+    data[[j]] <- as.numeric(data[[j]])
+  }
   nms <- names(data)
   dup <- unique(nms[duplicated(nms)])
   if (length(dup)) {

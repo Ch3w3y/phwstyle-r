@@ -521,6 +521,13 @@ says what to change.
   `phw_boundaries()` joined to case counts, and show the other columns.
   Before, the geometry showed as a column of coordinates, "[[XY]]" or
   "[object Object]", and in Excel it ran past the cell size limit.
+* `phw_flextable()`, `phw_gt()`, `phw_reactable()`, `phw_datatable()` and
+  `phw_write_xlsx()` show a `difftime` column, such as a length of stay made
+  by subtracting two dates, as a plain number in its own units. It is
+  right-aligned like other numbers, and a missing value is blank. Before,
+  flextable showed "4 days", gt centred the column and reactable showed a
+  missing stay as "NA". Name the unit in the column heading, for example
+  "Length of stay (days)".
 * `phw_summary_table()`, `phw_crosstab()` and `phw_group_table()` keep
   the `label` attributes of columns when rows are left out for a missing
   value. Before, the headings fell back to the column names.
