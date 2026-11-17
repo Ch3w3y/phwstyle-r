@@ -156,7 +156,7 @@ phw_flextable <- function(data, caption = NULL, number = NULL, source = NULL,
                           col_labels = NULL, autofit = TRUE, number_prefix = "Table",
                           caption_args = list(), flextable_args = list(), ...) {
   rlang::check_installed(c("flextable", "officer"))
-  check_table_data(data)
+  data <- check_table_data(data)
   data <- blank_non_finite(data)
   if (missing(digits)) digits <- attr(data, "digits") %||% digits
   if (inherits(data, "phw_summary")) check_summary_keys(data, flextable_args$col_keys)

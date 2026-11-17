@@ -497,6 +497,11 @@ says what to change.
   failed with "subscript out of bounds" and `phw_gt()` drew an empty
   table. `phw_datatable()`, which converted them itself, now stops the
   same way.
+* `phw_flextable()`, `phw_gt()`, `phw_reactable()`, `phw_datatable()` and
+  `phw_write_xlsx()` leave out the geometry of an sf data frame, such as
+  `phw_boundaries()` joined to case counts, and show the other columns.
+  Before, the geometry showed as a column of coordinates, "[[XY]]" or
+  "[object Object]", and in Excel it ran past the cell size limit.
 * `phw_summary_table()`, `phw_crosstab()` and `phw_group_table()` keep
   the `label` attributes of columns when rows are left out for a missing
   value. Before, the headings fell back to the column names.
