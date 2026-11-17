@@ -392,6 +392,23 @@ test_that("ggplot axis titles keep their text in the PHW colour", {
   expect_equal(l$xaxis$title$font$color, phw_colours[["text_secondary"]])
 })
 
+test_that("a ggplot's subtitle goes under its title and its caption becomes the source line", {
+  g <- ggplot2::ggplot(groups_df, ggplot2::aes(week, cases, colour = group)) + ggplot2::geom_line() +
+    ggplot2::labs(title = "Cases", subtitle = "Wales\n2026", caption = phw_caption("Example data"))
+  l <- built(phw_plotly(g))$layout
+  lines <- strsplit(title_text(l$title), "<br>", fixed = TRUE)[[1]]
+  expect_match(lines[1], "Cases", fixed = TRUE)
+  expect_match(lines[2], "Wales", fixed = TRUE)
+  expect_match(lines[3], "2026</span>", fixed = TRUE)
+  expect_equal(l$title$font$color, phw_colours[["navy"]])
+  src <- Filter(function(a) identical(a$name, "phw_source"), l$annotations)
+  expect_equal(src[[1]]$text, "<b>Source: Example data</b>")
+  given <- built(phw_plotly(g, source = "Other data"))$layout$annotations
+  expect_equal(vapply(given, function(a) a$text, ""), "<b>Source: Other data</b>")
+  untitled <- built(phw_plotly(g + ggplot2::labs(title = NULL)))$layout$title
+  expect_match(title_text(untitled), "^<span[^>]*>Wales<br>2026</span>$")
+})
+
 test_that("legend sets where a legend goes, not whether one trace gets one", {
   one <- plotly::plot_ly(groups_df, x = ~week, y = ~cases, type = "bar")
   expect_false(built(phw_plotly(one))$layout$showlegend)

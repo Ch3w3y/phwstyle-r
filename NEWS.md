@@ -554,6 +554,10 @@ says what to change.
   the legend, such as `phw_epicurve(average = )` or
   `phw_forest(target = )`, read "(A,1)" and "(3-week average,1)", and the
   forest plot listed each group twice.
+* `phw_plotly()` keeps a ggplot's subtitle, under the title, and its
+  caption, as the source line under the chart. Before, both were dropped,
+  so a chart captioned with `labs(caption = phw_caption(...))` lost its
+  source. A `source` or `date` you pass still replaces the caption.
 * `phw_leaflet_polygons()`, `phw_boundaries()`, `phw_plotly()` and the
   colour key functions check their input first. `phw_boundaries()` checks
   `crs` before downloading anything.
