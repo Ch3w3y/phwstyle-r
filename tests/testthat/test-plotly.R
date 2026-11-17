@@ -531,6 +531,17 @@ test_that("a pyramid's hover shows each bar's unsigned value, as on the axis", {
   expect_equal(pct[5:8], pct[1:4])
 })
 
+test_that("a layer added to a pyramid with its own data draws, and in plotly", {
+  py <- data.frame(age = factor(rep(c("0-4", "5-9"), 2)), sex = rep(c("Female", "Male"), each = 2),
+                   n = c(240000, 230000, 250000, 220000))
+  tot <- data.frame(pos = c(-260000, 260000), band = factor("5-9", levels(py$age)), who = c("Female", "Male"))
+  g <- phw_pyramid(py, age, sex, value = n, compare = py) +
+    ggplot2::geom_text(data = tot, ggplot2::aes(x = pos, y = band, label = who))
+  expect_no_warning(b <- ggplot2::ggplot_build(g))
+  expect_equal(b$data[[4]]$label, c("Female", "Male"))
+  expect_no_error(built(phw_plotly(g)))
+})
+
 test_that("a ggplot that maps text shows only that text on hover", {
   d <- data.frame(x = 1:2, y = 3:4, lab = c("first", "second"))
   g <- ggplot2::ggplot(d, ggplot2::aes(x, y, text = lab)) + ggplot2::geom_point()
