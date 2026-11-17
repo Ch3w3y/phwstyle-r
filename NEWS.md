@@ -497,6 +497,9 @@ says what to change.
   `phw_finalise()`, `phw_word_document()`, `phw_pdf_document()`,
   `phw_latex_header()`, `phw_reference_docx()` and `use_phw_quarto()`.
   Before, it stopped with "a raster array must have exactly 3 or 4 planes".
+* `phw_reference_docx()` writes a document with no text in it. A Word file
+  made with `officer::read_docx(phw_reference_docx())` now starts with your
+  own content. Before, it started with a page of sample text from pandoc.
 * `phw_add_slide()` places content on every layout. Two Content fills the
   left side first, and Title Only and Blank place the chart, table or text
   in the free space.
