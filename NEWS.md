@@ -594,6 +594,12 @@ says what to change.
   caption, as the source line under the chart. Before, both were dropped,
   so a chart captioned with `labs(caption = phw_caption(...))` lost its
   source. A `source` or `date` you pass still replaces the caption.
+* `phw_plotly()` shows each bar of `phw_pyramid()` on hover by its sex, age
+  band and value, formatted as on the axis: "Female, 0-4: 240,000" or
+  "Female, 0-4: 25.5%". Before, the left-hand sex read as a negative,
+  unrounded number such as "x: -240000". A ggplot that maps the `text`
+  aesthetic now shows only that text on hover, as
+  `plotly::ggplotly(tooltip = "text")` does.
 * `phw_leaflet_polygons()`, `phw_boundaries()`, `phw_plotly()` and the
   colour key functions check their input first. `phw_boundaries()` checks
   `crs` before downloading anything.

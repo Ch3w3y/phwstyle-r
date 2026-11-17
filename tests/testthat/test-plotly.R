@@ -519,3 +519,33 @@ test_that("ggrepel labels show as text in plotly, placed by their hjust and vjus
   expect_equal(as.vector(lab[[1]]$text), c("a", "b"))
   expect_equal(unique(lab[[1]]$textposition), "middle right")
 })
+
+test_that("a pyramid's hover shows each bar's unsigned value, as on the axis", {
+  hover <- function(g) unlist(lapply(built(phw_plotly(g))$data, function(t) as.vector(t$text)))
+  py <- data.frame(age = factor(rep(c("0-4", "5-9"), 2)), sex = rep(c("Female", "Male"), each = 2),
+                   n = c(240000, 230000, 250000, 220000))
+  expect_equal(hover(phw_pyramid(py, age, sex, value = n)),
+               c("Female, 0-4: 240,000", "Female, 5-9: 230,000", "Male, 0-4: 250,000", "Male, 5-9: 220,000", ""))
+  pct <- hover(phw_pyramid(py, age, sex, value = n, percent = TRUE, compare = py))
+  expect_equal(pct[1:4], c("Female, 0-4: 25.5%", "Female, 5-9: 24.5%", "Male, 0-4: 26.6%", "Male, 5-9: 23.4%"))
+  expect_equal(pct[5:8], pct[1:4])
+})
+
+test_that("a layer added to a pyramid with its own data draws, and in plotly", {
+  py <- data.frame(age = factor(rep(c("0-4", "5-9"), 2)), sex = rep(c("Female", "Male"), each = 2),
+                   n = c(240000, 230000, 250000, 220000))
+  tot <- data.frame(pos = c(-260000, 260000), band = factor("5-9", levels(py$age)), who = c("Female", "Male"))
+  g <- phw_pyramid(py, age, sex, value = n, compare = py) +
+    ggplot2::geom_text(data = tot, ggplot2::aes(x = pos, y = band, label = who))
+  expect_no_warning(b <- ggplot2::ggplot_build(g))
+  expect_equal(b$data[[4]]$label, c("Female", "Male"))
+  expect_no_error(built(phw_plotly(g)))
+})
+
+test_that("a ggplot that maps text shows only that text on hover", {
+  d <- data.frame(x = 1:2, y = 3:4, lab = c("first", "second"))
+  g <- ggplot2::ggplot(d, ggplot2::aes(x, y, text = lab)) + ggplot2::geom_point()
+  expect_equal(as.vector(built(phw_plotly(g))$data[[1]]$text), c("first", "second"))
+  plain <- built(phw_plotly(ggplot2::ggplot(d, ggplot2::aes(x, y)) + ggplot2::geom_point()))
+  expect_match(plain$data[[1]]$text, "^x: 1<br />y: 3$|^x: 2<br />y: 4$")
+})

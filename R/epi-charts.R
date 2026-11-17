@@ -278,8 +278,16 @@ phw_pyramid <- function(data, age, sex, value = NULL, percent = FALSE, left = NU
     }
     sexes <- unique(c(left, sexes))
   }
-  d$sex <- factor(d$sex, sexes)
-  d$x <- ifelse(d$sex == sexes[1], -d$n, d$n)
+  # The left-hand sex is drawn as negative values, so the plotly hover shows
+  # its own text: the sex, the age band and the unsigned value.
+  hover_value <- if (percent) phw_number(accuracy = 0.1, suffix = "%") else phw_number()
+  side <- function(d) {
+    d$sex <- factor(d$sex, sexes)
+    d$x <- ifelse(d$sex == sexes[1], -d$n, d$n)
+    d$hover <- paste0(d$sex, ", ", d$age, ": ", hover_value(d$n))
+    d
+  }
+  d <- side(d)
   if (!is.null(compare)) {
     gone <- setdiff(c(age, sex, value), names(compare))
     if (length(gone)) cli::cli_abort("{.arg compare} has no {.field {gone}} column{?s}, which {.arg data} has.")
@@ -295,14 +303,20 @@ phw_pyramid <- function(data, age, sex, value = NULL, percent = FALSE, left = NU
   }
   lim <- max(abs(d$x))
   bar_args <- utils::modifyList(list(width = 0.85), list(...))
+  # `text` goes on the bar layers only, so a layer the user adds with its own
+  # data does not look for `hover`. It is set after the layer is made, as
+  # geom_col() warns about an aesthetic it does not draw.
+  with_hover <- function(layer) {
+    layer$mapping <- ggplot2::aes(!!!layer$mapping, text = .data$hover)
+    layer
+  }
   p <- ggplot2::ggplot(d, ggplot2::aes(x = .data$x, y = .data$age)) +
-    do.call(ggplot2::geom_col, c(list(ggplot2::aes(fill = .data$sex)), bar_args))
+    with_hover(do.call(ggplot2::geom_col, c(list(ggplot2::aes(fill = .data$sex)), bar_args)))
   if (!is.null(compare)) {
-    cd$sex <- factor(cd$sex, sexes)
-    cd$x <- ifelse(cd$sex == sexes[1], -cd$n, cd$n)
+    cd <- side(cd)
     lim <- max(lim, abs(cd$x))
-    p <- p + ggplot2::geom_col(data = cd, fill = NA, colour = compare_colour, width = bar_args$width,
-                                 linewidth = 0.5)
+    p <- p + with_hover(ggplot2::geom_col(data = cd, fill = NA, colour = compare_colour, width = bar_args$width,
+                                            linewidth = 0.5))
   }
   p + ggplot2::geom_vline(xintercept = 0, colour = phw_colours[["text"]], linewidth = 0.4) +
     scale_fill_phw_d(palette = palette %||% unname(phw_colours[c("navy", "teal")]), name = NULL) +
