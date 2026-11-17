@@ -51,7 +51,8 @@ Restyles a plotly figure with the PHW font, colour order, light
 gridlines, a horizontal legend under the chart, and hover labels in navy.
 It also trims the mode bar. You can pass it a plotly object, or a ggplot,
 which is converted with \code{\link[plotly:ggplotly]{plotly::ggplotly()}} first. A ggplot's subtitle
-goes under its title.
+goes under its title. A ggplot that maps the \code{text} aesthetic shows only
+that text on hover, as \code{ggplotly(tooltip = "text")} does.
 }
 \details{
 Any plotly chart type works: scatter and lines, bars, pies and

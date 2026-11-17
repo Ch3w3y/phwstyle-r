@@ -228,7 +228,8 @@ wrap_widget <- function(widget, caption, cap, note = NULL) {
 #' gridlines, a horizontal legend under the chart, and hover labels in navy.
 #' It also trims the mode bar. You can pass it a plotly object, or a ggplot,
 #' which is converted with [plotly::ggplotly()] first. A ggplot's subtitle
-#' goes under its title.
+#' goes under its title. A ggplot that maps the `text` aesthetic shows only
+#' that text on hover, as `ggplotly(tooltip = "text")` does.
 #'
 #' @param p A plotly object or a ggplot.
 #' @param source,date Passed to [phw_caption()] and shown under the chart.
@@ -456,7 +457,11 @@ ggplotly_phw <- function(p, palette) {
   keys <- unlist(lapply(b$plot$scales$scales, function(s) {
     if (s$is_discrete() && !any(c("x", "y") %in% s$aesthetics)) as.character(s$get_limits())
   }))
-  w <- plain_legend(plotly::ggplotly(unrepel(p)), keys)
+  # A mapped `text` aesthetic is there for the hover, as with
+  # ggplotly(tooltip = "text").
+  mappings <- c(list(p$mapping), lapply(p$layers, function(l) l$mapping))
+  tooltip <- if (any(vapply(mappings, function(m) "text" %in% names(m), logical(1)))) "text" else "all"
+  w <- plain_legend(plotly::ggplotly(unrepel(p), tooltip = tooltip), keys)
   # ggplotly() gives the legend a title even when the theme blanks it.
   if (inherits(ggplot2::calc_element("legend.title", ggplot2::theme_get() + p$theme), "element_blank")) {
     w$x$layout$legend$title <- NULL
