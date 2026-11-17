@@ -8,6 +8,18 @@ test_that("graphics and reference document are available", {
   expect_match(footer, "Page")
 })
 
+test_that("the reference document has no text for officer to keep", {
+  skip_if_not_installed("officer")
+  doc <- officer::read_docx(phw_reference_docx())
+  expect_equal(nrow(officer::docx_summary(doc)), 0)
+  doc <- officer::body_add_par(doc, "My report", style = "Heading 1")
+  out <- withr::local_tempfile(fileext = ".docx")
+  print(doc, target = out)
+  saved <- officer::read_docx(out)
+  expect_equal(officer::docx_summary(saved)$text, "My report")
+  expect_length(xml2::xml_find_all(officer::docx_body_xml(saved), "//w:headerReference"), 1)
+})
+
 test_that("logo lookup honours the option and returns NULL when absent", {
   dir <- withr::local_tempdir()
   writeLines("<svg/>", file.path(dir, "phw-logo-blue.svg"))
