@@ -573,9 +573,7 @@ phw_col_percent <- function(digits = 1, ...) {
 #' phw_plotly_colorscale("blues", n = 3)
 #' @export
 phw_plotly_colorscale <- function(palette = "blues", reverse = FALSE, n = 9) {
-  if (!is.numeric(n) || length(n) != 1 || is.na(n) || n < 2) {
-    cli::cli_abort("{.arg n} must be one number, 2 or more.")
-  }
+  check_whole_number(n, 2)
   cols <- if (is.function(palette)) {
     phw_pal(n, palette, reverse = reverse)
   } else {

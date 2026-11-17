@@ -476,6 +476,9 @@ says what to change.
   read from the old file. Before, a second report rendered in the same
   session used the first report's colours and saved them into its own key
   file. Keys made before any key file was set are kept.
+* `phw_plotly_colorscale()` and `phw_pal()` take a whole number for `n`.
+  Before, `phw_plotly_colorscale(n = 2.5)` made a scale whose last stop was
+  0.67, not 1.
 * `phw_contrast()`, `phw_text_on()` and `phw_cvd()` return `NA` for a missing
   colour instead of treating it as white, and accept palette names.
 * `show_phw_palettes()` picks each swatch's label colour with

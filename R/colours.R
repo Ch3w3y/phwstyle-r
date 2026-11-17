@@ -215,9 +215,7 @@ palette_type <- function(name) {
 phw_pal <- function(n = NULL, palette = phw_default_palette(), reverse = FALSE,
                     type = c("qualitative", "sequential")) {
   type <- rlang::arg_match(type)
-  if (!is.null(n) && !(is.numeric(n) && length(n) == 1 && !is.na(n) && n >= 0)) {
-    cli::cli_abort("{.arg n} must be one number, 0 or more.")
-  }
+  if (!is.null(n)) check_whole_number(n, 0)
   check_true_false(reverse)
   if (is.function(palette)) {
     out <- palette(n %||% 1L)

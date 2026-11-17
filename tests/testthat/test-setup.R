@@ -16,7 +16,7 @@ test_that("setup hints show code as code and words as words", {
 
 test_that("phw_install_fonts needs a folder for dest", {
   f <- withr::local_tempfile(lines = "x")
-  expect_error(phw_install_fonts(dest = NA, ask = FALSE), "must be a single string")
-  expect_error(phw_install_fonts(dest = "", ask = FALSE), "must be a folder path")
+  expect_error(phw_install_fonts(dest = NA, ask = FALSE), "must be a single non-empty string")
+  expect_error(phw_install_fonts(dest = "", ask = FALSE), "must be a single non-empty string")
   expect_error(phw_install_fonts(dest = f, ask = FALSE), "is a file, not a folder")
 })

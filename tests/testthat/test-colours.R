@@ -140,6 +140,6 @@ test_that("show_phw_palettes names an unknown palette", {
 test_that("phw_pal checks its colours, n and reverse", {
   expect_error(phw_pal(2, c("#285087", NA)), "must be a palette name")
   expect_error(phw_pal(3, function(n) 1:n), "must return colours")
-  expect_error(phw_pal(NA), "`n` must be one number")
+  expect_error(phw_pal(NA), "`n` must be a whole number")
   expect_error(phw_pal(2, reverse = NA), "`reverse` must be")
 })
