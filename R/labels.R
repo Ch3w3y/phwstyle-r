@@ -93,6 +93,20 @@ phw_number <- function(accuracy = 1, big.mark = ",", ...) {
   scales::label_number(accuracy = accuracy, big.mark = big.mark, ...)
 }
 
+# The tables show years without a thousands separator, as
+# phw_number(big.mark = "") does: 2021, not 2,021. A year column is a column
+# of whole numbers between 1800 and 2200 whose name has the word "year",
+# "yr" or "blwyddyn" in it, as the table functions document.
+# One flag per column of `data`.
+year_cols <- function(data) {
+  is_year <- function(v, name) {
+    words <- strsplit(tolower(name), "[^[:alpha:]]+")[[1]]
+    is.numeric(v) && any(words %in% c("year", "yr", "blwyddyn")) &&
+      all(v == round(v) & v >= 1800 & v <= 2200, na.rm = TRUE)
+  }
+  vapply(seq_along(data), function(j) is_year(data[[j]], names(data)[j]), logical(1))
+}
+
 #' @rdname phw_number
 #' @export
 phw_percent <- function(accuracy = 0.1, big.mark = ",", ...) {

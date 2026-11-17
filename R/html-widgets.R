@@ -86,6 +86,10 @@ phw_reactable_theme <- function(font_size = 14, header = c("booktabs", "navy", "
 #' @param caption_args List of other [phw_caption()] arguments.
 #' @param digits Decimal places for non-integer numbers, as in
 #'   [phw_flextable()] and [phw_gt()]. A column of whole numbers shows none.
+#'   Whole numbers show with a thousands separator, except in a year
+#'   column: whole numbers from 1800 to 2200 in a column whose name has the
+#'   word "year", "yr" or "blwyddyn" in it, such as `Year`, `year_of_onset`
+#'   or `Blwyddyn`. These show as 2021, not 2,021.
 #'   A column you format yourself in `columns` keeps your format, and a
 #'   `format` in `defaultColDef` applies to every column.
 #' @param group_col,key,palette Colour the cells of the column `group_col`
@@ -175,11 +179,12 @@ local_times <- function(data) {
 
 with_number_formats <- function(columns, data, digits) {
   columns <- columns %||% list()
+  years <- names(data)[year_cols(data)]
   for (nm in names(data)[vapply(data, is.numeric, logical(1))]) {
     places <- col_digits(data[[nm]], digits)
     def <- columns[[nm]] %||% reactable::colDef()
     if (is.null(def$format)) {
-      fmt <- reactable::colFormat(separators = TRUE, digits = places)
+      fmt <- reactable::colFormat(separators = !nm %in% years, digits = places)
       def$format <- list(cell = fmt, aggregated = fmt)
     }
     columns[[nm]] <- def

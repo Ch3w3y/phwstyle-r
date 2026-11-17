@@ -233,6 +233,33 @@ test_that("phw_write_xlsx draws the house look on summary tables", {
   expect_equal(cell("Source: Probe")$align, "right")
 })
 
+test_that("every renderer shows years without a thousands separator", {
+  df <- data.frame(Year = 2021:2022, year_of_onset = c(2019, NA), Cases = c(1520, 2021))
+  skip_if_not_installed("flextable")
+  html <- as.character(flextable::htmltools_value(phw_flextable(df)))
+  expect_match(html, ">2021<")
+  expect_match(html, ">2019<")
+  expect_match(html, ">1,520<")
+  expect_match(html, ">2,021<")
+  skip_if_not_installed("gt")
+  html <- as.character(gt::as_raw_html(phw_gt(df)))
+  expect_match(html, ">2021<")
+  expect_match(html, ">2019<")
+  expect_match(html, ">1,520<")
+  skip_if_not_installed("reactable")
+  cols <- phw_reactable(df)$x$tag$attribs$columns
+  expect_equal(vapply(cols, function(c) isTRUE(c$format$cell$separators), TRUE), c(FALSE, FALSE, TRUE))
+  skip_if_not_installed("DT")
+  defs <- Filter(function(d) !is.null(d$render), phw_datatable(df)$x$options$columnDefs)
+  marks <- vapply(defs, function(d) sub('.*formatRound\\(data, 0, 3, "(.?)".*', "\\1", d$render), "")
+  expect_equal(marks[order(vapply(defs, function(d) d$targets, numeric(1)))], c("", "", ","))
+  skip_if_not_installed("openxlsx2")
+  f <- withr::local_tempfile(fileext = ".xlsx")
+  phw_write_xlsx(df, f)
+  cells <- xlsx_cells(f)
+  expect_equal(cells$format[cells$ref %in% c("A2", "B2", "C2")], c("0", "0", "#,##0"))
+})
+
 test_that("phw_write_xlsx writes dates in ISO format", {
   skip_if_not_installed("openxlsx2")
   f <- withr::local_tempfile(fileext = ".xlsx")

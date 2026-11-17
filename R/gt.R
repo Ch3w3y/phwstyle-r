@@ -83,6 +83,10 @@ as.tags.phw_gt <- function(x, ...) {
 #' @param caption_args List of other [phw_caption()] arguments.
 #' @param digits Decimal places for non-integer numbers. Defaults to the
 #'   `digits` of a [phw_group_table()], or 1.
+#'   Whole numbers show with a thousands separator, except in a year
+#'   column: whole numbers from 1800 to 2200 in a column whose name has the
+#'   word "year", "yr" or "blwyddyn" in it, such as `Year`, `year_of_onset`
+#'   or `Blwyddyn`. These show as 2021, not 2,021.
 #' @param gt_args List of arguments for [gt::gt()], e.g.
 #'   `list(groupname_col = "region")`. On a summary table, `rowname_col`
 #'   takes a column name as it prints, such as `"Characteristic"`, and
@@ -97,6 +101,7 @@ phw_gt <- function(data, caption = NULL, subtitle = NULL, number = NULL, source 
   if (missing(digits)) digits <- attr(data, "digits") %||% digits
   is_sum <- inherits(data, "phw_summary")
   df <- as.data.frame(unclass(data)[names(data)], check.names = FALSE)
+  years <- year_cols(df)
   if (is_sum) {
     nl <- attr(data, "label_cols") %||% 1L
     # gt needs unique, syntactic-enough ids; keep display names as labels.
@@ -108,7 +113,9 @@ phw_gt <- function(data, caption = NULL, subtitle = NULL, number = NULL, source 
   x <- do.call(gt::gt, c(list(df), gt_args))
   num <- names(df)[vapply(df, is.numeric, logical(1))]
   is_int <- vapply(df[num], function(v) all(v == round(v), na.rm = TRUE), logical(1))
-  if (any(is_int)) x <- gt::fmt_integer(x, columns = gt_cols(num[is_int]))
+  is_year <- num %in% names(df)[years]
+  if (any(is_year)) x <- gt::fmt_integer(x, columns = gt_cols(num[is_year]), use_seps = FALSE)
+  if (any(is_int & !is_year)) x <- gt::fmt_integer(x, columns = gt_cols(num[is_int & !is_year]))
   if (any(!is_int)) x <- gt::fmt_number(x, columns = gt_cols(num[!is_int]), decimals = digits)
   dates <- names(df)[vapply(df, inherits, logical(1), c("Date", "POSIXt"))]
   if (length(dates)) x <- gt::cols_align(x, "left", columns = gt_cols(dates))

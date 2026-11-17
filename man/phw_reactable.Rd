@@ -39,6 +39,10 @@ table keeps its indents, alignment and headings.}
 
 \item{digits}{Decimal places for non-integer numbers, as in
 \code{\link[=phw_flextable]{phw_flextable()}} and \code{\link[=phw_gt]{phw_gt()}}. A column of whole numbers shows none.
+Whole numbers show with a thousands separator, except in a year
+column: whole numbers from 1800 to 2200 in a column whose name has the
+word "year", "yr" or "blwyddyn" in it, such as \code{Year}, \code{year_of_onset}
+or \code{Blwyddyn}. These show as 2021, not 2,021.
 A column you format yourself in \code{columns} keeps your format, and a
 \code{format} in \code{defaultColDef} applies to every column.}
 

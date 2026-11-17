@@ -137,6 +137,10 @@ align_by_type <- function(ft) {
 #' @param style Passed to [phw_flextable_theme()].
 #' @param digits Decimal places for non-integer numbers. Defaults to the
 #'   `digits` of a [phw_group_table()], or 1.
+#'   Whole numbers show with a thousands separator, except in a year
+#'   column: whole numbers from 1800 to 2200 in a column whose name has the
+#'   word "year", "yr" or "blwyddyn" in it, such as `Year`, `year_of_onset`
+#'   or `Blwyddyn`. These show as 2021, not 2,021.
 #' @param col_labels Optional named list of display names, as in
 #'   [flextable::set_header_labels()].
 #' @param autofit Fit column widths to their content?
@@ -159,7 +163,9 @@ phw_flextable <- function(data, caption = NULL, number = NULL, source = NULL,
   shown <- names(data) %in% ft$col_keys
   is_int <- vapply(data, function(v) is.numeric(v) && all(v == round(v), na.rm = TRUE), logical(1)) & shown
   is_dbl <- vapply(data, is.numeric, logical(1)) & shown & !is_int
-  if (any(is_int)) ft <- flextable::colformat_double(ft, j = names(data)[is_int], digits = 0, big.mark = ",", na_str = "")
+  is_year <- year_cols(data) & shown
+  if (any(is_year)) ft <- flextable::colformat_num(ft, j = names(data)[is_year], big.mark = "", na_str = "")
+  if (any(is_int & !is_year)) ft <- flextable::colformat_double(ft, j = names(data)[is_int & !is_year], digits = 0, big.mark = ",", na_str = "")
   if (any(is_dbl)) ft <- flextable::colformat_double(ft, j = names(data)[is_dbl], digits = digits, big.mark = ",", na_str = "")
   if (!is.null(col_labels)) ft <- do.call(flextable::set_header_labels, c(list(ft), col_labels))
   ft <- phw_flextable_theme(ft, style = style, ...)

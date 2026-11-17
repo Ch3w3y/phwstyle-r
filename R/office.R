@@ -15,6 +15,10 @@
 #' @param caption_args List of other [phw_caption()] arguments.
 #' @param digits Decimal places for non-integer numbers. Defaults to the
 #'   `digits` of a [phw_group_table()], or 1.
+#'   Whole numbers show with a thousands separator, except in a year
+#'   column: whole numbers from 1800 to 2200 in a column whose name has the
+#'   word "year", "yr" or "blwyddyn" in it, such as `Year`, `year_of_onset`
+#'   or `Blwyddyn`. These show as 2021, not 2,021.
 #' @param page_length Rows per page.
 #' @param options List of DataTables options, merged with the defaults.
 #' @param ... Passed to [DT::datatable()], e.g. `filter = "top"`.
@@ -58,7 +62,9 @@ phw_datatable <- function(data, caption = NULL, source = NULL, date = NULL, digi
   # Columns go to DT by position: a rename in `colnames` changes the names.
   num <- setdiff(which(vapply(data, is.numeric, logical(1))), sm$helper)
   is_int <- vapply(data[num], function(v) all(v == round(v), na.rm = TRUE), logical(1))
-  if (any(is_int)) w <- DT::formatRound(w, num[is_int], digits = 0)
+  is_year <- year_cols(data)[num]
+  if (any(is_year)) w <- DT::formatRound(w, num[is_year], digits = 0, mark = "")
+  if (any(is_int & !is_year)) w <- DT::formatRound(w, num[is_int & !is_year], digits = 0)
   if (any(!is_int)) w <- DT::formatRound(w, num[!is_int], digits = digits)
   if (!is.null(sm)) w <- style_summary_dt(w, sm)
   w$dependencies <- c(w$dependencies, list(phw_font_dependency(), phw_dt_css()))
@@ -223,6 +229,10 @@ phw_dt_css <- function() {
 #' @param caption_args List of other [phw_caption()] arguments.
 #' @param digits Decimal places for non-integer numbers. Defaults to the
 #'   `digits` of a [phw_group_table()], or 1.
+#'   Whole numbers show with a thousands separator, except in a year
+#'   column: whole numbers from 1800 to 2200 in a column whose name has the
+#'   word "year", "yr" or "blwyddyn" in it, such as `Year`, `year_of_onset`
+#'   or `Blwyddyn`. These show as 2021, not 2,021.
 #' @param header_fill Header fill colour: a colour, or a name from
 #'   [phw_colours] such as `"navy"`.
 #' @param font Font name. Excel uses it if it is installed on the reader's
@@ -313,9 +323,12 @@ phw_write_xlsx <- function(x, file, title = NULL, source = NULL, date = NULL, ca
         wb <- openxlsx2::wb_add_cell_style(wb, sheet, openxlsx2::wb_dims(rows = head_row + 0:nr, cols = j),
                                            horizontal = "right")
       }
+      years <- year_cols(df)
       for (j in seq_along(df)) {
         v <- df[[j]]
-        fmt <- if (inherits(v, "POSIXt")) "yyyy-mm-dd hh:mm" else if (inherits(v, "Date")) "yyyy-mm-dd" else if (is.numeric(v)) {
+        fmt <- if (inherits(v, "POSIXt")) "yyyy-mm-dd hh:mm" else if (inherits(v, "Date")) "yyyy-mm-dd" else if (years[j]) {
+          "0"
+        } else if (is.numeric(v)) {
           if (places == 0 || all(v == round(v), na.rm = TRUE)) "#,##0" else paste0("#,##0.", strrep("0", places))
         }
         if (!is.null(fmt)) wb <- openxlsx2::wb_add_numfmt(wb, sheet, openxlsx2::wb_dims(rows = head_row + seq_len(nr), cols = j), fmt)
