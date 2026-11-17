@@ -385,7 +385,8 @@ phw_funnel <- function(data, numerator, denominator, label = NULL, type = c("pro
     cli::cli_abort("{.arg limits} must be two confidence levels between 0 and 1, inner first, such as {.code c(0.95, 0.998)}.")
   }
   top <- if (type == "proportion") multiplier else Inf
-  if (!is.null(target) && !(is.numeric(target) && length(target) == 1 && is.finite(target) && target > 0 && target < top)) {
+  check_number(target, allow_null = TRUE)
+  if (!is.null(target) && !(target > 0 && target < top)) {
     below <- if (type == "proportion") paste(" and below", multiplier) else ""
     cli::cli_abort(c("{.arg target} must be one number above 0{below}.",
                      i = "It is on the same scale as the chart, with {.code multiplier = {multiplier}}."))

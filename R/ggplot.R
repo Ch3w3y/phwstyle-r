@@ -419,9 +419,7 @@ scale_color_phw_b <- scale_colour_phw_b
 # `midpoint` is on the data scale, as in ggplot2::scale_fill_gradient2(), so
 # it goes through the scale's transformation before rescaling.
 centre_on_midpoint <- function(scale, midpoint, call = rlang::caller_env()) {
-  if (!is.numeric(midpoint) || length(midpoint) != 1 || is.na(midpoint)) {
-    cli::cli_abort("{.arg midpoint} must be a single number, not {.obj_type_friendly {midpoint}}.", call = call)
-  }
+  check_number(midpoint, call = call)
   transformation <- scale$get_transformation()
   mid <- suppressWarnings(transformation$transform(midpoint))
   if (!is.finite(mid)) {
