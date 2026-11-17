@@ -252,6 +252,22 @@ test_that("phw_write_xlsx checks what it is given before writing", {
   expect_error(phw_write_xlsx(mtcars, f, header_fill = "nope"), "header_fill")
 })
 
+test_that("phw_write_xlsx checks the file and the titles before writing", {
+  skip_if_not_installed("openxlsx2")
+  dir <- withr::local_tempdir()
+  expect_error(phw_write_xlsx(mtcars, file.path(dir, "nofolder", "x.xlsx")), "folder not found")
+  expect_error(phw_write_xlsx(mtcars, file.path(dir, "x.xls")), "must end in .*\\.xlsx")
+  f <- file.path(dir, "x.xlsx")
+  three <- list(a = head(iris), b = head(mtcars), c = head(cars))
+  expect_error(phw_write_xlsx(three, f, title = c("Iris", "Cars")), "2 titles for 3 sheets")
+  expect_error(phw_write_xlsx(head(iris), f, title = c("Iris", "Cars")), "2 titles for 1 sheet")
+  expect_false(file.exists(f))
+  phw_write_xlsx(three, f, title = c("Iris", "Mtcars", "Cars"))
+  expect_equal(vapply(1:3, function(i) xlsx_cells(f, i)$value[1], ""), c("Iris", "Mtcars", "Cars"))
+  phw_write_xlsx(three, f, title = "Same")
+  expect_equal(xlsx_cells(f, 3)$value[1], "Same")
+})
+
 test_that("phw_write_xlsx stops on sheet names Excel would treat as the same", {
   skip_if_not_installed("openxlsx2")
   f <- withr::local_tempfile(fileext = ".xlsx")

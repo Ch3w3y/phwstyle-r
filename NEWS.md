@@ -307,6 +307,11 @@ says what to change.
   cleaned for Excel, such as `"North/South"` and `"North?South"`, `"Cases"`
   and `"cases"`, or two long names that share their first 31 characters.
   Before, the second table was written over the first sheet.
+* `phw_write_xlsx()` stops when the folder for `file` doesn't exist, when
+  `file` doesn't end in `.xlsx`, and when `title` is neither one string nor
+  one per sheet. Before, a missing folder gave an error from openxlsx2, a
+  `.xls` name gave a file Excel complained about, and a short `title` was
+  repeated, so a sheet could get another sheet's title.
 * `phw_flextable_heat(symbols = TRUE)` keeps the table's number format, so
   `phw_flextable(digits = 1)` shows "▼ 92.3", not "▼ 92.34568".
 * On a summary, cross-tab or group table, `phw_flextable_heat()` and
