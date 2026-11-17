@@ -479,6 +479,10 @@ phw_pptx <- function(template = NULL) {
 #'   * `"Title and Content"` (the default): one chart, table or text.
 #'   * `"Two Content"`: two side by side. With one, it goes on the left.
 #'     With two, the first of `plot`, `table` and `text` goes on the left.
+#'   * `"Comparison"`: two side by side, under a heading on each side.
+#'     The headings stay empty for you to fill in.
+#'   * `"Content with Caption"`: one chart, table or text on the right, with
+#'     a narrow text box on the left that stays empty for you to fill in.
 #'   * `"Title Only"`: one chart, table or text in the space below the
 #'     title.
 #'   * `"Blank"`: one chart, table or text filling the slide. It has no

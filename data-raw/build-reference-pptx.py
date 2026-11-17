@@ -29,7 +29,9 @@ TEXT = "212B32"
 GREY = "4C6272"
 FONT = "Ubuntu"
 THEME_NAME = "PHW"
-KEEP = ["Title Slide", "Title and Content", "Section Header", "Two Content", "Title Only", "Blank"]
+# Every layout pandoc (and so Quarto) uses, so no slide falls back to pandoc's own.
+KEEP = ["Title Slide", "Title and Content", "Section Header", "Two Content", "Comparison",
+        "Title Only", "Blank", "Content with Caption"]
 
 A = "http://schemas.openxmlformats.org/drawingml/2006/main"
 P = "http://schemas.openxmlformats.org/presentationml/2006/main"
@@ -148,6 +150,62 @@ for ph in layouts["Two Content"].placeholders:
         place(ph, MARGIN, Inches(1.65), half, Inches(4.9))
     elif idx == 2:
         place(ph, MARGIN + half + Inches(0.4), Inches(1.65), half, Inches(4.9))
+
+
+def set_lvl1(ph, size=None, bold=False, colour=None):
+    """Replace a placeholder's list style with one unbulleted first level."""
+    lst = ph._element.find(".//a:lstStyle", NS)
+    for child in list(lst):
+        lst.remove(child)
+    lvl = etree.SubElement(lst, f"{{{A}}}lvl1pPr")
+    lvl.set("marL", "0")
+    lvl.set("indent", "0")
+    etree.SubElement(lvl, f"{{{A}}}buNone")
+    rpr = etree.SubElement(lvl, f"{{{A}}}defRPr")
+    if size:
+        rpr.set("sz", str(int(size * 100)))
+    if bold:
+        rpr.set("b", "1")
+    if colour:
+        fill = etree.SubElement(rpr, f"{{{A}}}solidFill")
+        etree.SubElement(fill, f"{{{A}}}srgbClr").set("val", colour)
+
+
+def inherit_text(ph):
+    """Drop a placeholder's own text style so it takes the master's."""
+    lst = ph._element.find(".//a:lstStyle", NS)
+    for child in list(lst):
+        lst.remove(child)
+    body_pr = ph._element.find(".//a:bodyPr", NS)
+    for attr in list(body_pr.attrib):
+        del body_pr.attrib[attr]
+
+
+# Comparison: a navy heading over each of two columns.
+heading_h = Inches(0.6)
+for ph in layouts["Comparison"].placeholders:
+    idx = ph.placeholder_format.idx
+    left = MARGIN if idx in (1, 2) else MARGIN + half + Inches(0.4)
+    if idx in (1, 3):
+        place(ph, left, Inches(1.65), half, heading_h)
+        set_lvl1(ph, 22, bold=True, colour=NAVY)
+    elif idx in (2, 4):
+        place(ph, left, Inches(1.65) + heading_h + Inches(0.1), half, Inches(4.2))
+        inherit_text(ph)
+
+# Content with Caption: the usual title, text in a narrow left column and the
+# content (often a chart) beside it.
+caption_w = (CONTENT_W - Inches(0.4)) // 3
+for ph in layouts["Content with Caption"].placeholders:
+    idx = ph.placeholder_format.idx
+    if idx == 0:
+        inherit_text(ph)
+    elif idx == 2:
+        place(ph, MARGIN, Inches(1.65), caption_w, Inches(4.9))
+        set_lvl1(ph)
+    elif idx == 1:
+        place(ph, MARGIN + caption_w + Inches(0.4), Inches(1.65), CONTENT_W - caption_w - Inches(0.4), Inches(4.9))
+        inherit_text(ph)
 
 # Title slide and section header: navy background, white title.
 for name in ("Title Slide", "Section Header"):
