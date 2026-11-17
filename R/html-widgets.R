@@ -420,7 +420,42 @@ ggplotly_phw <- function(p, palette) {
       }
     }
   }
-  plotly::ggplotly(p)
+  keys <- unlist(lapply(b$plot$scales$scales, function(s) {
+    if (s$is_discrete() && !any(c("x", "y") %in% s$aesthetics)) as.character(s$get_limits())
+  }))
+  plain_legend(plotly::ggplotly(p), keys)
+}
+
+# ggplotly() names a trace by every discrete legend scale of the plot. A
+# layer without one of them, such as the line next to filled bars, gets its
+# panel number in that place: "(A,1)". Name such a trace by its group, as
+# the static legend does, and show each group in the legend once, by a
+# trace that was named plainly when there is one: a forest plot's points
+# and their shapes rather than the error bars.
+plain_legend <- function(p, keys) {
+  traces <- p$x$data
+  renamed <- logical(length(traces))
+  for (i in seq_along(traces)) {
+    nm <- traces[[i]]$name
+    if (is.null(nm) || !grepl("^\\(.*\\)$", nm)) next
+    inner <- substr(nm, 2, nchar(nm) - 1)
+    core <- sub("(,[0-9]+)+$", "", inner)
+    rest <- strsplit(substring(inner, nchar(core) + 2), ",", fixed = TRUE)[[1]]
+    if (core %in% keys && !any(rest %in% keys)) {
+      traces[[i]]$name <- traces[[i]]$legendgroup <- core
+      renamed[i] <- TRUE
+    }
+  }
+  if (!any(renamed)) return(p)
+  shown <- vapply(traces, function(t) isTRUE(t$showlegend), logical(1))
+  group <- vapply(traces, function(t) t$legendgroup %||% NA_character_, "")
+  for (g in unique(group[renamed])) {
+    idx <- which(group == g & shown)
+    keep <- c(idx[!renamed[idx]], idx)[1]
+    for (i in setdiff(idx, keep)) traces[[i]]$showlegend <- FALSE
+  }
+  p$x$data <- traces
+  p
 }
 
 summary_reactable_args <- function(x) {

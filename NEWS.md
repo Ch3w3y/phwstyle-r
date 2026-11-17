@@ -493,6 +493,11 @@ says what to change.
   the axis title. Other annotations, including the axis titles of a
   faceted ggplot, stay where they are. A bottom margin you set with
   `margin = list(b = )` is kept as the least space under the chart.
+* `phw_plotly()` names the legend of a ggplot the way the static chart
+  does, with one entry per group. Before, a chart with a second layer in
+  the legend, such as `phw_epicurve(average = )` or
+  `phw_forest(target = )`, read "(A,1)" and "(3-week average,1)", and the
+  forest plot listed each group twice.
 * `phw_leaflet_polygons()`, `phw_boundaries()`, `phw_plotly()` and the
   colour key functions check their input first. `phw_boundaries()` checks
   `crs` before downloading anything.
