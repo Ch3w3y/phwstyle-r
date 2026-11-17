@@ -518,6 +518,25 @@ test_that("every renderer stops on duplicated column names", {
   expect_error(phw_write_xlsx(d, withr::local_tempfile(fileext = ".xlsx")), "more than one column named")
 })
 
+test_that("every renderer asks for a data frame when given a table or a matrix", {
+  skip_if_not_installed("flextable")
+  skip_if_not_installed("gt")
+  skip_if_not_installed("reactable")
+  skip_if_not_installed("DT")
+  skip_if_not_installed("openxlsx2")
+  m <- table(c("a", "b", "a"), c("x", "y", "y"))
+  f <- withr::local_tempfile(fileext = ".xlsx")
+  for (x in list(m, unclass(m))) {
+    expect_error(phw_flextable(x), "must be a data frame.*as.data.frame")
+    expect_error(phw_gt(x), "must be a data frame.*as.data.frame")
+    expect_error(phw_reactable(x), "must be a data frame.*as.data.frame")
+    expect_error(phw_datatable(x), "must be a data frame.*as.data.frame")
+    expect_error(phw_write_xlsx(x, f), "must be a data frame.*as.data.frame")
+  }
+  expect_false(file.exists(f))
+  expect_s3_class(phw_flextable(as.data.frame(m)), "flextable")
+})
+
 test_that("phw_datatable rounds and styles columns renamed with a named colnames", {
   skip_if_not_installed("DT")
   renders <- function(w) {
