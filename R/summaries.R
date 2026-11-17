@@ -99,6 +99,7 @@ dplyr_row_slice.phw_summary <- function(data, i, ...) {
 #' if (requireNamespace("flextable", quietly = TRUE)) phw_flextable(tab)
 #' @export
 phw_as_summary <- function(data, row_type = NULL, note = NULL) {
+  check_data_frame(data, "Make a data frame whose first column holds the row labels.")
   row_type <- pick_col(rlang::enquo(row_type), data, "row_type", null_ok = TRUE)
   data <- as.data.frame(data)
   if (is.null(row_type)) {
@@ -254,6 +255,8 @@ phw_summary_table <- function(data, vars = NULL, by = NULL, labels = list(),
                               numeric = c("median_iqr", "mean_sd"), total = TRUE,
                               missing = "Unknown", digits = 1, n_in_header = TRUE,
                               label_header = "Characteristic") {
+  check_data_frame(data, paste("Pass a line list, with one row per record. To show counts you",
+                               "already have, convert them with {.fn as.data.frame} and pass them to {.fn phw_flextable}."))
   percent <- rlang::arg_match(percent)
   numeric <- rlang::arg_match(numeric)
   vars <- pick_cols(rlang::enquo(vars), data, "vars", null_ok = TRUE)
@@ -351,6 +354,7 @@ phw_summary_table <- function(data, vars = NULL, by = NULL, labels = list(),
 phw_crosstab <- function(data, rows, cols, count = NULL,
                          percent = c("none", "row", "column", "total"), totals = TRUE,
                          missing = "Unknown", digits = 1, labels = list()) {
+  check_data_frame(data, "For counts in a {.fn table} or a matrix, pass {.code as.data.frame(as.table(x))} with {.code count = Freq}.")
   percent <- rlang::arg_match(percent)
   rows <- pick_col(rlang::enquo(rows), data, "rows")
   cols <- pick_col(rlang::enquo(cols), data, "cols")

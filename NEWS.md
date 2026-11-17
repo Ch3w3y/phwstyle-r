@@ -508,6 +508,14 @@ says what to change.
   failed with "subscript out of bounds" and `phw_gt()` drew an empty
   table. `phw_datatable()`, which converted them itself, now stops the
   same way.
+* `phw_as_summary()`, `phw_summary_table()`, `phw_crosstab()` and
+  `phw_group_table()` stop when given a `table()` or a matrix and say what
+  to pass instead. Before, `phw_as_summary()` dropped the row names,
+  `phw_summary_table()` counted the cells as records, and `phw_crosstab()`
+  and `phw_group_table()` failed with "Can't select within an unnamed
+  vector". For counts you already have, `phw_crosstab()` takes
+  `as.data.frame(as.table(x))` with `count = Freq`, and `phw_group_table()`
+  takes it with `value = Freq`.
 * `phw_flextable()`, `phw_gt()`, `phw_reactable()`, `phw_datatable()` and
   `phw_write_xlsx()` leave out the geometry of an sf data frame, such as
   `phw_boundaries()` joined to case counts, and show the other columns.
