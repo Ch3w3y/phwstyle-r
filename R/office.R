@@ -848,7 +848,6 @@ fit_table_to_area <- function(ft, width, height, max_grow = 1.6, max_pad = 1.8,
 # charts, pictures and tables get it written onto the shape just added.
 set_slide_alt <- function(x, alt) {
   if (is.null(alt)) return(x)
-  rlang::check_installed("xml2")
   doc <- x$slide$get_slide(x$cursor)$get()
   shapes <- xml2::xml_find_all(doc, "//p:spTree/*[p:nvSpPr or p:nvGrpSpPr or p:nvGraphicFramePr or p:nvPicPr]")
   last <- shapes[[length(shapes)]]
@@ -860,7 +859,6 @@ set_slide_alt <- function(x, alt) {
 # template, so the runs of the cover shape just added get the PHW font, and
 # bold and a size when asked, here.
 set_cover_runs <- function(x, bold = FALSE, size = NULL) {
-  rlang::check_installed("xml2")
   doc <- x$slide$get_slide(x$cursor)$get()
   shapes <- xml2::xml_find_all(doc, "//p:spTree/p:sp")
   font <- phw_font()
@@ -876,7 +874,6 @@ set_cover_runs <- function(x, bold = FALSE, size = NULL) {
 # A text box outside a placeholder doesn't inherit the master's bullets, so
 # the paragraphs of the shape just added get the template's first-level ones.
 set_slide_bullets <- function(x) {
-  rlang::check_installed("xml2")
   doc <- x$slide$get_slide(x$cursor)$get()
   shapes <- xml2::xml_find_all(doc, "//p:spTree/p:sp")
   for (p in xml2::xml_find_all(shapes[[length(shapes)]], ".//a:p")) {
