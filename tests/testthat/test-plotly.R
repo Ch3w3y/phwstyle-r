@@ -409,6 +409,19 @@ test_that("a ggplot's subtitle goes under its title and its caption becomes the 
   expect_match(title_text(untitled), "^<span[^>]*>Wales<br>2026</span>$")
 })
 
+test_that("the top margin makes room for every title line and the facet strips", {
+  g <- ggplot2::ggplot(groups_df, ggplot2::aes(week, cases)) + ggplot2::geom_line() +
+    ggplot2::labs(title = "Cases", subtitle = "Wales")
+  top <- function(p) built(phw_plotly(p))$layout$margin$t
+  faceted <- built(phw_plotly(g + ggplot2::facet_wrap(~group)))$layout
+  strips <- Filter(function(s) identical(s$ysizemode, "pixel"), faceted$shapes)
+  expect_gt(strips[[1]]$y1, 0)
+  expect_equal(faceted$margin$t, top(g) + strips[[1]]$y1)
+  expect_equal(top(g + ggplot2::labs(subtitle = "Wales\n2026")), top(g) + 22)
+  expect_equal(top(g + ggplot2::labs(title = "Cases\nby week")), top(g) + 22)
+  expect_equal(top(g + ggplot2::labs(title = NULL, subtitle = NULL)), top(g) - 22)
+})
+
 test_that("every panel of a subplot() or a faceted ggplot gets the PHW axes", {
   bars <- plotly::plot_ly(data.frame(week = 1:5, rate = 1:5), x = ~week, y = ~rate, type = "bar")
   g <- ggplot2::ggplot(groups_df, ggplot2::aes(week, cases)) + ggplot2::geom_line() +
