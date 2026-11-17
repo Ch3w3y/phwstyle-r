@@ -12,3 +12,4 @@ dev/
 .noodle/
 .obsidian/workspace.json
 .obsidian/workspace-mobile.json
+tests/testthat/_problems/

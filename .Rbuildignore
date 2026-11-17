@@ -24,3 +24,4 @@
 ^brain$
 ^CLAUDE\.md$
 ^\.obsidian$
+^tests/testthat/_problems$

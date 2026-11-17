@@ -672,6 +672,16 @@ test_that("phw_col_rag with data colours only the level rows of a summary table"
   expect_error(phw_col_rag(breaks = c(12, 25), data = 1:3), "must be a data frame")
 })
 
+test_that("phw_col_rag shows a missing value as a blank cell", {
+  skip_if_not_installed("reactable")
+  rag <- phw_col_rag(breaks = c(3, 6))
+  expect_equal(rag$cell(NA, 1, "v"), "")
+  expect_equal(rag$cell(NA_real_, 1, "v"), "")
+  expect_null(rag$style(NA, 1))
+  df <- data.frame(a = c("x", "y"), v = c(NA, NA))
+  expect_s3_class(phw_reactable(df, columns = list(v = phw_col_rag(breaks = c(3, 6)))), "htmlwidget")
+})
+
 test_that("bars cover only the level rows of a summary table", {
   skip_if_not_installed("flextable")
   dat <- data.frame(group = rep(c("A", "B", "C"), times = c(10, 20, 30)),

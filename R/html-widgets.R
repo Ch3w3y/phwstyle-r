@@ -631,6 +631,7 @@ phw_col_rag <- function(breaks, higher_is_better = TRUE, rag_palette = "rag_acce
   reactable::colDef(
     align = "right",
     cell = function(value, index, name) {
+      if (is.na(value)) return("")
       txt <- fmt_num(value, places(name))
       if (coloured(value, index)) paste(shapes[[status(value)]], txt) else txt
     },
