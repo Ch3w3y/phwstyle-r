@@ -21,7 +21,8 @@ says what to change.
 * Text dates must be ISO dates such as `"2026-11-14"`. `phw_epicurve()`,
   `phw_date()` and the caption `date` stop on text such as `"05/01/2026"`
   instead of misreading it, and show how to convert it. `phw_epicurve()`
-  also stops on a numeric date column.
+  also stops on a numeric date column. A blank text date, as `read.csv()`
+  reads an empty cell, counts as a missing date.
 * Rows with a missing date, count, value, estimate or code are left out with
   one message saying how many. Before, they could turn a whole period into 0
   or blank a chart. `phw_crosstab(missing = NULL)` and

@@ -259,6 +259,12 @@ test_that("phw_epicurve says how many rows have no date or fall outside range", 
   expect_equal(sum(p$data$n), 2)
 })
 
+test_that("phw_epicurve leaves out blank text dates as missing", {
+  d <- utils::read.csv(text = "id,onset\n1,2025-01-06\n2,\n3,2025-01-13\n4, ")
+  expect_message(p <- phw_epicurve(d, onset), "Left out 2 rows with a missing value")
+  expect_equal(sum(p$data$n), 2)
+})
+
 test_that("phw_epicurve drops empty groups unless keyed, and refuses negative counts", {
   d <- data.frame(onset = as.Date("2025-01-06") + 0:1,
                   g = factor(c("A", "B"), c("A", "B", "Unused")), n = c(2, 3))
