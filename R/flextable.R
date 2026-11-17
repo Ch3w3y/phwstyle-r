@@ -331,10 +331,12 @@ rag_status <- function(v, breaks, higher_is_better) {
   status[band]
 }
 
-# Colour function for a heat scale. Values beyond `domain` take the end
-# colour, as on a chart with `oob = scales::squish`, so a fixed domain
-# shared across tables never leaves a cell blank.
+# Colour function for a heat scale over the range of `domain`, in any order
+# or pooled from several tables. Values beyond it take the end colour, as on
+# a chart with `oob = scales::squish`, so a fixed domain shared across tables
+# never leaves a cell blank.
 heat_fill <- function(palette, domain) {
+  domain <- range(domain, na.rm = TRUE)
   pal <- scales::col_numeric(seq_cols(palette, FALSE), domain = domain, na.color = "transparent")
   function(v) pal(scales::oob_squish(v, domain))
 }

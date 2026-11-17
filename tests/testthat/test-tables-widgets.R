@@ -711,6 +711,21 @@ test_that("heat values beyond a fixed domain take the end colours", {
   expect_equal(toupper(style(-5, 3)$background), ends[1])
 })
 
+test_that("a heat domain is used as a range, in any order or pooled", {
+  a <- data.frame(x = 1:3, rate = c(45, 120, 88))
+  b <- data.frame(x = 1:2, rate = c(20, 150))
+  pal <- scales::col_numeric(seq_cols("teals", FALSE), domain = c(20, 150))
+  skip_if_not_installed("flextable")
+  bg <- function(ft) unname(ft$body$styles$cells$background.color$data[, "rate"])
+  pooled <- phw_flextable(b) |> phw_flextable_heat(rate, domain = c(a$rate, b$rate))
+  expect_equal(toupper(bg(pooled)), toupper(pal(b$rate)))
+  reversed <- phw_flextable(a) |> phw_flextable_heat(rate, domain = c(150, 20))
+  expect_equal(toupper(bg(reversed)), toupper(pal(a$rate)))
+  skip_if_not_installed("reactable")
+  style <- phw_col_heat(a, rate, domain = c(150, 20))$style
+  expect_equal(toupper(style(45, 1)$background), toupper(pal(45)))
+})
+
 test_that("phw_col_heat follows the table's decimal places", {
   skip_if_not_installed("reactable")
   dat <- data.frame(group = rep(c("A", "B", "C"), times = c(10, 20, 30)),
