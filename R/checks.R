@@ -29,6 +29,7 @@ as_date_col <- function(data, col, arg = col, call = rlang::caller_env()) {
 # Drops rows with a missing value in any of `cols`, or an infinite one in a
 # numeric column, with one message saying how many went. Stops when no row
 # is left, since an empty chart or table would only hide the problem.
+# Column `label` attributes, which `[` drops, are kept for the headings.
 drop_missing <- function(data, cols, call = rlang::caller_env()) {
   bad <- rep(FALSE, NROW(data))
   for (col in cols) {
@@ -42,7 +43,12 @@ drop_missing <- function(data, cols, call = rlang::caller_env()) {
     cli::cli_abort("Every row has a missing value in {.field {cols}}.", call = call)
   }
   cli::cli_inform("{fn}Left out {n} row{?s} with a missing value in {.or {.field {cols}}}.")
-  data[!bad, , drop = FALSE]
+  out <- data[!bad, , drop = FALSE]
+  for (j in seq_along(data)) {
+    label <- attr(data[[j]], "label", exact = TRUE)
+    if (!is.null(label)) attr(out[[j]], "label") <- label
+  }
+  out
 }
 
 check_colours <- function(x, arg, call = rlang::caller_env()) {

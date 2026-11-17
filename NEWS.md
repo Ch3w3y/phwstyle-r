@@ -474,6 +474,9 @@ says what to change.
   failed with "subscript out of bounds" and `phw_gt()` drew an empty
   table. `phw_datatable()`, which converted them itself, now stops the
   same way.
+* `phw_summary_table()`, `phw_crosstab()` and `phw_group_table()` keep
+  the `label` attributes of columns when rows are left out for a missing
+  value. Before, the headings fell back to the column names.
 
 ## Slides and documents
 
