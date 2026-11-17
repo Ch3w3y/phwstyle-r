@@ -35,7 +35,9 @@ populations of different sizes can be compared?}
 level.}
 
 \item{compare}{Optional data frame with the same columns and the same
-two \code{sex} values, drawn as outlines.}
+two \code{sex} values, drawn as outlines. Without \code{value}, it is counted as
+one row per person too, so to compare cases with a population, count
+\code{data} by age and sex first and give \code{value}.}
 
 \item{palette}{Two colours, or a palette name. Name the colours after
 the \code{sex} values, as in \code{c(Female = "#24A2B5", Male = "#285087")}, to

@@ -286,6 +286,10 @@ says what to change.
   each sex could be drawn in the other's colour. Its colours now come from
   `scale_fill_phw_d()`, so a sex value such as "Unknown" is drawn in grey,
   as in the other charts.
+* `phw_pyramid(compare = )` stops when `value` is not given and `compare`
+  has one row per age and sex, as a population table does, and says to
+  count `data` and pass `value`. Before, each row of the population was
+  counted as one person, so every outline was drawn the same size.
 * `phw_pyramid()` shows every level of the `age` factor, so an age band
   with nobody in it stays on the axis as a gap. Before, it was dropped when
   `data` had one row per person, or no row for that band.
