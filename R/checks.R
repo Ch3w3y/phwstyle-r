@@ -19,8 +19,9 @@ check_numeric_col <- function(data, col, arg = col, call = rlang::caller_env()) 
 }
 
 # Dates as Date, POSIXct or ISO 8601 text ("2026-11-14"). Text in another
-# format, such as "14/11/2026", stops instead of being guessed at. NA stays
-# NA. as_date_col() reads a data column, as_date_value() an argument.
+# format, such as "14/11/2026", stops instead of being guessed at. NA and
+# blank text, as read.csv() reads an empty cell, are NA. as_date_col() reads
+# a data column, as_date_value() an argument.
 as_date_col <- function(data, col, arg = col, call = rlang::caller_env()) {
   as_date_value(data[[col]], arg = arg, call = call)
 }
@@ -63,6 +64,7 @@ as_date_value <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_en
   if (is.logical(x) && all(is.na(x))) return(as.Date(x))
   if (is.character(x) || is.factor(x)) {
     x <- as.character(x)
+    x[!is.na(x) & trimws(x) == ""] <- NA
     iso <- !is.na(x) & grepl("^\\d{4}-\\d{2}-\\d{2}", x)
     out <- as.Date(ifelse(iso, substr(x, 1, 10), NA_character_), format = "%Y-%m-%d", optional = TRUE)
     bad <- !is.na(x) & is.na(out)

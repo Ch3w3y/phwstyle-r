@@ -9,6 +9,8 @@ test_that("dates are read only from Date, POSIXct or ISO text", {
   expect_equal(as_date_col(d, "when"), as.Date(c("2026-11-14", NA, "2026-11-15")))
   expect_equal(as_date_col(data.frame(when = as.POSIXct("2026-11-14 23:30", tz = "UTC")), "when"),
                as.Date("2026-11-14"))
+  expect_equal(as_date_col(data.frame(when = c("2026-11-14", "", "  ")), "when"),
+               as.Date(c("2026-11-14", NA, NA)))
   expect_error(as_date_col(data.frame(when = "05/01/2026"), "when"), "05/01/2026")
   expect_error(as_date_col(data.frame(when = 1:2), "when"), "must be a Date, a date-time or ISO text")
 })
