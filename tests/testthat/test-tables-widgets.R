@@ -260,6 +260,14 @@ test_that("every renderer shows years without a thousands separator", {
   expect_equal(cells$format[cells$ref %in% c("A2", "B2", "C2")], c("0", "0", "#,##0"))
 })
 
+test_that("phw_write_xlsx writes a missing summary row label as an empty cell", {
+  skip_if_not_installed("openxlsx2")
+  f <- withr::local_tempfile(fileext = ".xlsx")
+  phw_write_xlsx(phw_as_summary(data.frame(lab = c("A", NA), n = 1:2)), f)
+  got <- openxlsx2::read_xlsx(f, col_names = FALSE)
+  expect_equal(got[[1]], c("lab", "    A", NA))
+})
+
 test_that("phw_write_xlsx writes dates in ISO format", {
   skip_if_not_installed("openxlsx2")
   f <- withr::local_tempfile(fileext = ".xlsx")
