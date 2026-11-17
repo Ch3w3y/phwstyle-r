@@ -316,6 +316,76 @@ test_that("a phw_flextable caption in a PDF document is numbered once", {
   expect_false(any(grepl("\\caption{", tex, fixed = TRUE) | grepl("\\caption[]{", tex, fixed = TRUE)))
 })
 
+board_table_rmd <- function(dir) {
+  rmd <- file.path(dir, "boards.Rmd")
+  writeLines(c("---", "title: Tables", "---", "",
+               "```{r, echo = FALSE}",
+               "boards <- c('Aneurin Bevan', 'Betsi Cadwaladr', 'Cardiff and Vale', 'Cwm Taf Morgannwg',",
+               "            'Hywel Dda', 'Powys', 'Swansea Bay')",
+               "ll <- data.frame(age = rep(c('0-4', '5-14', '15-44', '45-64', '65+'), length.out = 700),",
+               "                 board = rep(boards, each = 100), sex = rep(c('Female', 'Male'), 350))",
+               "phwstyle::phw_flextable(phwstyle::phw_summary_table(ll, vars = c(age, sex), by = board))",
+               "```", "", "Text.", "",
+               "```{r, echo = FALSE}",
+               "phwstyle::phw_flextable(head(mtcars[, 1:4]))",
+               "```"), rmd)
+  rmd
+}
+
+test_that("a table by health board fits the page width of a Word document", {
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("flextable")
+  skip_if_not(rmarkdown::pandoc_available(), "pandoc is not available")
+  local_ggplot_state()
+  dir <- withr::local_tempdir()
+  docx <- rmarkdown::render(board_table_rmd(dir), phw_word_document(), quiet = TRUE)
+  ref <- xml2::read_xml(unz(phw_reference_docx(), "word/document.xml"))
+  twips <- function(node, attr) as.numeric(xml2::xml_attr(xml2::xml_find_first(ref, node), attr))
+  text_width <- twips("//w:sectPr/w:pgSz", "w") - twips("//w:sectPr/w:pgMar", "left") -
+    twips("//w:sectPr/w:pgMar", "right")
+  doc <- xml2::read_xml(unz(docx, "word/document.xml"))
+  grids <- lapply(xml2::xml_find_all(doc, "//w:tbl/w:tblGrid"), function(g) {
+    as.numeric(xml2::xml_attr(xml2::xml_find_all(g, "w:gridCol"), "w"))
+  })
+  expect_length(grids, 2)
+  # Each column's width is rounded to a whole twip.
+  expect_lte(sum(grids[[1]]), text_width + length(grids[[1]]))
+  # A table that already fits keeps the widths it was given.
+  small <- phw_flextable(head(mtcars[, 1:4]))
+  expect_equal(grids[[2]] / 1440, small$body$colwidths, tolerance = 0.01, ignore_attr = TRUE)
+})
+
+test_that("a table by health board fits the text width of a PDF document", {
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("flextable")
+  skip_if_not(rmarkdown::pandoc_available(), "pandoc is not available")
+  local_ggplot_state()
+  dir <- withr::local_tempdir()
+  tex <- rmarkdown::render(board_table_rmd(dir), phw_pdf_document(), output_file = "boards.tex", quiet = TRUE)
+  tex <- paste(readLines(tex, warn = FALSE), collapse = "\n")
+  specs <- regmatches(tex, gregexpr("\\\\begin\\{longtable\\}\\[[a-z]\\]\\{[^\n]*\\}", tex))[[1]]
+  widths <- lapply(specs, function(s) as.numeric(regmatches(s, gregexpr("(?<=p\\{)[0-9.]+(?=in\\})", s, perl = TRUE))[[1]]))
+  expect_length(widths, 2)
+  sep <- as.numeric(regmatches(tex, regexpr("(?<=\\\\setlength\\{\\\\tabcolsep\\}\\{)[0-9.]+(?=pt\\})", tex, perl = TRUE)))
+  # A4 less the 2 cm side margins; LaTeX adds \tabcolsep either side of each column.
+  used <- sum(widths[[1]]) + length(widths[[1]]) * 2 * sep / 72
+  expect_lte(used, 170 / 25.4 + 0.02)
+})
+
+test_that("a table too wide for the page even with its text wrapped gives a warning", {
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("flextable")
+  wide <- as.data.frame(matrix(1000000, 2, 14, dimnames = list(NULL, paste0("Unbreakable", 1:14))))
+  ft <- phw_flextable(wide)
+  withr::local_options(knitr.in.progress = TRUE)
+  old <- knitr::opts_knit$get("rmarkdown.pandoc.to")
+  knitr::opts_knit$set(rmarkdown.pandoc.to = "docx")
+  withr::defer(knitr::opts_knit$set(rmarkdown.pandoc.to = old))
+  expect_warning(knitr::knit_print(ft), "too wide for the page")
+})
+
 test_that("a Quarto PDF colours its links in PHW navy and blue", {
   skip_on_cran()
   quarto <- Sys.which("quarto")

@@ -570,6 +570,12 @@ says what to change.
   and HTML: "Table 1 Counts by board", or no number when you give none.
   Before, LaTeX added its own label, giving "Table 1. Table 1 Counts by
   board".
+* In a Word or PDF document, a `phw_flextable()` table wider than the page
+  now fits the text width. Its headings wrap first, then its cells, and its
+  text shrinks to no less than 8 pt if the words alone are still too wide.
+  A table that cannot fit even then gives a warning. Before, a summary
+  table or cross-tab by the seven health boards ran past the right margin
+  and lost its last columns.
 * On the title slide and section header of your own template,
   `phw_add_slide()` gives `text` the template's colour and size, and the
   source line is white only when the slide background is dark. Before, both
