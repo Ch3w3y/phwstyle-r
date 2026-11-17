@@ -26,7 +26,8 @@ phw_finalise(
 figure, or any grob or gtable (e.g. from \code{\link[gridExtra:arrangeGrob]{gridExtra::arrangeGrob()}}).}
 
 \item{source, date}{Passed to \code{\link[=phw_caption]{phw_caption()}}. Leave both \code{NULL} to keep
-any caption already on the plot.}
+any caption already on the plot. A \code{note} given in \code{...} is then added
+under it.}
 
 \item{logo}{Logo variant (see \code{\link[=phw_logo]{phw_logo()}}), a path to your own PNG, or
 \code{FALSE} for none. When no PHW logo is installed, \code{org} is written in its

@@ -100,6 +100,27 @@ test_that("phw_finalise can put the logo on the right with no rule", {
   expect_true("phw-footer" %in% f$layout$name)
 })
 
+test_that("phw_finalise adds a note under the caption already on the plot", {
+  library(ggplot2)
+  footer_label <- function(fp) {
+    fp$grobs[[which(fp$layout$name == "phw-footer")]]$children$text$label
+  }
+  p <- ggplot(mtcars, aes(wt, mpg)) + geom_point() +
+    labs(caption = phw_caption("Example system"))
+  expect_equal(footer_label(phw_finalise(p, note = "Provisional figures", logo = FALSE)),
+               "Source: Example system\nProvisional figures")
+  expect_equal(footer_label(phw_finalise(p, note = "Provisional", sep = " | ", team = "CDSC", logo = FALSE)),
+               "Source: Example system | Provisional\nCDSC")
+  expect_equal(footer_label(phw_finalise(p, source = "New", note = "Provisional", logo = FALSE)),
+               "Source: New\nProvisional")
+  bare <- ggplot(mtcars, aes(wt, mpg)) + geom_point()
+  expect_equal(footer_label(phw_finalise(bare, note = "Provisional", logo = FALSE)), "Provisional")
+  skip_if_not_installed("patchwork")
+  pw <- phw_arrange(bare, bare, source = "S")
+  expect_equal(footer_label(phw_finalise(pw, note = "Provisional", logo = FALSE)),
+               "Source: S\nProvisional")
+})
+
 test_that("theme_phw takes overrides and extra options", {
   library(ggplot2)
   th <- theme_phw(legend = c(0.9, 0.9), grid_minor = TRUE, axis_ticks = TRUE,
