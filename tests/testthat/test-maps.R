@@ -88,6 +88,16 @@ test_that("areas without data are drawn in the NA colour", {
   expect_no_error(ggplot2::ggplot_build(p))
 })
 
+test_that("an area held as several rows in level is filled in every part", {
+  areas <- tiny_areas()
+  areas$code[4] <- "A2"
+  p <- phw_map(data.frame(area = c("A1", "A2"), rate = c(10, 20)), by = area, fill = rate, level = areas)
+  expect_equal(nrow(ggplot2::layer_data(p, 1)), 3)
+  expect_equal(nrow(p$data), 2)
+  expect_equal(sf::st_area(p$data), c(1, 2))
+  expect_equal(plot_labs(p)$caption, wrap_caption("Boundaries: test source"))
+})
+
 test_that("each facet panel draws every area, in the NA colour where it has no data", {
   areas <- tiny_areas()
   d <- data.frame(area = c("A1", "A2", "A3", "A4", "A1", "A2"), yr = c(1, 1, 1, 1, 2, 2), v = 1:6)

@@ -181,6 +181,10 @@ says what to change.
 
 ## Charts and maps
 
+* `phw_map()` fills every part of an area when `level` is an sf data frame
+  that holds the area as several rows, one per island or part, as some
+  boundary files do. Before, only the first part took the area's colour and
+  the others were drawn grey, as areas with no data.
 * `phw_map()` follows the settings given to `use_phw_ggplot()`, such as
   `base_size = 14` or `accessible = TRUE`, as the other ready-made charts
   do. Before, maps always used the `theme_phw_map()` defaults, so in a report

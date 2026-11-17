@@ -32,7 +32,8 @@ binned scale; text and factors get distinct colours.}
 
 \item{level}{A boundary level for \code{\link[=phw_boundaries]{phw_boundaries()}} such as
 \code{"local_authority"}, or an sf data frame with \code{code} and \code{name} columns
-that you have already loaded.}
+that you have already loaded. An area held as several rows, one per
+island or part, is drawn as one area.}
 
 \item{bins}{Breaks for numeric \code{fill}, or a single number of bins (2 or
 more). \code{bins = 2} splits the areas at a tidy number near the median. Not
