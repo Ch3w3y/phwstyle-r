@@ -44,7 +44,11 @@ or \code{Blwyddyn}. These show as 2021, not 2,021.}
 \item{col_labels}{Optional named list of display names, as in
 \code{\link[flextable:set_header_labels]{flextable::set_header_labels()}}.}
 
-\item{autofit}{Fit column widths to their content?}
+\item{autofit}{Fit column widths to their content? In a Word or PDF
+document, a table wider than the page is narrowed to fit the text width
+either way: its headings wrap first, then its cells, and its text
+shrinks to no less than 8 pt if the words alone are still too wide. A
+table that cannot fit even then gives a warning.}
 
 \item{number_prefix}{Word before the number.}
 

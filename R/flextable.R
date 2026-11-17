@@ -143,7 +143,11 @@ align_by_type <- function(ft) {
 #'   or `Blwyddyn`. These show as 2021, not 2,021.
 #' @param col_labels Optional named list of display names, as in
 #'   [flextable::set_header_labels()].
-#' @param autofit Fit column widths to their content?
+#' @param autofit Fit column widths to their content? In a Word or PDF
+#'   document, a table wider than the page is narrowed to fit the text width
+#'   either way: its headings wrap first, then its cells, and its text
+#'   shrinks to no less than 8 pt if the words alone are still too wide. A
+#'   table that cannot fit even then gives a warning.
 #' @param ... Passed to [phw_flextable_theme()].
 #' @return A flextable.
 #' @examples
@@ -182,7 +186,6 @@ phw_flextable <- function(data, caption = NULL, number = NULL, source = NULL,
                                  color = phw_colours[["navy"]], font.size = 11))),
       fp_p = officer::fp_par(text.align = "left", padding.bottom = 4),
       align_with_table = FALSE)
-    class(ft) <- c("phw_flextable", class(ft))
   }
   cap <- caption_from(source, date, caption_args)
   if (!is.null(cap)) {
@@ -194,6 +197,7 @@ phw_flextable <- function(data, caption = NULL, number = NULL, source = NULL,
     ft <- flextable::align(ft, i = k, align = "right", part = "footer")
   }
   if (autofit) ft <- flextable::autofit(ft)
+  class(ft) <- c("phw_flextable", class(ft))
   ft
 }
 
@@ -201,9 +205,70 @@ phw_flextable <- function(data, caption = NULL, number = NULL, source = NULL,
 # unnumbered \caption* rather than one LaTeX labels "Table N." again.
 #' @exportS3Method knitr::knit_print
 knit_print.phw_flextable <- function(x, ...) {
+  if (knitr::pandoc_to("docx")) x <- fit_table_to_width(x, page_text_width)
+  if (knitr::is_latex_output()) {
+    # LaTeX adds \tabcolsep points either side of each column's width.
+    sep <- knitr::opts_current$get("ft.tabcolsep") %||% x$properties$opts_pdf$tabcolsep
+    x <- fit_table_to_width(x, page_text_width - length(x$col_keys) * 2 * sep / 72)
+  }
   out <- NextMethod()
   if (knitr::is_latex_output()) out[] <- gsub("\\\\caption(\\[\\])?\\{", "\\\\caption*{", out)
   out
+}
+
+# A4 less the 2 cm side margins of the PHW Word reference document and PDF
+# format, in inches.
+page_text_width <- (210 - 2 * 20) / 25.4
+
+# Narrows a table wider than `width` by letting its text wrap at spaces: the
+# headings first, then the body cells. Each column gives up a share of the
+# width it can lose, and keeps at least its widest word. If the words alone
+# are too wide, the text shrinks as well, down to `min_size` points for the
+# largest text, as on slides.
+fit_table_to_width <- function(ft, width, min_size = 8) {
+  if (sum(ft$body$colwidths) <= width) return(ft)
+  parts <- c("header", "body", "footer")
+  wrapped <- function(ft, parts) {
+    for (part in parts) {
+      ft[[part]]$content$data[] <- lapply(ft[[part]]$content$data, function(chunks) {
+        chunks$txt <- gsub(" ", "\n", chunks$txt, fixed = TRUE)
+        chunks
+      })
+    }
+    flextable::dim_pretty(ft)$widths
+  }
+  steps <- list(flextable::dim_pretty(ft)$widths, wrapped(ft, "header"), wrapped(ft, parts))
+  fits <- which(vapply(steps, sum, numeric(1)) <= width)
+  if (length(fits)) {
+    k <- fits[1]
+    widths <- if (k == 1) steps[[1]] else squeeze(steps[[k - 1]], steps[[k]], width)
+    return(flextable::width(ft, j = seq_along(widths), width = widths))
+  }
+  resize <- function(ft, scale) {
+    for (part in parts) ft[[part]]$styles$text$font.size$data[] <- ft[[part]]$styles$text$font.size$data * scale
+    ft
+  }
+  largest <- max(unlist(lapply(parts, function(part) ft[[part]]$styles$text$font.size$data)), na.rm = TRUE)
+  least <- min(min_size / largest, 1)
+  smallest <- sum(wrapped(resize(ft, least), parts))
+  if (smallest > width) {
+    cli::cli_warn(c("The table's {length(ft$col_keys)} columns are too wide for the page, even with their text wrapped and at {min_size} pt, so the table runs past the margin.",
+                    i = "Show fewer columns, or split the table in two."))
+    scale <- least
+  } else {
+    # Column widths are linear in the text size, so the size that fits is
+    # read off the widths at full and smallest size.
+    full <- sum(steps[[3]])
+    scale <- 1 - (1 - least) * (full - width) / (full - smallest)
+  }
+  ft <- resize(ft, scale)
+  widths <- wrapped(ft, parts)
+  flextable::width(ft, j = seq_along(widths), width = widths)
+}
+
+# Widths between `wide` and `narrow` that add up to `width`.
+squeeze <- function(wide, narrow, width) {
+  narrow + (wide - narrow) * (width - sum(narrow)) / (sum(wide) - sum(narrow))
 }
 
 #' Set PHW defaults for every new flextable
