@@ -11,7 +11,7 @@ test_that("graphics and reference document are available", {
 test_that("the reference document has no text for officer to keep", {
   skip_if_not_installed("officer")
   doc <- officer::read_docx(phw_reference_docx())
-  expect_equal(nrow(officer::docx_summary(doc)), 0)
+  expect_equal(NROW(officer::docx_summary(doc)), 0L)
   doc <- officer::body_add_par(doc, "My report", style = "Heading 1")
   out <- withr::local_tempfile(fileext = ".docx")
   print(doc, target = out)
