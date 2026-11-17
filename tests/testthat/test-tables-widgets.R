@@ -851,3 +851,32 @@ test_that("every renderer leaves out the geometry of a map's data", {
   expect_no_warning(phw_write_xlsx(list(map = s, plain = sf::st_drop_geometry(s)), f))
   expect_equal(names(openxlsx2::read_xlsx(f, sheet = "map")), shown)
 })
+
+test_that("every renderer shows a difftime as a plain number, with missing values blank", {
+  d <- data.frame(patient = paste0("P", 1:3),
+                  los = as.Date(c("2026-01-05", NA, "2026-02-20")) - as.Date("2026-01-01"))
+  shown <- c(4, NA, 50)
+  skip_if_not_installed("flextable")
+  ft <- phw_flextable(d)
+  body <- function(info) info[info$.part == "body" & info$.col_id == "los", ]
+  expect_equal(body(flextable::information_data_chunk(ft))$txt, c("4", "", "50"))
+  expect_equal(unique(body(flextable::information_data_paragraph(ft))$text.align), "right")
+  skip_if_not_installed("gt")
+  g <- phw_gt(d)
+  expect_equal(gt::extract_body(g)$los, c("4", "<br />", "50"))
+  expect_equal(g[["_boxhead"]]$column_align[g[["_boxhead"]]$var == "los"], "right")
+  skip_if_not_installed("reactable")
+  cols <- phw_reactable(d)$x$tag$attribs$columns
+  expect_equal(cols[[2]]$type, "numeric")
+  skip_if_not_installed("DT")
+  dt <- phw_datatable(d)
+  expect_identical(dt$x$data$los, shown)
+  right <- Filter(function(def) identical(def$className, "dt-right"), dt$x$options$columnDefs)
+  expect_true(1 %in% unlist(lapply(right, `[[`, "targets")))
+  d$admitted <- structure(c(30600, 3600, NA), units = "secs", class = c("hms", "difftime"))
+  expect_s3_class(phw_datatable(d)$x$data$admitted, "hms")
+  skip_if_not_installed("openxlsx2")
+  f <- withr::local_tempfile(fileext = ".xlsx")
+  phw_write_xlsx(d, f)
+  expect_equal(openxlsx2::read_xlsx(f)$los, shown)
+})
