@@ -74,6 +74,8 @@ print(deck, target = "slides.pptx")
 - `"Section Header"` shows the title on navy, for the start of a section.
 - `"Title Only"` and `"Blank"` leave room for your own content.
 - `"Two Content"` has two body areas, and `phw_add_slide()` fills the first.
+- `"Comparison"` has two body areas with a heading over each.
+- `"Content with Caption"` has a body area with a narrow text box beside it.
 
 ### Charts and tables
 

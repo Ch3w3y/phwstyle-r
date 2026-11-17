@@ -493,6 +493,12 @@ says what to change.
 
 ## Slides and documents
 
+* The PowerPoint template from `phw_reference_pptx()`, used by `phw_pptx()`
+  and the Quarto `phw-pptx` format, now has Comparison and Content with
+  Caption layouts. pandoc uses these for a slide with text followed by a
+  chart, and for two columns that hold text and a chart. Before, those
+  slides fell back to pandoc's own plain layout, with a small unstyled
+  title.
 * A grey PNG logo with transparency now works like a colour one in
   `phw_finalise()`, `phw_word_document()`, `phw_pdf_document()`,
   `phw_latex_header()`, `phw_reference_docx()` and `use_phw_quarto()`.

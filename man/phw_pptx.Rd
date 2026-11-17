@@ -60,6 +60,10 @@ template has these layouts:
 \item \code{"Title and Content"} (the default): one chart, table or text.
 \item \code{"Two Content"}: two side by side. With one, it goes on the left.
 With two, the first of \code{plot}, \code{table} and \code{text} goes on the left.
+\item \code{"Comparison"}: two side by side, under a heading on each side.
+The headings stay empty for you to fill in.
+\item \code{"Content with Caption"}: one chart, table or text on the right, with
+a narrow text box on the left that stays empty for you to fill in.
 \item \code{"Title Only"}: one chart, table or text in the space below the
 title.
 \item \code{"Blank"}: one chart, table or text filling the slide. It has no

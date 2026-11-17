@@ -153,9 +153,19 @@ test_that("a deck built with all defaults uses the PHW master and layouts", {
   expect_equal(length(saved), 4)
   expect_equal(unique(officer::layout_summary(saved)$master), "PHW")
   expect_setequal(officer::layout_summary(saved)$layout,
-                  c("Title Slide", "Title and Content", "Section Header", "Two Content", "Title Only", "Blank"))
+                  c("Title Slide", "Title and Content", "Section Header", "Two Content", "Comparison",
+                    "Title Only", "Blank", "Content with Caption"))
   expect_equal(unname(unlist(officer::slide_size(saved))), c(13.333, 7.5), tolerance = 1e-3)
   expect_equal(officer::pptx_summary(saved)$text[1], "Title")
+})
+
+test_that("phw_reference_pptx has every layout pandoc uses", {
+  skip_if_not_installed("officer")
+  deck <- officer::read_pptx(phw_reference_pptx())
+  pandoc <- c("Title Slide", "Title and Content", "Section Header", "Two Content",
+              "Comparison", "Content with Caption", "Blank")
+  expect_equal(setdiff(pandoc, officer::layout_summary(deck)$layout), character())
+  expect_equal(unique(officer::layout_summary(deck)$master), "PHW")
 })
 
 test_that("phw_reference_pptx writes the template and stays small", {

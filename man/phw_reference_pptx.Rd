@@ -16,7 +16,9 @@ A file path.
 The template behind \code{\link[=phw_pptx]{phw_pptx()}} and the Quarto \code{phw-pptx} format: 16:9,
 Ubuntu text (named, not embedded), navy titles, PHW theme colours and the
 layouts Title Slide, Title and Content, Section Header, Two Content,
-Title Only and Blank, all in one slide master called \code{"PHW"}. Use it with
+Comparison, Title Only, Blank and Content with Caption, all in one slide
+master called \code{"PHW"}. These include every layout pandoc uses, so all
+slides from Quarto or R Markdown take the PHW style. Use it with
 any tool that takes a PowerPoint template. Examples are
 \code{officer::read_pptx(phw_reference_pptx())} or \verb{reference-doc:} in Quarto.
 }
