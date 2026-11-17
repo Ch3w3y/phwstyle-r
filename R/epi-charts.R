@@ -235,7 +235,9 @@ phw_epicurve <- function(data, date, group = NULL, count = NULL,
 #' @param left Which `sex` value goes on the left. Defaults to the first
 #'   level.
 #' @param compare Optional data frame with the same columns and the same
-#'   two `sex` values, drawn as outlines.
+#'   two `sex` values, drawn as outlines. Without `value`, it is counted as
+#'   one row per person too, so to compare cases with a population, count
+#'   `data` by age and sex first and give `value`.
 #' @param palette Two colours, or a palette name. Name the colours after
 #'   the `sex` values, as in `c(Female = "#24A2B5", Male = "#285087")`, to
 #'   choose which sex takes which colour.
@@ -291,6 +293,10 @@ phw_pyramid <- function(data, age, sex, value = NULL, percent = FALSE, left = NU
   if (!is.null(compare)) {
     gone <- setdiff(c(age, sex, value), names(compare))
     if (length(gone)) cli::cli_abort("{.arg compare} has no {.field {gone}} column{?s}, which {.arg data} has.")
+    if (is.null(value) && !anyDuplicated(as.data.frame(compare)[c(age, sex)])) {
+      cli::cli_abort(c("{.arg compare} has one row per {.field {age}} and {.field {sex}}, so it looks like counts.",
+                       i = "Count {.arg data} by {.field {age}} and {.field {sex}} and pass {.arg value}, with a column of the same name in {.arg compare}."))
+    }
     cd <- prep(compare, "compare")
     other <- setdiff(cd$sex, sexes)
     if (length(other)) {

@@ -382,6 +382,14 @@ test_that("phw_pyramid checks data and compare at entry", {
                "same sex values")
 })
 
+test_that("phw_pyramid stops when a population compare would be counted as people", {
+  people <- pyr[rep(seq_len(nrow(pyr)), pyr$n), c("age", "sex")]
+  expect_error(phw_pyramid(people, age, sex, percent = TRUE, compare = pyr), "looks like counts")
+  p <- phw_pyramid(people, age, sex, percent = TRUE, compare = people[people$age == "40+" | people$sex == "Male", ])
+  outline <- ggplot2::ggplot_build(p)$data[[2]]
+  expect_equal(sort(outline$xmax - outline$xmin), 100 * c(20, 30, 40) / 90)
+})
+
 fun <- data.frame(u = letters[1:6], n = c(500, 800, 1000, 1500, 2000, 3000), e = c(40, 90, 100, 160, 190, 330))
 
 test_that("phw_funnel leaves out unusable rows and stops when the target is 0", {
