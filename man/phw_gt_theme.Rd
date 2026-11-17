@@ -52,7 +52,11 @@ levels and header spanners, as in \code{\link[=phw_flextable]{phw_flextable()}}.
 \item{source, date}{Passed to \code{\link[=phw_caption]{phw_caption()}} and shown under the table.}
 
 \item{digits}{Decimal places for non-integer numbers. Defaults to the
-\code{digits} of a \code{\link[=phw_group_table]{phw_group_table()}}, or 1.}
+\code{digits} of a \code{\link[=phw_group_table]{phw_group_table()}}, or 1.
+Whole numbers show with a thousands separator, except in a year
+column: whole numbers from 1800 to 2200 in a column whose name has the
+word "year", "yr" or "blwyddyn" in it, such as \code{Year}, \code{year_of_onset}
+or \code{Blwyddyn}. These show as 2021, not 2,021.}
 
 \item{number_prefix}{Word before the number.}
 

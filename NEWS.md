@@ -391,6 +391,11 @@ says what to change.
   set by its `digits`, unless you give them their own `digits`. Before,
   `digits` was ignored without `percent`, so `fun = mean` values showed
   with one decimal place.
+* `phw_flextable()`, `phw_gt()`, `phw_reactable()`, `phw_datatable()` and
+  `phw_write_xlsx()` show a year column without a thousands separator, as
+  2021, not 2,021. A year column holds whole numbers from 1800 to 2200 and
+  has the word "year", "yr" or "blwyddyn" in its name, such as `Year`,
+  `year_of_onset` or `Blwyddyn`. Other numbers keep their separator.
 * `phw_summary_table()` shows a blank, not "( to )", when a statistic can't
   be calculated, and `labels` can be a named character vector.
 * Filtering the rows of a summary, cross-tab or group table, or selecting

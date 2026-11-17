@@ -5,6 +5,8 @@
 - **openxlsx2 `wb_add_font()` defaults `size` to 11.** Pass the size every time, or bold rows come out larger than the 10pt body.
 - **One row model for all renderers.** `summary_rows()` in R/summaries.R decides shading, bold, italic, navy, rules and indents for every summary and group row. Change the look there, not in one renderer, so the five stay the same.
 - **One header model too.** `summary_header()` in R/office.R gives the spanner or the upper header levels as runs, with a `total` flag for grand total columns. DT, xlsx, gt and reactable hide a total's upper labels. flextable keeps them so `merge_v()` joins the total into one tall cell.
+- **One number-format rule too.** `year_cols()` in R/labels.R marks year columns (whole numbers 1800 to 2200, name with "year", "yr" or "blwyddyn"), which every renderer shows without a thousands separator. A new per-column format belongs beside it, not in one renderer.
+- **flextable `colformat_double()` skips integer columns.** `2021:2024` is integer, so use `colformat_num()` to reach both types. Mask a subset as `is_int & !is_year` at each call: overwriting `is_int` sends the subset into the `!is_int` decimal branch.
 - **Red, amber, green:** `rag_status()` in R/flextable.R classifies values for `phw_flextable_heat()` and `phw_col_rag()`.
 - **Shading rule:** shade variable and group rows when `attr(x, "highlight") %||% TRUE`.
 - To compare all five renderers by eye, render the same inputs through each one and montage the screenshots: HTML via headless Firefox, docx and xlsx via the `phw-lo-writer` image ([[codebase/render-pptx-with-libreoffice]]).
