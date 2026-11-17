@@ -24,7 +24,8 @@ names such as \code{c(rate, cases)}, positions such as \code{2:5}, or strings.}
 colours, \code{"rag"} or \code{"rag_accessible"} (navy instead of green).}
 
 \item{domain}{Range of values the palette spans. Defaults to the range of
-the coloured cells.}
+the coloured cells. Set it to keep one scale across several tables:
+values beyond it take the colour at the nearer end.}
 
 \item{breaks}{For \code{palette = "rag"}: two cut points (red below the first,
 green at or above the second).}

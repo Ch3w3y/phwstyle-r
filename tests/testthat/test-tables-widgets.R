@@ -698,6 +698,19 @@ test_that("phw_col_heat colours only the level rows of a summary table", {
   expect_equal(toupper(style(ct$x[3], 3)$background), toupper(top))
 })
 
+test_that("heat values beyond a fixed domain take the end colours", {
+  r <- data.frame(area = c("A", "B", "C", "D"), rate = c(45, 120, -5, NA))
+  ends <- toupper(seq_cols("teals", FALSE)[c(1, length(seq_cols("teals", FALSE)))])
+  skip_if_not_installed("flextable")
+  ft <- expect_no_warning(phw_flextable(r) |> phw_flextable_heat(rate, domain = c(0, 100)))
+  bg <- unname(ft$body$styles$cells$background.color$data[, "rate"])
+  expect_equal(bg[2:4], c(ends[2], ends[1], "transparent"))
+  skip_if_not_installed("reactable")
+  style <- phw_col_heat(r, rate, domain = c(0, 100))$style
+  expect_equal(toupper(expect_no_warning(style(120, 2))$background), ends[2])
+  expect_equal(toupper(style(-5, 3)$background), ends[1])
+})
+
 test_that("phw_col_heat follows the table's decimal places", {
   skip_if_not_installed("reactable")
   dat <- data.frame(group = rep(c("A", "B", "C"), times = c(10, 20, 30)),

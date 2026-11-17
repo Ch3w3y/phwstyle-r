@@ -635,7 +635,7 @@ summary_reactable_args <- function(x) {
 #' @param colour Bar colour.
 #' @param palette Palette name or vector of colours.
 #' @param domain Range for the heat colours. Defaults to the range of the
-#'   coloured cells.
+#'   coloured cells. Values beyond it take the colour at the nearer end.
 #' @param breaks,higher_is_better See [phw_flextable_heat()].
 #' @param rag_palette `"rag"` or `"rag_accessible"`.
 #' @param digits Decimal places. Heat and RAG columns follow the table by
@@ -688,8 +688,7 @@ phw_col_heat <- function(data, column, palette = "teals", domain = NULL, digits 
   fmt <- reactable::colFormat(separators = TRUE, digits = digits)
   rows <- heat_rows(data)
   if (!length(value_cols(data[rows, , drop = FALSE], column, "column"))) return(reactable::colDef(format = fmt, ...))
-  domain <- domain %||% range(data[[column]][rows], na.rm = TRUE)
-  fill <- scales::col_numeric(seq_cols(palette, FALSE), domain = domain, na.color = "transparent")
+  fill <- heat_fill(palette, domain %||% range(data[[column]][rows], na.rm = TRUE))
   reactable::colDef(
     format = fmt,
     style = function(value, index) {
