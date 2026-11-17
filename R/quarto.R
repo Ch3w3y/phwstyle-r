@@ -115,12 +115,17 @@ build_quarto_extension <- function(dest) {
   phw_reference_pptx(file.path(dest, "phw-reference.pptx"))
   writeLines(html_band(), file.path(dest, "phw-band.html"))
 
-  # Logos: real files if available, otherwise blank placeholders so the
+  # Logos: the SVG, or an SVG showing the PNG, or else blank placeholders so the
   # Typst, LaTeX, dashboard and slide formats still render.
   for (v in c("white", "blue")) {
     svg <- phw_logo(v, "svg")
+    png <- phw_logo(v, "png")
     out <- file.path(dest, sprintf("phw-logo-%s.svg", v))
-    if (is.null(svg)) writeLines(blank_svg, out) else file.copy(svg, out, overwrite = TRUE)
+    if (!is.null(svg)) {
+      file.copy(svg, out, overwrite = TRUE)
+    } else {
+      writeLines(if (is.null(png)) blank_svg else png_logo_svg(png), out)
+    }
   }
   png_logo <- phw_logo("white", "png")
   out <- file.path(dest, "phw-logo-white.png")

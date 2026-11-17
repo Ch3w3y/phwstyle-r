@@ -10,7 +10,8 @@ phw_has_logo()
 \code{TRUE} or \code{FALSE}.
 }
 \description{
-Does phwstyle have a PHW logo to use?
+Every output can use a PNG logo, so this is \code{TRUE} when the white logo is
+available as a PNG. HTML outputs use the SVG instead when there is one.
 }
 \examples{
 phw_has_logo()

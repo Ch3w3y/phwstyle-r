@@ -95,3 +95,37 @@ test_that("a grey + alpha PNG logo draws like an RGBA one", {
   # The logo is drawn in its own grey, not dropped.
   expect_true(any(abs(band[130, 211:400, 1] - 0.2) < 0.02))
 })
+
+test_that("a logo folder with PNG logos only shows the logo in HTML and Quarto", {
+  skip_if_not_installed("png")
+  dir <- withr::local_tempdir()
+  for (v in c("blue", "white", "black")) {
+    png::writePNG(array(0.2, c(20, 60, 4)), file.path(dir, sprintf("phw-logo-%s.png", v)))
+  }
+  withr::local_options(phwstyle.logo_dir = dir)
+  expect_true(phw_has_logo())
+  expect_match(as.character(phw_header("App")), '<img src="data:image/png;base64,', fixed = TRUE)
+
+  out <- withr::local_tempdir()
+  suppressMessages(use_phw_quarto(out, "none"))
+  ext <- file.path(out, "_extensions", "phw")
+  expect_match(paste(readLines(file.path(ext, "phw-band.html")), collapse = ""),
+               '<img src="data:image/png;base64,', fixed = TRUE)
+  for (v in c("white", "blue")) {
+    svg <- paste(readLines(file.path(ext, sprintf("phw-logo-%s.svg", v))), collapse = "")
+    expect_match(svg, 'width="60" height="20" viewBox="0 0 60 20"', fixed = TRUE)
+    expect_match(svg, 'href="data:image/png;base64,', fixed = TRUE)
+  }
+})
+
+test_that("phw_has_logo needs a PNG logo, and HTML prefers the SVG", {
+  dir <- withr::local_tempdir()
+  cache <- withr::local_tempdir()
+  local_mocked_bindings(logo_cache_dir = function() cache)
+  writeLines("<svg/>", file.path(dir, "phw-logo-white.svg"))
+  withr::local_options(phwstyle.logo_dir = dir)
+  expect_false(phw_has_logo())
+  file.copy(phw_graphic("band"), file.path(dir, "phw-logo-white.png"))
+  expect_true(phw_has_logo())
+  expect_match(as.character(phw_header("App")), '<img src="data:image/svg+xml;base64,', fixed = TRUE)
+})

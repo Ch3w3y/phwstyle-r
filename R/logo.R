@@ -63,11 +63,14 @@ check_logo_dir <- function(dir) {
 }
 
 #' Does phwstyle have a PHW logo to use?
+#'
+#' Every output can use a PNG logo, so this is `TRUE` when the white logo is
+#' available as a PNG. HTML outputs use the SVG instead when there is one.
 #' @return `TRUE` or `FALSE`.
 #' @examples
 #' phw_has_logo()
 #' @export
-phw_has_logo <- function() !is.null(phw_logo("white", "svg")) && !is.null(phw_logo("white", "png"))
+phw_has_logo <- function() !is.null(phw_logo("white", "png"))
 
 #' Download the PHW logo
 #'
@@ -185,9 +188,20 @@ read_logo_png <- function(path) {
 }
 
 logo_data_uri <- function(variant = "white") {
-  path <- phw_logo(variant, "svg")
-  if (is.null(path)) return(NULL)
-  base64_uri(path, "image/svg+xml")
+  svg <- phw_logo(variant, "svg")
+  if (!is.null(svg)) return(base64_uri(svg, "image/svg+xml"))
+  png <- phw_logo(variant, "png")
+  if (!is.null(png)) return(base64_uri(png, "image/png"))
+  NULL
+}
+
+# An SVG that shows a PNG logo, for outputs that only take the logo as an
+# SVG file. The size comes from the PNG header.
+png_logo_svg <- function(path) {
+  size <- readBin(readBin(path, "raw", 24)[17:24], "integer", n = 2, size = 4, endian = "big")
+  sprintf(paste0('<svg xmlns="http://www.w3.org/2000/svg" width="%1$d" height="%2$d" viewBox="0 0 %1$d %2$d">',
+                 '<image width="%1$d" height="%2$d" href="%3$s"/></svg>'),
+          size[1], size[2], base64_uri(path, "image/png"))
 }
 
 #' @noRd

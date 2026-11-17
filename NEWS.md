@@ -448,6 +448,11 @@ says what to change.
   `linkcolor`, `urlcolor`, `citecolor` or `filecolor` in the YAML header to
   change them.
 * `phw_download_logos()` saves nothing when the reply isn't an SVG.
+* A logo folder with only PNG logos now shows the logo in
+  `phw_html_document()`, `phw_header()`, `phw_page_navbar()` and the Quarto
+  dashboard, slide and Typst formats. Before, they showed the organisation
+  name or nothing, and `phw_has_logo()` returned `FALSE`. `phw_has_logo()`
+  is now `TRUE` whenever the white PNG logo is available.
 
 ## Interactive outputs and colours
 
