@@ -240,12 +240,17 @@ phw_write_xlsx <- function(x, file, title = NULL, source = NULL, date = NULL, ca
                            digits = 1, header_fill = phw_colours[["navy"]], font = "Arial",
                            overwrite = TRUE) {
   rlang::check_installed("openxlsx2")
+  check_out_file(file, "xlsx")
   x <- xlsx_sheets(x)
   own_digits <- !missing(digits)
   if (is.character(header_fill) && length(header_fill) == 1 && header_fill %in% names(phw_colours)) {
     header_fill <- phw_colours[[header_fill]]
   }
   check_colours(header_fill, "header_fill")
+  if (!length(title) %in% c(0, 1, length(x))) {
+    cli::cli_abort(c("{.arg title} must be one string or one per sheet.",
+                     x = "It has {length(title)} title{?s} for {length(x)} sheet{?s}."))
+  }
   titles <- rep_len(as.list(title %||% list(NULL)), length(x))
   cap <- caption_from(source, date, caption_args)
   col <- phw_colours
