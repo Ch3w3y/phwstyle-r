@@ -195,6 +195,8 @@ check_labels <- function(labels, call = rlang::caller_env()) {
 as_levels <- function(x, missing) {
   if (is.logical(x)) x <- factor(x, levels = c(TRUE, FALSE), labels = c("Yes", "No"))
   if (!is.factor(x)) x <- factor(x)
+  blank <- is_missing(levels(x))
+  if (any(blank)) x <- factor(x, levels = levels(x)[!blank])
   if (anyNA(x) && !is.null(missing)) {
     levels(x) <- c(levels(x), missing)
     x[is.na(x)] <- missing

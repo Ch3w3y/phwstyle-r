@@ -26,15 +26,16 @@ as_date_col <- function(data, col, arg = col, call = rlang::caller_env()) {
   as_date_value(data[[col]], arg = arg, call = call)
 }
 
-# Drops rows with a missing value in any of `cols`, or an infinite one in a
-# numeric column, with one message saying how many went. Stops when no row
-# is left, since an empty chart or table would only hide the problem.
-# Column `label` attributes, which `[` drops, are kept for the headings.
+# Drops rows with a missing value in any of `cols` (blank text included), or
+# an infinite one in a numeric column, with one message saying how many went.
+# Stops when no row is left, since an empty chart or table would only hide
+# the problem. Column `label` attributes, which `[` drops, are kept for the
+# headings.
 drop_missing <- function(data, cols, call = rlang::caller_env()) {
   bad <- rep(FALSE, NROW(data))
   for (col in cols) {
     x <- data[[col]]
-    bad <- bad | if (is.numeric(x)) !is.finite(x) else is.na(x)
+    bad <- bad | if (is.numeric(x)) !is.finite(x) else is_missing(x)
   }
   n <- sum(bad)
   if (!n) return(data)
@@ -49,6 +50,11 @@ drop_missing <- function(data, cols, call = rlang::caller_env()) {
     if (!is.null(label)) attr(out[[j]], "label") <- label
   }
   out
+}
+
+# NA, or blank text as read.csv() reads an empty cell.
+is_missing <- function(x) {
+  if (is.character(x) || is.factor(x)) is.na(x) | trimws(x) == "" else is.na(x)
 }
 
 check_colours <- function(x, arg, call = rlang::caller_env()) {
@@ -70,7 +76,7 @@ as_date_value <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_en
   if (is.logical(x) && all(is.na(x))) return(as.Date(x))
   if (is.character(x) || is.factor(x)) {
     x <- as.character(x)
-    x[!is.na(x) & trimws(x) == ""] <- NA
+    x[is_missing(x)] <- NA
     iso <- !is.na(x) & grepl("^\\d{4}-\\d{2}-\\d{2}", x)
     out <- as.Date(ifelse(iso, substr(x, 1, 10), NA_character_), format = "%Y-%m-%d", optional = TRUE)
     bad <- !is.na(x) & is.na(out)

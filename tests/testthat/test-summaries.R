@@ -285,6 +285,27 @@ test_that("phw_crosstab says how many rows it leaves out when missing = NULL", {
   expect_equal(tab$Total[tab$area == "Total"], 18)
 })
 
+test_that("a blank text group counts as missing", {
+  d <- data.frame(area = c("Cardiff", "Cardiff", "Newport", "Swansea"),
+                  sex = c("Female", "", "Male", " "))
+  expect_equal(names(phw_crosstab(d, area, sex)), c("area", "Female", "Male", "Unknown", "Total"))
+  expect_equal(names(phw_group_table(d, area, sex)), c("area", "Female", "Male", "Unknown", "Total"))
+  expect_equal(phw_summary_table(d, vars = sex)[[1]], c("sex", "Female", "Male", "Unknown"))
+  expect_equal(names(phw_summary_table(d, vars = area, by = sex, n_in_header = FALSE))[-1],
+               c("Female", "Male", "Unknown", "Total"))
+  f <- transform(d, sex = factor(sex, c("Male", "Female", "", " ")))
+  expect_equal(names(phw_crosstab(f, area, sex)), c("area", "Male", "Female", "Unknown", "Total"))
+  expect_message(tab <- phw_crosstab(d, area, sex, missing = NULL), "Left out 2 rows")
+  expect_equal(names(tab), c("area", "Female", "Male", "Total"))
+  expect_message(tab <- phw_group_table(f, area, sex, missing = NULL), "Left out 2 rows")
+  expect_equal(names(tab), c("area", "Male", "Female", "Total"))
+  expect_message(tab <- phw_summary_table(d, vars = area, by = sex, missing = NULL), "Left out 2 rows")
+  expect_equal(ncol(tab), 4)
+  tab <- phw_summary_table(d, vars = sex, missing = NULL)
+  expect_equal(tab[[1]], c("sex", "Female", "Male"))
+  expect_equal(tab[[2]][2], "1 (50.0%)")
+})
+
 test_that("labels can be a named character vector", {
   ll <- data.frame(age = c("0-14", "15-44"), sex = c("F", "M"))
   expect_equal(phw_summary_table(ll, labels = c(sex = "Sex"))[[1]][4], "Sex")
