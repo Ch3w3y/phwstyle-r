@@ -292,6 +292,29 @@ test_that("subplot() panels take the PHW colours, and a group keeps its colour a
   expect_equal(tr[[7]]$colorscale[, 2], alone[, 2])
 })
 
+test_that("subplot() colours groups from the data when a column shares a name with an object", {
+  withr::local_options(rlib_warning_verbosity = "verbose")
+  d <- data.frame(week = rep(1:3, 2), y = 1:6, class = rep(c("a", "b"), each = 3))
+  d$g <- d$class
+  g <- letters
+  for (col in c("class", "g")) {
+    f <- stats::as.formula(paste0("~", col))
+    s <- plotly::subplot(
+      plotly::plot_ly(d, x = ~week, y = ~y, color = f, type = "bar"),
+      plotly::plot_ly(d, x = ~week, y = ~y, color = f, type = "scatter", mode = "lines")
+    )
+    expect_no_warning(tr <- built(phw_plotly(s))$data)
+    key <- plotly::toRGB(phw_colour_key(c("a", "b")))
+    expect_equal(vapply(tr[1:2], function(t) t$marker$color, ""), unname(key))
+    expect_equal(vapply(tr[3:4], function(t) t$line$color, ""), unname(key))
+  }
+  pies <- plotly::subplot(
+    plotly::plot_ly(data.frame(labels = c("a", "b"), n = 1:2), labels = ~labels, values = ~n, type = "pie")
+  )
+  # plotly itself warns about the layout of a subplot() of pies.
+  expect_no_error(suppressWarnings(built(phw_plotly(pies))))
+})
+
 test_that("subplot() draws a missing group in grey, as each panel alone does", {
   d <- data.frame(week = rep(1:2, 4), y = 1:8, g = rep(c("a", "b", "c", NA), each = 2))
   lines <- plotly::plot_ly(d, x = ~week, y = ~y, color = ~g, type = "scatter", mode = "lines",

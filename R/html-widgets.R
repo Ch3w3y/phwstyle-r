@@ -714,18 +714,21 @@ plotly_scale_types <- c("heatmap", "contour", "histogram2d", "histogram2dcontour
 # one's.
 # A trace with its own key, such as one from phw_colour_key(), keeps it, with
 # "NA" added in grey when a value is missing.
+# A subplot()'s traces are already built and colour_built() colours them.
 colour_mapped <- function(p, palette) {
-  if (is.null(p$x$attrs)) return(p)
+  todo <- unbuilt_attrs(p)
+  if (!any(todo)) return(p)
+  attrs <- p$x$attrs[todo]
   values <- Map(function(a, id) {
     if (is.null(a$colorscale) && !is.null(a$color)) mapped_values(a$color, p, id)
-  }, p$x$attrs, rlang::names2(p$x$attrs))
-  own <- vapply(p$x$attrs, function(a) !is.null(a$colors), logical(1))
-  keyed <- vapply(p$x$attrs, function(a) is.character(a$colors) && rlang::is_named(a$colors), logical(1))
+  }, attrs, rlang::names2(attrs))
+  own <- vapply(attrs, function(a) !is.null(a$colors), logical(1))
+  keyed <- vapply(attrs, function(a) is.character(a$colors) && rlang::is_named(a$colors), logical(1))
   missing <- vapply(values, function(v) !is.numeric(v) && anyNA(v), logical(1))
   groups <- Filter(function(v) !is.null(v) && !is.numeric(v), values[!own])
   key <- if (length(groups)) group_colours(groups, palette)
   keyed_na <- any(keyed & missing)
-  p$x$attrs <- Map(function(a, v, keyed) {
+  attrs <- Map(function(a, v, keyed) {
     if (keyed && keyed_na) {
       if (!"NA" %in% names(a$colors)) a$colors[["NA"]] <- phw_colours[["grey_light"]]
       if (!is.numeric(v) && anyNA(v)) a$color <- na_as_group(a$color)
@@ -743,15 +746,23 @@ colour_mapped <- function(p, palette) {
       if (anyNA(v)) a$color <- na_as_group(a$color)
     }
     a
-  }, p$x$attrs, values, keyed)
-  shared <- Find(Negate(is.null), lapply(p$x$attrs, `[[`, "colors"))
+  }, attrs, values, keyed)
+  shared <- Find(Negate(is.null), lapply(attrs, `[[`, "colors"))
   if (!is.null(shared)) {
-    p$x$attrs <- lapply(p$x$attrs, function(a) {
+    attrs <- lapply(attrs, function(a) {
       if (is.null(a$colors)) a$colors <- shared
       a
     })
   }
+  p$x$attrs[todo] <- attrs
   p
+}
+
+# The attributes plotly has yet to evaluate. A built figure, such as a
+# subplot()'s, marks its attributes "plotly_eval" and keeps no data to
+# evaluate them with, so a formula would be evaluated in its environment.
+unbuilt_attrs <- function(p) {
+  !vapply(p$x$attrs, inherits, logical(1), "plotly_eval")
 }
 
 # A trace that maps no colour takes the colorway colour of its place among
@@ -946,8 +957,9 @@ mapped_values <- function(x, p, id) {
 # so a label has one colour in every pie. A missing label would show as
 # "null", so it shows as "NA" in grey, as missing groups do in the charts.
 colour_pies <- function(p, palette, colorway) {
-  if (is.null(p$x$attrs)) return(p)
-  pie <- vapply(p$x$attrs, function(a) identical(a$type, "pie") && is.null(a$marker$colors), logical(1))
+  pie <- unbuilt_attrs(p) &
+    vapply(p$x$attrs, function(a) identical(a$type, "pie") && is.null(a$marker$colors), logical(1))
+  if (!any(pie)) return(p)
   labels <- Map(function(a, id, pie) if (pie) mapped_values(a$labels, p, id),
                 p$x$attrs, rlang::names2(p$x$attrs), pie)
   used <- Filter(Negate(is.null), labels)

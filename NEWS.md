@@ -153,6 +153,10 @@ says what to change.
 * `phw_plotly()` draws a missing group (`NA`) in grey in a figure combined
   with `plotly::subplot()`, as it does in a single chart. Before, its lines,
   bars and markers were invisible and its legend entry had no colour.
+* `phw_plotly()` colours a figure combined with `plotly::subplot()` from
+  its data when a colour column shares its name with an object or a
+  function, such as `class`. Before, it stopped with an error, or warned
+  that the palette had run out.
 * `phw_plotly()` gives a label the same colour in every pie of a figure.
   Before, each pie took its colours from its own labels, so a label could
   be orange in one pie and teal in the next, and the shared legend showed
