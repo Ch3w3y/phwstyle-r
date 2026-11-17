@@ -42,7 +42,10 @@ phw_key_file(path)
 \item \code{phw_key()} returns a stored key. The accessible copy of a key is
 called \code{name@accessible} (see \code{\link[=phw_colour_key]{phw_colour_key()}}).
 \item \code{phw_keys()} lists every key as a data frame.
-\item \code{phw_key_set()} adds or changes colours by hand.
+\item \code{phw_key_set()} adds or changes colours by hand. If the key has an
+accessible copy, the colours go into it too, as when the copy is made:
+a colour of the default palette that isn't in \code{"accessible"} keeps the
+group's accessible colour, or takes the next free one.
 \item \code{phw_key_recolour()} reassigns a whole key from a new palette, keeping
 the group order and the colour of neutral groups such as "Other".
 Groups named after the palette's colours, as in \code{"rag"}, take those

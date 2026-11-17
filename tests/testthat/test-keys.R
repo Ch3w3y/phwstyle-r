@@ -100,6 +100,35 @@ test_that("pinned colours and phw_key_set work", {
   expect_error(phw_key_set("t_set", "#000000"), "named")
 })
 
+test_that("phw_key_set reaches an accessible copy that already exists", {
+  f <- withr::local_tempfile(fileext = ".csv")
+  withr::defer(phw_key_file(NULL))
+  acc <- phw_palettes$accessible
+  both <- function() {
+    list(default = phw_colour_key(c("A", "B"), "t_both"),
+         accessible = phw_colour_key(c("A", "B"), "t_both", palette = "accessible"))
+  }
+  phw_key_file(f)
+  phw_key_set("t_both", c(A = "#7A1F1F"))
+  both()
+  # A later run, reading the key file, changes the colour.
+  phw_key_file(NULL)
+  phw_key_file(f)
+  phw_key_set("t_both", c(A = "#1F7A3A", C = "#123456"))
+  out <- both()
+  expect_equal(out$accessible, out$default)
+  expect_equal(phw_colour_key("C", "t_both", palette = "accessible"), c(C = "#123456"))
+  # A default-palette colour gets an accessible one, as when the copy is made.
+  phw_key_set("t_both", c(A = phw_colours[["pink"]]))
+  expect_equal(both()$accessible, c(A = acc[[2]], B = acc[[1]]))
+  phw_key_set("t_both", c(A = phw_colours[["green"]]))
+  expect_equal(both()$accessible[["A"]], acc[[2]])
+  # Setting the copy itself leaves the default key alone.
+  phw_key_set("t_both@accessible", c(B = "#654321"))
+  expect_equal(both()$default[["B"]], acc[[1]])
+  phw_key_reset("t_both")
+})
+
 test_that("keys persist to a CSV file", {
   f <- withr::local_tempfile(fileext = ".csv")
   withr::defer(phw_key_file(NULL))
