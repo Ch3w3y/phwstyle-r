@@ -431,6 +431,21 @@ test_that("legend sets where a legend goes, not whether one trace gets one", {
   expect_false(built(phw_plotly(two, legend = "none"))$layout$showlegend)
 })
 
+test_that("the legend has a title only where the chart sets or shows one", {
+  title_of <- function(w) built(w)$layout$legend$title$text
+  p <- plotly::plot_ly(groups_df, x = ~week, y = ~cases, color = ~group, type = "scatter", mode = "lines")
+  titled <- plotly::layout(p, legend = list(title = list(text = "Age group")))
+  expect_equal(title_of(phw_plotly(titled)), "Age group")
+  expect_equal(title_of(phw_plotly(titled, legend = "right")), "Age group")
+  expect_null(title_of(phw_plotly(p)))
+  skip_if_not_installed("ggplot2")
+  g <- ggplot2::ggplot(groups_df, ggplot2::aes(week, cases, colour = group)) + ggplot2::geom_line() +
+    ggplot2::labs(colour = "Age group")
+  expect_equal(title_of(phw_plotly(g + theme_phw(legend_title = TRUE))), "Age group")
+  expect_null(title_of(phw_plotly(g + theme_phw())))
+  expect_null(title_of(phw_plotly(g + ggplot2::theme(legend.title = ggplot2::element_blank()))))
+})
+
 test_that("a bottom legend is stacked under the axis title, and the source under it, when drawn", {
   p <- plotly::plot_ly(groups_df, x = ~week, y = ~cases, color = ~group, type = "scatter", mode = "lines")
   hook <- function(w) w$jsHooks$render

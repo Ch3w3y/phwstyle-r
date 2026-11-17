@@ -344,8 +344,8 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
     title = c(if (!is.null(title) && !is.list(title)) list(text = title),
               list(font = list(color = col[["navy"]], size = 17), x = 0, xanchor = "left")),
     legend = if (legend == "bottom") list(orientation = "h", x = 0, y = -0.15, xanchor = "left",
-                                          yanchor = "top", title = list(text = ""))
-             else list(orientation = "v", title = list(text = "")),
+                                          yanchor = "top")
+             else list(orientation = "v"),
     hoverlabel = list(bgcolor = col[["navy"]], bordercolor = col[["navy"]],
                       font = list(color = "#FFFFFF", family = font$family)),
     margin = list(b = if (!is.null(cap)) 110 else 60, t = if (is.null(subtitle)) 50 else 75),
@@ -456,7 +456,12 @@ ggplotly_phw <- function(p, palette) {
   keys <- unlist(lapply(b$plot$scales$scales, function(s) {
     if (s$is_discrete() && !any(c("x", "y") %in% s$aesthetics)) as.character(s$get_limits())
   }))
-  plain_legend(plotly::ggplotly(p), keys)
+  w <- plain_legend(plotly::ggplotly(p), keys)
+  # ggplotly() gives the legend a title even when the theme blanks it.
+  if (inherits(ggplot2::calc_element("legend.title", ggplot2::theme_get() + p$theme), "element_blank")) {
+    w$x$layout$legend$title <- NULL
+  }
+  w
 }
 
 # ggplotly() names a trace by every discrete legend scale of the plot. A
