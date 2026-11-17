@@ -86,6 +86,23 @@ test_that("ready-made charts follow the settings given to use_phw_ggplot()", {
   expect_equal(phw_epicurve(d, "onset")$theme$text$size, 11)
 })
 
+test_that("ready-made charts keep the use_phw_ggplot() settings after a theme tweak", {
+  library(ggplot2)
+  local_ggplot_state()
+  use_phw_ggplot(base_size = 16, accessible = TRUE)
+  theme_update(plot.title = element_text(colour = "red"))
+  theme_replace(legend.position = "top")
+  d <- data.frame(a = "x", v = 1, l = 0, h = 2)
+  th <- phw_forest(d, v, l, h, a)$theme
+  expect_equal(th$text$size, 16)
+  # accessible = TRUE draws thicker lines, as the session theme does.
+  expect_equal(th$line$linewidth, theme_get()$line$linewidth)
+  expect_gt(th$line$linewidth, theme_phw(base_size = 16)$line$linewidth)
+  # Adding a whole theme replaces the PHW one, so the defaults are back.
+  theme_set(theme_get() + theme_minimal())
+  expect_equal(phw_forest(d, v, l, h, a)$theme$text$size, 11)
+})
+
 test_that("phw_epicurve draws a trailing average of the total count", {
   d <- data.frame(onset = as.Date("2025-01-01") + c(0, 1, 1, 2, 2, 2, 3, 3, 3, 3), g = rep(c("A", "B"), 5))
   p <- phw_epicurve(d, "onset", group = "g", interval = "day", average = 3)

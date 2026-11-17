@@ -191,6 +191,13 @@ says what to change.
   do. Before, maps always used the `theme_phw_map()` defaults, so in a report
   set up for larger text they had smaller text than every other chart. Maps
   keep their legend on the right and have no gridlines.
+* The ready-made charts and maps, and the titles and source lines from
+  `phw_arrange()`, `phw_finalise()` and `phw_title_grob()`, keep following
+  the settings given to `use_phw_ggplot()` after a `theme_update()` or
+  `theme_replace()`. Before, any such tweak sent them back to size 11 and
+  `accessible = FALSE` without a word, while plain ggplots kept the
+  settings. Setting a whole new theme, such as `theme_set(theme_grey())`,
+  still sends them back to the defaults.
 * `phw_arrange()` draws the figure title, subtitle and source line with
   the settings given to `use_phw_ggplot()`, such as `base_size = 16` or
   `accessible = TRUE`. Before, they kept the `theme_phw()` defaults, so the
