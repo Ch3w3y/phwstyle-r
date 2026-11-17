@@ -450,6 +450,10 @@ says what to change.
 * A flextable's caption, such as "Table 1 ..." from `phw_flextable()`, now
   shows on a `phw_add_slide()` slide, in a row at the top of the table.
   Before, PowerPoint left it out without a word.
+* In a PDF document, a `phw_flextable()` caption reads as it does in Word
+  and HTML: "Table 1 Counts by board", or no number when you give none.
+  Before, LaTeX added its own label, giving "Table 1. Table 1 Counts by
+  board".
 * On the title slide and section header of your own template,
   `phw_add_slide()` gives `text` the template's colour and size, and the
   source line is white only when the slide background is dark. Before, both
