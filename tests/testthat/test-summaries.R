@@ -228,6 +228,21 @@ test_that("phw_as_summary names unknown row types", {
   expect_error(phw_as_summary(d, kind), "heading")
 })
 
+test_that("summary builders stop on a table() or a matrix and say what to pass", {
+  m <- matrix(c(10, 20, 30, 40), 2, dimnames = list(c("Cardiff", "Newport"), c("2023", "2024")))
+  tb <- table(area = c("A", "A", "B"), sex = c("F", "M", "F"))
+  for (x in list(m, tb)) {
+    expect_error(phw_as_summary(x), "must be a data frame.*row labels")
+    expect_error(phw_summary_table(x), "must be a data frame.*line list")
+    expect_error(phw_crosstab(x, area, sex), "must be a data frame.*count = Freq")
+    expect_error(phw_group_table(x, area, sex), "must be a data frame.*value = Freq")
+  }
+  ct <- phw_crosstab(as.data.frame(as.table(tb)), area, sex, count = Freq)
+  expect_equal(ct$F[ct$area == "B"], 1)
+  gt <- phw_group_table(as.data.frame(as.table(m)), Var1, Var2, value = Freq)
+  expect_equal(gt[["2023"]][gt$Var1 == "Cardiff"], 10)
+})
+
 test_that("phw_summary_table leaves out rows with a missing group when missing = NULL", {
   ll <- data.frame(age = c("0-14", "15-44", NA), sex = c("F", "M", "F"))
   expect_message(tab <- phw_summary_table(ll, by = age, missing = NULL), "Left out 1 row")

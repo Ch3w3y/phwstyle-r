@@ -9,6 +9,16 @@ check_has_rows <- function(data, arg = "data", call = rlang::caller_env()) {
   invisible(data)
 }
 
+# A data frame, not a table() or a matrix, which pick_col() and the builders
+# would misread. `hint` says what to pass instead.
+check_data_frame <- function(data, hint, arg = "data", call = rlang::caller_env()) {
+  if (!is.data.frame(data)) {
+    cli::cli_abort(c("{.arg {arg}} must be a data frame, not {.obj_type_friendly {data}}.",
+                     i = hint), call = call)
+  }
+  invisible(data)
+}
+
 check_numeric_col <- function(data, col, arg = col, call = rlang::caller_env()) {
   x <- data[[col]]
   if (!is.numeric(x)) {

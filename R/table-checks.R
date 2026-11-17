@@ -5,10 +5,7 @@
 # since the renderers would each fail on it in their own way. The geometry of
 # an sf object is dropped, as a table shows its attributes only.
 check_table_data <- function(data, arg = "data", call = rlang::caller_env()) {
-  if (!is.data.frame(data)) {
-    cli::cli_abort(c("{.arg {arg}} must be a data frame, not {.obj_type_friendly {data}}.",
-                     i = as_data_frame_hint), call = call)
-  }
+  check_data_frame(data, as_data_frame_hint, arg, call)
   if (inherits(data, "sf")) data <- sf::st_drop_geometry(data)
   nms <- names(data)
   dup <- unique(nms[duplicated(nms)])
