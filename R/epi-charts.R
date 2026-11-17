@@ -232,7 +232,9 @@ phw_epicurve <- function(data, date, group = NULL, count = NULL,
 #'   level.
 #' @param compare Optional data frame with the same columns and the same
 #'   two `sex` values, drawn as outlines.
-#' @param palette Two colours, or a palette name.
+#' @param palette Two colours, or a palette name. Name the colours after
+#'   the `sex` values, as in `c(Female = "#24A2B5", Male = "#285087")`, to
+#'   choose which sex takes which colour.
 #' @param compare_colour Outline colour for `compare`.
 #' @param ... Passed to [ggplot2::geom_col()].
 #' @return A ggplot.
@@ -284,7 +286,6 @@ phw_pyramid <- function(data, age, sex, value = NULL, percent = FALSE, left = NU
                        x = "{.arg compare} has {.val {other}}; {.arg data} has {.val {sexes}}."))
     }
   }
-  cols <- if (is.null(palette)) unname(phw_colours[c("navy", "teal")]) else phw_pal(2, palette = palette)
   lab_fun <- function(x) {
     if (percent) paste0(format(abs(x), trim = TRUE), "%") else format(abs(x), big.mark = ",", trim = TRUE, scientific = FALSE)
   }
@@ -300,7 +301,7 @@ phw_pyramid <- function(data, age, sex, value = NULL, percent = FALSE, left = NU
                                  linewidth = 0.5)
   }
   p + ggplot2::geom_vline(xintercept = 0, colour = phw_colours[["text"]], linewidth = 0.4) +
-    ggplot2::scale_fill_manual(values = cols, name = NULL) +
+    scale_fill_phw_d(palette = palette %||% unname(phw_colours[c("navy", "teal")]), name = NULL) +
     ggplot2::scale_x_continuous(labels = lab_fun, limits = c(-lim, lim) * 1.05) +
     ggplot2::scale_y_discrete(drop = FALSE) +
     ggplot2::labs(x = if (percent) "Percentage of population" else "Count", y = NULL) +
