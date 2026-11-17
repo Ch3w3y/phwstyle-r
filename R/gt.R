@@ -98,6 +98,7 @@ phw_gt <- function(data, caption = NULL, subtitle = NULL, number = NULL, source 
                    theme_args = list()) {
   rlang::check_installed("gt")
   check_table_data(data)
+  data <- blank_non_finite(data)
   if (missing(digits)) digits <- attr(data, "digits") %||% digits
   is_sum <- inherits(data, "phw_summary")
   df <- as.data.frame(unclass(data)[names(data)], check.names = FALSE)

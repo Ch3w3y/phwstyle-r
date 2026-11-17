@@ -418,3 +418,15 @@ test_that("a bad plot_scale fails before a slide is added", {
   expect_error(phw_add_slide(deck, "Chart", plot = p, plot_scale = -1), "plot_scale")
   expect_equal(length(deck), n)
 })
+
+test_that("phw_write_xlsx writes NaN and Inf as blank cells, not Excel errors", {
+  skip_if_not_installed("openxlsx2")
+  f <- withr::local_tempfile(fileext = ".xlsx")
+  phw_write_xlsx(data.frame(area = c("A", "B", "C"), rate = c(0 / 0, 1 / 0, 2.5)), f)
+  ex <- withr::local_tempdir()
+  utils::unzip(f, exdir = ex)
+  sheet <- paste(readLines(file.path(ex, "xl", "worksheets", "sheet1.xml"), warn = FALSE), collapse = "")
+  expect_false(grepl('t="e"', sheet, fixed = TRUE))
+  got <- openxlsx2::wb_to_df(f, col_names = FALSE)
+  expect_equal(got[[2]][-1], c(NA, NA, "2.5"))
+})

@@ -161,6 +161,18 @@ test_that("phw_group_table(drop = FALSE) keeps unused factor levels as zeros", {
   expect_equal(names(dropped), c("age", "2023", "2024", "Total"))
 })
 
+test_that("phw_group_table leaves an empty cell blank when fun gives no number", {
+  d <- data.frame(a = c("N", "N", "S"), y = c(2023, 2024, 2023), v = 1:3)
+  expect_no_warning(top <- phw_group_table(d, a, y, value = v, fun = max))
+  expect_equal(top[["2024"]], c(2, NA, 2))
+  expect_equal(top$Total, c(2, 3, 3))
+  avg <- phw_group_table(d, a, y, value = v, fun = mean)
+  expect_equal(avg[["2024"]], c(2, NA, 2))
+  expect_equal(phw_group_table(d, a, y)[["2024"]], c(1, 0, 1))
+  ratio <- phw_group_table(d, a, y, value = v, fun = function(x) 1 / (sum(x) - 3))
+  expect_equal(ratio[["2023"]], c(-0.5, NA, 1))
+})
+
 test_that("grouped tables render with flextable and reactable", {
   skip_if_not_installed("flextable")
   skip_if_not_installed("reactable")

@@ -34,6 +34,7 @@ phw_datatable <- function(data, caption = NULL, source = NULL, date = NULL, digi
                           page_length = 10, options = list(), caption_args = list(), ...) {
   rlang::check_installed("DT")
   check_table_data(data)
+  data <- blank_non_finite(data)
   if (missing(digits)) digits <- attr(data, "digits") %||% digits
   dots <- list(...)
   sm <- NULL
@@ -275,7 +276,7 @@ phw_write_xlsx <- function(x, file, title = NULL, source = NULL, date = NULL, ca
     s <- x[[k]]
     is_sum <- inherits(s, "phw_summary")
     places <- if (own_digits) digits else attr(s, "digits") %||% digits
-    df <- as.data.frame(unclass(s)[names(s)], check.names = FALSE)
+    df <- blank_non_finite(as.data.frame(unclass(s)[names(s)], check.names = FALSE))
     nl <- if (is_sum) attr(s, "label_cols") %||% 1L else 0L
     hd <- if (is_sum) summary_header(s, nl) else list(upper = list(), bottom = names(df))
     header <- c(names(df)[seq_len(nl)], hd$bottom)
