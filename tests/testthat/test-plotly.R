@@ -384,3 +384,28 @@ test_that("the source line is the one annotation the legend hook moves, wherever
   expect_equal(source_of(phw_plotly(faceted, source = "S")), "<b>Source: S</b>")
   expect_length(source_of(phw_plotly(faceted)), 0)
 })
+
+test_that("a ggplot with a second layer in the legend lists each group once, by name", {
+  legend_of <- function(p) {
+    traces <- built(phw_plotly(p))$data
+    shown <- vapply(traces, function(t) isTRUE(t$showlegend), logical(1))
+    vapply(traces[shown], function(t) t$name, "")
+  }
+  cases <- data.frame(onset = as.Date("2025-01-01") + rep(0:20, 3), grp = rep(c("A", "B", "C"), each = 21))
+  expect_equal(legend_of(phw_epicurve(cases, onset, group = grp, average = 3)),
+               c("A", "B", "C", "3-week average"))
+  areas <- data.frame(area = c("X", "Y", "Z"), value = c(70, 60, 50), lower = c(65, 55, 45), upper = c(75, 65, 55))
+  forest <- built(phw_plotly(phw_forest(areas, value, lower, upper, area, target = 60)))$data
+  keys <- Filter(function(t) isTRUE(t$showlegend), forest)
+  expect_equal(vapply(keys, function(t) t$name, ""), c("Higher", "Similar", "Lower"))
+  expect_true(all(vapply(keys, function(t) !is.null(t$marker$symbol), logical(1))))
+
+  d <- data.frame(x = rep(1:3, 4), y = 1:12, f = rep(c("A", "B"), each = 3), pan = rep(c("p", "q"), each = 6))
+  faceted <- ggplot2::ggplot(d, ggplot2::aes(x, y)) + ggplot2::geom_col(ggplot2::aes(fill = f)) +
+    ggplot2::geom_line(ggplot2::aes(colour = "Average")) + ggplot2::facet_wrap(~pan)
+  expect_equal(legend_of(faceted), c("A", "B", "Average"))
+
+  two <- data.frame(x = 1:4, y = 1:4, a = c("A", "A", "B", "B"), s = c("1", "2", "1", "2"))
+  both <- ggplot2::ggplot(two, ggplot2::aes(x, y, colour = a, shape = s)) + ggplot2::geom_point()
+  expect_equal(legend_of(both), c("(A,1)", "(A,2)", "(B,1)", "(B,2)"))
+})
