@@ -350,21 +350,29 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
     js <- paste(readLines(system.file("js", "plotly-bottom-legend.js", package = "phwstyle")), collapse = "\n")
     p <- htmlwidgets::onRender(p, js, data = list(margin = extra$margin$b %||% 0))
   }
-  class(p) <- unique(c("phw_plotly", class(p)))
-  p
+  grey_missing_numbers(p)
 }
 
 # plotly keeps a missing number in a trace's colour array, and plotly.js
 # draws it in its near-black fallback colour, which reads as a high value.
-# Only the built trace holds that array, so grey it after plotly builds.
-#' @exportS3Method plotly::plotly_build
-plotly_build.phw_plotly <- function(p, registerFrames = TRUE) {
-  p <- NextMethod()
-  p$x$data <- lapply(p$x$data, grey_missing_numbers)
+# Only built traces hold that array, so a chart coloured by a number with a
+# missing value is built here, and built traces, such as a subplot()'s, are
+# greyed. The chart stays a plain plotly widget, which htmlwidgets names by
+# its first class.
+grey_missing_numbers <- function(p) {
+  ids <- rlang::names2(p$x$attrs)
+  unbuilt <- vapply(seq_along(p$x$attrs), function(i) {
+    a <- p$x$attrs[[i]]
+    if (inherits(a, "plotly_eval")) return(FALSE)
+    v <- mapped_values(a$color, p, ids[[i]])
+    is.numeric(v) && anyNA(v)
+  }, logical(1))
+  if (any(unbuilt)) p <- plotly::plotly_build(p)
+  if (length(p$x$data)) p$x$data <- lapply(p$x$data, grey_missing_number)
   p
 }
 
-grey_missing_numbers <- function(trace) {
+grey_missing_number <- function(trace) {
   grey <- function(x) {
     if (!is.numeric(x) || !anyNA(x)) return(x)
     out <- as.list(unclass(x))

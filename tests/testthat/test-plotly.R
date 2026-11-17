@@ -39,10 +39,14 @@ test_that("a missing number is drawn in grey, alone or in a subplot", {
   pts <- plotly::plot_ly(d, x = ~x, y = ~y, color = ~rate, type = "scatter", mode = "markers")
   big <- plotly::plot_ly(d, x = ~x, y = ~y, color = ~rate, size = I(30), type = "scatter", mode = "markers")
   marker <- built(phw_plotly(pts))$data[[1]]$marker
-  expect_equal(unclass(marker$color), want)
-  expect_equal(unclass(marker$line$color), want)
-  json <- gsub("\\s", "", plotly::plotly_json(phw_plotly(pts), jsonedit = FALSE))
-  expect_match(json, '"color":[2,"#AEB7BD",8]', fixed = TRUE)
+  expect_equal(unclass(marker$color), want, ignore_attr = TRUE)
+  expect_equal(unclass(marker$line$color), want, ignore_attr = TRUE)
+  # The page plotly.js draws from: a plotly widget, with the grey in its data.
+  tags <- htmltools::as.tags(phw_plotly(pts))
+  html <- as.character(tags)
+  expect_match(html, 'class="plotly html-widget', fixed = TRUE)
+  expect_match(html, '"color":[2,"#AEB7BD",8]', fixed = TRUE)
+  expect_true("plotly-binding" %in% vapply(htmltools::findDependencies(tags), `[[`, "", "name"))
   combined <- list(plotly::subplot(phw_plotly(pts), phw_plotly(big)), phw_plotly(plotly::subplot(pts, big)))
   for (s in combined) {
     tr <- built(s)$data
