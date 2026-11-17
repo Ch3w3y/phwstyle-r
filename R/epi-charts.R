@@ -467,7 +467,9 @@ phw_funnel <- function(data, numerator, denominator, label = NULL, type = c("pro
 #' good direction are blue and in the bad direction orange, as in NHS
 #' "Making Data Count" charts.
 #'
-#' @param data A data frame with one row per time point.
+#' @param data A data frame with one row per time point. For several series,
+#'   such as areas, draw one chart per series and combine them with
+#'   [phw_arrange()].
 #' @param x,y The time column (a date, date-time or number, not text) and
 #'   the measure, unquoted as in dplyr (strings work too). Rows with a
 #'   missing `x` or `y` are left out, with a message.
@@ -507,6 +509,12 @@ phw_spc <- function(data, x, y, type = c("xmr", "run"), improvement = c("none", 
   if (!is.null(baseline)) check_whole_number(baseline, 2)
   data <- drop_missing(data, c(x, y))
   if (nrow(data) < 2) cli::cli_abort("An SPC chart needs at least 2 points, not {nrow(data)}.")
+  if (anyDuplicated(data[[x]])) {
+    twice <- cli::cli_vec(format(unique(data[[x]][duplicated(data[[x]])])), list("vec-trunc" = 3))
+    cli::cli_abort(c("{.arg data} must have one row per time point.",
+                     x = "{.field {x}} has {length(twice)} value{?s} on more than one row: {.val {twice}}.",
+                     i = "Filter to one series, or draw one chart per series and combine them with {.fn phw_arrange}."))
+  }
   data <- data[order(data[[x]]), , drop = FALSE]
   v <- data[[y]]
   n <- length(v)
