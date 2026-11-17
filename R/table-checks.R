@@ -17,6 +17,17 @@ check_table_data <- function(data, arg = "data", call = rlang::caller_env()) {
   invisible(data)
 }
 
+# NaN and Inf show as blank cells, as NA does. Left to each renderer, they
+# show as "Inf", an infinity sign, blank or an Excel error that breaks a SUM.
+blank_non_finite <- function(data) {
+  for (j in which(vapply(data, is.numeric, logical(1)))) {
+    v <- data[[j]]
+    bad <- is.nan(v) | is.infinite(v)
+    if (any(bad)) data[[j]][bad] <- NA
+  }
+  data
+}
+
 as_data_frame_hint <- "Convert a {.fn table} or a matrix with {.fn as.data.frame} first."
 
 check_flextable <- function(x, call = rlang::caller_env()) {

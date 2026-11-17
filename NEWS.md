@@ -422,6 +422,11 @@ says what to change.
 * `phw_group_table(drop = FALSE)` keeps factor levels that have no records,
   such as an empty age band or year, as rows and columns of zeros, as
   `phw_crosstab()` does. Before, it left them out.
+* `phw_flextable()`, `phw_gt()`, `phw_reactable()`, `phw_datatable()` and
+  `phw_write_xlsx()` show `NaN`, `Inf` and `-Inf` as blank cells, as they
+  show `NA`. Before, each showed them its own way, and `phw_write_xlsx()`
+  wrote them as the Excel errors `#VALUE!` and `#NUM!`, so a `SUM` over the
+  column failed.
 * `phw_group_table(layout = "columns")` with three or more row variables
   puts the levels of the subgroup block ("Total by ...") in the innermost
   variable's column. Before, they sat in the second column.
