@@ -501,10 +501,11 @@ use_phw_ggplot <- function(..., palette = NULL) {
     options(phwstyle.palette = palette)
   }
   theme <- theme_phw(...)
+  # Carried by the theme, so the ready-made charts follow these settings
+  # for as long as it, or a theme_update() of it, is the session theme.
+  # See chart_theme().
+  attr(theme, "phwstyle_args") <- list(...)
   old <- ggplot2::theme_set(theme)
-  # Remembered for the ready-made charts, see chart_theme().
-  phw_session$theme <- theme
-  phw_session$args <- list(...)
   phw_style_extensions()
   set_phw_geom_defaults(theme, accessible = isTRUE(list(...)[["accessible"]]))
   # Ordered factors get ggplot2's ordinal scale, which no version of ggplot2
@@ -528,8 +529,6 @@ use_phw_ggplot <- function(..., palette = NULL) {
   }
   invisible(old)
 }
-
-phw_session <- new.env(parent = emptyenv())
 
 # The default scales that come from options rather than the theme: all of
 # them before ggplot2 4.0, and the ordinal ones on every version. Arguments

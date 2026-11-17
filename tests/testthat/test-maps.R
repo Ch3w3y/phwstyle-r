@@ -36,6 +36,8 @@ test_that("maps follow the settings given to use_phw_ggplot() and keep their own
   expect_s3_class(th$panel.grid, "element_blank")
   expect_s3_class(th$panel.grid.major.x, "element_blank")
   expect_s3_class(th$axis.text, "element_blank")
+  theme_update(plot.title = element_text(colour = "red"))
+  expect_equal(phw_map(d, area, rate, areas)$theme$text$size, 16)
   theme_set(theme_grey())
   expect_equal(phw_map(d, area, rate, areas)$theme$text$size, 11)
 })
