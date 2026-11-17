@@ -617,7 +617,8 @@ set_geom_defaults <- function(geoms, new) {
 #' @param plot A ggplot, a patchwork (e.g. from [phw_arrange()]), a cowplot
 #'   figure, or any grob or gtable (e.g. from [gridExtra::arrangeGrob()]).
 #' @param source,date Passed to [phw_caption()]. Leave both `NULL` to keep
-#'   any caption already on the plot.
+#'   any caption already on the plot. A `note` given in `...` is then added
+#'   under it.
 #' @param logo Logo variant (see [phw_logo()]), a path to your own PNG, or
 #'   `FALSE` for none. When no PHW logo is installed, `org` is written in its
 #'   place.
@@ -674,16 +675,21 @@ phw_finalise <- function(plot, source = NULL, date = NULL, logo = "blue",
   }
   check_one_string(org)
   text_size <- text_size %||% (8.5 * session_text_scale())
-  caption <- caption_from(source, date, list(...), arg = "...")
+  kept <- NULL
   if (inherits(plot, "patchwork")) {
-    if (is.null(caption)) caption <- plot$patches$annotation$caption
+    kept <- plot$patches$annotation$caption
     plot <- plot + patchwork::plot_annotation(caption = NULL)
   } else if (inherits(plot, "ggplot")) {
-    if (is.null(caption)) caption <- plot$labels$caption
+    kept <- plot$labels$caption
     plot <- plot + ggplot2::labs(caption = NULL)
   } else if (!inherits(plot, "grob")) {
     cli::cli_abort("{.arg plot} must be a ggplot, a patchwork or a grob, not {.cls {class(plot)}}.")
   }
+  # With no new source or date, the plot's own caption stays as the first
+  # line and any note from `...` goes under it.
+  dots <- list(...)
+  if (is.null(source) && is.null(date)) dots$note <- c(kept, dots$note)
+  caption <- caption_from(source, date, dots, arg = "...")
   txt <- paste(c(caption, team), collapse = "\n")
   fam <- phw_font()
   g <- if (inherits(plot, "gtable")) {
