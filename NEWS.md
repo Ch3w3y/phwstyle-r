@@ -442,6 +442,11 @@ says what to change.
   `pandoc_args` gave LaTeX an option it doesn't know, so the text was 10pt.
   A `geometry` that sets only the margins keeps A4 pages: set `papersize` to
   change the paper. The Quarto `phw-pdf` format works the same way.
+* `phw_pdf_document()` and the Quarto `phw-pdf` format colour links in PHW
+  colours: web links in PHW blue, as in Word and HTML, and cross-references
+  in navy. Before, pandoc's own blue and maroon replaced them. Set
+  `linkcolor`, `urlcolor`, `citecolor` or `filecolor` in the YAML header to
+  change them.
 * `phw_download_logos()` saves nothing when the reply isn't an SVG.
 
 ## Interactive outputs and colours
