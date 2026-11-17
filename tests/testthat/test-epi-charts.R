@@ -102,6 +102,14 @@ test_that("phw_epicurve draws a trailing average of the total count", {
   expect_equal(b$plot$scales$get_scales("colour")$get_labels(), "3-day average")
 })
 
+test_that("phw_epicurve repeats the average line in every panel faceted by group", {
+  d <- data.frame(onset = as.Date("2025-01-01") + c(0, 1, 1, 2, 2, 2, 3, 3, 3, 3), g = rep(c("A", "B"), 5))
+  p <- phw_epicurve(d, onset, group = g, interval = "day", average = 3) + ggplot2::facet_wrap(~group)
+  line <- ggplot2::ggplot_build(p)$data[[2]]
+  expect_equal(as.vector(table(line$PANEL)), c(4, 4))
+  expect_equal(line$y[line$PANEL == 2], c(NA, NA, 2, 3))
+})
+
 test_that("phw_epicurve names the average line from the interval or average_label", {
   d <- data.frame(onset = as.Date("2025-01-06") + 7 * 0:5)
   label <- function(p) ggplot2::ggplot_build(p)$plot$scales$get_scales("colour")$get_labels()

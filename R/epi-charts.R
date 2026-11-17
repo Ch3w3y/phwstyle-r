@@ -195,7 +195,8 @@ phw_epicurve <- function(data, date, group = NULL, count = NULL,
     label <- average_label %||% paste0(average, "-", interval, " average")
     p <- p +
       ggplot2::geom_line(ggplot2::aes(x = .data$period + centre, y = .data$average, colour = label),
-                         data = full[!duplicated(full$period), ], linewidth = 1, na.rm = TRUE) +
+                         data = full[!duplicated(full$period), c("period", "average")],
+                         linewidth = 1, na.rm = TRUE) +
       ggplot2::scale_colour_manual(values = stats::setNames(phw_colours[["black"]], label), name = NULL)
   }
   xargs <- list(expand = ggplot2::expansion(mult = c(0.01, 0.02)),
