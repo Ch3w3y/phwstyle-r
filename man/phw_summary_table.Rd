@@ -37,7 +37,10 @@ otherwise.}
 
 \item{numeric}{How to summarise numeric variables: \code{"median_iqr"} or
 \code{"mean_sd"}. A \code{difftime} column, such as a length of stay made by
-subtracting two dates, counts as numeric, in its own units.}
+subtracting two dates, counts as numeric, in its own units.
+A date or date-time column, such as an onset date, is summarised
+the same way and shown as dates (dd/mm/yyyy); its standard deviation
+is in days.}
 
 \item{total}{Add a total column when \code{by} is given?}
 

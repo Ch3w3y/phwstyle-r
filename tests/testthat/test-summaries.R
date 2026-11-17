@@ -252,6 +252,20 @@ test_that("phw_summary_table summarises a difftime column as a number", {
   expect_equal(attr(tab, "note"), "n (%); median (IQR)")
 })
 
+test_that("phw_summary_table summarises a date column as dates", {
+  d <- data.frame(g = rep(c("A", "B"), 4), onset = as.Date("2024-01-01") + c(0:5, NA, NA))
+  tab <- phw_summary_table(d, by = g, n_in_header = FALSE)
+  expect_equal(tab$Characteristic, c("onset", "Unknown"))
+  expect_equal(unname(unlist(tab[1, -1])),
+               c("03/01/2024 (02/01/2024 to 04/01/2024)", "04/01/2024 (03/01/2024 to 05/01/2024)",
+                 "04/01/2024 (02/01/2024 to 05/01/2024)"))
+  expect_equal(unname(unlist(tab[2, -1])), c("1", "1", "2"))
+  tab <- phw_summary_table(d, by = g, numeric = "mean_sd", n_in_header = FALSE)
+  expect_equal(tab[[2]][1], "03/01/2024 (2.0)")
+  d$onset <- as.POSIXct("2024-01-01 10:00", tz = "UTC") + 86400 * c(0:5, NA, NA)
+  expect_equal(nrow(phw_summary_table(d, by = g)), 2)
+})
+
 test_that("phw_group_table and phw_crosstab leave out rows with a missing value", {
   gd <- data.frame(g = c("A", "A", "B"), t = c("1", "2", "1"), v = c(5, NA, 2))
   expect_message(tab <- phw_group_table(gd, c(g, t), value = v), "Left out 1 row")
