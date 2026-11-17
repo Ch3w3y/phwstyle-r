@@ -55,7 +55,8 @@ Any plotly chart type works: scatter and lines, bars, pies and
 donuts (given the PHW colours and white slice borders), box and violin plots, histograms,
 heatmaps, contours and choropleth maps, and markers coloured by a number
 (which start at the same blue as the ggplot2 charts, not the palest
-one, unless you set \code{colorscale} or \code{colors}), and figures combined with
+one, unless you set \code{colorscale} or \code{colors}, and draw a missing number
+in light grey), and figures combined with
 \code{\link[plotly:subplot]{plotly::subplot()}}. Use \code{\link[=phw_plotly_colorscale]{phw_plotly_colorscale()}} to set a PHW scale on
 a trace yourself.
 
