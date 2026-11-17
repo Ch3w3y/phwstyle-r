@@ -146,8 +146,8 @@ summary_rows <- function(x) {
 }
 
 # Rows a heat scale colours. On a summary table, only its level rows:
-# headings, subtotals and totals keep their own styling and stay out of the
-# scale. Any other table, or one whose rows no longer match its row types,
+# headings, subtotals, subgroup totals and totals keep their own styling and
+# stay out of the scale. Any other table, or one whose rows no longer match its row types,
 # colours every row.
 heat_rows <- function(x) {
   types <- attr(x, "row_type")
