@@ -646,6 +646,10 @@ says what to change.
   the axis title. Other annotations, including the axis titles of a
   faceted ggplot, stay where they are. A bottom margin you set with
   `margin = list(b = )` is kept as the least space under the chart.
+* `phw_plotly(legend = "right")` puts the legend of a ggplot to the right
+  of the plot, as it does for a `plot_ly()` chart. Before, a chart with
+  `theme_phw()` kept its legend under the chart, as a vertical list next
+  to the source line.
 * `phw_plotly()` names the legend of a ggplot the way the static chart
   does, with one entry per group. Before, a chart with a second layer in
   the legend, such as `phw_epicurve(average = )` or
