@@ -3,7 +3,8 @@
 What `phw_plotly()` has to know about an unbuilt `plot_ly()` object.
 
 - Each entry of `p$x$attrs` is evaluated against the data stored under its own name: `plotly::plotly_data(p, names(p$x$attrs)[i])`. There is no `visdat` field on an attr. Reading `visdat[[1]]` gives every `add_trace(data = ...)` trace the first trace's data.
-- Discrete `color` mapping uses only the first trace's `colors`, for every trace. Give all traces one shared vector.
+- Colour mapping, discrete or numeric, uses only the first trace's `colors`, for every trace, even when the first trace maps no colour. Give all traces one shared vector, plain ones included.
+- A trace with no colour mapping takes `colorway[i]`, where `i` is its place among all built traces. A plain line before the groups takes colorway slot 1, which is the first group key colour, so `phw_plotly()` drops the key's colours from the colorway.
 - A named `colors` vector is matched by name (`scales::col_factor(levels = names(pal))`). An unnamed one is spread over all levels, unused ones included, and interpolated when it is shorter.
 - Missing values are always `transparent`: `map_color()` hard-codes `na.color`. Map them to an "NA" group instead. plotly already names that trace "NA".
 - `phw_colour_key()` overflow warnings fire at most once every 8 hours, so a test that expects one needs `withr::local_options(rlib_warning_verbosity = "verbose")`. With verbose on, it warns once per overflow group: use `capture_warnings()`, not `expect_warning()`.
