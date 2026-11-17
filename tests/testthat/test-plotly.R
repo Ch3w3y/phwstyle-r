@@ -32,6 +32,28 @@ test_that("plot_ly charts coloured by a number start at the blue ggplot charts u
   expect_lte(max(abs(grDevices::col2rgb(first) - grDevices::col2rgb(phw_continuous_auto[[1]]))), 1)
 })
 
+test_that("a missing number is drawn in grey, alone or in a subplot", {
+  d <- data.frame(x = 1:3, y = 1:3, rate = c(2, NA, 8))
+  grey <- phw_colours[["grey_light"]]
+  want <- list(2, grey, 8)
+  pts <- plotly::plot_ly(d, x = ~x, y = ~y, color = ~rate, type = "scatter", mode = "markers")
+  big <- plotly::plot_ly(d, x = ~x, y = ~y, color = ~rate, size = I(30), type = "scatter", mode = "markers")
+  marker <- built(phw_plotly(pts))$data[[1]]$marker
+  expect_equal(unclass(marker$color), want, ignore_attr = TRUE)
+  expect_equal(unclass(marker$line$color), want, ignore_attr = TRUE)
+  # The page plotly.js draws from: a plotly widget, with the grey in its data.
+  tags <- htmltools::as.tags(phw_plotly(pts))
+  html <- as.character(tags)
+  expect_match(html, 'class="plotly html-widget', fixed = TRUE)
+  expect_match(html, '"color":[2,"#AEB7BD",8]', fixed = TRUE)
+  expect_true("plotly-binding" %in% vapply(htmltools::findDependencies(tags), `[[`, "", "name"))
+  combined <- list(plotly::subplot(phw_plotly(pts), phw_plotly(big)), phw_plotly(plotly::subplot(pts, big)))
+  for (s in combined) {
+    tr <- built(s)$data
+    expect_equal(lapply(tr[c(1, 3)], function(t) unclass(t$marker$color)), list(want, want), ignore_attr = TRUE)
+  }
+})
+
 test_that("user annotations are added after the caption", {
   p <- plotly::plot_ly(groups_df, x = ~week, y = ~cases, type = "scatter", mode = "lines")
   note <- list(text = "note", x = 1, y = 1, showarrow = FALSE)

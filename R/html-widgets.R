@@ -239,7 +239,8 @@ wrap_widget <- function(widget, caption, cap, note = NULL) {
 #'   donuts (given the PHW colours and white slice borders), box and violin plots, histograms,
 #'   heatmaps, contours and choropleth maps, and markers coloured by a number
 #'   (which start at the same blue as the ggplot2 charts, not the palest
-#'   one, unless you set `colorscale` or `colors`), and figures combined with
+#'   one, unless you set `colorscale` or `colors`, and draw a missing number
+#'   in light grey), and figures combined with
 #'   [plotly::subplot()]. Use [phw_plotly_colorscale()] to set a PHW scale on
 #'   a trace yourself.
 #'
@@ -349,7 +350,41 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
     js <- paste(readLines(system.file("js", "plotly-bottom-legend.js", package = "phwstyle")), collapse = "\n")
     p <- htmlwidgets::onRender(p, js, data = list(margin = extra$margin$b %||% 0))
   }
+  grey_missing_numbers(p)
+}
+
+# plotly keeps a missing number in a trace's colour array, and plotly.js
+# draws it in its near-black fallback colour, which reads as a high value.
+# Only built traces hold that array, so a chart coloured by a number with a
+# missing value is built here, and built traces, such as a subplot()'s, are
+# greyed. The chart stays a plain plotly widget, which htmlwidgets names by
+# its first class.
+grey_missing_numbers <- function(p) {
+  ids <- rlang::names2(p$x$attrs)
+  unbuilt <- vapply(seq_along(p$x$attrs), function(i) {
+    a <- p$x$attrs[[i]]
+    if (inherits(a, "plotly_eval")) return(FALSE)
+    v <- mapped_values(a$color, p, ids[[i]])
+    is.numeric(v) && anyNA(v)
+  }, logical(1))
+  if (any(unbuilt)) p <- plotly::plotly_build(p)
+  if (length(p$x$data)) p$x$data <- lapply(p$x$data, grey_missing_number)
   p
+}
+
+grey_missing_number <- function(trace) {
+  grey <- function(x) {
+    if (!is.numeric(x) || !anyNA(x)) return(x)
+    out <- as.list(unclass(x))
+    out[is.na(x)] <- phw_colours[["grey_light"]]
+    structure(out, class = setdiff(oldClass(x), c("numeric", "integer")))
+  }
+  if (is.list(trace$marker)) {
+    trace$marker$color <- grey(trace$marker$color)
+    if (is.list(trace$marker$line)) trace$marker$line$color <- grey(trace$marker$line$color)
+  }
+  if (is.list(trace$line)) trace$line$color <- grey(trace$line$color)
+  trace
 }
 
 # The last title set on the chart, or on one axis, before phw_plotly():

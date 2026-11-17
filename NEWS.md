@@ -161,6 +161,9 @@ says what to change.
   `plotly::subplot()`. Before, the scale started at the palest blue, so the
   lowest values almost vanished on white and the same data looked
   different in the two kinds of chart.
+* `phw_plotly()` draws a missing value in a `plot_ly()` chart coloured by
+  a number in light grey, as the ggplot2 charts do. Before, plotly drew it
+  near-black, so it read as the highest value.
 * With `palette = "rag"` or `"rag_accessible"`, groups called "Red",
   "Amber" and "Green" (in any case) take the red, amber and green colours,
   whatever order they sort in. Before, they took the colours in sorted
