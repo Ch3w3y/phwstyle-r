@@ -498,3 +498,24 @@ test_that("a ggplot with a second layer in the legend lists each group once, by 
   both <- ggplot2::ggplot(two, ggplot2::aes(x, y, colour = a, shape = s)) + ggplot2::geom_point()
   expect_equal(legend_of(both), c("(A,1)", "(A,2)", "(B,1)", "(B,2)"))
 })
+
+test_that("ggrepel labels show as text in plotly, placed by their hjust and vjust", {
+  skip_if_not_installed("ggrepel")
+  text_traces <- function(w) Filter(function(t) identical(t$mode, "text"), built(w)$data)
+  set.seed(1)
+  u <- data.frame(unit = paste("Unit", 1:20), events = c(rpois(19, 10), 40), n = rep(1000, 20))
+  g <- phw_funnel(u, events, n, label = unit)
+  expect_no_warning(w <- phw_plotly(g))
+  lab <- text_traces(w)
+  expect_length(lab, 1)
+  expect_equal(lab[[1]]$text, "Unit 20")
+  expect_equal(lab[[1]]$textposition, "top center")
+  expect_s3_class(g$layers[[length(g$layers)]]$geom, "GeomTextRepel")
+
+  d <- data.frame(x = 1:2, y = 1:2, l = c("a", "b"))
+  boxed <- ggplot2::ggplot(d, ggplot2::aes(x, y, label = l)) + ggplot2::geom_point() +
+    ggrepel::geom_label_repel(hjust = 0)
+  expect_no_warning(lab <- text_traces(phw_plotly(boxed)))
+  expect_equal(as.vector(lab[[1]]$text), c("a", "b"))
+  expect_equal(unique(lab[[1]]$textposition), "middle right")
+})
