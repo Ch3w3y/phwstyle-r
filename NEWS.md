@@ -144,6 +144,10 @@ says what to change.
   now has the same colour in every panel. If a panel sets its own colours,
   `phw_plotly()` keeps them and says how to give the other panels PHW
   colours.
+* `phw_plotly()` gives every panel of a figure combined with
+  `plotly::subplot()`, or of a faceted ggplot, the PHW axis style. Before,
+  only the first panel had it and the others kept plotly's or ggplot2's
+  default axes.
 * `phw_plotly()` gives the groups of ggplots combined with
   `plotly::subplot()`, or converted with `plotly::ggplotly()`, the PHW
   colours, with a group the same colour in every panel. Before, they kept

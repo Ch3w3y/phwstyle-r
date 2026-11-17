@@ -315,7 +315,10 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
   axis <- list(color = col[["text_secondary"]], gridcolor = col[["grey_border"]],
                zerolinecolor = col[["grey_mid"]], linecolor = col[["grey_mid"]],
                tickfont = list(color = col[["text_secondary"]]))
-  axes <- lapply(c(xaxis = "xaxis", yaxis = "yaxis"), function(a) {
+  # A subplot() figure or a faceted ggplot has an x and a y axis per panel.
+  axis_names <- unlist(lapply(c(list(p$x$layout), p$x$layoutAttrs), names))
+  axis_names <- unique(c("xaxis", "yaxis", grep("^[xy]axis[0-9]+$", axis_names, value = TRUE)))
+  axes <- lapply(rlang::set_names(axis_names), function(a) {
     # ggplotly() gives its axis titles a font colour of their own.
     if (is.list(current_title(p, a))) axis$title <- list(font = list(color = col[["text_secondary"]]))
     axis
@@ -339,7 +342,6 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
     paper_bgcolor = "#FFFFFF", plot_bgcolor = "#FFFFFF",
     title = c(if (!is.null(title) && !is.list(title)) list(text = title),
               list(font = list(color = col[["navy"]], size = 17), x = 0, xanchor = "left")),
-    xaxis = axes$xaxis, yaxis = axes$yaxis,
     legend = if (legend == "bottom") list(orientation = "h", x = 0, y = -0.15, xanchor = "left",
                                           yanchor = "top", title = list(text = ""))
              else list(orientation = "v", title = list(text = "")),
@@ -348,6 +350,7 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
     margin = list(b = if (!is.null(cap)) 110 else 60, t = if (is.null(subtitle)) 50 else 75),
     annotations = ann
   )
+  base <- c(base, axes)
   if (legend == "none") base$showlegend <- FALSE
   extra <- list(...)
   for (nm in names(extra)) {

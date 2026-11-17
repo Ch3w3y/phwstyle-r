@@ -409,6 +409,20 @@ test_that("a ggplot's subtitle goes under its title and its caption becomes the 
   expect_match(title_text(untitled), "^<span[^>]*>Wales<br>2026</span>$")
 })
 
+test_that("every panel of a subplot() or a faceted ggplot gets the PHW axes", {
+  bars <- plotly::plot_ly(data.frame(week = 1:5, rate = 1:5), x = ~week, y = ~rate, type = "bar")
+  g <- ggplot2::ggplot(groups_df, ggplot2::aes(week, cases)) + ggplot2::geom_line() +
+    ggplot2::facet_wrap(~group, scales = "free")
+  for (p in list(plotly::subplot(bars, bars), g)) {
+    l <- built(phw_plotly(p))$layout
+    for (a in c("xaxis", "yaxis", "xaxis2", "yaxis2")) {
+      expect_equal(l[[a]]$gridcolor, phw_colours[["grey_border"]], label = a)
+      expect_equal(l[[a]]$linecolor, phw_colours[["grey_mid"]], label = a)
+      expect_equal(l[[a]]$tickfont$color, phw_colours[["text_secondary"]], label = a)
+    }
+  }
+})
+
 test_that("legend sets where a legend goes, not whether one trace gets one", {
   one <- plotly::plot_ly(groups_df, x = ~week, y = ~cases, type = "bar")
   expect_false(built(phw_plotly(one))$layout$showlegend)
