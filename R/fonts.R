@@ -95,8 +95,7 @@ phw_install_fonts <- function(dest = NULL, ask = interactive()) {
       file.path(Sys.getenv("HOME"), ".local", "share", "fonts")
     )
   }
-  check_one_string(dest, hint = "Give a folder path.")
-  if (!nzchar(dest)) cli::cli_abort("{.arg dest} must be a folder path, not an empty string.")
+  check_one_string(dest, allow_empty = FALSE, hint = "Give a folder path.")
   if (file.exists(dest) && !dir.exists(dest)) {
     cli::cli_abort("{.arg dest} is a file, not a folder: {.file {dest}}.")
   }

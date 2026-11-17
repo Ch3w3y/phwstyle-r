@@ -77,8 +77,8 @@ as_date_value <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_en
                  call = call)
 }
 
-# Single TRUE or FALSE, single non-NA string, single positive number and
-# single whole number, for arguments.
+# Single TRUE or FALSE, single non-NA string, single finite number, single
+# positive number and single whole number, for arguments.
 check_true_false <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
   if (!isTRUE(x) && !isFALSE(x)) {
     cli::cli_abort("{.arg {arg}} must be {.code TRUE} or {.code FALSE}, not {.obj_type_friendly {x}}.", call = call)
@@ -109,6 +109,14 @@ check_one_string <- function(x, arg = rlang::caller_arg(x), allow_null = FALSE, 
 check_positive_number <- function(x, arg = rlang::caller_arg(x), call = rlang::caller_env()) {
   if (!is.numeric(x) || length(x) != 1 || is.na(x) || x <= 0) {
     cli::cli_abort("{.arg {arg}} must be a single positive number, not {.val {x}}.", call = call)
+  }
+  invisible(x)
+}
+
+check_number <- function(x, arg = rlang::caller_arg(x), allow_null = FALSE, call = rlang::caller_env()) {
+  if (allow_null && is.null(x)) return(invisible(x))
+  if (!is.numeric(x) || length(x) != 1 || !is.finite(x)) {
+    cli::cli_abort("{.arg {arg}} must be a single number, not {.obj_type_friendly {x}}.", call = call)
   }
   invisible(x)
 }

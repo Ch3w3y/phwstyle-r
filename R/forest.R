@@ -43,9 +43,7 @@ phw_forest <- function(data, value, lower, upper, label, target = NULL, labels =
   check_numeric_col(data, value, "value")
   check_numeric_col(data, lower, "lower")
   check_numeric_col(data, upper, "upper")
-  if (!is.null(target) && !(is.numeric(target) && length(target) == 1 && is.finite(target))) {
-    cli::cli_abort("{.arg target} must be one number.")
-  }
+  check_number(target, allow_null = TRUE)
   data <- drop_missing(data, c(value, lower, upper))
   units <- data[[label]]
   if (anyNA(units)) cli::cli_abort("Every unit needs a {.arg label}: {.field {label}} has a missing value.")
