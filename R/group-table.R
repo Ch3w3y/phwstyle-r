@@ -208,8 +208,10 @@ phw_group_table <- function(data, rows, cols = NULL, value = NULL, fun = sum,
     add(heading, 0, "variable",
         all_rows, all_rows, blank = TRUE)
     # Indented one step under the heading, or in the innermost variable's column.
+    # Drawn like level rows, but typed apart: they are totals across the
+    # groups, so they stay out of heat and bar scales.
     lv_depth <- if (layout == "columns") k - 1 else 1
-    for (lv in levels_in(g, all_rows)) add(lv, lv_depth, "level", g == lv, all_rows)
+    for (lv in levels_in(g, all_rows)) add(lv, lv_depth, "subgroup", g == lv, all_rows)
   }
   if ("table" %in% totals) add(total_label, 0, "total", all_rows, all_rows)
   extra <- out

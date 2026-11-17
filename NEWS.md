@@ -333,6 +333,11 @@ says what to change.
   `phw_col_bar()` draw bars on the level rows only, scaled to the largest
   level. Headings, subtotals and totals show the number only. Before, the
   grand total set the scale, so every level bar came out a sliver.
+* On a group table with `totals = "subgroup"`, the "Total by ..." block
+  stays out of the heat and bar scales too, in `phw_flextable_heat()`,
+  `phw_flextable_bars()`, `phw_col_heat()` and `phw_col_bar()`. Before, its
+  rows set the top of the scale, so the group levels came out pale with
+  short bars. The block looks the same as before.
 * In `phw_flextable()`, the spanner above a summary, cross-tab or group
   table's columns takes the same colour as the column labels below it. With
   `style = "header"` it is white on the navy band, with a white rule under

@@ -672,3 +672,26 @@ test_that("phw_col_bar draws bars on the level rows of a summary table only", {
   expect_equal(width(4), "0%")
   expect_match(as.character(cell(ct$Total[4], 4)), ">60<", fixed = TRUE)
 })
+
+test_that("the subgroup total block stays out of heat and bar scales", {
+  dat <- data.frame(group = rep(c("A", "B", "C"), times = c(10, 20, 30)),
+                    type = rep(c("T1", "T2"), 30))
+  g <- phw_group_table(dat, c(group, type), totals = c("group", "subgroup", "table"))
+  sub <- which(g[[1]] %in% c("T1", "T2") & g$n == 30)
+  top <- which(g[[1]] %in% c("T1", "T2") & g$n == 15)
+  expect_length(sub, 2)
+  expect_length(top, 2)
+  skip_if_not_installed("flextable")
+  bg <- (phw_flextable(g) |> phw_flextable_heat(n))$body$styles$cells$background.color$data
+  expect_equal(unname(bg[top, "n"]), rep(toupper(utils::tail(seq_cols("teals", FALSE), 1)), 2))
+  expect_equal(unname(bg[sub, "n"]), rep("transparent", 2))
+  chunks <- flextable::information_data_chunk(phw_flextable(g) |> phw_flextable_bars(n))
+  chunks <- chunks[chunks$.part == "body" & chunks$.col_id == "n" & !is.na(chunks$width), ]
+  filled <- vapply(chunks$img_data, function(img) mean(toupper(img) == toupper(phw_colours[["light_teal"]])), 0)
+  expect_equal(filled[c(top, sub)], c(1, 1, 0, 0), tolerance = 0.02)
+  skip_if_not_installed("reactable")
+  cell <- phw_col_bar(g, n)$cell
+  width <- function(i) sub(".*width:([0-9.]+%);height.*", "\\1", as.character(cell(g$n[i], i)))
+  expect_equal(vapply(c(top, sub), width, ""), c("100%", "100%", "0%", "0%"))
+  expect_null(phw_col_heat(g, n)$style(g$n[sub[1]], sub[1]))
+})
