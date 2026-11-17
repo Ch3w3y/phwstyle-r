@@ -427,6 +427,10 @@ says what to change.
   show `NA`. Before, each showed them its own way, and `phw_write_xlsx()`
   wrote them as the Excel errors `#VALUE!` and `#NUM!`, so a `SUM` over the
   column failed.
+* A `phw_group_table()` cell with no records is blank when `fun` gives no
+  number for it, as `max` and `mean` do, and any `NaN` or `Inf` from `fun`
+  is blank too. Counts and sums still show 0. Before, `fun = max` warned
+  and showed `-Inf`.
 * `phw_group_table(layout = "columns")` with three or more row variables
   puts the levels of the subgroup block ("Total by ...") in the innermost
   variable's column. Before, they sat in the second column.

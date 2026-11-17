@@ -47,7 +47,9 @@ counted.}
 \code{sum} (so \code{value} can hold counts of aggregated data). Use e.g.
 \code{function(x) median(x, na.rm = TRUE)} for other statistics; group and
 total rows are then computed from the records in the group, not by
-adding up the rows below.}
+adding up the rows below. A cell with no records is 0 for \code{sum}, and
+blank for \code{max} or \code{mean}, which give no number for no records. Any
+\code{NaN} or \code{Inf} from \code{fun} is blank too.}
 
 \item{totals}{Which row totals to show. Any of:
 \itemize{
@@ -111,7 +113,7 @@ The renderers use it unless you give them their own \code{digits}.}
 }
 \value{
 A \code{phw_summary} data frame. Without \code{percent}, value columns are
-numeric (blank group rows are \code{NA}).
+numeric (blank group rows and blank cells are \code{NA}).
 }
 \description{
 Turns a raw data frame (one row per record, or with a value column) into

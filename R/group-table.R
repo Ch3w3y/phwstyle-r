@@ -24,7 +24,9 @@
 #'   `sum` (so `value` can hold counts of aggregated data). Use e.g.
 #'   `function(x) median(x, na.rm = TRUE)` for other statistics; group and
 #'   total rows are then computed from the records in the group, not by
-#'   adding up the rows below.
+#'   adding up the rows below. A cell with no records is 0 for `sum`, and
+#'   blank for `max` or `mean`, which give no number for no records. Any
+#'   `NaN` or `Inf` from `fun` is blank too.
 #' @param totals Which row totals to show. Any of:
 #'   * `"group"`: each group row shows the total for its group (e.g. Group A
 #'     shows the total for all of group A), at every level that has groups inside.
@@ -67,7 +69,7 @@
 #' @param digits Decimal places for percentages and non-integer values.
 #'   The renderers use it unless you give them their own `digits`.
 #' @return A `phw_summary` data frame. Without `percent`, value columns are
-#'   numeric (blank group rows are `NA`).
+#'   numeric (blank group rows and blank cells are `NA`).
 #' @examples
 #' set.seed(1)
 #' dat <- data.frame(
@@ -129,10 +131,13 @@ phw_group_table <- function(data, rows, cols = NULL, value = NULL, fun = sum,
   names(grp) <- c(rows, cols)
   n <- length(x)
   all_rows <- rep(TRUE, n)
+  # A cell with no records is fun() of no values: 0 for sum, and blank for
+  # max() and mean(), which give no number (and max() a warning).
   cell <- function(idx) {
-    v <- fun(x[idx])
+    v <- if (any(idx)) fun(x[idx]) else suppressWarnings(fun(x[idx]))
     if (length(v) != 1) cli::cli_abort("{.arg fun} must return a single value.")
-    as.numeric(v)
+    v <- as.numeric(v)
+    if (is.finite(v)) v else NA_real_
   }
 
   # ---- Columns ---------------------------------------------------------
@@ -240,7 +245,6 @@ phw_group_table <- function(data, rows, cols = NULL, value = NULL, fun = sum,
         none = NA_real_)
     }
   }
-  vals[is.nan(vals)] <- NA
   body_df <- if (percent == "none") {
     as.data.frame(vals)
   } else {
