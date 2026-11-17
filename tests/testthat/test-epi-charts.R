@@ -297,6 +297,18 @@ test_that("phw_pyramid stops when left is not a sex value", {
   expect_true(all(phw_pyramid(pyr, age, sex, value = n, left = "Male")$data$x[3:4] < 0))
 })
 
+test_that("phw_pyramid gives each sex the colour named after it", {
+  fills <- function(p) {
+    d <- unique(data.frame(sex = as.character(p$data$sex), fill = ggplot2::layer_data(p, 1)$fill))
+    stats::setNames(d$fill, d$sex)
+  }
+  pal <- c(Male = "#0000FF", Female = "#FF0000")
+  expect_equal(fills(phw_pyramid(pyr, age, sex, value = n, palette = pal))[c("Male", "Female")], pal)
+  expect_equal(fills(phw_pyramid(pyr, age, sex, value = n, palette = pal, left = "Male"))[c("Male", "Female")], pal)
+  expect_equal(unname(fills(phw_pyramid(pyr, age, sex, value = n, palette = unname(pal)))), unname(pal))
+  expect_equal(unname(fills(phw_pyramid(pyr, age, sex, value = n))), unname(phw_colours[c("navy", "teal")]))
+})
+
 test_that("phw_pyramid keeps every age band, including empty ones", {
   ages <- c("0-14", "15-29", "30-44", "45-64")
   pop <- expand.grid(age = factor(ages, ages), sex = c("F", "M"))

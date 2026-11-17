@@ -216,6 +216,12 @@ says what to change.
   function gives groups its colours in its own order.
 * `width` and other bar settings passed through `...` work in
   `phw_epicurve()` and `phw_pyramid()`.
+* `phw_pyramid()` gives each sex the colour named after it in `palette`,
+  as in `palette = c(Female = "#24A2B5", Male = "#285087")`. Before, it
+  dropped the names and gave the colours out in the order of the sexes, so
+  each sex could be drawn in the other's colour. Its colours now come from
+  `scale_fill_phw_d()`, so a sex value such as "Unknown" is drawn in grey,
+  as in the other charts.
 * `phw_pyramid()` shows every level of the `age` factor, so an age band
   with nobody in it stays on the axis as a gap. Before, it was dropped when
   `data` had one row per person, or no row for that band.

@@ -37,7 +37,9 @@ level.}
 \item{compare}{Optional data frame with the same columns and the same
 two \code{sex} values, drawn as outlines.}
 
-\item{palette}{Two colours, or a palette name.}
+\item{palette}{Two colours, or a palette name. Name the colours after
+the \code{sex} values, as in \code{c(Female = "#24A2B5", Male = "#285087")}, to
+choose which sex takes which colour.}
 
 \item{compare_colour}{Outline colour for \code{compare}.}
 
