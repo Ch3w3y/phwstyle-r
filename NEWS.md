@@ -194,6 +194,10 @@ says what to change.
 * `phw_plotly()` draws a missing value in a `plot_ly()` chart coloured by
   a number in light grey, as the ggplot2 charts do. Before, plotly drew it
   near-black, so it read as the highest value.
+* `phw_plotly()` draws a missing heat map cell in light grey, as the
+  static chart does, for `geom_tile()`, `geom_raster()` and `plot_ly()`
+  heat maps. Before, the cell was left white, so it read as the lowest
+  value.
 * `phw_plotly()` gives groups the PHW colours, and a number the PHW blues,
   when the chart starts with a trace that maps no colour, such as a Wales
   line added before the health boards. Before, plotly took the colours of
