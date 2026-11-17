@@ -556,6 +556,9 @@ says what to change.
   in navy. Before, pandoc's own blue and maroon replaced them. Set
   `linkcolor`, `urlcolor`, `citecolor` or `filecolor` in the YAML header to
   change them.
+* `phw_pdf_document()` and the Quarto `phw-pdf` format build a document with
+  two or more authors, and the cover lists each author on its own line.
+  Before, LaTeX failed to compile and no PDF was written.
 * `phw_download_logos()` saves nothing when the reply isn't an SVG.
 * A logo folder with only PNG logos now shows the logo in
   `phw_html_document()`, `phw_header()`, `phw_page_navbar()` and the Quarto

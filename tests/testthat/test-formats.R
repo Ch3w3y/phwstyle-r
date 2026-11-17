@@ -267,6 +267,19 @@ test_that("a PDF document renders with XeLaTeX", {
   expect_report_colours(gsub("\\\\#", "#", tex), "main")
 })
 
+test_that("a PDF document with two authors renders", {
+  skip_on_cran()
+  skip_if_not_installed("rmarkdown")
+  skip_if_not(rmarkdown::pandoc_available(), "pandoc is not available")
+  skip_if(!nzchar(Sys.which("xelatex")), "XeLaTeX is not installed")
+  local_ggplot_state()
+  dir <- withr::local_tempdir()
+  rmd <- file.path(dir, "authors.Rmd")
+  writeLines(c("---", "title: Report", 'author: ["Jane Smith", "Alan Jones"]', "---", "", "Hello."), rmd)
+  pdf <- rmarkdown::render(rmd, phw_pdf_document(), quiet = TRUE)
+  expect_true(file.exists(pdf))
+})
+
 test_that("a phw_flextable caption in a PDF document is numbered once", {
   skip_if_not_installed("rmarkdown")
   skip_if_not_installed("knitr")
@@ -307,6 +320,20 @@ test_that("a Quarto PDF colours its links in PHW navy and blue", {
   tex <- paste(readLines(tex, warn = FALSE), collapse = " ")
   links <- c("linkcolor={phwnavy}", "citecolor={phwnavy}", "urlcolor={phwblue}", "filecolor={phwblue}")
   for (link in links) expect_match(tex, link, fixed = TRUE)
+})
+
+test_that("a Quarto PDF with two authors renders", {
+  skip_on_cran()
+  quarto <- Sys.which("quarto")
+  skip_if(!nzchar(quarto), "Quarto is not installed")
+  skip_if(!nzchar(Sys.which("xelatex")), "XeLaTeX is not installed")
+  dir <- withr::local_tempdir()
+  suppressMessages(use_phw_quarto(dir, "none"))
+  writeLines(c("---", "title: Report", "author: [Jane Smith, Alan Jones]", "---", "", "Hello."),
+             file.path(dir, "authors.qmd"))
+  log <- withr::with_dir(dir, suppressWarnings(system2(quarto, c("render", "authors.qmd", "--to", "phw-pdf"),
+                                                       stdout = TRUE, stderr = TRUE)))
+  expect_true(file.exists(file.path(dir, "authors.pdf")), info = paste(utils::tail(log, 15), collapse = "\n"))
 })
 
 test_that("use_phw_quarto copies the extension and a template", {
