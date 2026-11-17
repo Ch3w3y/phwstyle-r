@@ -582,6 +582,10 @@ says what to change.
   the legend, such as `phw_epicurve(average = )` or
   `phw_forest(target = )`, read "(A,1)" and "(3-week average,1)", and the
   forest plot listed each group twice.
+* `phw_plotly()` keeps a legend title set with `plotly::layout()`, and the
+  legend title a ggplot or `phw_map()` shows. Before, it removed every
+  legend title. A ggplot whose theme hides the legend title, as
+  `theme_phw()` does, still has none.
 * `phw_plotly()` keeps a ggplot's subtitle, under the title, and its
   caption, as the source line under the chart. Before, both were dropped,
   so a chart captioned with `labs(caption = phw_caption(...))` lost its
