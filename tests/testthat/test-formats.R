@@ -267,6 +267,24 @@ test_that("a PDF document renders with XeLaTeX", {
   expect_report_colours(gsub("\\\\#", "#", tex), "main")
 })
 
+test_that("a Quarto PDF colours its links in PHW navy and blue", {
+  skip_on_cran()
+  quarto <- Sys.which("quarto")
+  skip_if(!nzchar(quarto), "Quarto is not installed")
+  skip_if(!nzchar(Sys.which("xelatex")), "XeLaTeX is not installed")
+  dir <- withr::local_tempdir()
+  suppressMessages(use_phw_quarto(dir, "none"))
+  writeLines(c("---", "title: T", "keep-tex: true", "---", "", "See [a link](https://example.org) and @sec-a.",
+               "", "# A {#sec-a}"), file.path(dir, "links.qmd"))
+  log <- withr::with_dir(dir, suppressWarnings(system2(quarto, c("render", "links.qmd", "--to", "phw-pdf"),
+                                                       stdout = TRUE, stderr = TRUE)))
+  tex <- file.path(dir, "links.tex")
+  if (!file.exists(tex)) fail(paste(c("quarto render failed:", utils::tail(log, 15)), collapse = "\n"))
+  tex <- paste(readLines(tex, warn = FALSE), collapse = " ")
+  links <- c("linkcolor={phwnavy}", "citecolor={phwnavy}", "urlcolor={phwblue}", "filecolor={phwblue}")
+  for (link in links) expect_match(tex, link, fixed = TRUE)
+})
+
 test_that("use_phw_quarto copies the extension and a template", {
   dir <- withr::local_tempdir()
   suppressMessages(use_phw_quarto(dir, "report"))
@@ -334,6 +352,9 @@ test_that("the YAML and pandoc_args replace the PHW page settings in a PDF", {
   default <- tex()
   expect_match(default, "\\\\documentclass\\[\\s*11pt,\\s*a4paper,\\s*\\]\\{article\\}")
   expect_match(default, "\\usepackage[top=3.2cm,bottom=2.6cm,left=2cm,right=2cm]{geometry}", fixed = TRUE)
+  links <- c("linkcolor={phwnavy}", "citecolor={phwnavy}", "urlcolor={phwblue}", "filecolor={phwblue}")
+  for (link in links) expect_match(default, link, fixed = TRUE)
+  expect_match(tex("urlcolor: red"), "urlcolor={red}", fixed = TRUE)
   yaml <- tex(c("fontsize: 12pt", "documentclass: report", "geometry: margin=1in"))
   expect_match(yaml, "\\\\documentclass\\[\\s*12pt,\\s*a4paper,\\s*\\]\\{report\\}")
   expect_match(yaml, "\\usepackage[margin=1in]{geometry}", fixed = TRUE)

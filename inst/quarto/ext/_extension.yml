@@ -73,6 +73,10 @@ contributes:
       geometry: [top=3.2cm, bottom=2.6cm, left=2cm, right=2cm]
       number-sections: true
       colorlinks: true
+      linkcolor: phwnavy
+      citecolor: phwnavy
+      urlcolor: phwblue
+      filecolor: phwblue
       include-in-header: phw-header.tex
       fig-dpi: 300
       format-resources:

@@ -15,9 +15,10 @@
 #'   "Page x of y" footer.
 #' * `phw_pdf_document()`: XeLaTeX with Ubuntu, a full-page gradient cover,
 #'   a running header band and a branded footer. Pages are A4 with PHW
-#'   margins, in an 11pt `article` with coloured links: set `papersize`,
-#'   `geometry`, `fontsize`, `documentclass` or `colorlinks` in the YAML
-#'   header to change them.
+#'   margins, in an 11pt `article` with links in PHW blue and
+#'   cross-references in navy: set `papersize`, `geometry`, `fontsize`,
+#'   `documentclass`, `colorlinks`, `linkcolor`, `urlcolor`, `citecolor` or
+#'   `filecolor` in the YAML header to change them.
 #'
 #' All three call [use_phw_ggplot()] (and [use_phw_flextable()] when
 #' flextable is installed) before knitting, so charts and tables match
