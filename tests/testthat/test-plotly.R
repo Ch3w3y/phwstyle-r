@@ -195,6 +195,26 @@ test_that("traces with their own data share one set of group colours", {
   expect_equal(cols, ggplot_colours(rbind(d1, d2))[names(cols)])
 })
 
+test_that("groups take the PHW colours after a trace that maps no colour, which keeps its own", {
+  wales <- data.frame(week = 1:3, cases = 2:4)
+  line <- function(p) plotly::add_lines(p, data = wales, x = ~week, y = ~cases, name = "Wales")
+  hb <- function(p, ...) plotly::add_lines(p, data = groups_df, x = ~week, y = ~cases, ...)
+  colours <- function(p) {
+    tr <- built(phw_plotly(p))$data
+    stats::setNames(vapply(tr, function(t) t$line$color, ""), vapply(tr, function(t) t$name, ""))
+  }
+  after <- colours(plotly::plot_ly() |> line() |> hb(color = ~group))
+  before <- colours(plotly::plot_ly() |> hb(color = ~group) |> line())
+  expect_equal(after[c("A", "B")], c(A = "rgba(40,80,135,1)", B = "rgba(36,162,181,1)"))
+  expect_equal(after[c("A", "B")], before[c("A", "B")])
+  expect_false(after[["Wales"]] %in% after[c("A", "B")])
+  expect_false(before[["Wales"]] %in% before[c("A", "B")])
+  num <- built(phw_plotly(plotly::plot_ly() |> line() |>
+                            plotly::add_markers(data = groups_df, x = ~week, y = ~cases, color = ~cases)))
+  scale <- num$data[[2]]$marker$colorscale
+  expect_equal(scale[c(1, nrow(scale)), 2], plotly::toRGB(phw_continuous_auto[c(1, 5)]))
+})
+
 test_that("a ggplot without a colour scale draws the same colours static and in plotly", {
   local_ggplot_state()
   use_phw_ggplot()

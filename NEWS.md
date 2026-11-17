@@ -170,6 +170,13 @@ says what to change.
 * `phw_plotly()` draws a missing value in a `plot_ly()` chart coloured by
   a number in light grey, as the ggplot2 charts do. Before, plotly drew it
   near-black, so it read as the highest value.
+* `phw_plotly()` gives groups the PHW colours, and a number the PHW blues,
+  when the chart starts with a trace that maps no colour, such as a Wales
+  line added before the health boards. Before, plotly took the colours of
+  all traces from the first one, so the groups kept plotly's default
+  colours and a number its default scale. A trace that maps no colour now
+  takes a palette colour no group uses, so it never shares a colour with a
+  group. A line added after the groups may change colour.
 * With `palette = "rag"` or `"rag_accessible"`, groups called "Red",
   "Amber" and "Green" (in any case) take the red, amber and green colours,
   whatever order they sort in. Before, they took the colours in sorted

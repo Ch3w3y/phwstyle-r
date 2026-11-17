@@ -350,6 +350,7 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
   p <- colour_built(p, palette, colorway)
   p <- colour_pies(p, palette, unname(colorway))
   p <- colour_mapped(p, palette)
+  if (!"colorway" %in% names(extra)) base$colorway <- spare_colorway(base$colorway, p)
   p <- do.call(plotly::layout, c(list(p), base))
   p <- plotly::config(p, displaylogo = FALSE, displayModeBar = modebar,
                       modeBarButtonsToRemove = c("lasso2d", "select2d", "autoScale2d",
@@ -708,8 +709,9 @@ plotly_scale_types <- c("heatmap", "contour", "histogram2d", "histogram2dcontour
 # A trace that maps `color` without `colors` gets plotly's own palette, so
 # give it PHW colours: a colour key for groups, and the continuous colours of
 # the ggplot2 charts for numbers and for heatmaps, contours and choropleths.
-# Every trace takes the same key, as plotly colours all traces from the first
-# one's `colors`.
+# Every trace takes the same key, and a trace with no `colors` takes those of
+# the first trace that has them, as plotly colours all traces from the first
+# one's.
 # A trace with its own key, such as one from phw_colour_key(), keeps it, with
 # "NA" added in grey when a value is missing.
 colour_mapped <- function(p, palette) {
@@ -742,7 +744,25 @@ colour_mapped <- function(p, palette) {
     }
     a
   }, p$x$attrs, values, keyed)
+  shared <- Find(Negate(is.null), lapply(p$x$attrs, `[[`, "colors"))
+  if (!is.null(shared)) {
+    p$x$attrs <- lapply(p$x$attrs, function(a) {
+      if (is.null(a$colors)) a$colors <- shared
+      a
+    })
+  }
   p
+}
+
+# A trace that maps no colour takes the colorway colour of its place among
+# all traces, so a line drawn before the groups would take the first group's
+# colour. Leave the colours of the groups' key out of the colorway while any
+# are left.
+spare_colorway <- function(colorway, p) {
+  key <- Find(Negate(is.null), lapply(p$x$attrs, `[[`, "colors"))
+  if (!is.character(key) || !rlang::is_named(key)) return(colorway)
+  spare <- colorway[!toupper(colorway) %in% toupper(key)]
+  if (length(spare)) spare else colorway
 }
 
 # A plotly::subplot() figure arrives with its traces built, in plotly's own
