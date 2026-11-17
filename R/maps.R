@@ -16,7 +16,8 @@
 #'   binned scale; text and factors get distinct colours.
 #' @param level A boundary level for [phw_boundaries()] such as
 #'   `"local_authority"`, or an sf data frame with `code` and `name` columns
-#'   that you have already loaded.
+#'   that you have already loaded. An area held as several rows, one per
+#'   island or part, is drawn as one area.
 #' @param bins Breaks for numeric `fill`, or a single number of bins (2 or
 #'   more). `bins = 2` splits the areas at a tidy number near the median. Not
 #'   used for text or factor `fill`.
@@ -151,6 +152,7 @@ map_boundaries <- function(level, detail, call = rlang::caller_env()) {
     if (!all(c("code", "name") %in% names(level))) {
       cli::cli_abort("{.arg level} must have {.field code} and {.field name} columns.", call = call)
     }
+    if (anyDuplicated(level$code)) level <- combine_parts(level)
     return(level)
   }
   phw_boundaries(level, detail = detail, quiet = TRUE)
