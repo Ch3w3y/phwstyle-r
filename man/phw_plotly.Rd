@@ -19,7 +19,9 @@ phw_plotly(
 \arguments{
 \item{p}{A plotly object or a ggplot.}
 
-\item{source, date}{Passed to \code{\link[=phw_caption]{phw_caption()}} and shown under the chart.}
+\item{source, date}{Passed to \code{\link[=phw_caption]{phw_caption()}} and shown under the chart.
+When they and \code{caption_args} give no source line, a ggplot shows its
+own caption there, such as one from \code{labs(caption = phw_caption(...))}.}
 
 \item{...}{Extra arguments for \code{\link[plotly:layout]{plotly::layout()}}. They override the PHW
 defaults; lists are merged, so \code{title = list(text = "My title")} keeps
@@ -48,7 +50,8 @@ A plotly object.
 Restyles a plotly figure with the PHW font, colour order, light
 gridlines, a horizontal legend under the chart, and hover labels in navy.
 It also trims the mode bar. You can pass it a plotly object, or a ggplot,
-which is converted with \code{\link[plotly:ggplotly]{plotly::ggplotly()}} first.
+which is converted with \code{\link[plotly:ggplotly]{plotly::ggplotly()}} first. A ggplot's subtitle
+goes under its title.
 }
 \details{
 Any plotly chart type works: scatter and lines, bars, pies and

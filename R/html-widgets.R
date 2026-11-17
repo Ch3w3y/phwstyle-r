@@ -226,10 +226,13 @@ wrap_widget <- function(widget, caption, cap, note = NULL) {
 #' Restyles a plotly figure with the PHW font, colour order, light
 #' gridlines, a horizontal legend under the chart, and hover labels in navy.
 #' It also trims the mode bar. You can pass it a plotly object, or a ggplot,
-#' which is converted with [plotly::ggplotly()] first.
+#' which is converted with [plotly::ggplotly()] first. A ggplot's subtitle
+#' goes under its title.
 #'
 #' @param p A plotly object or a ggplot.
 #' @param source,date Passed to [phw_caption()] and shown under the chart.
+#'   When they and `caption_args` give no source line, a ggplot shows its
+#'   own caption there, such as one from `labs(caption = phw_caption(...))`.
 #' @param legend Where the legend goes: `"bottom"`, `"right"` or `"none"`.
 #'   As in plotly, a chart with one trace has no legend; pass
 #'   `showlegend = TRUE` to show one.
@@ -297,7 +300,13 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
     cli::cli_abort("{.arg p} must be a plotly chart or a ggplot, not {.obj_type_friendly {p}}.")
   }
   cap <- caption_from(source, date, caption_args)
-  if (inherits(p, "ggplot")) p <- ggplotly_phw(p, palette)
+  subtitle <- NULL
+  if (inherits(p, "ggplot")) {
+    # ggplotly() leaves out the subtitle and the caption.
+    cap <- cap %||% label_text(p$labels$caption)
+    subtitle <- label_text(p$labels$subtitle)
+    p <- ggplotly_phw(p, palette)
+  }
   col <- phw_colours
   colorway <- plotly_colorway(p, palette)
   font <- list(family = paste0(phw_font(), ", Arial, sans-serif"), size = font_size, color = col[["text"]])
@@ -312,6 +321,11 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
     axis
   })
   title <- current_title(p)
+  if (!is.null(subtitle)) {
+    title <- paste(c(title$text, sprintf('<span style="font-size:%gpx;color:%s">%s</span>', font_size,
+                                         col[["text_secondary"]], gsub("\n", "<br>", subtitle))),
+                   collapse = "<br>")
+  }
   ann <- if (!is.null(cap)) list(list(
     name = "phw_source", text = paste0("<b>", gsub("\n", "<br>", cap), "</b>"), showarrow = FALSE,
     xref = "paper", yref = "paper", x = 1, y = 0, xanchor = "right", yanchor = "top",
@@ -331,7 +345,7 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
              else list(orientation = "v", title = list(text = "")),
     hoverlabel = list(bgcolor = col[["navy"]], bordercolor = col[["navy"]],
                       font = list(color = "#FFFFFF", family = font$family)),
-    margin = list(b = if (!is.null(cap)) 110 else 60, t = 50),
+    margin = list(b = if (!is.null(cap)) 110 else 60, t = if (is.null(subtitle)) 50 else 75),
     annotations = ann
   )
   if (legend == "none") base$showlegend <- FALSE
@@ -409,6 +423,10 @@ current_title <- function(p, axis = NULL) {
   }
   out
 }
+
+# A ggplot subtitle or caption as text: NULL when unset or not a
+# string, such as a plotmath expression.
+label_text <- function(x) if (is.character(x) && has_text(x)) paste(x, collapse = "\n")
 
 # plotly::ggplotly() builds the plot itself and ignores palettes stored in
 # the theme (ggplot2 >= 4.0), so add the default scales use_phw_ggplot()
