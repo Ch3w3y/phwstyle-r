@@ -231,6 +231,15 @@ test_that("phw_summary_table leaves a statistic blank when it can't be worked ou
   expect_equal(tab[[2]][1], "1.0 (-)")
 })
 
+test_that("phw_summary_table summarises a difftime column as a number", {
+  d <- data.frame(g = rep(c("A", "B"), 3),
+                  los = as.Date("2026-02-01") - as.Date("2026-01-01") + 0:5)
+  tab <- phw_summary_table(d, by = g, n_in_header = FALSE)
+  expect_equal(tab$Characteristic, "los")
+  expect_equal(unname(unlist(tab[1, -1])), c("33.0 (32.0 to 34.0)", "34.0 (33.0 to 35.0)", "33.5 (32.2 to 34.8)"))
+  expect_equal(attr(tab, "note"), "n (%); median (IQR)")
+})
+
 test_that("phw_group_table and phw_crosstab leave out rows with a missing value", {
   gd <- data.frame(g = c("A", "A", "B"), t = c("1", "2", "1"), v = c(5, NA, 2))
   expect_message(tab <- phw_group_table(gd, c(g, t), value = v), "Left out 1 row")
