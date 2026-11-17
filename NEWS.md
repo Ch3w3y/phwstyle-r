@@ -187,6 +187,12 @@ says what to change.
 
 ## Charts and maps
 
+* `phw_funnel()` draws the same chart whatever the columns are called.
+  Before, a denominator column named `value` was replaced by the computed
+  percentage, so the points were drawn at the wrong place along the x-axis,
+  and a `label` column named `zone` showed the zone names instead of the
+  units. The added `value` and `zone` columns in `$data` now get a dot in
+  front (`.value`, `.zone`) when `data` already has a column of that name.
 * `phw_map()` fills every part of an area when `level` is an sf data frame
   that holds the area as several rows, one per island or part, as some
   boundary files do. Before, only the first part took the area's colour and
