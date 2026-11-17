@@ -23,6 +23,12 @@ says what to change.
   instead of misreading it, and show how to convert it. `phw_epicurve()`
   also stops on a numeric date column. A blank text date, as `read.csv()`
   reads an empty cell, counts as a missing date.
+* A blank text group, as `read.csv()` reads an empty cell, counts as a
+  missing value in `phw_epicurve()`, `phw_pyramid()`, `phw_crosstab()`,
+  `phw_group_table()` and `phw_summary_table()`. It shows as "Unknown" (or
+  the `missing` label), or is left out with a message when `missing = NULL`.
+  Before, it became a group of its own with no name, which stopped
+  `phw_epicurve()` when printed and gave tables a made-up column heading.
 * Rows with a missing date, count, value, estimate or code are left out with
   one message saying how many. Before, they could turn a whole period into 0
   or blank a chart. `phw_crosstab(missing = NULL)` and

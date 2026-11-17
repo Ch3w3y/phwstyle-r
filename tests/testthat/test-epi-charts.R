@@ -300,6 +300,13 @@ test_that("phw_epicurve leaves out blank text dates as missing", {
   expect_equal(sum(p$data$n), 2)
 })
 
+test_that("phw_epicurve shows a blank text group as Unknown", {
+  d <- utils::read.csv(text = "onset,organism\n2025-01-06,Flu A\n2025-01-07,\n2025-01-14,RSV")
+  p <- phw_epicurve(d, onset, group = organism)
+  expect_equal(levels(p$data$group), c("Flu A", "RSV", "Unknown"))
+  expect_no_error(ggplot2::ggplot_build(p))
+})
+
 test_that("phw_epicurve drops empty groups unless keyed, and refuses negative counts", {
   d <- data.frame(onset = as.Date("2025-01-06") + 0:1,
                   g = factor(c("A", "B"), c("A", "B", "Unused")), n = c(2, 3))
@@ -327,6 +334,12 @@ test_that("phw_pyramid leaves out rows with a missing value and keeps percentage
   expect_equal(sum(abs(p$data$x)), 100)
   d <- rbind(pyr, data.frame(age = NA, sex = "Male", n = 5), data.frame(age = "40+", sex = NA, n = 5))
   expect_message(phw_pyramid(d, age, sex, value = n), "Left out 2 rows")
+})
+
+test_that("phw_pyramid leaves out a blank text sex as missing", {
+  d <- rbind(pyr, data.frame(age = "40+", sex = "", n = 5))
+  expect_message(p <- phw_pyramid(d, age, sex, value = n), "Left out 1 row")
+  expect_equal(sum(abs(p$data$x)), 100)
 })
 
 test_that("phw_pyramid stops on negative values", {
