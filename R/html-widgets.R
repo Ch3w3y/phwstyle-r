@@ -755,17 +755,19 @@ phw_plotly_colorscale <- function(palette = "blues", reverse = FALSE, n = 9) {
 
 # The colours plotly gives traces in turn: trace i takes colour i, counting
 # every trace. "main" needs the rest of "extended" behind it for charts with
-# more than six traces. A function palette is asked for as many colours as
-# there are traces. Sequential and diverging palettes drop their near-white
-# steps, which vanish on white, and spread what is left over the traces.
+# more than six traces. A function palette, or "highlight", is asked for as
+# many colours as there are traces. Sequential and diverging palettes drop
+# their near-white steps, which vanish on white, and spread what is left over
+# the traces.
 plotly_colorway <- function(p, palette) {
-  if (!is.function(palette) && !is_ramp(palette)) {
+  per_trace <- is.function(palette) || identical(palette, "highlight")
+  if (!per_trace && !is_ramp(palette)) {
     return(palette_colours(palette_for(palette, Inf)))
   }
   # plotly repeats its notes about the chart when it is printed.
   built <- suppressMessages(suppressWarnings(plotly::plotly_build(p)))
   n <- max(length(built$x$data), 1)
-  if (is.function(palette)) return(phw_pal(n, palette))
+  if (per_trace) return(phw_pal(n, palette))
   cols <- palette_colours(palette)
   phw_pal(n, cols[phw_contrast(cols) >= 1.3], type = "sequential")
 }

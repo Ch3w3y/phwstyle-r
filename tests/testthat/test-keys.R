@@ -91,6 +91,21 @@ test_that("keys overflow into other palettes with a warning", {
   expect_equal(anyDuplicated(k2), 0)
 })
 
+test_that("a highlight key keeps one navy group, and every other group grey", {
+  phw_key_reset("t_hl")
+  withr::defer(phw_key_reset("t_hl"))
+  navy <- toupper(phw_colours[["navy"]])
+  grey <- toupper(phw_colours[["grey_light"]])
+  expect_no_warning(k <- phw_colour_key(c("Wales", "A", "B", "C"), "t_hl", palette = "highlight"))
+  expect_equal(toupper(unname(k)), c(navy, grey, grey, grey))
+  k <- phw_colour_key(c("D", "Wales", "E"), "t_hl", palette = "highlight")
+  expect_equal(toupper(unname(k)), c(grey, navy, grey))
+  pinned <- phw_colour_key(c("A", "B", "C"), palette = "highlight", fixed = c(B = phw_colours[["navy"]]))
+  expect_equal(toupper(unname(pinned)), c(grey, navy, grey))
+  expect_equal(toupper(unname(phw_colour_key(c("A", "Other", "B", "C"), palette = "highlight"))),
+               c(navy, toupper(phw_colours[["grey_mid"]]), grey, grey))
+})
+
 test_that("pinned colours and phw_key_set work", {
   phw_key_reset("t_set")
   withr::defer(phw_key_reset("t_set"))

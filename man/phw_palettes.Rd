@@ -57,8 +57,8 @@ still look like PHW. Black and a dark rose-brown come last, for the
 same reason as black in \code{extended}. It is never used unless you ask
 for it: see \code{\link[=phw_default_palette]{phw_default_palette()}} for how to switch a whole script or
 document to it.
-\item \code{highlight} (qualitative, 2): navy for the focus series, light grey for
-everything else.
+\item \code{highlight} (qualitative): navy for the focus series, light grey for
+every other series, however many there are.
 \item \code{rag} (qualitative, 3): red / amber / green (RAG) status colours that
 keep 3:1 contrast on white. These were chosen for phwstyle, not taken from a PHW source.
 \item \code{rag_accessible} (qualitative, 3): like \code{rag}, but "good" is navy

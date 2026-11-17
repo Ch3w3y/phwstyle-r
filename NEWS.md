@@ -59,6 +59,12 @@ says what to change.
   `#24A2B5`, `#285087` instead of `#F43882`, `#FF5D0C`, `#24A2B5`.
   `"main"` also carries on into `"extended"`, so more than four groups no
   longer take colours from other palettes with a warning.
+* `palette = "highlight"` draws the first group in navy and every other
+  group in light grey, however many groups there are. This applies to
+  `phw_pal()`, `scale_*_phw_d()`, `phw_colour_key()`, `phw_plotly()` and
+  the leaflet functions. With `reverse = TRUE` the last group is navy.
+  Before, only the second group was grey and later groups took colours from
+  other palettes, and `phw_pal()` stopped when asked for more than two.
 * `scale_fill_phw_div()` and `scale_colour_phw_div()` take `midpoint` in the
   units of the data, as `ggplot2::scale_fill_gradient2()` does. With
   `transform = "log10"`, `midpoint = 1` now puts the neutral colour on 1, so

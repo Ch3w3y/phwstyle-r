@@ -125,6 +125,18 @@ test_that("plot_ly groups take the colours the ggplot2 scales give them", {
   expect_equal(cols[["High"]], plotly::toRGB(phw_colours[["teal"]]))
 })
 
+test_that("highlight greys every plot_ly trace after the first", {
+  withr::local_options(phwstyle.palette = "highlight")
+  d <- data.frame(x = 1:5, y = 1:5, g = c("a", "b", "c", "d", "e"))
+  rgb <- plotly::toRGB(phw_pal(5, "highlight"))
+  mapped <- plotly::plot_ly(d, x = ~x, y = ~y, color = ~g, type = "scatter", mode = "markers")
+  expect_equal(unname(trace_colours(mapped)), rgb)
+  p <- plotly::plot_ly(d, x = ~x)
+  for (i in 1:5) p <- plotly::add_lines(p, y = d$y + i, name = letters[i])
+  colorway <- built(phw_plotly(p))$layout$colorway
+  expect_equal(toupper(unlist(colorway))[1:5], phw_pal(5, "highlight"))
+})
+
 test_that("a sequential or diverging palette spreads over plot_ly groups, as in the ggplot2 scales", {
   d <- data.frame(x = 1:3, y = 1:3, g = c("a", "b", "c"))
   for (pal in c("blues", "orange_navy")) {

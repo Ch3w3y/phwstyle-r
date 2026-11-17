@@ -14,7 +14,29 @@ test_that("qualitative palettes refuse to invent colours", {
   expect_length(phw_pal(12, "extended"), 12)
   expect_error(phw_pal(13, "extended"), "has 12 colours")
   expect_error(phw_pal(13), "has 12 colours")
-  expect_error(phw_pal(3, "highlight"), "has 2 colours")
+})
+
+test_that("highlight draws the first group navy and every other group light grey", {
+  navy <- phw_colours[["navy"]]
+  grey <- phw_colours[["grey_light"]]
+  expect_equal(phw_pal(5, "highlight"), c(navy, rep(grey, 4)))
+  expect_equal(phw_pal(1, "highlight"), navy)
+  expect_equal(phw_pal(palette = "highlight"), c(navy, grey))
+  expect_equal(phw_pal(4, "highlight", reverse = TRUE), c(rep(grey, 3), navy))
+
+  d <- data.frame(x = 1, y = 1, g = factor(c("Wales", "Cardiff", "Swansea", "Newport", "Wrexham"),
+                                         levels = c("Wales", "Cardiff", "Swansea", "Newport", "Wrexham")))
+  colour_of <- function(scale, aes = "colour") {
+    g <- ggplot2::ggplot(d, ggplot2::aes(x, y, colour = g, fill = g)) + ggplot2::geom_point() + scale
+    ld <- ggplot2::layer_data(g)
+    stats::setNames(ld[[aes]], as.character(d$g[ld$group]))
+  }
+  expect_no_warning(cols <- colour_of(scale_colour_phw_d(palette = "highlight")))
+  expect_equal(unname(cols[levels(d$g)]), c(navy, rep(grey, 4)))
+  fill <- colour_of(scale_fill_phw_d(palette = "highlight"), "fill")
+  expect_equal(unname(fill[levels(d$g)]), c(navy, rep(grey, 4)))
+  rev_cols <- colour_of(scale_colour_phw_d(palette = "highlight", reverse = TRUE))
+  expect_equal(unname(rev_cols[levels(d$g)]), c(rep(grey, 4), navy))
 })
 
 test_that("sequential palettes interpolate", {
