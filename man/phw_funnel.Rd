@@ -50,8 +50,11 @@ keeps its colour and shape.}
 \item{...}{Passed to \code{\link[ggplot2:geom_point]{ggplot2::geom_point()}}, e.g. \code{size = 3}.}
 }
 \value{
-A ggplot. The units, with a \code{zone} column ("Within limits",
-"Above 95\%"...), are in \verb{$data}.
+A ggplot. The units are in \verb{$data}, with two added columns:
+\code{value} (the percentage or rate) and \code{zone} ("Within limits",
+"Above 95\%"...). If \code{data} already has a column with one of those names,
+the added column gets a dot in front (\code{.value}, \code{.zone}), so your
+columns are never replaced.
 }
 \description{
 Compares areas, providers or practices of different sizes against a

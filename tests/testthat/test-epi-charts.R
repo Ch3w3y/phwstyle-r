@@ -56,6 +56,24 @@ test_that("phw_funnel flags units outside the limits", {
   expect_silent(ggplot2::ggplot_build(p))
 })
 
+test_that("phw_funnel draws the same chart whatever the columns are called", {
+  set.seed(2)
+  d <- data.frame(u = paste("U", 1:30), n = round(runif(30, 200, 5000)))
+  d$e <- rbinom(30, d$n, 0.12)
+  d$e[1] <- round(d$n[1] * 0.3)
+  ref <- ggplot2::ggplot_build(phw_funnel(d, e, n, label = u))$data
+  clash <- data.frame(zone = d$u, value = d$n, e = d$e, region = "North")
+  p <- phw_funnel(clash, e, value, label = zone)
+  got <- ggplot2::ggplot_build(p)$data
+  for (k in 2:4) expect_equal(got[[k]][c("x", "y")], ref[[k]][c("x", "y")])
+  expect_equal(got[[4]]$label, ref[[4]]$label)
+  expect_equal(got[[3]]$colour, ref[[3]]$colour)
+  expect_equal(p$data$value, d$n)
+  expect_equal(p$data$zone, d$u)
+  expect_equal(p$data$.zone, phw_funnel(d, e, n)$data$zone)
+  expect_equal(p$data$.value, 100 * d$e / d$n)
+})
+
 test_that("phw_spc finds limits, shifts and trends", {
   v <- c(10, 11, 9, 10, 11, 9, 10, 30, 10, 11, 12, 12, 12, 12, 12, 12, 12)
   d <- data.frame(t = seq_along(v), v = v)

@@ -363,8 +363,11 @@ relabel_levels <- function(f, labels, call = rlang::caller_env()) {
 #'   Names are the default zone text and values the replacement. Each zone
 #'   keeps its colour and shape.
 #' @param ... Passed to [ggplot2::geom_point()], e.g. `size = 3`.
-#' @return A ggplot. The units, with a `zone` column ("Within limits",
-#'   "Above 95%"...), are in `$data`.
+#' @return A ggplot. The units are in `$data`, with two added columns:
+#'   `value` (the percentage or rate) and `zone` ("Within limits",
+#'   "Above 95%"...). If `data` already has a column with one of those names,
+#'   the added column gets a dot in front (`.value`, `.zone`), so your
+#'   columns are never replaced.
 #' @details Limits use the normal approximation to the binomial (for
 #'   proportions) or Poisson (for rates) distribution around the target.
 #' @examples
@@ -412,16 +415,22 @@ phw_funnel <- function(data, numerator, denominator, label = NULL, type = c("pro
   }
   se <- function(n) if (type == "proportion") sqrt(p0 * (1 - p0) / n) else sqrt(p0 / n)
   z <- stats::qnorm(1 - (1 - sort(limits)) / 2)
-  data$value <- multiplier * num / den
+  added <- function(name) {
+    while (name %in% names(data)) name <- paste0(".", name)
+    name
+  }
+  value_col <- added("value")
+  zone_col <- added("zone")
+  data[[value_col]] <- multiplier * num / den
   dev <- (num / den - p0) / se(den)
-  data$zone <- factor(ifelse(dev > z[2], paste0("Above ", limits[2] * 100, "%"),
+  zone <- factor(ifelse(dev > z[2], paste0("Above ", limits[2] * 100, "%"),
                       ifelse(dev > z[1], paste0("Above ", limits[1] * 100, "%"),
                       ifelse(dev < -z[2], paste0("Below ", limits[2] * 100, "%"),
                       ifelse(dev < -z[1], paste0("Below ", limits[1] * 100, "%"), "Within limits")))),
                       levels = c(paste0("Above ", rev(limits) * 100, "%"), "Within limits",
                                  paste0("Below ", limits * 100, "%")))
-  outer <- grepl(paste0(limits[2] * 100, "%"), data$zone)
-  data$zone <- relabel_levels(data$zone, labels)
+  outer <- grepl(paste0(limits[2] * 100, "%"), zone)
+  data[[zone_col]] <- relabel_levels(zone, labels)
   grid_n <- exp(seq(log(max(1, min(den) * 0.8)), log(max(den) * 1.1), length.out = 200))
   lines <- do.call(rbind, lapply(seq_along(z), function(k) {
     rbind(data.frame(n = grid_n, y = multiplier * (p0 + z[k] * se(grid_n)), limit = k, side = "upper"),
@@ -429,14 +438,14 @@ phw_funnel <- function(data, numerator, denominator, label = NULL, type = c("pro
   }))
   lines$grp <- paste(lines$limit, lines$side)
   zone_cols <- stats::setNames(c(phw_colours[["magenta"]], phw_colours[["amber"]], point_colour,
-                                 phw_colours[["navy"]], phw_colours[["teal"]]), levels(data$zone))
-  zone_shapes <- stats::setNames(c(17, 17, 16, 15, 15), levels(data$zone))
-  p <- ggplot2::ggplot(data, ggplot2::aes(x = .data[[denominator]], y = .data$value)) +
+                                 phw_colours[["navy"]], phw_colours[["teal"]]), levels(data[[zone_col]]))
+  zone_shapes <- stats::setNames(c(17, 17, 16, 15, 15), levels(data[[zone_col]]))
+  p <- ggplot2::ggplot(data, ggplot2::aes(x = .data[[denominator]], y = .data[[value_col]])) +
     ggplot2::geom_hline(yintercept = multiplier * p0, colour = phw_colours[["text"]], linewidth = 0.5) +
     ggplot2::geom_line(data = lines, ggplot2::aes(x = .data$n, y = .data$y, group = .data$grp,
                                                   linetype = factor(.data$limit)),
                        colour = phw_colours[["text_secondary"]], linewidth = 0.4, inherit.aes = FALSE) +
-    signal_points(ggplot2::aes(colour = .data$zone, shape = .data$zone), ...) +
+    signal_points(ggplot2::aes(colour = .data[[zone_col]], shape = .data[[zone_col]]), ...) +
     ggplot2::scale_colour_manual(values = zone_cols, name = NULL, drop = TRUE) +
     ggplot2::scale_shape_manual(values = zone_shapes, name = NULL, drop = TRUE) +
     ggplot2::scale_linetype_manual(values = c("dashed", "solid"), guide = "none") +
