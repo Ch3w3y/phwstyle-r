@@ -479,6 +479,12 @@ says what to change.
   read from the old file. Before, a second report rendered in the same
   session used the first report's colours and saved them into its own key
   file. Keys made before any key file was set are kept.
+* `phw_key_set()` changes the accessible copy of a key (`name@accessible`)
+  too, when there is one. Before, once a key file held that copy from an
+  earlier accessible render, a colour set by hand reached only the default
+  version of the report. Colours go into the copy as they do when it is
+  first made: a default-palette colour that isn't in `"accessible"` keeps
+  the group's accessible colour, or takes the next free one.
 * `phw_plotly_colorscale()` and `phw_pal()` take a whole number for `n`.
   Before, `phw_plotly_colorscale(n = 2.5)` made a scale whose last stop was
   0.67, not 1.

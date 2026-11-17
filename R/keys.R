@@ -171,18 +171,36 @@ key_id <- function(name, palette) {
 # in the same order so the two versions of a report line up. Colours that
 # are in both palettes (navy, teal, orange), grey and hand-picked colours
 # stay as they are; the rest take the next free accessible colour.
-key_mirror <- function(default, palette, neutral_colour) {
+key_mirror <- function(default, palette, neutral_colour, used = character()) {
   if (!length(default)) return(default)
-  col <- toupper(default)
-  house <- toupper(c(phw_palettes$extended, phw_palettes$accessible))
-  keep <- col %in% toupper(palette_colours(palette)) | !col %in% house |
-    col == toupper(neutral_colour)
+  keep <- mirror_keeps(default, palette, neutral_colour)
   out <- default
   out[!keep] <- NA
   for (l in names(default)[!keep]) {
-    out[[l]] <- next_colour(out[!is.na(out)], palette, neutral_colour)
+    out[[l]] <- next_colour(c(used, out[!is.na(out)]), palette, neutral_colour)
   }
   out
+}
+
+mirror_keeps <- function(col, palette, neutral_colour) {
+  col <- toupper(col)
+  house <- toupper(c(phw_palettes$extended, phw_palettes$accessible))
+  col %in% toupper(palette_colours(palette)) | !col %in% house |
+    col == toupper(neutral_colour)
+}
+
+# Colours set by hand reach an existing accessible copy as key_mirror()
+# would copy them, so both versions of a report agree whichever came first.
+# A group given a default-palette colour keeps the accessible colour it has.
+mirror_set <- function(acc, values) {
+  grey <- phw_colours[["grey_mid"]]
+  had <- toupper(acc[names(values)])
+  stays <- had %in% toupper(palette_colours("accessible")) &
+    !mirror_keeps(values, "accessible", grey)
+  values <- values[!stays]
+  others <- acc[setdiff(names(acc), names(values))]
+  acc[names(values)] <- key_mirror(values, "accessible", grey, used = others)
+  acc
 }
 
 next_colour <- function(used, palette, neutral_colour, ramp = NULL) {
@@ -224,7 +242,10 @@ next_colour <- function(used, palette, neutral_colour, ramp = NULL) {
 #' * `phw_key()` returns a stored key. The accessible copy of a key is
 #'   called `name@accessible` (see [phw_colour_key()]).
 #' * `phw_keys()` lists every key as a data frame.
-#' * `phw_key_set()` adds or changes colours by hand.
+#' * `phw_key_set()` adds or changes colours by hand. If the key has an
+#'   accessible copy, the colours go into it too, as when the copy is made:
+#'   a colour of the default palette that isn't in `"accessible"` keeps the
+#'   group's accessible colour, or takes the next free one.
 #' * `phw_key_recolour()` reassigns a whole key from a new palette, keeping
 #'   the group order and the colour of neutral groups such as "Other".
 #'   Groups named after the palette's colours, as in `"rag"`, take those
@@ -285,6 +306,9 @@ phw_key_set <- function(name, values) {
   vals <- phw_key(name)
   vals[names(values)] <- unname(values)
   key_store(name, vals)
+  acc_id <- paste0(name, "@accessible")
+  acc <- if (!endsWith(name, "@accessible")) phw_key(acc_id)
+  if (length(acc)) key_store(acc_id, mirror_set(acc, values))
   invisible(vals)
 }
 
