@@ -231,6 +231,15 @@ wrap_widget <- function(widget, caption, cap, note = NULL) {
 #' goes under its title. A ggplot that maps the `text` aesthetic shows only
 #' that text on hover, as `ggplotly(tooltip = "text")` does.
 #'
+#' A ggplot's secondary axis, such as one from [phw_sec_axis()], is drawn
+#' on the right (or the top), as in the static chart. Hover shows the
+#' second measure in the units of the main axis, so map the `text`
+#' aesthetic to show it in its own. A faceted chart can't show a secondary
+#' axis: `phw_plotly()` warns, and the series is read against the main
+#' axis. To combine charts that have one with [plotly::subplot()], pass the
+#' combined figure to `phw_plotly()` too, so each axis stays on its own
+#' chart.
+#'
 #' @param p A plotly object or a ggplot.
 #' @param source,date Passed to [phw_caption()] and shown under the chart.
 #'   When they and `caption_args` give no source line, a ggplot shows its
@@ -312,6 +321,7 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
     # ggplotly() draws the facet strips above the top panels in pixels.
     strip <- max(0, unlist(lapply(p$x$layout$shapes, function(s) if (identical(s$ysizemode, "pixel")) s$y1)))
   }
+  p <- overlay_own_panel(p)
   col <- phw_colours
   colorway <- plotly_colorway(p, palette)
   font <- list(family = paste0(phw_font(), ", Arial, sans-serif"), size = font_size, color = col[["text"]])
@@ -496,11 +506,72 @@ ggplotly_phw <- function(p, palette) {
   mappings <- c(list(p$mapping), lapply(p$layers, function(l) l$mapping))
   tooltip <- if (any(vapply(mappings, function(m) "text" %in% names(m), logical(1)))) "text" else "all"
   w <- plain_legend(plotly::ggplotly(unrepel(p), tooltip = tooltip), keys)
+  w <- secondary_axes(w, b)
   # ggplotly() gives the legend a title even when the theme blanks it.
   if (inherits(ggplot2::calc_element("legend.title", ggplot2::theme_get() + p$theme), "element_blank")) {
     w$x$layout$legend$title <- NULL
   }
   w
+}
+
+# ggplotly() drops a secondary axis, which leaves the second series read
+# against the main axis. Draw it as a second plotly axis over the main one,
+# matched to its range, with the secondary breaks placed in the main axis's
+# units as ggplot2 places them. plotly.js draws only an axis a trace is on,
+# so an empty trace goes on it. A faceted chart has one plotly axis per
+# panel, which this does not cover.
+secondary_axes <- function(w, b) {
+  panels <- b$layout$panel_params
+  for (a in c("x", "y")) {
+    view <- panels[[1]][[paste0(a, ".sec")]]
+    if (!inherits(view$scale$secondary.axis, "AxisSecondary")) next
+    if (length(panels) > 1) {
+      cli::cli_warn(c(
+        "{.fn phw_plotly} can't show the secondary axis of a faceted chart.",
+        i = "Its series are read against the main axis. Combine one chart per panel with {.code phw_plotly(plotly::subplot(...))} instead."
+      ))
+      next
+    }
+    breaks <- view$get_breaks()
+    keep <- !is.na(breaks)
+    title <- b$layout$resolve_label(view$scale, b$plot$labels)$secondary
+    axis <- w$x$layout[[paste0(a, "axis")]]
+    axis[c("range", "domain", "categoryorder", "categoryarray")] <- NULL
+    axis$title$text <- if (is.character(title)) paste(title, collapse = "\n") else ""
+    w$x$layout[[paste0(a, "axis2")]] <- utils::modifyList(axis, list(
+      overlaying = a, matches = a, anchor = if (a == "y") "x" else "y",
+      side = if (a == "y") "right" else "top", tickmode = "array",
+      tickvals = breaks[keep], ticktext = as.character(view$get_labels()[keep]),
+      showgrid = FALSE, zeroline = FALSE, automargin = TRUE
+    ))
+    trace <- list(type = "scatter", mode = "lines", x = list(), y = list(),
+                  showlegend = FALSE, hoverinfo = "skip")
+    trace[[paste0(a, "axis")]] <- paste0(a, "2")
+    w$x$data <- c(w$x$data, list(trace))
+  }
+  w
+}
+
+# plotly::subplot() renames each chart's axes but leaves an axis drawn over
+# another, such as a ggplot's secondary axis, over the first chart's axis.
+# Put it back over the main axis of its own chart: the one it is anchored
+# with.
+overlay_own_panel <- function(p) {
+  l <- p$x$layout
+  axes <- grep("^[xy]axis[0-9]*$", names(l), value = TRUE)
+  for (nm in axes) {
+    ax <- l[[nm]]
+    if (!is.character(ax$overlaying) || !is.character(ax$anchor)) next
+    main <- Filter(function(m) {
+      substr(m, 1, 1) == substr(nm, 1, 1) && is.null(l[[m]]$overlaying) && identical(l[[m]]$anchor, ax$anchor)
+    }, axes)
+    if (!length(main)) next
+    ref <- sub("axis", "", main[[1]])
+    if (identical(ax$matches, ax$overlaying)) l[[nm]]$matches <- ref
+    l[[nm]]$overlaying <- ref
+  }
+  p$x$layout <- l
+  p
 }
 
 # plotly drops ggrepel labels with a warning of its own, and it has no

@@ -700,6 +700,14 @@ says what to change.
   unrounded number such as "x: -240000". A ggplot that maps the `text`
   aesthetic now shows only that text on hover, as
   `plotly::ggplotly(tooltip = "text")` does.
+* `phw_plotly()` draws the secondary axis of a ggplot, such as one from
+  `phw_sec_axis()`, on the right (or the top) with its own breaks and
+  title, and it stays with its own chart in a `plotly::subplot()` figure
+  passed to `phw_plotly()`. Before, the axis was dropped without a word, so
+  the second measure was read against the main axis: a positivity of 30%
+  read as 184 cases. Hover still shows the second measure in the units of
+  the main axis; map the `text` aesthetic to show it in its own. A faceted
+  chart can't show the axis and now warns.
 * `phw_leaflet_polygons()`, `phw_boundaries()`, `phw_plotly()` and the
   colour key functions check their input first. `phw_boundaries()` checks
   `crs` before downloading anything.
