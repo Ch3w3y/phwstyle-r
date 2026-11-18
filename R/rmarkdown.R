@@ -168,7 +168,11 @@ link_docx_files <- function(prev) {
   force(prev)
   function(metadata, input_file, output_file, clean, verbose) {
     if (is.function(prev)) output_file <- prev(metadata, input_file, output_file, clean, verbose)
-    xml <- readLines(unz(output_file, "word/document.xml"), warn = FALSE, encoding = "UTF-8")
+    # Not readLines(unz()): before R 4.4 it can stop after the first line.
+    dir <- tempfile()
+    on.exit(unlink(dir, recursive = TRUE), add = TRUE)
+    part <- utils::unzip(output_file, "word/document.xml", exdir = dir, junkpaths = TRUE)
+    xml <- readLines(part, warn = FALSE, encoding = "UTF-8")
     if (any(grepl('r:(embed|id)="(?!rId)', xml, perl = TRUE))) {
       print(officer::read_docx(output_file), target = output_file)
     }
