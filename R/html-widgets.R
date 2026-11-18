@@ -895,6 +895,7 @@ colour_built <- function(p, palette, colorway) {
   key <- if (length(lv)) group_colours(list(factor(lv, lv)), palette)
   at <- seq(0, 1, length.out = 25)
   scale <- matrix(c(at, plotly::toRGB(scales::col_numeric(phw_continuous_auto, c(0, 1))(at))), ncol = 2)
+  gradient <- if (uses_ggplot_gradient(p$x$data)) ggplot_gradient()
   p$x$data <- lapply(seq_along(p$x$data), function(i) {
     if (missing[[i]]) {
       like <- p$x$data[grouped & panel == panel[[i]]]
@@ -911,6 +912,8 @@ colour_built <- function(p, palette, colorway) {
         plotly::toRGB(key[[gg[[paste(panel[[i]], rgb_of(x))]]]], rgba_alpha(x))
       } else if (!own && is_default(x) && is.matrix(x)) {
         scale
+      } else if (!is.null(gradient)) {
+        regradient(x, gradient)
       }
       # plotly reads the class to tell its defaults from colours a user set.
       if (is.null(new)) x else structure(new, class = oldClass(x))
@@ -981,6 +984,60 @@ shared_name <- function(names) {
 # The colours ggplot2's default scale gives up to n groups.
 ggplot_hue <- function(n) {
   unique(unlist(lapply(seq_len(n), function(k) rgb_of(plotly::toRGB(scales::hue_pal()(k))))))
+}
+
+# ggplotly() skips the continuous palette a theme sets too, so a number
+# comes out in ggplot2's default gradient, from #132B43 for low values to
+# #56B1F7 for high ones: hex colours in a colour scale and rgba() colours on
+# the marks, with no class. Nothing else says where on the scale a colour
+# sits, so look each one up on the gradient and give it the PHW colour at
+# the same place. Other scales cross the gradient too (PHW's own "gradient"
+# palette does near #326791), so only a figure that holds both ends of the
+# gradient, as the default scale gives its lowest and highest values, is
+# recoloured. A colour more than one step off the gradient is kept.
+ggplot_gradient <- function() {
+  at <- seq(0, 1, length.out = 1001)
+  list(from = grDevices::col2rgb(scales::seq_gradient_pal("#132B43", "#56B1F7")(at)),
+       to = scales::gradient_n_pal(phw_continuous_auto)(at))
+}
+
+uses_ggplot_gradient <- function(data) {
+  cols <- unique(unlist(rapply(data, plain_colours, how = "list")))
+  rgb <- colour_rgb(cols)
+  ends <- grDevices::col2rgb(c("#132B43", "#56B1F7"))
+  all(apply(ends, 2, function(end) any(colSums(rgb == end) == 3)))
+}
+
+regradient <- function(x, gradient) {
+  cols <- plain_colours(x)
+  if (!length(cols)) return(NULL)
+  rgb <- colour_rgb(cols)
+  new <- vapply(seq_along(cols), function(i) {
+    off <- abs(gradient$from - rgb[, i])
+    near <- which(colSums(off > 1) == 0)
+    if (!length(near)) return(NA_character_)
+    to <- gradient$to[[near[which.min(colSums(off[, near, drop = FALSE]))]]]
+    if (startsWith(cols[[i]], "#")) to else plotly::toRGB(to, rgba_alpha(cols[[i]]))
+  }, "")
+  swap <- stats::setNames(new, cols)[!is.na(new)]
+  hit <- x %in% names(swap)
+  if (!any(hit)) return(NULL)
+  x[hit] <- unname(swap[x[hit]])
+  x
+}
+
+# The unclassed hex and rgba() colours in a value, and their red, green and
+# blue, one column each.
+plain_colours <- function(x) {
+  if (!is.character(x) || !is.null(oldClass(x))) return(character())
+  unique(x[grepl("^(rgba\\(|#[0-9A-Fa-f]{6}$)", x)])
+}
+
+colour_rgb <- function(cols) {
+  vapply(cols, function(col) {
+    if (startsWith(col, "#")) as.numeric(grDevices::col2rgb(col))
+    else as.numeric(strsplit(gsub("^rgba\\(|\\)$", "", col), ",")[[1]][1:3])
+  }, numeric(3), USE.NAMES = FALSE)
 }
 
 is_plain_rgba <- function(x) {
