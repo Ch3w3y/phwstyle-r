@@ -65,9 +65,9 @@ test_that("phw_funnel draws the same chart whatever the columns are called", {
   clash <- data.frame(zone = d$u, value = d$n, e = d$e, region = "North")
   p <- phw_funnel(clash, e, value, label = zone)
   got <- ggplot2::ggplot_build(p)$data
-  for (k in 2:4) expect_equal(got[[k]][c("x", "y")], ref[[k]][c("x", "y")])
-  expect_equal(got[[4]]$label, ref[[4]]$label)
-  expect_equal(got[[3]]$colour, ref[[3]]$colour)
+  for (k in 2:5) expect_equal(got[[k]][c("x", "y")], ref[[k]][c("x", "y")])
+  expect_equal(got[[5]]$label, ref[[5]]$label)
+  expect_equal(got[[4]]$colour, ref[[4]]$colour)
   expect_equal(p$data$value, d$n)
   expect_equal(p$data$zone, d$u)
   expect_equal(p$data$.zone, phw_funnel(d, e, n)$data$zone)

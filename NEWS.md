@@ -192,6 +192,9 @@ says what to change.
   of any `ggrepel::geom_text_repel()` or `ggrepel::geom_label_repel()`
   layer, as plain text placed by its `hjust` and `vjust`. Before, plotly
   dropped them with a warning that this geom was not implemented.
+* `phw_plotly()` draws the 95% limits of `phw_funnel()` dashed and the
+  99.8% limits solid, as in the static chart. Before, plotly drew all four
+  limit lines solid, so a reader could not tell the two limits apart.
 * `phw_plotly()` gives a label the same colour in every pie of a figure.
   Before, each pie took its colours from its own labels, so a label could
   be orange in one pie and teal in the next, and the shared legend showed

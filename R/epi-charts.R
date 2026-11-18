@@ -452,23 +452,22 @@ phw_funnel <- function(data, numerator, denominator, label = NULL, type = c("pro
   outer <- grepl(paste0(limits[2] * 100, "%"), zone)
   data[[zone_col]] <- relabel_levels(zone, labels)
   grid_n <- exp(seq(log(max(1, min(den) * 0.8)), log(max(den) * 1.1), length.out = 200))
-  lines <- do.call(rbind, lapply(seq_along(z), function(k) {
-    rbind(data.frame(n = grid_n, y = multiplier * (p0 + z[k] * se(grid_n)), limit = k, side = "upper"),
-          data.frame(n = grid_n, y = multiplier * pmax(0, p0 - z[k] * se(grid_n)), limit = k, side = "lower"))
-  }))
-  lines$grp <- paste(lines$limit, lines$side)
+  limit_lines <- lapply(seq_along(z), function(k) {
+    lines <- rbind(data.frame(n = grid_n, y = multiplier * (p0 + z[k] * se(grid_n)), side = "upper"),
+                   data.frame(n = grid_n, y = multiplier * pmax(0, p0 - z[k] * se(grid_n)), side = "lower"))
+    ggplot2::geom_line(data = lines, ggplot2::aes(x = .data$n, y = .data$y, group = .data$side),
+                       linetype = c("dashed", "solid")[k], colour = phw_colours[["text_secondary"]],
+                       linewidth = 0.4, inherit.aes = FALSE)
+  })
   zone_cols <- stats::setNames(c(phw_colours[["magenta"]], phw_colours[["amber"]], point_colour,
                                  phw_colours[["navy"]], phw_colours[["teal"]]), levels(data[[zone_col]]))
   zone_shapes <- stats::setNames(c(17, 17, 16, 15, 15), levels(data[[zone_col]]))
   p <- ggplot2::ggplot(data, ggplot2::aes(x = .data[[denominator]], y = .data[[value_col]])) +
     ggplot2::geom_hline(yintercept = multiplier * p0, colour = phw_colours[["text"]], linewidth = 0.5) +
-    ggplot2::geom_line(data = lines, ggplot2::aes(x = .data$n, y = .data$y, group = .data$grp,
-                                                  linetype = factor(.data$limit)),
-                       colour = phw_colours[["text_secondary"]], linewidth = 0.4, inherit.aes = FALSE) +
+    limit_lines +
     signal_points(ggplot2::aes(colour = .data[[zone_col]], shape = .data[[zone_col]]), ...) +
     ggplot2::scale_colour_manual(values = zone_cols, name = NULL, drop = TRUE) +
     ggplot2::scale_shape_manual(values = zone_shapes, name = NULL, drop = TRUE) +
-    ggplot2::scale_linetype_manual(values = c("dashed", "solid"), guide = "none") +
     ggplot2::scale_x_continuous(labels = function(x) format(x, big.mark = ",", trim = TRUE, scientific = FALSE)) +
     ggplot2::labs(x = denominator, y = if (type == "proportion") "Percentage" else "Rate") +
     chart_theme(grid = "y")
