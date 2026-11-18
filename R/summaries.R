@@ -62,6 +62,7 @@ new_phw_summary <- function(df, row_type, spanner = NULL, note = NULL, label_col
     keys
   }
   if (!is.null(attr(x, "spanner"))) names(attr(x, "spanner")) <- rekey(names(attr(x, "spanner")))
+  if (!is.null(attr(x, "total_cols"))) attr(x, "total_cols") <- rekey(attr(x, "total_cols"))
   if (!is.null(attr(x, "col_header"))) colnames(attr(x, "col_header")) <- rekey(colnames(attr(x, "col_header")))
   x
 }
@@ -154,6 +155,14 @@ heat_rows <- function(x) {
   types <- attr(x, "row_type")
   if (length(types) != nrow(x)) return(seq_len(nrow(x)))
   which(types %in% c("level", "level0"))
+}
+
+# Columns of `j` that share one heat scale. A summary table's total columns
+# stay out of a scale shared with other columns, as its total rows do. Chosen
+# on their own, they get a scale of their own.
+heat_cols <- function(x, j) {
+  rest <- setdiff(j, attr(x, "total_cols"))
+  if (length(rest)) rest else j
 }
 
 #' @export
@@ -388,8 +397,10 @@ phw_crosstab <- function(data, rows, cols, count = NULL,
   df <- cbind(stats::setNames(data.frame(rownames(m), check.names = FALSE), var_label(data, rows, labels)), body)
   types <- rep("level0", nrow(df))
   if (totals) types[nrow(df)] <- "total"
-  new_phw_summary(df, types, spanner = var_label(data, cols, labels),
-                  note = if (percent != "none") sprintf("n (%% of %s)", percent) else NULL)
+  res <- new_phw_summary(df, types, spanner = var_label(data, cols, labels),
+                         note = if (percent != "none") sprintf("n (%% of %s)", percent) else NULL)
+  if (totals) attr(res, "total_cols") <- names(df)[ncol(df)]
+  res
 }
 
 #' Rates with confidence intervals by group

@@ -687,6 +687,36 @@ test_that("heat colours only the level rows of a summary table", {
   expect_true(all(bg[types == "level", "n"] != "transparent"))
 })
 
+test_that("heat leaves total columns out of a scale shared with other columns", {
+  skip_if_not_installed("flextable")
+  top <- toupper(utils::tail(seq_cols("teals", FALSE), 1))
+  bg <- function(ft) ft$body$styles$cells$background.color$data
+  dat <- data.frame(group = rep(c("A", "B", "C"), times = c(10, 20, 30)),
+                    type = rep(c("x", "y"), 30))
+  ct <- phw_crosstab(dat, group, type)
+  heated <- bg(phw_flextable(ct) |> phw_flextable_heat(-1))
+  expect_equal(unname(heated[, "Total"]), rep("transparent", 4))
+  expect_equal(unname(heated[3, c("x", "y")]), c(top, top))
+  expect_identical(heated, bg(phw_flextable(ct) |> phw_flextable_heat(where(is.numeric))))
+
+  renamed <- ct
+  names(renamed)[4] <- "All"
+  expect_equal(unname(bg(phw_flextable(renamed) |> phw_flextable_heat(-1))[, "All"]), rep("transparent", 4))
+
+  # Chosen on its own, the total column gets a scale of its own.
+  alone <- bg(phw_flextable(ct) |> phw_flextable_heat(Total))
+  expect_equal(unname(alone[3, "Total"]), top)
+
+  g <- phw_group_table(data.frame(a = rep(c("p", "q"), c(10, 50)), b = rep(c("r", "s", "t"), 20),
+                                  c = rep(c("u", "v"), each = 30)),
+                       a, cols = c(b, c), col_totals = c("group", "table"))
+  totals <- grep("Total", names(g), value = TRUE)
+  expect_length(totals, 4)
+  heated <- bg(phw_flextable(g) |> phw_flextable_heat(-1))
+  expect_true(all(heated[, totals] == "transparent"))
+  expect_true(top %in% heated[, setdiff(names(g)[-1], totals)])
+})
+
 test_that("phw_col_heat colours only the level rows of a summary table", {
   skip_if_not_installed("reactable")
   dat <- data.frame(group = rep(c("A", "B", "C"), times = c(10, 20, 30)),

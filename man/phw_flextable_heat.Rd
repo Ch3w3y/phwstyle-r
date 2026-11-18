@@ -51,7 +51,9 @@ adds a shape before each value as well.
 On a summary table from \code{\link[=phw_flextable]{phw_flextable()}}, only the level rows are
 coloured. Headings, subtotals and totals keep their own styling and do
 not count towards the colour scale, so a total does not make every other
-cell pale.
+cell pale. The same goes for the total columns of a \code{\link[=phw_crosstab]{phw_crosstab()}} or
+\code{\link[=phw_group_table]{phw_group_table()}}, so \code{j = -1} colours every column but the totals.
+Choose only total columns to colour them on a scale of their own.
 }
 \examples{
 if (requireNamespace("flextable", quietly = TRUE)) {
