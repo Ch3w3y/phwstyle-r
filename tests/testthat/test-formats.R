@@ -316,6 +316,34 @@ test_that("a phw_flextable caption in a PDF document is numbered once", {
   expect_false(any(grepl("\\caption{", tex, fixed = TRUE) | grepl("\\caption[]{", tex, fixed = TRUE)))
 })
 
+test_that("a phw_flextable in a plain HTML document brings the Ubuntu web font", {
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("flextable")
+  skip_if_not(rmarkdown::pandoc_available(), "pandoc is not available")
+  dir <- withr::local_tempdir()
+  rmd <- file.path(dir, "report.Rmd")
+  writeLines(c("---", "title: Tables", "---", "",
+               "```{r, echo = FALSE}",
+               "phwstyle::phw_flextable(data.frame(area = c('Conwy', 'Gwynedd'), cases = c(1234, 56)))",
+               "```"), rmd)
+  html <- readLines(rmarkdown::render(rmd, rmarkdown::html_document(self_contained = FALSE),
+                                      quiet = TRUE), warn = FALSE)
+  expect_true(any(grepl("phw-ubuntu-font", html, fixed = TRUE)))
+})
+
+test_that("a phw_flextable shown in the Viewer brings the Ubuntu web font", {
+  skip_if_not_installed("flextable")
+  ft <- phw_flextable(data.frame(area = c("Conwy", "Gwynedd"), cases = c(1234, 56)))
+  deps <- htmltools::findDependencies(htmltools::as.tags(ft))
+  expect_true("phw-ubuntu-font" %in% vapply(deps, `[[`, "", "name"))
+  shown <- NULL
+  rlang::local_interactive()
+  withr::local_options(viewer = function(url, ...) shown <<- url)
+  print(ft)
+  expect_true(any(grepl("phw-ubuntu-font", readLines(shown, warn = FALSE), fixed = TRUE)))
+})
+
 test_that("a phw_flextable caption shows above the table in a PowerPoint deck", {
   skip_if_not_installed("rmarkdown")
   skip_if_not_installed("knitr")

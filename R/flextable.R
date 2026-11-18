@@ -217,7 +217,24 @@ knit_print.phw_flextable <- function(x, ...) {
   }
   out <- NextMethod()
   if (knitr::is_latex_output()) out[] <- gsub("\\\\caption(\\[\\])?\\{", "\\\\caption*{", out)
+  # flextable's CSS names Ubuntu but brings no font file, so a browser without
+  # Ubuntu installed draws the table in its default serif font.
+  if (knitr::is_html_output(excludes = "gfm")) {
+    attr(out, "knit_meta") <- c(attr(out, "knit_meta"), list(phw_font_dependency()))
+  }
   out
+}
+
+#' @exportS3Method htmltools::as.tags
+as.tags.phw_flextable <- function(x, ...) {
+  htmltools::attachDependencies(flextable::htmltools_value(x, ...), phw_font_dependency(), append = TRUE)
+}
+
+#' @export
+print.phw_flextable <- function(x, preview = "html", align = "center", ...) {
+  if (!identical(preview, "html") || !rlang::is_interactive()) return(NextMethod())
+  print(htmltools::browsable(htmltools::as.tags(x, ft.align = align)))
+  invisible(x)
 }
 
 # A4 less the 2 cm side margins of the PHW Word reference document and PDF
