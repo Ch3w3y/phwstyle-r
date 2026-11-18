@@ -448,6 +448,12 @@ says what to change.
   labels were dropped without a message.
 * `phw_gt()` tables carry the bundled Ubuntu web font, dates are
   left-aligned and subtotals are italic.
+* `phw_gt()` and `phw_gt_theme()` tables in a Word document use the PHW
+  font, with bold spanners and bold, shaded row groups. Before, Word showed
+  them in Calibri. gt can't make the column labels bold or indent the
+  levels of a summary table in Word, so the first gt table knitted to Word
+  in a session gives a message suggesting `phw_flextable()`, the table
+  renderer for Word.
 * `phw_gt()` left-aligns factor and logical columns, such as a health
   board stored as a factor or the label columns of a `table()` turned into
   a data frame, as the other table functions do. Before, gt centred them.

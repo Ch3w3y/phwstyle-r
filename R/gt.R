@@ -6,6 +6,10 @@
 #' [phw_summary_table()] and friends) and adds the title, number formats
 #' and source line in one call.
 #'
+#' Use gt tables in HTML and PDF. In a Word document they get the PHW font
+#' and colours, but gt can't make the column labels bold or indent the levels
+#' of a summary table, so use [phw_flextable()] for Word.
+#'
 #' @param x A gt table.
 #' @param font_size Body font size in pixels.
 #' @param accent Colour of the title, column labels and rules.
@@ -59,8 +63,33 @@ phw_gt_theme <- function(x, font_size = 14, accent = phw_colours[["navy"]], stri
                      locations = list(gt::cells_title(), gt::cells_stubhead(), gt::cells_column_labels(),
                                       gt::cells_column_spanners(), gt::cells_row_groups()))
   x <- gt::tab_style(x, gt::cell_text(weight = "bold"), locations = gt::cells_title("title"))
+  # gt's Word writer reads cell styles, not tab_options(), so the spanner and
+  # row group settings are repeated as styles.
+  x <- gt::tab_style(x, gt::cell_text(weight = args$column_labels.font.weight),
+                     locations = gt::cells_column_spanners())
+  x <- gt::tab_style(x, list(gt::cell_text(weight = args$row_group.font.weight),
+                             gt::cell_fill(args$row_group.background.color)),
+                     locations = gt::cells_row_groups())
   if (!inherits(x, "phw_gt")) class(x) <- c("phw_gt", class(x))
   x
+}
+
+# gt's Word writer ignores the table font and takes a single font name, not
+# the CSS list phw_gt_theme() sets, so the PHW font goes on every cell for Word.
+# It cannot bold column labels or indent cells.
+#' @exportS3Method knitr::knit_print
+knit_print.phw_gt <- function(x, ...) {
+  if (knitr::pandoc_to("docx")) {
+    cli::cli_inform(c("gt tables in Word lose some PHW styling: column labels are not bold and the levels of a summary table are not indented.",
+                      i = "Use {.fn phw_flextable} for tables in Word documents."),
+                    .frequency = "once", .frequency_id = "phw_gt_word")
+    x <- gt::tab_style(x, gt::cell_text(font = phw_font()), locations = list(
+      gt::cells_title(), gt::cells_stubhead(), gt::cells_column_spanners(), gt::cells_column_labels(),
+      gt::cells_row_groups(), gt::cells_stub(), gt::cells_body(), gt::cells_footnotes(),
+      gt::cells_source_notes()
+    ))
+  }
+  NextMethod()
 }
 
 # gt builds its HTML in as.tags(), which drops any dependency attached to the
