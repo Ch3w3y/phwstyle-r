@@ -600,6 +600,10 @@ says what to change.
 * A flextable's caption, such as "Table 1 ..." from `phw_flextable()`, now
   shows on a `phw_add_slide()` slide, in a row at the top of the table.
   Before, PowerPoint left it out without a word.
+* A `phw_flextable()` caption now shows above the table when the table is
+  knitted into a PowerPoint deck, from R Markdown
+  `powerpoint_presentation()` or the Quarto `phw-pptx` format. Before, the
+  slide kept the table and its source line but dropped the caption.
 * In a PDF document, a `phw_flextable()` caption reads as it does in Word
   and HTML: "Table 1 Counts by board", or no number when you give none.
   Before, LaTeX added its own label, giving "Table 1. Table 1 Counts by

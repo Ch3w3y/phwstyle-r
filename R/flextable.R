@@ -206,6 +206,7 @@ phw_flextable <- function(data, caption = NULL, number = NULL, source = NULL,
 #' @exportS3Method knitr::knit_print
 knit_print.phw_flextable <- function(x, ...) {
   if (knitr::pandoc_to("docx")) x <- fit_table_to_width(x, page_text_width)
+  if (knitr::pandoc_to("pptx")) x <- caption_as_header(x)
   if (knitr::is_latex_output()) {
     # LaTeX adds \tabcolsep points either side of each column's width.
     sep <- knitr::opts_current$get("ft.tabcolsep") %||% x$properties$opts_pdf$tabcolsep

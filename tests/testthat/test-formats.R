@@ -316,6 +316,29 @@ test_that("a phw_flextable caption in a PDF document is numbered once", {
   expect_false(any(grepl("\\caption{", tex, fixed = TRUE) | grepl("\\caption[]{", tex, fixed = TRUE)))
 })
 
+test_that("a phw_flextable caption shows above the table in a PowerPoint deck", {
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("flextable")
+  skip_if_not(rmarkdown::pandoc_available("2.4"), "pandoc 2.4 or later is not available")
+  dir <- withr::local_tempdir()
+  rmd <- file.path(dir, "deck.Rmd")
+  writeLines(c("---", "title: Deck", "---", "", "## Table", "",
+               "```{r, echo = FALSE}",
+               "phwstyle::phw_flextable(head(mtcars[, 1:4]), caption = 'Cars by model', number = 1, source = 'mtcars')",
+               "```"), rmd)
+  pptx <- rmarkdown::render(rmd, rmarkdown::powerpoint_presentation(reference_doc = phw_reference_pptx()),
+                            quiet = TRUE)
+  unzipped <- withr::local_tempdir()
+  utils::unzip(pptx, exdir = unzipped)
+  slides <- list.files(file.path(unzipped, "ppt", "slides"), pattern = "\\.xml$", full.names = TRUE)
+  xml <- paste(unlist(lapply(slides, readLines, warn = FALSE)), collapse = "")
+  caption <- regexpr("Table 1 Cars by model", xml, fixed = TRUE)
+  expect_gt(caption, 0)
+  expect_lt(caption, regexpr(">mpg<", xml, fixed = TRUE))
+  expect_match(xml, "Source: mtcars", fixed = TRUE)
+})
+
 board_table_rmd <- function(dir) {
   rmd <- file.path(dir, "boards.Rmd")
   writeLines(c("---", "title: Tables", "---", "",
