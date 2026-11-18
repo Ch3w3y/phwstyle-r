@@ -880,3 +880,18 @@ test_that("every renderer shows a difftime as a plain number, with missing value
   phw_write_xlsx(d, f)
   expect_equal(openxlsx2::read_xlsx(f)$los, shown)
 })
+
+test_that("phw_gt left-aligns every column that is not a number", {
+  skip_if_not_installed("gt")
+  d <- data.frame(health_board = factor(c("Powys THB", "Hywel Dda UHB")),
+                  confirmed = c(TRUE, FALSE), area = c("North", "South"),
+                  week = as.Date(c("2026-01-05", "2026-01-12")), cases = c(3L, 5L))
+  box <- phw_gt(d)[["_boxhead"]]
+  align <- stats::setNames(box$column_align, box$var)
+  expect_equal(unname(align[c("health_board", "confirmed", "area", "week")]), rep("left", 4))
+  expect_equal(unname(align["cases"]), "right")
+  t2 <- as.data.frame(table(health_board = c("Powys THB", "Hywel Dda UHB", "Powys THB"),
+                            sex = c("Female", "Male", "Male")))
+  box <- phw_gt(t2)[["_boxhead"]]
+  expect_equal(box$column_align, c("left", "left", "right"))
+})

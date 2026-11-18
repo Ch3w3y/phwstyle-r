@@ -444,6 +444,9 @@ says what to change.
   labels were dropped without a message.
 * `phw_gt()` tables carry the bundled Ubuntu web font, dates are
   left-aligned and subtotals are italic.
+* `phw_gt()` left-aligns factor and logical columns, such as a health
+  board stored as a factor or the label columns of a `table()` turned into
+  a data frame, as the other table functions do. Before, gt centred them.
 * `phw_gt_theme(...)` and `phw_gt(theme_args = )` can change a setting
   phwstyle already sets, such as `heading.align` or `data_row.padding`.
   Your value replaces the PHW one. Before, these stopped with "matched by
