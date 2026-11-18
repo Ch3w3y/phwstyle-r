@@ -101,7 +101,7 @@ phw_group_table <- function(data, rows, cols = NULL, value = NULL, fun = sum,
                             subtotal_label = "{group} total",
                             subgroup_label = "Total by {variable}", missing = "Unknown",
                             drop = TRUE, digits = 1) {
-  check_data_frame(data, "For counts in a {.fn table} or a matrix, pass {.code as.data.frame(as.table(x))} with {.code value = Freq}.")
+  data <- check_data_frame(data, "For counts in a {.fn table} or a matrix, pass {.code as.data.frame(as.table(x))} with {.code value = Freq}.")
   total_position <- rlang::arg_match(total_position)
   subtotal_position <- rlang::arg_match(subtotal_position)
   percent <- rlang::arg_match(percent)

@@ -525,6 +525,11 @@ says what to change.
   `phw_boundaries()` joined to case counts, and show the other columns.
   Before, the geometry showed as a column of coordinates, "[[XY]]" or
   "[object Object]", and in Excel it ran past the cell size limit.
+  `phw_summary_table()`, `phw_crosstab()`, `phw_group_table()` and
+  `phw_as_summary()` also leave it out, so an sf line list or area table is
+  summarised by its other columns. Before, areas stopped with an error from
+  the units package, and points added a "geometry" variable with one row per
+  point.
 * `phw_flextable()`, `phw_gt()`, `phw_reactable()`, `phw_datatable()` and
   `phw_write_xlsx()` show a `difftime` column, such as a length of stay made
   by subtracting two dates, as a plain number in its own units. It is
