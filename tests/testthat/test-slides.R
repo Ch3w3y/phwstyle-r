@@ -232,3 +232,33 @@ test_that("phw_pptx checks the template path", {
   expect_error(phw_pptx(TRUE), "`template` must be a single string")
   expect_error(phw_pptx("no-such-deck.pptx"), "file not found")
 })
+
+test_that("a map's licence line wraps to fit a half-width slide, not running off its left", {
+  skip_if_not_installed("officer")
+  skip_if_not_installed("rvg")
+  skip_if_not_installed("xml2")
+  skip_if_not_installed("sf")
+  square <- function(x, y) sf::st_polygon(list(rbind(c(x, y), c(x + 1, y), c(x + 1, y + 1),
+                                                     c(x, y + 1), c(x, y))))
+  areas <- sf::st_sf(code = paste0("A", 1:4), name = paste("Area", 1:4),
+                     geometry = sf::st_sfc(square(0, 0), square(1, 0), square(0, 1), square(1, 1)))
+  licence <- paste("Source: Office for National Statistics licensed under the Open Government",
+                   "Licence v3.0. Contains OS data (c) Crown copyright and database right.")
+  attr(areas, "attribution") <- licence
+  p <- phw_map(data.frame(area = areas$code, rate = 1:4), by = area, fill = rate, level = areas)
+  caption_lines <- function(deck) {
+    runs <- xml2::xml_find_all(deck_xml(deck), "//p:grpSp//p:sp[.//a:t]")
+    text <- xml2::xml_text(runs)
+    keep <- seq(which(startsWith(text, "Source:")), length(text))
+    x <- as.numeric(xml2::xml_attr(xml2::xml_find_first(runs[keep], ".//a:off"), "x")) / 914400
+    data.frame(text = text[keep], x = x)
+  }
+
+  half <- caption_lines(phw_add_slide(phw_pptx(), "Map", plot = p, text = "Note", layout = "Two Content"))
+  expect_equal(paste(half$text, collapse = " "), licence)
+  expect_gte(min(half$x), 0.6)
+
+  # A full-width slide has room for the lines as they are on screen.
+  full <- caption_lines(phw_add_slide(phw_pptx(), "Map", plot = p))
+  expect_equal(full$text, strsplit(wrap_caption(licence), "\n")[[1]])
+})

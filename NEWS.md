@@ -646,6 +646,10 @@ says what to change.
 * `phw_add_slide()` scales the text of a `phw_arrange()` figure as one: every
   panel, the figure title and the source line. Before, only the last panel
   was scaled.
+* `phw_add_slide()` wraps a chart's caption to fit the slide when its
+  enlarged lines are too wide. Before, the start of each line was cut off,
+  so a `phw_map()` on a half-width slide lost the start of its OS and ONS
+  licence line.
 * A flextable's caption, such as "Table 1 ..." from `phw_flextable()`, now
   shows on a `phw_add_slide()` slide, in a row at the top of the table.
   Before, PowerPoint left it out without a word.
