@@ -368,6 +368,12 @@ says what to change.
 
 ## Tables
 
+* `phw_flextable()` brings the Ubuntu web font into an HTML document, a
+  Quarto HTML page and the RStudio Viewer, as `phw_gt()`, `phw_reactable()`
+  and `phw_datatable()` do. Before, a computer without Ubuntu installed drew
+  the table in a serif font unless another phwstyle output on the page
+  loaded the font. `htmltools::as.tags()` on a `phw_flextable()` carries the
+  font too.
 * Summary and group tables look the same in `phw_flextable()`, `phw_gt()`,
   `phw_reactable()`, `phw_datatable()` and `phw_write_xlsx()`. Variable rows
   are shaded unless `highlight = FALSE`. `phw_datatable()` gains the
