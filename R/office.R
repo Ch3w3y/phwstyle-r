@@ -716,7 +716,7 @@ slide_value <- function(value, kind, area, editable, plot_scale, table_fit, cove
       phw_save(value, file, width = area$width, height = area$height, units = "in", dpi = 200)
       return(officer::external_img(file, width = area$width, height = area$height))
     }
-    value <- scale_plot_text(value, plot_scale)
+    value <- wrap_legends(scale_plot_text(value, plot_scale))
     if (editable && requireNamespace("rvg", quietly = TRUE)) {
       return(rvg::dml(ggobj = value, fonts = list(sans = phw_font())))
     }

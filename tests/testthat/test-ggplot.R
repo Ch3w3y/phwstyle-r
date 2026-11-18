@@ -461,3 +461,94 @@ test_that("reverse carries \"main\" on into \"extended\" as phw_pal() does", {
   expect_equal(fill_of(c(LETTERS[1:4], "Other")),
                c(phw_pal(4, "main", reverse = TRUE), phw_colours[["grey_mid"]]))
 })
+
+# A weekly chart of `k` health boards, the commonest long legend labels.
+board_chart <- function(k = 4) {
+  boards <- c("Aneurin Bevan UHB", "Betsi Cadwaladr UHB", "Cardiff and Vale UHB",
+              "Cwm Taf Morgannwg UHB", "Hywel Dda UHB", "Powys THB", "Swansea Bay UHB")[seq_len(k)]
+  d <- data.frame(week = rep(as.Date("2026-09-07") + 7 * 0:9, k),
+                  board = rep(boards, each = 10), cases = rep(seq(30, 48, by = 2), k))
+  ggplot2::ggplot(d, ggplot2::aes(week, cases, colour = board)) + ggplot2::geom_line()
+}
+
+# Opens a device of the given size in cm for the rest of the calling test.
+local_size <- function(width = 16, height = 10, env = parent.frame()) {
+  ragg::agg_png(tempfile(fileext = ".png"), width = width, height = height, units = "cm", res = 72)
+  withr::defer(grDevices::dev.off(), envir = env)
+}
+
+legend_cm <- function(g) {
+  box <- g$grobs[[which(g$layout$name %in% c("guide-box-bottom", "guide-box"))[1]]]
+  grid::convertWidth(gtable::gtable_width(box), "cm", valueOnly = TRUE)
+}
+
+test_that("phw_save wraps a bottom legend of health boards to fit the default size", {
+  skip_if_not_installed("ragg")
+  library(ggplot2)
+  local_ggplot_state()
+  use_phw_ggplot()
+  saved <- NULL
+  local_mocked_bindings(ggsave = function(filename, plot, ...) saved <<- plot, .package = "ggplot2")
+  for (k in c(4, 7)) {
+    phw_save(board_chart(k), "cases.png")
+    local_size()
+    expect_lte(legend_cm(ggplotGrob(saved)), 16)
+  }
+  # The same with colours of the user's own.
+  phw_save(board_chart() + scale_colour_manual(values = unname(phw_palettes$main[1:4])), "cases.png")
+  local_size()
+  expect_lte(legend_cm(ggplotGrob(saved)), 16)
+})
+
+test_that("legends that fit, a set number of rows and colour bars are left as they are", {
+  skip_if_not_installed("ragg")
+  library(ggplot2)
+  local_ggplot_state()
+  use_phw_ggplot()
+  local_size()
+  rows <- function(p) {
+    g <- ggplotGrob(wrap_legends(p))
+    box <- g$grobs[[which(g$layout$name == "guide-box-bottom")]]
+    labels <- grepl("^label", box$grobs[[1]]$layout$name)
+    length(unique(box$grobs[[1]]$layout$t[labels]))
+  }
+  expect_equal(rows(board_chart()), 2)
+  expect_equal(rows(board_chart() + guides(colour = guide_legend(nrow = 1))), 1)
+  expect_equal(rows(ggplot(mpg, aes(displ, hwy, colour = drv)) + geom_point()), 1)
+  wide <- board_chart() + theme(legend.position = "right")
+  expect_identical(wrap_legends(wide), wide)
+  bar <- wrap_legends(ggplot(mpg, aes(displ, hwy, colour = cty)) + geom_point())
+  expect_s3_class(ggplot_build(bar)$plot$guides$guides[[1]], "GuideColourbar")
+})
+
+test_that("a phw_finalise() chart wraps its legend to the size it is drawn at", {
+  skip_if_not_installed("ragg")
+  library(ggplot2)
+  local_ggplot_state()
+  use_phw_ggplot()
+  f <- phw_finalise(board_chart(), source = "PHW", logo = FALSE)
+  local_size()
+  drawn <- grid::makeContext(f)
+  expect_lte(legend_cm(drawn), 16)
+  expect_true("phw-footer" %in% drawn$layout$name)
+})
+
+test_that("phw_arrange wraps a collected legend of health boards", {
+  skip_if_not_installed("ragg")
+  skip_if_not_installed("patchwork")
+  library(ggplot2)
+  local_ggplot_state()
+  use_phw_ggplot()
+  local_size(16, 16)
+  g <- patchwork::patchworkGrob(phw_arrange(board_chart(), board_chart(), ncol = 1))
+  expect_lte(legend_cm(g), 16)
+})
+
+test_that("phw_finalise of a finished chart keeps both footers when drawn", {
+  library(ggplot2)
+  local_ggplot_state()
+  use_phw_ggplot()
+  twice <- phw_finalise(phw_finalise(board_chart(), source = "Inner", logo = FALSE),
+                        source = "Outer", logo = FALSE)
+  expect_equal(sum(grid::makeContext(twice)$layout$name == "phw-footer"), 2)
+})

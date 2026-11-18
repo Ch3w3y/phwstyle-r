@@ -109,6 +109,15 @@ phw_knitr_setup <- function(palette = NULL) {
   }
 }
 
+# Prints each chunk value as knitr does by default, with the legends of a
+# ggplot wrapped to the figure width (see wrap_legends()).
+phw_knit_render <- function(x, ...) {
+  res <- withVisible(knitr::knit_print(wrap_legends(x), ...))
+  # As knitr's own default: the class lets knitr add a figure caption.
+  if (inherits(x, "htmlwidget")) class(res$value) <- c(class(res$value), "knit_asis_htmlwidget")
+  if (res$visible) res$value else invisible(res$value)
+}
+
 try_setup <- function(what, fn, expr) {
   tryCatch(expr, error = function(e) {
     cli::cli_warn(c(
@@ -270,6 +279,7 @@ add_setup <- function(fmt, style_plots, palette = NULL) {
   if (!is.null(palette) && !is.function(palette)) palette_colours(palette)
   if (!style_plots && is.null(palette)) return(fmt)
   setup <- if (style_plots) phw_knitr_setup(palette) else function() options(phwstyle.palette = palette)
+  if (style_plots) fmt$knitr$opts_chunk$render <- phw_knit_render
   prev <- fmt$pre_knit
   prev_exit <- fmt$on_exit
   state <- new.env(parent = emptyenv())

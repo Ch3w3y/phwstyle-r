@@ -240,6 +240,14 @@ says what to change.
 
 ## Charts and maps
 
+* A legend of groups across the bottom or top of a chart takes more rows
+  when one row is wider than the chart. Before, a legend of health boards
+  at the default sizes stayed on one row and its last boards were cut off.
+  This applies to charts saved with `phw_save()`, finished with
+  `phw_finalise()`, arranged with `phw_arrange()`, placed with
+  `phw_add_slide()` or drawn in a document made with the `phw_*_document()`
+  formats. A legend given its own number of rows or columns, as in
+  `guide_legend(nrow = 1)`, keeps them.
 * `phw_funnel()` draws the same chart whatever the columns are called.
   Before, a denominator column named `value` was replaced by the computed
   percentage, so the points were drawn at the wrong place along the x-axis,

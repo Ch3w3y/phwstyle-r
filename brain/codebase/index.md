@@ -7,3 +7,4 @@
 - [[codebase/grid-measured-heights]]
 - [[codebase/plotly-attrs-traps]]
 - [[codebase/ci-check-traps]]
+- [[codebase/ggplot2-legend-hooks]]
