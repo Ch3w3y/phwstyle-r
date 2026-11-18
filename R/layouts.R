@@ -51,6 +51,7 @@ phw_arrange <- function(..., plots = NULL, ncol = NULL, nrow = NULL, widths = NU
     cli::cli_abort(c("Each plot must be a ggplot or a grob.",
                      x = "Plot {bad[1]} is {.cls {class(all[[bad[1]]])[1]}}."))
   }
+  all <- lapply(all, wrap_legends, position = if (guides == "collect") legend)
   out <- patchwork::wrap_plots(all, ncol = ncol, nrow = nrow, widths = widths,
                                heights = heights, design = design, guides = guides)
   ann_theme <- (theme %||% chart_theme()) + ggplot2::theme(

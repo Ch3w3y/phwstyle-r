@@ -211,6 +211,51 @@ phw_discrete_auto <- function(n, self) {
 # disappear on a white background.
 phw_continuous_auto <- phw_palettes$blues[2:6]
 
+# A legend for groups that takes more rows when one row is wider than the
+# chart. ggplot2 lays a legend out while the device it is drawn on is open,
+# so the width that matters is known then. With no device open, or with
+# rows or columns set, the legend stays as it is.
+phw_guide_legend <- function() {
+  ggplot2::ggproto("GuidePhwLegend", ggplot2::GuideLegend,
+    params = ggplot2::guide_legend()$params,
+    draw = function(self, theme, position = NULL, direction = NULL, params = self$params) {
+      draw <- ggplot2::ggproto_parent(ggplot2::GuideLegend, self)$draw
+      grob <- draw(theme, position, direction, params)
+      wraps <- identical(params$direction %||% direction, "horizontal") &&
+        is.null(params$nrow) && is.null(params$ncol) && grDevices::dev.cur() > 1
+      if (!wraps) return(grob)
+      cm <- function(u) grid::convertWidth(u, "cm", valueOnly = TRUE)
+      room <- cm(grid::unit(1, "npc")) - cm(sum(ggplot2::calc_element("plot.margin", theme)[c(2, 4)]))
+      n <- nrow(params$key)
+      rows <- ceiling(n / 5)
+      while (cm(gtable::gtable_width(grob)) > room && rows < n) {
+        rows <- rows + 1
+        params$nrow <- rows
+        grob <- draw(theme, position, direction, params)
+      }
+      grob
+    })
+}
+
+# Gives each legend for groups that ggplot2 would draw by default, across the
+# top or bottom of the chart, phw_guide_legend(). A theme can't choose a
+# legend, so phwstyle does this wherever it draws a chart. `position` is the
+# legend position the chart will be drawn with, when it isn't the chart's own.
+wrap_legends <- function(plot, position = NULL) {
+  if (!inherits(plot, "ggplot") || inherits(plot, "patchwork")) return(plot)
+  position <- position %||% ggplot2::calc_element("legend.position", ggplot2::theme_get() + plot$theme)
+  if (!identical(position, "bottom") && !identical(position, "top")) return(plot)
+  # Any warning or error comes again when the chart is drawn.
+  built <- tryCatch(suppressMessages(suppressWarnings(ggplot2::ggplot_build(plot))),
+                    error = function(e) NULL)
+  if (is.null(built)) return(plot)
+  scales <- built$plot$scales$non_position_scales()$scales
+  aes <- unlist(lapply(scales, function(s) if (s$is_discrete() && identical(s$guide, "legend")) s$aesthetics))
+  aes <- setdiff(aes, names(plot$guides$guides))
+  if (!length(aes)) return(plot)
+  plot + do.call(ggplot2::guides, stats::setNames(rep(list(phw_guide_legend()), length(aes)), aes))
+}
+
 #' PHW map theme
 #'
 #' [theme_phw()] without axes or gridlines, with the legend on the right.
@@ -681,7 +726,7 @@ phw_finalise <- function(plot, source = NULL, date = NULL, logo = "blue",
     plot <- plot + patchwork::plot_annotation(caption = NULL)
   } else if (inherits(plot, "ggplot")) {
     kept <- plot$labels$caption
-    plot <- plot + ggplot2::labs(caption = NULL)
+    plot <- wrap_legends(plot + ggplot2::labs(caption = NULL))
   } else if (!inherits(plot, "grob")) {
     cli::cli_abort("{.arg plot} must be a ggplot, a patchwork or a grob, not {.cls {class(plot)}}.")
   }
@@ -698,10 +743,7 @@ phw_finalise <- function(plot, source = NULL, date = NULL, logo = "blue",
     gtable::gtable_add_grob(gtable::gtable(widths = grid::unit(1, "null"), heights = grid::unit(1, "null")),
                             plot, t = 1, l = 1, name = "phw-content")
   } else {
-    build <- if (inherits(plot, "patchwork")) patchwork::patchworkGrob else ggplot2::ggplotGrob
-    withCallingHandlers(build(plot), warning = function(w) {
-      if (grepl("font (family|database)", conditionMessage(w))) invokeRestart("muffleWarning")
-    })
+    plot_gtable(plot)
   }
 
   m <- grid::unit(margin, "mm")
@@ -733,11 +775,34 @@ phw_finalise <- function(plot, source = NULL, date = NULL, logo = "blue",
   }
   footer <- grid::gTree(children = do.call(grid::gList, kids), margin = margin / 10,
                         height = logo_height + 0.5, name = "phw-footer", cl = "phw_footer")
-  g <- gtable::gtable_add_rows(g, grid::grobHeight(footer))
-  g <- gtable::gtable_add_grob(g, footer, t = nrow(g), l = 1, r = ncol(g),
-                               clip = "off", name = "phw-footer")
+  g <- add_footer(g, footer)
+  g$phw_plot <- if (inherits(plot, "ggplot")) plot
   class(g) <- c("phw_finalised", class(g))
   g
+}
+
+plot_gtable <- function(plot) {
+  build <- if (inherits(plot, "patchwork")) patchwork::patchworkGrob else ggplot2::ggplotGrob
+  withCallingHandlers(build(plot), warning = function(w) {
+    if (grepl("font (family|database)", conditionMessage(w))) invokeRestart("muffleWarning")
+  })
+}
+
+add_footer <- function(g, footer) {
+  g <- gtable::gtable_add_rows(g, grid::grobHeight(footer))
+  gtable::gtable_add_grob(g, footer, t = nrow(g), l = 1, r = ncol(g),
+                          clip = "off", name = "phw-footer")
+}
+
+# phw_finalise() can't know the size the chart is drawn at, and its legend
+# wraps to that width (see phw_guide_legend()), so the chart is built again
+# when it is drawn. Its warnings were shown when it was first built.
+#' @exportS3Method grid::makeContext
+makeContext.phw_finalised <- function(x) {
+  if (is.null(x$phw_plot)) return(NextMethod())
+  footer <- x$grobs[[which(x$layout$name == "phw-footer")]]
+  g <- suppressMessages(suppressWarnings(plot_gtable(x$phw_plot)))
+  grid::makeContext(add_footer(g, footer))
 }
 
 #' @export
@@ -856,6 +921,7 @@ phw_save <- function(plot = ggplot2::last_plot(), filename, width = 16, height =
     eps = , ps = grDevices::cairo_ps,
     NULL)
   if (!is.null(bg)) plot <- blank_background(plot)
+  plot <- wrap_legends(plot)
   ggplot2::ggsave(filename, plot = plot, width = width, height = height, units = units,
                   dpi = dpi, device = device, bg = bg %||% if (!inherits(plot, "ggplot")) "white", ...)
   invisible(filename)
@@ -873,6 +939,7 @@ blank_background <- function(plot) {
   if (inherits(plot, "patchwork")) return(plot & ggplot2::theme(plot.background = ggplot2::element_blank()))
   if (inherits(plot, "ggplot")) return(plot + ggplot2::theme(plot.background = ggplot2::element_blank()))
   if (inherits(plot, "gtable")) {
+    if (!is.null(plot$phw_plot)) plot$phw_plot <- blank_background(plot$phw_plot)
     bg <- grepl("^background(-[0-9]+)?$", plot$layout$name)
     plot$grobs[bg] <- list(ggplot2::zeroGrob())
   }
