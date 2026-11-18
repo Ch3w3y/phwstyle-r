@@ -352,6 +352,30 @@ test_that("phw_gt takes a summary table's column names in gt_args", {
                "No column called \"characteristic\".*\"Characteristic\" and \"All \\(n = 3\\)\"")
 })
 
+test_that("later gt steps find a summary table's columns by name", {
+  skip_if_not_installed("gt")
+  html <- function(g) gt::as_raw_html(g, inline_css = FALSE)
+  ll <- data.frame(hb = c("Cardiff", "Swansea", "Cardiff", "Powys"),
+                   sex = c("Male", "Female", "Female", "Male"))
+  s <- phw_summary_table(ll, by = sex)
+  g <- phw_gt(s) |>
+    gt::cols_width(Characteristic ~ gt::px(200)) |>
+    gt::cols_label(`Total (n = 4)` = "All Wales")
+  expect_match(html(g), "width:200px")
+  expect_match(html(g), ">All Wales<")
+  ct <- phw_gt(phw_crosstab(ll, hb, sex)) |> gt::cols_hide(Total)
+  expect_match(html(ct), "headers=\"Female\"")
+  expect_no_match(html(ct), "headers=\"Total\"")
+})
+
+test_that("phw_gt keeps a spanner whose label is also a column name", {
+  skip_if_not_installed("gt")
+  d <- data.frame(hb = c("Cardiff", "Swansea", "Cardiff"), smoker = c("smoker", "non-smoker", "smoker"))
+  html <- gt::as_raw_html(phw_gt(phw_crosstab(d, hb, smoker)), inline_css = FALSE)
+  expect_match(html, "gt_column_spanner[^>]*>smoker<", perl = TRUE)
+  expect_match(html, "headers=\"smoker\"")
+})
+
 test_that("use_phw_flextable() styles are not carried into another style", {
   skip_if_not_installed("flextable")
   old <- use_phw_flextable(style = "zebra")

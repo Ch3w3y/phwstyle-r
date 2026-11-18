@@ -147,11 +147,8 @@ phw_gt <- function(data, caption = NULL, subtitle = NULL, number = NULL, source 
   years <- year_cols(df)
   if (is_sum) {
     nl <- attr(data, "label_cols") %||% 1L
-    # gt needs unique, syntactic-enough ids; keep display names as labels.
-    ids <- paste0("c", seq_along(df))
-    labels <- stats::setNames(as.list(c(names(df)[seq_len(nl)], summary_header(data, nl)$bottom)), ids)
-    gt_args <- gt_args_to_ids(gt_args, names(df), ids)
-    names(df) <- ids
+    labels <- stats::setNames(as.list(c(names(df)[seq_len(nl)], summary_header(data, nl)$bottom)), names(df))
+    check_summary_gt_args(gt_args, names(df))
   }
   x <- do.call(gt::gt, c(list(df), gt_args))
   num <- names(df)[vapply(df, is.numeric, logical(1))]
@@ -163,7 +160,7 @@ phw_gt <- function(data, caption = NULL, subtitle = NULL, number = NULL, source 
   text <- setdiff(names(df), num)
   if (length(text)) x <- gt::cols_align(x, "left", columns = gt_cols(text))
   x <- gt::sub_missing(x, missing_text = "")
-  if (is_sum) x <- style_summary_gt(x, data, ids, labels, stub = gt_args$rowname_col)
+  if (is_sum) x <- style_summary_gt(x, data, names(df), labels, stub = gt_args$rowname_col)
   if (!is.null(caption) || !is.null(subtitle)) {
     title <- if (is.null(number) || is.null(caption)) caption else paste(number_prefix, number, caption)
     x <- gt::tab_header(x, title = title %||% "", subtitle = subtitle)
@@ -177,25 +174,23 @@ phw_gt <- function(data, caption = NULL, subtitle = NULL, number = NULL, source 
   x
 }
 
-# A summary table reaches gt::gt() with ids for column names, so the name
-# given as gt's `rowname_col` becomes an id too. A summary table's label
-# columns hold a group's name on its first row only, so gt would put the
-# other rows under a blank heading: `groupname_col` stops instead.
-gt_args_to_ids <- function(gt_args, cols, ids, call = rlang::caller_env()) {
+# A summary table's label columns hold a group's name on its first row only,
+# so gt would put the other rows under a blank heading: `groupname_col`
+# stops instead.
+check_summary_gt_args <- function(gt_args, cols, call = rlang::caller_env()) {
   if (!is.null(gt_args$groupname_col)) {
     cli::cli_abort(c("{.code gt_args$groupname_col} does not work on a summary table.",
                      i = "Use gt row groups on a data frame, not on a summary table."), call = call)
   }
   v <- gt_args$rowname_col
-  if (is.null(v)) return(gt_args)
+  if (is.null(v)) return(invisible())
   bad <- if (is.character(v)) setdiff(v, cols) else v
   if (length(bad)) {
     cli::cli_abort(c("{.code gt_args$rowname_col} must name a column of the table.",
                      x = "{cli::qty(length(bad))}No column{?s} called {.val {bad}}.",
                      i = "The columns are {.val {cols}}."), call = call)
   }
-  gt_args$rowname_col <- ids[match(v, cols)]
-  gt_args
+  invisible()
 }
 
 # Column names for gt's `columns` arguments. gt only re-exports all_of()
@@ -238,8 +233,9 @@ style_summary_gt <- function(x, s, ids, labels, stub = NULL) {
   for (l in seq_len(L)) {
     level <- hd$upper[[l]]
     # A column moved inside a spanner splits it, so a spanner's id is its
-    # label made unique.
-    sp_ids <- if (multi) paste0("sp", l, "_", seq_len(nrow(level))) else make.unique(level$label)
+    # label made unique. gt also refuses a spanner id that is a column name.
+    sp_ids <- if (multi) paste0("sp", l, "_", seq_len(nrow(level))) else level$label
+    sp_ids <- make.unique(c(ids, sp_ids))[-seq_along(ids)]
     for (g in which(!level$total & nzchar(level$label))) {
       columns <- gt_cols(data_ids[level$start[g] + seq_len(level$n[g]) - 1])
       x <- gt::tab_spanner(x, label = level$label[g], columns = columns, level = L + 1 - l, id = sp_ids[g])
