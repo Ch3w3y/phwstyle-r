@@ -158,7 +158,7 @@ phw_gt <- function(data, caption = NULL, subtitle = NULL, number = NULL, source 
   x <- do.call(phw_gt_theme, c(list(x), theme_args))
   cap <- caption_from(source, date, caption_args)
   if (!is.null(cap)) {
-    x <- gt::tab_source_note(x, gt::html(gsub("\n", "<br>", htmltools::htmlEscape(cap))))
+    for (line in strsplit(cap, "\n", fixed = TRUE)[[1]]) x <- gt::tab_source_note(x, line)
     x <- gt::tab_style(x, gt::cell_text(weight = "bold", align = "right"), locations = gt::cells_source_notes())
   }
   x
