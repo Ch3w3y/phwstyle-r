@@ -466,6 +466,50 @@ test_that("a table by health board fits the text width of a PDF document", {
   expect_lte(used, 170 / 25.4 + 0.02)
 })
 
+gt_board_rmd <- function(dir) {
+  rmd <- file.path(dir, "gt.Rmd")
+  writeLines(c("---", "title: Report", "---", "", "Text before the table.", "",
+               "```{r, echo = FALSE}",
+               "set.seed(1)",
+               "ll <- data.frame(",
+               "  board = sample(c('Aneurin Bevan UHB', 'Betsi Cadwaladr UHB', 'Cardiff and Vale UHB'), 300, TRUE),",
+               "  sex = sample(c('Female', 'Male'), 300, TRUE))",
+               "phwstyle::phw_gt(phwstyle::phw_summary_table(ll, vars = sex, by = board))",
+               "```", "", "Text after the table."), rmd)
+  rmd
+}
+
+test_that("a phw_gt table in a PDF document stays where it is placed", {
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("gt")
+  skip_if_not(rmarkdown::pandoc_available(), "pandoc is not available")
+  # Before gt 0.11.1 a LaTeX table is a longtable, which never moves.
+  skip_if_not("latex.tbl.pos" %in% names(formals(gt::tab_options)), "gt writes a longtable")
+  local_ggplot_state()
+  dir <- withr::local_tempdir()
+  tex <- readLines(rmarkdown::render(gt_board_rmd(dir), phw_pdf_document(), output_file = "gt.tex",
+                                     quiet = TRUE), warn = FALSE)
+  expect_length(grep("\\begin{table}", tex, fixed = TRUE), 1)
+  expect_length(grep("\\begin{table}[H]", tex, fixed = TRUE), 1)
+  expect_true(any(tex == "\\usepackage{float}"))
+})
+
+test_that("a wide phw_gt table fits the text width of a PDF document", {
+  skip_on_cran()
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("gt")
+  skip_if_not(rmarkdown::pandoc_available(), "pandoc is not available")
+  skip_if(!nzchar(Sys.which("xelatex")), "XeLaTeX is not installed")
+  local_ggplot_state()
+  withr::local_options(tinytex.clean = FALSE)
+  dir <- withr::local_tempdir()
+  pdf <- rmarkdown::render(gt_board_rmd(dir), phw_pdf_document(), quiet = TRUE)
+  log <- readLines(sub("\\.pdf$", ".log", pdf), warn = FALSE)
+  expect_false(any(grepl("Overfull \\hbox", log, fixed = TRUE)))
+})
+
 test_that("a table too wide for the page even with its text wrapped gives a warning", {
   skip_if_not_installed("knitr")
   skip_if_not_installed("flextable")

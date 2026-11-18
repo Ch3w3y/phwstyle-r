@@ -80,6 +80,9 @@ source note. \code{phw_gt()} builds the table from a data frame (or a
 and source line in one call.
 }
 \details{
+In a PDF document from R Markdown, the table stays where it is in the
+text, and a table wider than the text shrinks to fit it.
+
 Use gt tables in HTML and PDF. In a Word document they get the PHW font
 and colours, but gt can't make the column labels bold or indent the levels
 of a summary table, so use \code{\link[=phw_flextable]{phw_flextable()}} for Word.
