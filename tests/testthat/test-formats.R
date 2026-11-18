@@ -339,6 +339,47 @@ test_that("a phw_flextable caption shows above the table in a PowerPoint deck", 
   expect_match(xml, "Source: mtcars", fixed = TRUE)
 })
 
+bars_rmd <- function(dir) {
+  rmd <- file.path(dir, "bars.Rmd")
+  writeLines(c("---", "title: Bars", "---", "", "## Bars", "",
+               "```{r, echo = FALSE}",
+               "df <- data.frame(Area = paste('Area', LETTERS[1:4]), Cases = c(120, 85, 64, 19))",
+               "phwstyle::phw_flextable_bars(phwstyle::phw_flextable(df), Cases)",
+               "```"), rmd)
+  rmd
+}
+
+test_that("bars from phw_flextable_bars() are pictures in the Word report", {
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("flextable")
+  skip_if_not(rmarkdown::pandoc_available(), "pandoc is not available")
+  local_ggplot_state()
+  dir <- withr::local_tempdir()
+  docx <- rmarkdown::render(bars_rmd(dir), phw_word_document(), quiet = TRUE)
+  doc <- xml2::read_xml(unz(docx, "word/document.xml"))
+  embed <- xml2::xml_attr(xml2::xml_find_all(doc, "//a:blip"), "embed")
+  expect_length(embed, 4)
+  rels <- xml2::read_xml(unz(docx, "word/_rels/document.xml.rels"))
+  targets <- xml2::xml_attr(xml2::xml_find_all(rels, "//*[local-name() = 'Relationship']"), "Target",
+                            ns = character())
+  ids <- xml2::xml_attr(xml2::xml_find_all(rels, "//*[local-name() = 'Relationship']"), "Id")
+  media <- targets[match(embed, ids)]
+  expect_true(all(grepl("^media/", media)))
+  expect_true(all(file.path("word", media) %in% utils::unzip(docx, list = TRUE)$Name))
+  expect_no_match(xml2::xml_text(doc), "officedown", fixed = TRUE)
+})
+
+test_that("a table with bars stops a PowerPoint deck rather than losing them", {
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("flextable")
+  skip_if_not(rmarkdown::pandoc_available("2.4"), "pandoc 2.4 or later is not available")
+  dir <- withr::local_tempdir()
+  expect_error(rmarkdown::render(bars_rmd(dir), rmarkdown::powerpoint_presentation(), quiet = TRUE),
+               "cannot show images")
+})
+
 board_table_rmd <- function(dir) {
   rmd <- file.path(dir, "boards.Rmd")
   writeLines(c("---", "title: Tables", "---", "",
