@@ -97,9 +97,7 @@ phw_leaflet_polygons <- function(map, data, fill = NULL, palette = NULL, bins = 
       } else {
         legend_values <- ifelse(ok, v, NA)
         edges <- if (!is.null(bins)) bin_edges(v[ok], bins)
-        if (length(bins) > 1 && length(edges) == 2) {
-          cli::cli_inform("No value of {.arg bins} falls inside the data ({edges[1]} to {edges[2]}), so every area has one colour.")
-        }
+        inform_bins(edges, bins)
         pal_fun <- phw_leaflet_palette(palette %||% "blues", domain = v[ok],
                                        type = if (is.null(bins)) "numeric" else "bin", bins = edges,
                                        na.color = na_col)

@@ -36,8 +36,10 @@ that you have already loaded. An area held as several rows, one per
 island or part, is drawn as one area.}
 
 \item{bins}{Breaks for numeric \code{fill}, or a single number of bins (2 or
-more). \code{bins = 2} splits the areas at a tidy number near the median. Not
-used for text or factor \code{fill}.
+more). A single number gives bins of equal width with tidy edges, as
+near that number as tidy edges allow, and a message when the number
+differs. \code{bins = 2} splits the areas at a tidy number near the median.
+Not used for text or factor \code{fill}.
 \code{NULL} gives a continuous scale. The legend also shows the lowest and
 highest values, rounded out to tidy numbers.}
 
