@@ -155,7 +155,25 @@ phw_word_document <- function(..., toc = FALSE, number_sections = FALSE,
   fmt <- do.call(rmarkdown::word_document, args)
   if (requireNamespace("ragg", quietly = TRUE)) fmt$knitr$opts_chunk$dev <- "ragg_png"
   fmt$knitr$opts_chunk$dpi <- 300
+  # Tells flextable that link_docx_files() adds its images and links.
+  fmt$knitr$opts_chunk$is_rdocx_document <- TRUE
+  fmt$post_processor <- link_docx_files(fmt$post_processor)
   add_setup(fmt, style_plots, palette)
+}
+
+# flextable writes each image or link in a Word table as a file path or URL
+# for officer to add to the .docx. Pandoc leaves them as they are, and Word
+# then calls the file corrupt.
+link_docx_files <- function(prev) {
+  force(prev)
+  function(metadata, input_file, output_file, clean, verbose) {
+    if (is.function(prev)) output_file <- prev(metadata, input_file, output_file, clean, verbose)
+    xml <- readLines(unz(output_file, "word/document.xml"), warn = FALSE, encoding = "UTF-8")
+    if (any(grepl('r:(embed|id)="(?!rId)', xml, perl = TRUE))) {
+      print(officer::read_docx(output_file), target = output_file)
+    }
+    output_file
+  }
 }
 
 # The arguments for an rmarkdown format: the PHW defaults, replaced by any

@@ -184,6 +184,15 @@ test_that("an empty table stops", {
   expect_error(phw_add_slide(phw_pptx(), "x", table = flextable::flextable(mtcars[0, 1:2])), "no rows")
 })
 
+test_that("a table with bars stops, as PowerPoint tables cannot show them", {
+  skip_if_not_installed("officer")
+  skip_if_not_installed("flextable")
+  deck <- phw_pptx()
+  ft <- phw_flextable_bars(phw_flextable(data.frame(area = c("A", "B"), n = c(3, 5))), n)
+  expect_error(phw_add_slide(deck, "x", table = ft), "cannot show images")
+  expect_length(deck, 0)
+})
+
 test_that("a phw_finalise() chart goes on the slide as a picture", {
   skip_if_not_installed("officer")
   skip_if_not_installed("xml2")

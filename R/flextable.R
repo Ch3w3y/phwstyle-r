@@ -206,7 +206,10 @@ phw_flextable <- function(data, caption = NULL, number = NULL, source = NULL,
 #' @exportS3Method knitr::knit_print
 knit_print.phw_flextable <- function(x, ...) {
   if (knitr::pandoc_to("docx")) x <- fit_table_to_width(x, page_text_width)
-  if (knitr::pandoc_to("pptx")) x <- caption_as_header(x)
+  if (knitr::pandoc_to("pptx")) {
+    check_no_images(x)
+    x <- caption_as_header(x)
+  }
   if (knitr::is_latex_output()) {
     # LaTeX adds \tabcolsep points either side of each column's width.
     sep <- knitr::opts_current$get("ft.tabcolsep") %||% x$properties$opts_pdf$tabcolsep
@@ -554,6 +557,11 @@ check_summary_keys <- function(x, keys, call = rlang::caller_env()) {
 #' On a summary table from [phw_flextable()], only the level rows get bars.
 #' Headings, subtotals and totals show the number only and do not count
 #' towards the scale, so a total does not shrink every other bar.
+#'
+#' The bars are small pictures. They show in HTML, PDF and Word reports
+#' (in Word, use [phw_word_document()]). PowerPoint tables cannot show
+#' pictures, so [phw_add_slide()] and a slide deck made with R Markdown stop
+#' with a message for a table with bars.
 #'
 #' @param x A flextable.
 #' @param j Columns, chosen as in [dplyr::select()]: unquoted names,

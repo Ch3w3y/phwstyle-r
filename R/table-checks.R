@@ -40,6 +40,18 @@ check_flextable <- function(x, call = rlang::caller_env()) {
   invisible(x)
 }
 
+# flextable leaves pictures, such as the bars from phw_flextable_bars(), out
+# of a PowerPoint table without a word.
+check_no_images <- function(ft, call = rlang::caller_env()) {
+  is_image <- function(z) inherits(z, "raster") || (is.character(z) && any(!is.na(z)))
+  if (!any(vapply(flextable::information_data_chunk(ft)$img_data, is_image, logical(1)))) {
+    return(invisible(ft))
+  }
+  cli::cli_abort(c("A PowerPoint table cannot show images, so the bars or pictures in this table would be lost.",
+                   i = "On a slide, leave out {.fn phw_flextable_bars}, or show the values as a bar chart."),
+                 call = call)
+}
+
 check_breaks <- function(breaks, call = rlang::caller_env()) {
   if (!is.numeric(breaks) || length(breaks) != 2 || anyNA(breaks)) {
     cli::cli_abort(c("{.arg breaks} must be two numbers: the cut points between red, amber and green.",

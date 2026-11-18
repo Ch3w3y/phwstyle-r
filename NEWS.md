@@ -7,6 +7,10 @@ says what to change.
 
 ## Changes that may affect existing code
 
+* `phw_add_slide()` and a slide deck made with R Markdown stop with a
+  message for a table with bars from `phw_flextable_bars()`. PowerPoint
+  tables cannot show pictures, and before, the slide showed the numbers
+  without the bars and gave no warning.
 * The default palette `"main"` now has six colours: navy, teal, orange,
   pink, green and gold. Charts with five or six groups change colour, and
   charts with more than six carry on into `"extended"` after the sixth.
@@ -429,6 +433,11 @@ says what to change.
   `phw_flextable_bars()`, `phw_col_heat()` and `phw_col_bar()`. Before, its
   rows set the top of the scale, so the group levels came out pale with
   short bars. The block looks the same as before.
+* Bars from `phw_flextable_bars()` show in a Word report made with
+  `phw_word_document()`, as do links in a flextable. Before, Word called the
+  file corrupt, and flextable's warning was printed in the report. A
+  flextable caption numbered with `set_caption(autonum = )` now shows its
+  number there too.
 * In `phw_flextable()`, the spanner above a summary, cross-tab or group
   table's columns takes the same colour as the column labels below it. With
   `style = "header"` it is white on the navy band, with a white rule under

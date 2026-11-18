@@ -535,6 +535,7 @@ phw_add_slide <- function(x, title = NULL, plot = NULL, table = NULL, text = NUL
   check_positive_number(plot_scale)
   check_positive_number(title_size)
   contents <- slide_contents(plot, table, text)
+  if (inherits(table, "flextable")) check_no_images(table)
   available <- officer::layout_summary(x)
   if (is.null(master)) {
     master <- available$master[available$layout == layout][1]
