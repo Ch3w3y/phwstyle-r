@@ -396,6 +396,28 @@ test_that("subplot() of ggplots gives groups the PHW colours, the same in every 
                c("rgba(255,0,0,1)", "rgba(0,0,255,1)", "rgba(0,0,0,1)"))
 })
 
+test_that("ggplotly() charts coloured by a number take the PHW blues, as phw_plotly(g) does", {
+  skip_if_not_installed("ggplot2")
+  d <- expand.grid(week = 1:4, area = c("A", "B", "C"))
+  d$rate <- 1:12
+  rgb <- function(x) {
+    vapply(x, function(v) {
+      if (startsWith(v, "#")) as.numeric(grDevices::col2rgb(v))
+      else as.numeric(strsplit(gsub("^rgba\\(|\\)$", "", v), ",")[[1]][1:3])
+    }, numeric(3), USE.NAMES = FALSE)
+  }
+  tiles <- ggplot2::ggplot(d, ggplot2::aes(week, area, fill = rate)) + ggplot2::geom_tile()
+  scale <- built(phw_plotly(plotly::ggplotly(tiles)))$data[[1]]$colorscale
+  expect_equal(scale[[2]][c(1, 12)], c(phw_palettes$blues[[2]], phw_palettes$blues[[6]]), ignore_attr = TRUE)
+  expect_lte(max(abs(rgb(scale[[2]]) - rgb(built(phw_plotly(tiles))$data[[1]]$colorscale[[2]]))), 1)
+
+  points <- ggplot2::ggplot(d, ggplot2::aes(week, rate, colour = rate)) + ggplot2::geom_point() +
+    ggplot2::geom_hline(yintercept = 3, colour = "steelblue")
+  tr <- built(phw_plotly(plotly::ggplotly(points)))$data
+  expect_lte(max(abs(rgb(tr[[1]]$marker$color) - rgb(built(phw_plotly(points))$data[[1]]$marker$color))), 1)
+  expect_equal(tr[[2]]$line$color, plotly::toRGB("steelblue"), ignore_attr = TRUE)
+})
+
 test_that("subplot() keeps colours a panel sets, and says how to colour the rest", {
   d <- data.frame(week = rep(1:3, 2), y = 1:6, g = rep(c("a", "b"), each = 3))
   own <- plotly::plot_ly(d, x = ~week, y = ~y, color = ~g, colors = c("red", "blue"), type = "bar")

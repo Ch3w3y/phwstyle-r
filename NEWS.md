@@ -166,6 +166,11 @@ says what to change.
   ggplot2's default colours, even after `use_phw_ggplot()`, and a group
   could change colour from one panel to the next. A ggplot that sets its
   own colours with a scale keeps them.
+* `phw_plotly()` shades a ggplot coloured or filled by a number with the
+  PHW blues when the ggplot was converted with `plotly::ggplotly()` or
+  combined with `plotly::subplot()`, light for low values and navy for
+  high ones, as in the static chart. Before, it kept ggplot2's default
+  gradient, which runs from dark to light, so the shading ran the other way.
 * `phw_plotly()` draws a missing group (`NA`) in grey in a figure combined
   with `plotly::subplot()`, as it does in a single chart. Before, its lines,
   bars and markers were invisible and its legend entry had no colour.
