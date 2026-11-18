@@ -45,6 +45,18 @@ test_that("phw_gt tables in Word use the PHW font and suggest phw_flextable", {
   expect_match(docx_text(out), "Use .?phw_flextable\\(\\).? for tables in Word documents")
 })
 
+test_that("phw_gt shows the source line as typed in LaTeX and HTML", {
+  skip_if_not_installed("gt")
+  d <- data.frame(area = "Powys", cases = 588)
+  g <- phw_gt(d, source = "PHW & ONS, 10% sample", date = as.Date("2024-05-01"))
+  tex <- as.character(gt::as_latex(g))
+  expect_match(tex, "Source: PHW \\& ONS, 10\\% sample\\\\\nData correct as of 01/05/2024", fixed = TRUE)
+  expect_no_match(tex, "<br>|&amp;")
+  html <- as.character(gt::as_raw_html(g))
+  expect_match(html, ">Source: PHW &amp; ONS, 10% sample</td>")
+  expect_match(html, ">Data correct as of 01/05/2024</td>")
+})
+
 test_that("use_phw_gtsummary sets a theme", {
   skip_if_not_installed("gtsummary")
   skip_if_not_installed("flextable")

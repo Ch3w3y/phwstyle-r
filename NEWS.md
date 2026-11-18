@@ -466,6 +466,11 @@ says what to change.
 * `phw_gt()` left-aligns factor and logical columns, such as a health
   board stored as a factor or the label columns of a `table()` turned into
   a data frame, as the other table functions do. Before, gt centred them.
+* In a PDF report, the source line of a `phw_gt()` table now reads as it
+  does in HTML: "Source:" and "Data correct as of" on separate lines, and
+  characters such as `&` and `%` shown as typed. Before, the PDF showed a
+  literal `<br>`, an `&` stopped the PDF from building and a `%` cut the
+  line short.
 * `phw_gt_theme(...)` and `phw_gt(theme_args = )` can change a setting
   phwstyle already sets, such as `heading.align` or `data_row.padding`.
   Your value replaces the PHW one. Before, these stopped with "matched by
