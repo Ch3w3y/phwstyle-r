@@ -448,3 +448,22 @@ test_that("a summary table whose row styling no longer fits its rows says how to
   expect_error(print(rbind(s, s)), "row styling is for 3")
   expect_output(print(as.data.frame(rbind(s, s))), "sex")
 })
+
+test_that("the summary builders summarise an sf object by its attributes", {
+  skip_if_not_installed("sf")
+  sq <- function(x) sf::st_polygon(list(rbind(c(x, 0), c(x + 1, 0), c(x + 1, 1), c(x, 1), c(x, 0))))
+  areas <- sf::st_sf(board = c("A", "B", "A"), quintile = c(1, 2, 3),
+                     geometry = sf::st_sfc(lapply(0:2, sq), crs = 27700))
+  plain <- sf::st_drop_geometry(areas)
+  expect_identical(phw_summary_table(areas, by = board), phw_summary_table(plain, by = board))
+  expect_identical(phw_crosstab(areas, board, quintile), phw_crosstab(plain, board, quintile))
+  expect_identical(phw_group_table(areas, board), phw_group_table(plain, board))
+  expect_identical(phw_as_summary(areas), phw_as_summary(plain))
+  expect_named(phw_as_summary(areas), c("board", "quintile"))
+
+  pts <- sf::st_as_sf(data.frame(sex = c("F", "M", "F"), age = c(30, 40, 50),
+                                 lon = c(-3.1, -3.2, -3.3), lat = c(51.5, 51.6, 51.7)),
+                      coords = c("lon", "lat"), crs = 4326)
+  expect_identical(phw_summary_table(pts, by = sex),
+                   phw_summary_table(sf::st_drop_geometry(pts), by = sex))
+})
