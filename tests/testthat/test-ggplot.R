@@ -544,6 +544,35 @@ test_that("phw_arrange wraps a collected legend of health boards", {
   expect_lte(legend_cm(g), 16)
 })
 
+test_that("a second legend below the chart gets a row of its own and fits", {
+  skip_if_not_installed("ragg")
+  library(ggplot2)
+  local_ggplot_state()
+  use_phw_ggplot()
+  saved <- NULL
+  local_mocked_bindings(ggsave = function(filename, plot, ...) saved <<- plot, .package = "ggplot2")
+  phw_save(board_chart(7) + geom_point(aes(shape = "4-week average")), "cases.png")
+  local_size()
+  expect_lte(legend_cm(ggplotGrob(saved)), 16)
+})
+
+test_that("phw_arrange fits legends that don't merge, and kept legends to their own plot", {
+  skip_if_not_installed("ragg")
+  skip_if_not_installed("patchwork")
+  library(ggplot2)
+  local_ggplot_state()
+  use_phw_ggplot()
+  local_size()
+  drives <- ggplot(mpg, aes(displ, hwy, shape = drv)) + geom_point()
+  expect_lte(legend_cm(patchwork::patchworkGrob(phw_arrange(board_chart(7), drives))), 16)
+  g <- patchwork::patchworkGrob(phw_arrange(board_chart(7), board_chart(7), guides = "keep"))
+  for (i in 1:2) {
+    box <- g$grobs[[which(g$layout$name == paste0("guide-box-bottom-", i))]]
+    expect_lte(grid::convertWidth(gtable::gtable_width(box), "cm", valueOnly = TRUE), 8)
+  }
+  expect_equal(column_shares(3, NULL, 2, c(3, 1)), c(0.75, 0.25, 0.75))
+})
+
 test_that("phw_finalise of a finished chart keeps both footers when drawn", {
   library(ggplot2)
   local_ggplot_state()
