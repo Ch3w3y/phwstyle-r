@@ -647,3 +647,44 @@ test_that("a ggplot that maps text shows only that text on hover", {
   plain <- built(phw_plotly(ggplot2::ggplot(d, ggplot2::aes(x, y)) + ggplot2::geom_point()))
   expect_match(plain$data[[1]]$text, "^x: 1<br />y: 3$|^x: 2<br />y: 4$")
 })
+
+test_that("a ggplot's secondary axis is drawn over the main one, with its own breaks and title", {
+  d <- data.frame(week = 1:20, cases = 4 + 180 * exp(-((1:20 - 9) / 4)^2))
+  d$positivity <- 2 + 28 * exp(-((d$week - 10) / 5)^2)
+  sec <- phw_sec_axis(d$cases, d$positivity, name = "Positivity (%)")
+  g <- ggplot2::ggplot(d, ggplot2::aes(week)) + ggplot2::geom_col(ggplot2::aes(y = cases)) +
+    ggplot2::geom_line(ggplot2::aes(y = sec$rescale(positivity))) +
+    ggplot2::scale_y_continuous("Cases", sec.axis = sec)
+  layout <- built(phw_plotly(g))$layout
+  right <- layout$yaxis2
+  expect_equal(right[c("overlaying", "matches", "side")], list(overlaying = "y", matches = "y", side = "right"))
+  expect_equal(right$ticktext, c("0", "10", "20", "30"))
+  expect_equal(right$tickvals, sec$rescale(c(0, 10, 20, 30)))
+  expect_equal(right$title$text, "Positivity (%)")
+  expect_equal(layout$yaxis$title$text, "Cases")
+
+  top <- built(phw_plotly(g + ggplot2::coord_flip()))$layout
+  expect_null(top$yaxis2)
+  expect_equal(top$xaxis2[c("overlaying", "side")], list(overlaying = "x", side = "top"))
+  expect_equal(top$xaxis2$ticktext, c("0", "10", "20", "30"))
+
+  g$scales$scales <- list()
+  expect_null(built(phw_plotly(g))$layout$yaxis2)
+})
+
+test_that("a secondary axis stays on its own chart in subplot(), and a faceted one warns", {
+  d <- data.frame(week = 1:10, cases = c(1:5, 5:1) * 10, panel = rep(c("A", "B"), 5))
+  sec <- phw_sec_axis(d$cases, d$cases / 10, name = "Rate")
+  g <- ggplot2::ggplot(d, ggplot2::aes(week, cases)) + ggplot2::geom_col() +
+    ggplot2::scale_y_continuous(sec.axis = sec)
+  plain <- ggplot2::ggplot(d, ggplot2::aes(week, cases)) + ggplot2::geom_line()
+  layout <- built(phw_plotly(plotly::subplot(phw_plotly(plain), phw_plotly(g))))$layout
+  own <- Filter(function(a) is.list(a) && identical(a$anchor, "x2") && is.null(a$overlaying), layout)
+  over <- Filter(function(a) is.list(a) && !is.null(a$overlaying), layout)
+  expect_length(over, 1)
+  expect_equal(over[[1]]$overlaying, sub("axis", "", names(own)))
+  expect_equal(over[[1]]$matches, over[[1]]$overlaying)
+
+  expect_warning(w <- phw_plotly(g + ggplot2::facet_wrap(~panel)), "faceted")
+  expect_false(any(vapply(built(w)$layout, function(a) is.list(a) && !is.null(a$overlaying), logical(1))))
+})

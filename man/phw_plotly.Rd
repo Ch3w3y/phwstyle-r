@@ -55,6 +55,15 @@ goes under its title. A ggplot that maps the \code{text} aesthetic shows only
 that text on hover, as \code{ggplotly(tooltip = "text")} does.
 }
 \details{
+A ggplot's secondary axis, such as one from \code{\link[=phw_sec_axis]{phw_sec_axis()}}, is drawn
+on the right (or the top), as in the static chart. Hover shows the
+second measure in the units of the main axis, so map the \code{text}
+aesthetic to show it in its own. A faceted chart can't show a secondary
+axis: \code{phw_plotly()} warns, and the series is read against the main
+axis. To combine charts that have one with \code{\link[plotly:subplot]{plotly::subplot()}}, pass the
+combined figure to \code{phw_plotly()} too, so each axis stays on its own
+chart.
+
 Any plotly chart type works: scatter and lines, bars, pies and
 donuts (given the PHW colours and white slice borders), box and violin plots, histograms,
 heatmaps, contours and choropleth maps, and markers coloured by a number
