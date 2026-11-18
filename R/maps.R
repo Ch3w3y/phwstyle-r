@@ -141,8 +141,9 @@ StatPhwMapAreas <- ggplot2::ggproto("StatPhwMapAreas", ggplot2::StatSf,
     ggplot2::ggproto_parent(ggplot2::StatSf, self)$compute_layer(data, params, layout)
   })
 
+# Slides wrap it again to their width from the unwrapped text.
 wrap_caption <- function(x) {
-  if (is.null(x)) NULL else paste(strwrap(x, 70), collapse = "\n")
+  if (is.null(x)) NULL else structure(paste(strwrap(x, 70), collapse = "\n"), phw_unwrapped = x)
 }
 
 map_boundaries <- function(level, detail, call = rlang::caller_env()) {

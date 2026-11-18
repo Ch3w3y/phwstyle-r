@@ -120,7 +120,7 @@ test_that("the boundary attribution is the caption and labs() replaces it", {
   areas <- tiny_areas()
   d <- data.frame(area = areas$code, rate = 1:4)
   p <- phw_map(d, by = area, fill = rate, level = areas)
-  expect_equal(plot_labs(p)$caption, "Boundaries: test source")
+  expect_equal(plot_labs(p)$caption, "Boundaries: test source", ignore_attr = TRUE)
   p2 <- p + ggplot2::labs(caption = "Mine")
   expect_equal(plot_labs(p2)$caption, "Mine")
 })
