@@ -618,6 +618,15 @@ test_that("ggrepel labels show as text in plotly, placed by their hjust and vjus
   expect_equal(unique(lab[[1]]$textposition), "middle right")
 })
 
+test_that("a funnel's 95% limits stay dashed and its 99.8% limits solid in plotly", {
+  set.seed(6)
+  d <- data.frame(den = round(runif(20, 500, 5000)))
+  d$num <- rbinom(20, d$den, 0.1)
+  lines <- Filter(function(t) identical(t$mode, "lines"), built(phw_plotly(phw_funnel(d, num, den)))$data)
+  # the target line, then the 95% and 99.8% limits
+  expect_equal(lapply(lines, function(t) t$line$dash), list("solid", "dash", "solid"))
+})
+
 test_that("a pyramid's hover shows each bar's unsigned value, as on the axis", {
   hover <- function(g) unlist(lapply(built(phw_plotly(g))$data, function(t) as.vector(t$text)))
   py <- data.frame(age = factor(rep(c("0-4", "5-9"), 2)), sex = rep(c("Female", "Male"), each = 2),
