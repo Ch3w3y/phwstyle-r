@@ -113,8 +113,8 @@ says what to change.
   binned and quantile palettes still default to `"blues"`.
 * `phw_leaflet_polygons(bins = )` reads `bins` as `phw_map()` does: the
   bins run from the lowest to the highest value, rounded out to tidy
-  numbers, and are split at the breaks you give, or at about that many tidy
-  breaks for a single number. Before, an area below the first break or
+  numbers, and are split at the breaks you give, or into that many classes
+  for a single number. Before, an area below the first break or
   above the last was drawn grey as if it had no data and was left out of
   the legend, and `bins = 5` gave 6 classes on a leaflet map and 3 in
   `phw_map()`. Binned leaflet maps change colour and legend.
@@ -126,6 +126,12 @@ says what to change.
   `phw_map()` and the second on the leaflet map, and the shades differed.
 * `phw_map(bins = )` no longer draws an area grey as missing when a break
   lies outside the data, as in `bins = c(0, 20, 100)` for rates of 5 to 35.
+* `phw_map(bins = )` and `phw_leaflet_polygons(bins = )` with a single
+  number draw that many classes of equal width with tidy edges, such as
+  0, 25, 50, 75 and 100 for `bins = 4` on rates of 12 to 88. Where no tidy
+  width gives that number, they draw the nearest number they can and say
+  so. Before, they drew fewer classes than asked for without a word:
+  `bins = 3` and `bins = 4` both gave 2 classes on rates of 12 to 88.
 * `phw_map(bins = 2)` and `phw_leaflet_polygons(bins = 2)` split the areas
   into two classes at the tidy number nearest the median that leaves an
   area in each class. Before, they could draw every area in one colour, or

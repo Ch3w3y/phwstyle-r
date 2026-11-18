@@ -111,7 +111,7 @@ test_that("bins give each area the class and colour phw_map() gives, with no val
   sq <- squares(4)
   sq$code <- paste0("A", 1:4)
   sq$rate <- c(10, 25, 35, 40)
-  for (bins in list(c(20, 30, 40), c(0, 20, 30, 100), 5)) {
+  for (bins in list(c(20, 30, 40), c(0, 20, 30, 100), 3)) {
     m <- expect_no_warning(phw_leaflet() |> phw_leaflet_polygons(sq, fill = rate, bins = bins))
     p <- phw_map(sf::st_drop_geometry(sq), by = code, fill = rate, level = sq, bins = bins)
     expect_false(any(polygon_fill(m) == phw_colours[["grey_light"]]))
@@ -135,6 +135,35 @@ test_that("bins = 2 splits the areas into two classes on both maps", {
     expect_equal(polygon_fill(m), ggplot2::layer_data(p, 2)$fill)
     expect_length(legend_args(m)$labels, 2)
   }
+})
+
+test_that("a number of bins gives that many classes on both maps", {
+  skip_if_not_installed("ggplot2")
+  sq <- squares(8)
+  sq$code <- paste0("A", 1:8)
+  rates <- list(c(12, 23, 31, 44, 52, 67, 78, 88), c(55, 58, 62, 66, 71, 75, 80, 85),
+                c(0.5, 1.8, 3.1, 4.4, 5.6, 6.9, 8.2, 9.5))
+  for (i in seq_along(rates)) {
+    sq$rate <- rates[[i]]
+    for (bins in if (i == 2) 3:4 else 3:5) {
+      m <- expect_no_message(phw_leaflet() |> phw_leaflet_polygons(sq, fill = rate, bins = bins))
+      p <- expect_no_message(phw_map(sf::st_drop_geometry(sq), by = code, fill = rate, level = sq, bins = bins))
+      expect_length(legend_args(m)$labels, bins)
+      expect_length(unique(ggplot2::layer_data(p, 2)$fill), bins)
+      expect_equal(polygon_fill(m), ggplot2::layer_data(p, 2)$fill)
+    }
+  }
+})
+
+test_that("a number of bins tidy edges cannot give says how many it gives", {
+  skip_if_not_installed("ggplot2")
+  sq <- squares(8)
+  sq$code <- paste0("A", 1:8)
+  sq$rate <- c(55, 58, 62, 66, 71, 75, 80, 85)
+  expect_message(m <- phw_leaflet() |> phw_leaflet_polygons(sq, fill = rate, bins = 5), "give 6 bins .* not 5")
+  expect_message(phw_map(sf::st_drop_geometry(sq), by = code, fill = rate, level = sq, bins = 5),
+                 "phw_map\\(\\): Tidy edges give 6 bins .* not 5")
+  expect_length(legend_args(m)$labels, 6)
 })
 
 test_that("an area on a break is in the same class and colour as on phw_map()", {

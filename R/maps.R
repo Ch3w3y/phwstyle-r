@@ -19,8 +19,10 @@
 #'   that you have already loaded. An area held as several rows, one per
 #'   island or part, is drawn as one area.
 #' @param bins Breaks for numeric `fill`, or a single number of bins (2 or
-#'   more). `bins = 2` splits the areas at a tidy number near the median. Not
-#'   used for text or factor `fill`.
+#'   more). A single number gives bins of equal width with tidy edges, as
+#'   near that number as tidy edges allow, and a message when the number
+#'   differs. `bins = 2` splits the areas at a tidy number near the median.
+#'   Not used for text or factor `fill`.
 #'   `NULL` gives a continuous scale. The legend also shows the lowest and
 #'   highest values, rounded out to tidy numbers.
 #' @param palette Palette name or colours, as in [phw_pal()]. Defaults to
@@ -164,9 +166,7 @@ map_fill_scale <- function(v, bins, palette, key) {
     palette <- palette %||% "blues"
     if (is.null(bins)) return(scale_fill_phw_c(palette))
     edges <- bin_edges(v, bins)
-    if (length(bins) > 1 && length(edges) == 2) {
-      cli::cli_inform("phw_map(): No value of {.arg bins} falls inside the data ({edges[1]} to {edges[2]}), so every area has one colour.")
-    }
+    inform_bins(edges, bins, "phw_map(): ")
     return(scale_fill_phw_b(palette, breaks = edges, limits = range(edges), show.limits = TRUE))
   }
   if (!is.null(bins)) cli::cli_inform("phw_map(): {.arg bins} is for numbers, so it is not used for a text or factor {.arg fill}.")
@@ -174,10 +174,10 @@ map_fill_scale <- function(v, bins, palette, key) {
 }
 
 # Edges of the bins for a numeric fill, shared by phw_map() and
-# phw_leaflet_polygons() so both draw the same classes: the data range
-# rounded out to tidy numbers, split at the breaks inside it, or at about
-# `bins` tidy breaks when `bins` is one number. `bins = 2` splits at the tidy
-# break nearest the median that leaves a value in each class.
+# phw_leaflet_polygons() so both draw the same classes. Breaks split the data
+# range rounded out to tidy numbers; one number gives equal_bins(), and
+# `bins = 2` splits at the tidy break nearest the median that leaves a value
+# in each class.
 bin_edges <- function(v, bins) {
   v <- v[is.finite(v)]
   lims <- range(pretty(range(v)))
@@ -190,7 +190,31 @@ bin_edges <- function(v, bins) {
       if (length(splits)) return(c(lims[1], splits[which.min(abs(splits - stats::median(v)))], lims[2]))
     }
   }
-  c(lims[1], inside(scales::extended_breaks(n = bins)(lims)), lims[2])
+  equal_bins(v, bins)
+}
+
+# Bins of one tidy width (1, 1.5, 2, 2.5, 3, 4 or 5 times a power of ten),
+# with edges on multiples of it that cover the data. Of the widths near
+# range / bins, keep the one whose number of bins is nearest `bins`, then the
+# one giving more bins, then the one that fits the data most closely.
+equal_bins <- function(v, bins) {
+  r <- range(v)
+  if (r[1] == r[2]) r <- range(pretty(r))
+  k <- floor(log10(diff(r) / bins))
+  widths <- as.vector(outer(c(1, 1.5, 2, 2.5, 3, 4, 5), 10^((k - 1):(k + 1))))
+  sets <- lapply(widths, function(w) signif(seq(floor(r[1] / w + 1e-9), ceiling(r[2] / w - 1e-9)) * w, 12))
+  n <- lengths(sets) - 1
+  span <- vapply(sets, function(e) diff(range(e)), numeric(1))
+  sets[[order(abs(n - bins), n < bins, span)[1]]]
+}
+
+# Says when the bins drawn are not the ones `bins` asked for.
+inform_bins <- function(edges, bins, prefix = "") {
+  if (length(bins) > 1 && length(edges) == 2) {
+    cli::cli_inform("{prefix}No value of {.arg bins} falls inside the data ({edges[1]} to {edges[2]}), so every area has one colour.")
+  } else if (length(bins) == 1 && length(edges) - 1 != bins) {
+    cli::cli_inform("{prefix}Tidy edges give {length(edges) - 1} bins for these values, not {bins}. Give {.arg bins} as a vector of breaks to choose them.")
+  }
 }
 
 # A map follows the use_phw_ggplot() settings as the other ready-made charts
