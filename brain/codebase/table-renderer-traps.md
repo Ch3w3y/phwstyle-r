@@ -2,6 +2,7 @@
 
 - **gt spanner ids share one namespace with column names.** `gt::tab_spanner()` stops when its `id` equals a column name, and `phw_gt()` passes a summary table's real names to gt so later gt steps find them. Make spanner ids unique against the column names (`style_summary_gt()`).
 - **gt drops attached HTML dependencies.** `gt:::as.tags.gt_tbl()` rebuilds the HTML and loses anything attached with `htmltools::attachDependencies()`. `phw_gt_theme()` adds the class `phw_gt`, whose `as.tags` method attaches `phw_font_dependency()`.
+- **flextable HTML names a font but ships none.** Its CSS says `font-family:'Ubuntu'` with no fallback, so without the font file a browser draws serif. `phw_flextable` adds `phw_font_dependency()` in `knit_print()` (HTML output), `as.tags()` and `print()` (Viewer). `flextable::htmltools_value()` is not generic, so plain calls to it stay without the font.
 - **htmlwidgets ignore `attachDependencies()`.** An htmlwidget renders from its own `$dependencies` list, so add the font with `w$dependencies <- c(w$dependencies, list(phw_font_dependency()))` (DT, leaflet, reactable, plotly). Test it by saving the page with `htmltools::save_html()` and looking for `phw-ubuntu`.
 - **openxlsx2 `wb_add_font()` defaults `size` to 11.** Pass the size every time, or bold rows come out larger than the 10pt body.
 - **One row model for all renderers.** `summary_rows()` in R/summaries.R decides shading, bold, italic, navy, rules and indents for every summary and group row. Change the look there, not in one renderer, so the five stay the same.
