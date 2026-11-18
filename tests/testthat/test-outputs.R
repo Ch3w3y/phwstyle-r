@@ -45,6 +45,25 @@ test_that("phw_gt tables in Word use the PHW font and suggest phw_flextable", {
   expect_match(docx_text(out), "Use .?phw_flextable\\(\\).? for tables in Word documents")
 })
 
+test_that("phw_gt captions in Word read as in HTML, without gt's own number", {
+  skip_if_not_installed("gt")
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("xml2")
+  skip_if_not(rmarkdown::pandoc_available(), "pandoc is not available")
+  local_ggplot_state()
+  dir <- withr::local_tempdir()
+  rmd <- file.path(dir, "gt.Rmd")
+  writeLines(c("---", "output: phwstyle::phw_word_document", "---", "", "```{r, echo = FALSE}",
+               "d <- data.frame(Area = paste('Area', LETTERS[1:4]), Cases = c(120, 85, 64, 19))",
+               "phwstyle::phw_gt(d, caption = 'Cases by area', number = 2)", "```", "", "Text.", "",
+               "```{r, echo = FALSE}", "phwstyle::phw_gt(d, caption = 'Cases by area')", "```"), rmd)
+  out <- suppressMessages(rmarkdown::render(rmd, quiet = TRUE))
+  doc <- xml2::read_xml(unz(out, "word/document.xml"))
+  caps <- xml2::xml_find_all(doc, "//w:p[w:pPr/w:pStyle/@w:val = 'caption']", xml2::xml_ns(doc))
+  expect_equal(xml2::xml_text(caps), c("Table 2 Cases by area", "Cases by area"))
+})
+
 test_that("phw_gt shows the source line as typed in LaTeX and HTML", {
   skip_if_not_installed("gt")
   d <- data.frame(area = "Powys", cases = 588)

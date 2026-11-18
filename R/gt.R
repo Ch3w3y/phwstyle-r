@@ -88,8 +88,21 @@ knit_print.phw_gt <- function(x, ...) {
       gt::cells_row_groups(), gt::cells_stub(), gt::cells_body(), gt::cells_footnotes(),
       gt::cells_source_notes()
     ))
+    return(knitr::asis_output(paste("```{=openxml}", gt_word_xml(x), "```\n\n", sep = "\n")))
   }
   NextMethod()
+}
+
+# gt's Word caption starts with its own "Table n: " field, and phw_gt() puts
+# any number in the title itself, so the field is turned off: with `autonum`
+# from gt 1.1.0, and by removing it from the XML before that.
+gt_word_xml <- function(x) {
+  if ("autonum" %in% names(formals(gt::as_word))) return(gt::as_word(x, autonum = FALSE))
+  run <- "<w:r>(?:(?!</w:r>).)*?<w:t[^>]*>%s</w:t>\\s*</w:r>\\s*"
+  field <- paste0(sprintf(run, "Table "), "<w:r>\\s*<w:fldChar w:fldCharType=\"begin\"[^>]*/>\\s*</w:r>\\s*",
+                  "<w:r>\\s*<w:instrText[^>]*> SEQ Table .*?w:fldCharType=\"end\"[^>]*/>\\s*</w:r>\\s*",
+                  sprintf(run, ": "))
+  sub(paste0("(?s)", field), "", gt::as_word(x), perl = TRUE)
 }
 
 # gt builds its HTML in as.tags(), which drops any dependency attached to the

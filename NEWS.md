@@ -631,6 +631,9 @@ says what to change.
   and HTML: "Table 1 Counts by board", or no number when you give none.
   Before, LaTeX added its own label, giving "Table 1. Table 1 Counts by
   board".
+* In a Word document, a `phw_gt()` caption reads as it does in HTML and
+  PDF: "Table 2 Cases by area", or no number when you give none. Before,
+  gt added its own number, giving "Table 1: Table 2 Cases by area".
 * In a Word or PDF document, a `phw_flextable()` table wider than the page
   now fits the text width. Its headings wrap first, then its cells, and its
   text shrinks to no less than 8 pt if the words alone are still too wide.
