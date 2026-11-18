@@ -142,7 +142,7 @@ phw_group_table <- function(data, rows, cols = NULL, value = NULL, fun = sum,
   }
 
   # ---- Columns ---------------------------------------------------------
-  col_masks <- list(); col_head <- list()
+  col_masks <- list(); col_head <- list(); total_cols <- integer()
   if (is.null(cols)) {
     col_masks[[1]] <- all_rows
     col_head[[1]] <- value_label %||% if (is.null(value)) "n" else var_label(data, value, labels)
@@ -164,11 +164,13 @@ phw_group_table <- function(data, rows, cols = NULL, value = NULL, fun = sum,
       }
       if ("group" %in% col_totals && length(cols) > 1) {
         col_masks[[length(col_masks) + 1]] <- cg[[1]] == t
+        total_cols <- c(total_cols, length(col_masks))
         col_head[[length(col_head) + 1]] <- c(t, rep(total_label, length(cols) - 1))
       }
     }
     if ("table" %in% col_totals) {
       col_masks[[length(col_masks) + 1]] <- all_rows
+      total_cols <- c(total_cols, length(col_masks))
       col_head[[length(col_head) + 1]] <- rep(total_label, length(cols))
     }
   }
@@ -291,6 +293,7 @@ phw_group_table <- function(data, rows, cols = NULL, value = NULL, fun = sum,
   attr(res, "separate") <- separate
   attr(res, "highlight") <- highlight
   attr(res, "digits") <- digits
+  attr(res, "total_cols") <- col_names[total_cols]
   if (length(cols) > 1) attr(res, "col_header") <- `colnames<-`(col_header, col_names)
   res
 }

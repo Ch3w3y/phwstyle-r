@@ -412,6 +412,10 @@ says what to change.
   `phw_col_heat()` colour only the level rows. Before, totals and subtotals
   were coloured too and set the top of the scale, so every other cell came
   out pale, and headings lost their grey band in the coloured columns.
+  The total columns of a cross-tab or group table stay out of the scale
+  too, so `phw_flextable_heat(j = -1)` no longer colours the Total column
+  navy and every other cell near-white. Choose only total columns to colour
+  them on a scale of their own.
 * With a fixed `domain`, `phw_flextable_heat()` and `phw_col_heat()` give a
   value beyond it the colour at the nearer end, as a chart does with
   `oob = scales::squish`. Before, the cell was left unfilled, so it read as

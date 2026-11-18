@@ -318,7 +318,9 @@ use_phw_flextable <- function(style = "booktabs", font_size = 10, ...) {
 #' On a summary table from [phw_flextable()], only the level rows are
 #' coloured. Headings, subtotals and totals keep their own styling and do
 #' not count towards the colour scale, so a total does not make every other
-#' cell pale.
+#' cell pale. The same goes for the total columns of a [phw_crosstab()] or
+#' [phw_group_table()], so `j = -1` colours every column but the totals.
+#' Choose only total columns to colour them on a scale of their own.
 #'
 #' @param x A flextable.
 #' @param j Columns to colour, chosen as in [dplyr::select()]: unquoted
@@ -356,7 +358,7 @@ phw_flextable_heat <- function(x, j, palette = "teals", domain = NULL, breaks = 
   data <- x$body$dataset
   j <- pick_cols(rlang::enquo(j), data, "j")
   rows <- heat_rows(data)
-  j <- value_cols(data[rows, , drop = FALSE], j, "j")
+  j <- value_cols(data[rows, , drop = FALSE], heat_cols(data, j), "j")
   if (!length(j)) return(x)
   vals <- unlist(data[rows, j])
   rag <- identical(palette, "rag") || identical(palette, "rag_accessible")
