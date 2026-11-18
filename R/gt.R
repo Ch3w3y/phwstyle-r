@@ -6,6 +6,9 @@
 #' [phw_summary_table()] and friends) and adds the title, number formats
 #' and source line in one call.
 #'
+#' In a PDF document from R Markdown, the table stays where it is in the
+#' text, and a table wider than the text shrinks to fit it.
+#'
 #' Use gt tables in HTML and PDF. In a Word document they get the PHW font
 #' and colours, but gt can't make the column labels bold or indent the levels
 #' of a summary table, so use [phw_flextable()] for Word.
@@ -90,7 +93,30 @@ knit_print.phw_gt <- function(x, ...) {
     ))
     return(knitr::asis_output(paste("```{=openxml}", gt_word_xml(x), "```\n\n", sep = "\n")))
   }
-  NextMethod()
+  if (!knitr::is_latex_output()) return(NextMethod())
+  # From gt 0.11.1 a LaTeX table is a float, which LaTeX moves away from its
+  # text, so it is held in place as phw_flextable() tables are.
+  float <- "latex.tbl.pos" %in% names(formals(gt::tab_options))
+  if (float) x <- gt::tab_options(x, latex.tbl.pos = "H")
+  out <- NextMethod()
+  out[] <- fit_gt_latex(out)
+  if (rlang::is_installed("rmarkdown")) {
+    deps <- lapply(c(if (float) "float", "graphicx"), rmarkdown::latex_dependency)
+    attr(out, "knit_meta") <- c(attr(out, "knit_meta"), deps)
+  }
+  out
+}
+
+# gt sets a float's table at full width with tabular*, which runs past the
+# margin when the columns are wider than the text. LaTeX measures the table
+# at its natural width and, when that is too wide, shrinks it to fit.
+fit_gt_latex <- function(tex) {
+  re <- paste0("(?s)\\\\begin\\{tabular\\*\\}\\{([^\n]*?)\\}\\{@\\{\\\\extracolsep\\{\\\\fill\\}\\}([^\n]*)\\}\n",
+               "(.*?)\\\\end\\{tabular\\*\\}\n")
+  fit <- paste0("\\\\sbox0{\\\\begin{tabular}{\\2}\n\\3\\\\end{tabular}}%\n",
+                "\\\\ifdim\\\\wd0>\\\\linewidth\\\\resizebox{\\\\linewidth}{!}{\\\\usebox0}\n\\\\else\n",
+                "\\\\begin{tabular*}{\\1}{@{\\\\extracolsep{\\\\fill}}\\2}\n\\3\\\\end{tabular*}\n\\\\fi\n")
+  gsub(re, fit, tex, perl = TRUE)
 }
 
 # gt's Word caption starts with its own "Table n: " field, and phw_gt() puts

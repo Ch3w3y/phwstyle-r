@@ -659,6 +659,11 @@ says what to change.
   A table that cannot fit even then gives a warning. Before, a summary
   table or cross-tab by the seven health boards ran past the right margin
   and lost its last columns.
+* In a PDF document, a `phw_gt()` table stays where it is in the text, and
+  a table wider than the text shrinks to fit it. Before, LaTeX moved the
+  table, often to the next page after the paragraph that follows it, and a
+  summary table by health board ran past the right margin and lost its
+  Total column.
 * On the title slide and section header of your own template,
   `phw_add_slide()` gives `text` the template's colour and size, and the
   source line is white only when the slide background is dark. Before, both
