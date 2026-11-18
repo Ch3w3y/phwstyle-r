@@ -118,8 +118,8 @@ phw_gt <- function(data, caption = NULL, subtitle = NULL, number = NULL, source 
   if (any(is_year)) x <- gt::fmt_integer(x, columns = gt_cols(num[is_year]), use_seps = FALSE)
   if (any(is_int & !is_year)) x <- gt::fmt_integer(x, columns = gt_cols(num[is_int & !is_year]))
   if (any(!is_int)) x <- gt::fmt_number(x, columns = gt_cols(num[!is_int]), decimals = digits)
-  dates <- names(df)[vapply(df, inherits, logical(1), c("Date", "POSIXt"))]
-  if (length(dates)) x <- gt::cols_align(x, "left", columns = gt_cols(dates))
+  text <- setdiff(names(df), num)
+  if (length(text)) x <- gt::cols_align(x, "left", columns = gt_cols(text))
   x <- gt::sub_missing(x, missing_text = "")
   if (is_sum) x <- style_summary_gt(x, data, ids, labels, stub = gt_args$rowname_col)
   if (!is.null(caption) || !is.null(subtitle)) {
