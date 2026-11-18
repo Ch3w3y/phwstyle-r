@@ -18,6 +18,33 @@ test_that("phw_gt styles data frames and summary tables", {
   expect_match(html2, "Group A")
 })
 
+test_that("phw_gt tables in Word use the PHW font and suggest phw_flextable", {
+  skip_if_not_installed("gt")
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("xml2")
+  skip_if_not(rmarkdown::pandoc_available(), "pandoc is not available")
+  local_ggplot_state()
+  withr::local_options(rlib_message_verbosity = "verbose")
+  dir <- withr::local_tempdir()
+  rmd <- file.path(dir, "gt.Rmd")
+  writeLines(c("---", "output: phwstyle::phw_word_document", "---", "", "```{r, echo = FALSE}",
+               "d <- data.frame(age = c('0-4', '5-14', '0-4'), sex = c('F', 'M', 'M'))",
+               "phwstyle::phw_gt(phwstyle::phw_summary_table(d, by = sex), caption = 'Summary')",
+               "```"), rmd)
+  out <- rmarkdown::render(rmd, quiet = TRUE)
+  utils::unzip(out, "word/document.xml", exdir = dir)
+  doc <- xml2::read_xml(file.path(dir, "word", "document.xml"))
+  ns <- xml2::xml_ns(doc)
+  runs <- xml2::xml_find_all(doc, "//w:tbl//w:r[normalize-space(w:t) != '']", ns)
+  fonts <- xml2::xml_attr(xml2::xml_find_first(runs, "w:rPr/w:rFonts", ns), "ascii")
+  expect_true(length(runs) > 0)
+  expect_equal(unique(fonts), phw_font())
+  spanner <- runs[xml2::xml_text(runs) == "sex"]
+  expect_length(xml2::xml_find_all(spanner, "w:rPr/w:b", ns), 1)
+  expect_match(docx_text(out), "Use .?phw_flextable\\(\\).? for tables in Word documents")
+})
+
 test_that("use_phw_gtsummary sets a theme", {
   skip_if_not_installed("gtsummary")
   skip_if_not_installed("flextable")

@@ -79,6 +79,11 @@ source note. \code{phw_gt()} builds the table from a data frame (or a
 \code{\link[=phw_summary_table]{phw_summary_table()}} and friends) and adds the title, number formats
 and source line in one call.
 }
+\details{
+Use gt tables in HTML and PDF. In a Word document they get the PHW font
+and colours, but gt can't make the column labels bold or indent the levels
+of a summary table, so use \code{\link[=phw_flextable]{phw_flextable()}} for Word.
+}
 \examples{
 if (requireNamespace("gt", quietly = TRUE)) {
   phw_gt(head(mtcars[, 1:4]), caption = "Example table", source = "mtcars")

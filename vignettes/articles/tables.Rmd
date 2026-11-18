@@ -346,7 +346,9 @@ do.call(flextable::set_flextable_defaults, old)
 ### gt
 
 `phw_gt()` builds a gt table with the same caption, number formats and source
-line. It understands summary tables and group tables.
+line. It understands summary tables and group tables. Use it for HTML and PDF.
+In Word, gt can't make the column labels bold or indent the levels of a
+summary table, so use `phw_flextable()` there.
 
 ```{r, eval = requireNamespace("gt", quietly = TRUE)}
 phw_gt(small, caption = "Cases by area", source = "Example data")

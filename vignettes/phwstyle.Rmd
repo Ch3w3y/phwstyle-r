@@ -181,7 +181,7 @@ in the setup chunk.
 | Use colour-blind safe colours everywhere | `use_phw_ggplot(palette = "accessible")` | [Colours](`r site`articles/colours.html#colour-blind-safe-colours) |
 | Build a table of counts, rates or characteristics from raw data | `phw_summary_table()`, `phw_crosstab()`, `phw_rate_table()`, `phw_risk_table()`, `phw_group_table()` | [Tables](`r site`articles/tables.html#summary-tables) |
 | Style a table you built yourself like those | `phw_as_summary()` | [Tables](`r site`articles/tables.html#summary-tables) |
-| Render a table for Word, PDF or HTML | `phw_flextable()`, `phw_gt()` | [Tables](`r site`articles/tables.html#render-the-same-table-anywhere) |
+| Render a table for Word, PDF or HTML | `phw_flextable()`, or `phw_gt()` for HTML and PDF | [Tables](`r site`articles/tables.html#render-the-same-table-anywhere) |
 | Make an interactive table or chart | `phw_reactable()`, `phw_datatable()`, `phw_plotly()` | [Interactive](`r site`articles/interactive.html) |
 | Draw a map of Welsh areas for a report | `phw_map()` | [Maps](`r site`articles/maps.html) |
 | Draw a map you build yourself, or an interactive map | `phw_boundaries()`, `theme_phw_map()`, `phw_leaflet()` | [Maps](`r site`articles/maps.html#interactive-maps) |
