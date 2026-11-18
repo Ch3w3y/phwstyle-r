@@ -485,6 +485,11 @@ says what to change.
   columns. `groupname_col` stops with a message on these tables, because
   their label columns name a group on its first row only. Before, any column name failed inside gt
   with a list of columns the table does not show.
+* gt steps added after `phw_gt()` on a summary, cross-tab or group table,
+  such as `gt::cols_width()`, `gt::cols_label()`, `gt::cols_hide()` or
+  `gt::fmt_number()`, find its columns by the names the table shows, such
+  as `Characteristic` or `Total`, as they do on a data frame. Before, they
+  stopped with "Can't select columns that don't exist".
 * `phw_group_table(totals = "subgroup")` heads the subgroup block with the
   variable label as you gave it, so "MRSA or MSSA (NHS lab)" is no longer
   printed as "mrsa or mssa (nhs lab)". The new `subgroup_label` sets the
