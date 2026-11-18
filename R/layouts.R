@@ -51,7 +51,10 @@ phw_arrange <- function(..., plots = NULL, ncol = NULL, nrow = NULL, widths = NU
     cli::cli_abort(c("Each plot must be a ggplot or a grob.",
                      x = "Plot {bad[1]} is {.cls {class(all[[bad[1]]])[1]}}."))
   }
-  all <- lapply(all, wrap_legends, position = if (guides == "collect") legend)
+  # A collected legend spans the figure; a kept one only its own plot.
+  share <- if (guides == "keep" && is.null(design)) column_shares(length(all), nrow, ncol, widths) else 1
+  all <- Map(wrap_legends, all, share = share,
+             MoreArgs = list(position = if (guides == "collect") legend))
   out <- patchwork::wrap_plots(all, ncol = ncol, nrow = nrow, widths = widths,
                                heights = heights, design = design, guides = guides)
   ann_theme <- (theme %||% chart_theme()) + ggplot2::theme(
@@ -66,6 +69,14 @@ phw_arrange <- function(..., plots = NULL, ncol = NULL, nrow = NULL, widths = NU
       face = "bold", colour = phw_colours[["navy"]], size = ggplot2::rel(1.1)))
   }
   out
+}
+
+# Each plot's share of the figure width, in a grid filled row by row as
+# patchwork fills it. Widths given as units count as equal.
+column_shares <- function(n, nrow, ncol, widths) {
+  ncol <- ggplot2::wrap_dims(n, nrow, ncol)[2]
+  w <- if (is.numeric(widths) && !grid::is.unit(widths)) rep_len(widths, ncol) else rep(1, ncol)
+  (w / sum(w))[(seq_len(n) - 1) %% ncol + 1]
 }
 
 #' PHW title for gridExtra and cowplot layouts

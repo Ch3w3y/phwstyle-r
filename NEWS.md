@@ -248,6 +248,13 @@ says what to change.
   `phw_add_slide()` or drawn in a document made with the `phw_*_document()`
   formats. A legend given its own number of rows or columns, as in
   `guide_legend(nrow = 1)`, keeps them.
+* `theme_phw()` puts each legend across the bottom or top of a chart on a
+  row of its own, so a second legend no longer runs off the right edge.
+  Before, the average line's key in `phw_epicurve(average = )` and the
+  legends of a `phw_arrange()` figure that do not merge were placed beside
+  the first legend and cut off. With `phw_arrange(guides = "keep")`, each
+  plot's legend now wraps to the width of that plot instead of the whole
+  figure, so the legends no longer overprint each other.
 * `phw_funnel()` draws the same chart whatever the columns are called.
   Before, a denominator column named `value` was replaced by the computed
   percentage, so the points were drawn at the wrong place along the x-axis,

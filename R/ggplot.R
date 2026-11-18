@@ -153,8 +153,12 @@ theme_phw <- function(base_size = 11,
     th <- th + ggplot2::theme(legend.position.inside = legend,
                               legend.background = ggplot2::element_rect(fill = background, colour = NA))
   } else if (legend %in% c("bottom", "top")) {
+    # A second legend goes on a row of its own, so each can take the width
+    # of the chart (see phw_guide_legend()).
     th <- th + ggplot2::theme(legend.justification = "left",
-                              legend.location = "plot")
+                              legend.location = "plot",
+                              legend.box = "vertical",
+                              legend.box.just = "left")
   }
   if (ggplot2_v4()) th <- th + phw_theme_v4_defaults(base_family, base_size, accessible)
   extra <- list(...)
@@ -214,8 +218,9 @@ phw_continuous_auto <- phw_palettes$blues[2:6]
 # A legend for groups that takes more rows when one row is wider than the
 # chart. ggplot2 lays a legend out while the device it is drawn on is open,
 # so the width that matters is known then. With no device open, or with
-# rows or columns set, the legend stays as it is.
-phw_guide_legend <- function() {
+# rows or columns set, the legend stays as it is. `share` is the chart's
+# share of the device width, when it is one panel of a figure.
+phw_guide_legend <- function(share = 1) {
   ggplot2::ggproto("GuidePhwLegend", ggplot2::GuideLegend,
     params = ggplot2::guide_legend()$params,
     draw = function(self, theme, position = NULL, direction = NULL, params = self$params) {
@@ -225,7 +230,7 @@ phw_guide_legend <- function() {
         is.null(params$nrow) && is.null(params$ncol) && grDevices::dev.cur() > 1
       if (!wraps) return(grob)
       cm <- function(u) grid::convertWidth(u, "cm", valueOnly = TRUE)
-      room <- cm(grid::unit(1, "npc")) - cm(sum(ggplot2::calc_element("plot.margin", theme)[c(2, 4)]))
+      room <- share * cm(grid::unit(1, "npc")) - cm(sum(ggplot2::calc_element("plot.margin", theme)[c(2, 4)]))
       n <- nrow(params$key)
       rows <- ceiling(n / 5)
       while (cm(gtable::gtable_width(grob)) > room && rows < n) {
@@ -240,8 +245,9 @@ phw_guide_legend <- function() {
 # Gives each legend for groups that ggplot2 would draw by default, across the
 # top or bottom of the chart, phw_guide_legend(). A theme can't choose a
 # legend, so phwstyle does this wherever it draws a chart. `position` is the
-# legend position the chart will be drawn with, when it isn't the chart's own.
-wrap_legends <- function(plot, position = NULL) {
+# legend position the chart will be drawn with, when it isn't the chart's own,
+# and `share` its share of the width it is drawn at (see phw_guide_legend()).
+wrap_legends <- function(plot, position = NULL, share = 1) {
   if (!inherits(plot, "ggplot") || inherits(plot, "patchwork")) return(plot)
   position <- position %||% ggplot2::calc_element("legend.position", ggplot2::theme_get() + plot$theme)
   if (!identical(position, "bottom") && !identical(position, "top")) return(plot)
@@ -253,7 +259,7 @@ wrap_legends <- function(plot, position = NULL) {
   aes <- unlist(lapply(scales, function(s) if (s$is_discrete() && identical(s$guide, "legend")) s$aesthetics))
   aes <- setdiff(aes, names(plot$guides$guides))
   if (!length(aes)) return(plot)
-  plot + do.call(ggplot2::guides, stats::setNames(rep(list(phw_guide_legend()), length(aes)), aes))
+  plot + do.call(ggplot2::guides, stats::setNames(rep(list(phw_guide_legend(share)), length(aes)), aes))
 }
 
 #' PHW map theme
