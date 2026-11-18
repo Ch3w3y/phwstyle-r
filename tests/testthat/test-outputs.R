@@ -18,7 +18,7 @@ test_that("phw_gt styles data frames and summary tables", {
   expect_match(html2, "Group A")
 })
 
-test_that("phw_gt tables in Word use the PHW font and suggest phw_flextable", {
+test_that("phw_gt tables in Word use the PHW font and suggest phw_flextable on the console", {
   skip_if_not_installed("gt")
   skip_if_not_installed("rmarkdown")
   skip_if_not_installed("knitr")
@@ -32,7 +32,9 @@ test_that("phw_gt tables in Word use the PHW font and suggest phw_flextable", {
                "d <- data.frame(age = c('0-4', '5-14', '0-4'), sex = c('F', 'M', 'M'))",
                "phwstyle::phw_gt(phwstyle::phw_summary_table(d, by = sex), caption = 'Summary')",
                "```"), rmd)
-  out <- rmarkdown::render(rmd, quiet = TRUE)
+  console <- utils::capture.output(out <- rmarkdown::render(rmd, quiet = TRUE), type = "message")
+  expect_match(paste(console, collapse = "\n"), "Use .?phw_flextable\\(\\).? for tables in Word documents")
+  expect_no_match(docx_text(out), "PHW styling|phw_flextable")
   utils::unzip(out, "word/document.xml", exdir = dir)
   doc <- xml2::read_xml(file.path(dir, "word", "document.xml"))
   ns <- xml2::xml_ns(doc)
@@ -42,7 +44,6 @@ test_that("phw_gt tables in Word use the PHW font and suggest phw_flextable", {
   expect_equal(unique(fonts), phw_font())
   spanner <- runs[xml2::xml_text(runs) == "sex"]
   expect_length(xml2::xml_find_all(spanner, "w:rPr/w:b", ns), 1)
-  expect_match(docx_text(out), "Use .?phw_flextable\\(\\).? for tables in Word documents")
 })
 
 test_that("phw_gt captions in Word read as in HTML, without gt's own number", {

@@ -79,13 +79,21 @@ phw_gt_theme <- function(x, font_size = 14, accent = phw_colours[["navy"]], stri
 
 # gt's Word writer ignores the table font and takes a single font name, not
 # the CSS list phw_gt_theme() sets, so the PHW font goes on every cell for Word.
-# It cannot bold column labels or indent cells.
+# It cannot bold column labels or indent cells. The note saying so is for the
+# author, so it goes straight to the console: knitr writes any message
+# condition raised while printing into the document.
 #' @exportS3Method knitr::knit_print
 knit_print.phw_gt <- function(x, ...) {
   if (knitr::pandoc_to("docx")) {
-    cli::cli_inform(c("gt tables in Word lose some PHW styling: column labels are not bold and the levels of a summary table are not indented.",
-                      i = "Use {.fn phw_flextable} for tables in Word documents."),
-                    .frequency = "once", .frequency_id = "phw_gt_word")
+    withCallingHandlers(
+      cli::cli_inform(c("gt tables in Word lose some PHW styling: column labels are not bold and the levels of a summary table are not indented.",
+                        i = "Use {.fn phw_flextable} for tables in Word documents."),
+                      .frequency = "once", .frequency_id = "phw_gt_word"),
+      message = function(m) {
+        cat(conditionMessage(m), "\n", sep = "", file = stderr())
+        invokeRestart("muffleMessage")
+      }
+    )
     x <- gt::tab_style(x, gt::cell_text(font = phw_font()), locations = list(
       gt::cells_title(), gt::cells_stubhead(), gt::cells_column_spanners(), gt::cells_column_labels(),
       gt::cells_row_groups(), gt::cells_stub(), gt::cells_body(), gt::cells_footnotes(),
