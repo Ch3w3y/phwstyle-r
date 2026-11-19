@@ -31,6 +31,23 @@
 \renewcommand{\familydefault}{\sfdefault}
 \color{phwtext}
 
+% Ubuntu has no ▲ ■ ▼, the shapes in red, amber and green table cells. Set
+% them in DejaVu Sans if installed, else in Latin Modern Math, which comes
+% with every TeX installation.
+\ifdefined\XeTeXinterchartokenstate
+  \IfFontExistsTF{DejaVu Sans}{\newfontfamily\phwshapefont{DejaVu Sans}}{%
+    \IfFontExistsTF{latinmodern-math.otf}{\newfontfamily\phwshapefont{latinmodern-math.otf}}{\let\phwshapefont\relax}}
+  \XeTeXinterchartokenstate=1
+  \newXeTeXintercharclass\phwshapeclass
+  \XeTeXcharclass"25A0=\phwshapeclass
+  \XeTeXcharclass"25B2=\phwshapeclass
+  \XeTeXcharclass"25BC=\phwshapeclass
+  \XeTeXinterchartoks 0 \phwshapeclass={\begingroup\phwshapefont}
+  \XeTeXinterchartoks 4095 \phwshapeclass={\begingroup\phwshapefont}
+  \XeTeXinterchartoks \phwshapeclass 0={\endgroup}
+  \XeTeXinterchartoks \phwshapeclass 4095={\endgroup}
+\fi
+
 % Links
 \usepackage{hyperref}
 

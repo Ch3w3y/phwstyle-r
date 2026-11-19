@@ -292,6 +292,29 @@ test_that("a PDF document with two authors renders", {
   expect_true(file.exists(pdf))
 })
 
+test_that("a PDF document draws the shapes in red, amber and green cells", {
+  skip_on_cran()
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("flextable")
+  skip_if_not(rmarkdown::pandoc_available(), "pandoc is not available")
+  skip_if(!nzchar(Sys.which("xelatex")), "XeLaTeX is not installed")
+  local_ggplot_state()
+  withr::local_options(tinytex.clean = FALSE)
+  dir <- withr::local_tempdir()
+  rmd <- file.path(dir, "rag.Rmd")
+  writeLines(c("---", "title: Uptake", "---", "",
+               "```{r, echo = FALSE}",
+               "u <- data.frame(Area = c('Powys', 'Hywel Dda', 'Cardiff'), Uptake = c(.91, .94, .96))",
+               "phwstyle::phw_flextable(u, digits = 2) |>",
+               "  phwstyle::phw_flextable_heat(Uptake, palette = 'rag', breaks = c(.92, .95))",
+               "```"), rmd)
+  pdf <- rmarkdown::render(rmd, phw_pdf_document(), quiet = TRUE)
+  expect_true(file.exists(pdf))
+  log <- readLines(file.path(dir, "rag.log"), warn = FALSE)
+  expect_false(any(grepl("Missing character", log, fixed = TRUE)))
+})
+
 test_that("a phw_flextable caption in a PDF document is numbered once", {
   skip_if_not_installed("rmarkdown")
   skip_if_not_installed("knitr")
