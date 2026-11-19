@@ -805,6 +805,12 @@ says what to change.
   `phw_plotly(plotly::ggplotly(g))` read "(Cardiff,1)" and "(Target,1)"
   in the legend, and the hover of `phw_pyramid()` showed the left-hand sex
   as negative values.
+* `phw_plotly()` gives ggplots combined with `plotly::subplot()` the same
+  legend names as each chart on its own. Before, a panel with an average
+  or target line, such as `phw_epicurve(average = )`, read "(Cardiff,1)"
+  and "(4-week average,1)". A group now also keeps one colour across the
+  panels when a line maps a colour of its own next to filled bars. Before,
+  the first group could be navy in one panel and pink in the next.
 * `phw_plotly()` draws the secondary axis of a ggplot, such as one from
   `phw_sec_axis()`, on the right (or the top) with its own breaks and
   title, and it stays with its own chart in a `plotly::subplot()` figure
