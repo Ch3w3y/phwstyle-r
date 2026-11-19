@@ -408,7 +408,9 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
   p <- colour_built(p, palette, colorway)
   p <- colour_pies(p, palette, unname(colorway))
   p <- colour_mapped(p, palette)
-  if (!"colorway" %in% names(extra)) base$colorway <- spare_colorway(base$colorway, p)
+  if (!"colorway" %in% names(extra)) {
+    base$colorway <- spare_colorway(base$colorway, Find(Negate(is.null), lapply(p$x$attrs, `[[`, "colors")))
+  }
   p <- do.call(plotly::layout, c(list(p), base))
   p <- plotly::config(p, displaylogo = FALSE, displayModeBar = modebar,
                       modeBarButtonsToRemove = c("lasso2d", "select2d", "autoScale2d",
@@ -987,7 +989,7 @@ colour_mapped <- function(p, palette) {
     })
   }
   own <- vapply(attrs, function(a) !is.null(a[["colors"]]), logical(1))
-  keyed <- vapply(attrs, function(a) is.character(a[["colors"]]) && rlang::is_named(a[["colors"]]), logical(1))
+  keyed <- vapply(attrs, function(a) is_colour_key(a[["colors"]]), logical(1))
   groups <- Filter(function(v) !is.null(v) && !is.numeric(v), values[!own])
   key <- if (length(groups)) group_colours(groups, palette)
   keyed_na <- any(keyed & missing)
@@ -1041,18 +1043,19 @@ unbuilt_attrs <- function(p) {
 # all traces, so a line drawn before the groups would take the first group's
 # colour. Leave the colours of the groups' key out of the colorway while any
 # are left.
-spare_colorway <- function(colorway, p) {
-  key <- Find(Negate(is.null), lapply(p$x$attrs, `[[`, "colors"))
-  if (!is.character(key) || !rlang::is_named(key)) return(colorway)
+spare_colorway <- function(colorway, key) {
+  if (!is_colour_key(key)) return(colorway)
   spare <- colorway[!toupper(colorway) %in% toupper(key)]
   if (length(spare)) spare else colorway
 }
+
+is_colour_key <- function(x) is.character(x) && rlang::is_named(x)
 
 # A plotly::subplot() figure arrives with its traces built, in plotly's own
 # colours, which plotly marks with the classes "colorway" (a trace with no
 # colour mapping) and "plotly_default" (group colours and colour scales).
 # Give them PHW colours as colour_mapped() does before a build: the colorway
-# in trace order, a colour key by trace name, grey for a missing group and
+# in trace order, less the colours of the groups, a colour key by trace name, grey for a missing group and
 # the PHW sequential scale. Colours a panel set itself are marked
 # "plotly_default" too, so when any panel sets its own, groups and scales
 # keep the colours they were built with, and only a missing group turns grey. A ggplot's groups come unmarked, in
@@ -1079,6 +1082,10 @@ colour_built <- function(p, palette, colorway) {
   gg <- ggplot_groups(p$x$data, panel)
   lv <- unique(c(trace_names[grouped & !is.na(trace_names)], gg))
   key <- if (length(lv)) group_colours(list(factor(lv, lv)), palette)
+  # Each panel keeps a colour key it set, such as phw_colour_key() or the
+  # one phw_plotly() gave it.
+  keys <- Filter(is_colour_key, lapply(p$x$attrs, `[[`, "colors"))
+  colorway <- spare_colorway(colorway, unlist(c(list(key), keys)))
   at <- seq(0, 1, length.out = 25)
   scale <- matrix(c(at, plotly::toRGB(scales::col_numeric(phw_continuous_auto, c(0, 1))(at))), ncol = 2)
   gradient <- if (uses_ggplot_gradient(p$x$data)) ggplot_gradient()

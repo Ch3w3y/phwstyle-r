@@ -168,7 +168,9 @@ says what to change.
 * `phw_plotly()` gives a figure combined with `plotly::subplot()` the PHW
   colours. Before, it kept plotly's default colours: groups, traces with no
   colour mapping and heatmaps all came out in plotly's palettes. A group
-  now has the same colour in every panel. If a panel sets its own colours,
+  now has the same colour in every panel, and a trace that maps no colour,
+  such as a Wales line, takes a palette colour no group uses, as in a
+  single chart. If a panel sets its own colours,
   `phw_plotly()` keeps them and says how to give the other panels PHW
   colours.
 * `phw_plotly()` gives every panel of a figure combined with
