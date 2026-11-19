@@ -880,6 +880,28 @@ test_that("groups in a summary table get the chart's colours, in factor order", 
   }
 })
 
+test_that("group table levels keep the chart's colours when the first group lacks one", {
+  ages <- c("0-4", "5-14", "15-44", "45-64", "65+")
+  d <- data.frame(hb = rep(c("Powys", "Swansea Bay"), each = 5), age_group = factor(rep(ages, 2), ages))
+  d <- d[-1, ]
+  chart <- stats::setNames(phw_pal(5), ages)
+  tabs <- list(list(phw_group_table(d, rows = c(hb, age_group)), 1),
+               list(phw_group_table(d, rows = c(hb, age_group), layout = "columns"), 2))
+  if (requireNamespace("flextable", quietly = TRUE)) {
+    for (t in tabs) {
+      tab <- t[[1]]; j <- t[[2]]
+      ft <- phw_flextable_groups(phw_flextable(tab), j = j)
+      lv <- attr(tab, "row_type") == "level"
+      expect_equal(ft$body$styles$cells$background.color$data[lv, j], unname(chart[tab[[j]][lv]]))
+    }
+  }
+  skip_if_not_installed("reactable")
+  tab <- tabs[[1]][[1]]
+  style <- phw_reactable(tab, group_col = 1)$x$tag$attribs$columns[[1]]$style
+  lv <- attr(tab, "row_type") == "level"
+  expect_equal(vapply(style[lv], function(s) s$background, ""), unname(chart[tab[[1]][lv]]))
+})
+
 test_that("renderers show phw_group_table(digits = ) unless given their own", {
   x <- phw_group_table(data.frame(g = c("A", "B"), v = c(1.23456, 2.5)), g, value = v, digits = 3)
   skip_if_not_installed("flextable")
