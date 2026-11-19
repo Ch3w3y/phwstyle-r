@@ -20,7 +20,7 @@ pstack is installed. Load `/pstack:poteto-mode` at the start and follow the play
 
 Write down, in one or two sentences, what changes and what does not. That is the contract for this stage.
 
-**Neighbours.** Fix the defect everywhere it occurs, not only in the issue's repro. Read `brain/codebase/neighbour-paths.md`. Before you change code, run the repro through each neighbour it lists that applies (the other table renderers, output formats, chart layouts, plotly inputs, map widths and input shapes), plus any the issue names. List each one that fails. The same root cause in a neighbour is part of this issue: fix it in this PR and add a test for it. After the change, run the neighbours again, and one ordinary call through every caller of each helper you changed, and compare with `main`. A neighbour that works on `main` must still work. A neighbour that fails for a different reason is out of scope: name it in the PR body and the yield message.
+**Neighbours.** Fix the defect everywhere it occurs, not only in the issue's repro. Read `brain/codebase/neighbour-paths.md`. Before you change code, run the repro through each neighbour it lists that applies (the other table renderers, output formats, chart layouts, plotly inputs, map widths and input shapes), plus any the issue names. List each one that fails. The same root cause in a neighbour a user would hit in normal use (the bar in the sweep skill's "Normal use only") is part of this issue: fix it in this PR and add a test for it. After the change, run the neighbours again, and one ordinary call through every caller of each helper you changed, and compare with `main`. A neighbour that works on `main` must still work. A neighbour that fails for a different reason, or only on edge-case input, is out of scope: name it in the PR body and the yield message.
 
 ## 2. Branch and worktree
 
@@ -104,7 +104,7 @@ Push the branch (`git -C "$W" push -u origin "$B"`, never `--force` on a shared 
 gh pr create --base main --head "$B" --title "<what changes, for users>" --body-file <file>
 ```
 
-The body opens with `## Why` restating the issue in one or two sentences, then what changed and how it was checked, then a `## Neighbours` list of each neighbour checked, saying which failed and were fixed here, then `Closes #<id>` on its own line, and ends with:
+The body opens with `## Why` restating the issue in one or two sentences, then what changed and how it was checked, then a `## Neighbours` list of each neighbour checked, saying which failed and were fixed here and which fail for another reason, then `Closes #<id>` on its own line, and ends with:
 
 ```
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
