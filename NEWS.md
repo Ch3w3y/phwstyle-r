@@ -363,6 +363,9 @@ says what to change.
   them and wraps to the width of the chart.
 * `phw_finalise()` on a `phw_arrange()` figure keeps every panel, the
   figure title and the panel tags. Before, only the last panel was kept.
+* `phw_finalise()` on a `phw_arrange()` figure of maps, or of other plots
+  that keep their shape, draws and saves. Before, printing or saving it
+  failed with "'respect' must be logical or an 'nrow' by 'ncol' matrix".
 * `phw_finalise(note = )` with no `source` or `date` adds the note under
   the caption already on the plot. Before, the plot's caption was dropped
   and only the note was shown.
