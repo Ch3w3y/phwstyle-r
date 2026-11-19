@@ -594,6 +594,33 @@ test_that("every renderer shows labels kept in row names as a first column", {
   expect_equal(phw_flextable(plain[plain$n > 1, ])$col_keys, c("area", "n"))
 })
 
+test_that("row names a column already holds are not shown a second time", {
+  skip_if_not_installed("flextable")
+  skip_if_not_installed("gt")
+  skip_if_not_installed("reactable")
+  skip_if_not_installed("DT")
+  skip_if_not_installed("openxlsx2")
+  hb <- c("Powys", "Hywel Dda", "Hywel Dda", "Swansea Bay")
+  los <- c(3, 5, 2, 4)
+  med <- tapply(los, hb, median)
+  tab <- data.frame(health_board = names(med), median_los = med)
+  f <- withr::local_tempfile(fileext = ".xlsx")
+  phw_write_xlsx(tab, f)
+  for (cols in list(phw_flextable(tab)$col_keys, names(phw_gt(tab)[["_data"]]),
+                    attr(phw_datatable(tab)$x, "colnames"),
+                    names(jsonlite::fromJSON(as.character(phw_reactable(tab)$x$tag$attribs$data))),
+                    names(openxlsx2::read_xlsx(f)))) {
+    expect_equal(cols, c("health_board", "median_los"))
+  }
+
+  df <- data.frame(hb = hb, los = los)
+  one <- do.call(rbind, lapply(split(df, df$hb), function(d) data.frame(hb = d$hb[1], n = nrow(d))))
+  each <- do.call(rbind, lapply(split(df, df$hb), function(d) d))
+  expect_equal(phw_flextable(one)$col_keys, c("hb", "n"))
+  expect_equal(phw_flextable(each)$col_keys, c("hb", "los"))
+  expect_equal(phw_flextable(data.frame(n = c(a = 1, b = 2)))$col_keys, c(" ", "n"))
+})
+
 test_that("phw_datatable rounds and styles columns renamed with a named colnames", {
   skip_if_not_installed("DT")
   renders <- function(w) {
