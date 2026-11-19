@@ -480,6 +480,24 @@ test_that("phw_add_slide leaves text on navy layouts to the template's light col
   expect_equal(xml2::xml_attr(body, "val"), sub("#", "", phw_colours[["grey_bg"]]))
 })
 
+test_that("every text placeholder on the navy layouts is light enough to read", {
+  skip_if_not_installed("officer")
+  skip_if_not_installed("xml2")
+  dir <- withr::local_tempdir()
+  utils::unzip(phw_reference_pptx(), exdir = dir)
+  layouts <- officer::layout_summary(officer::read_pptx(phw_reference_pptx()))$layout
+  for (name in c("Title Slide", "Section Header")) {
+    layout <- xml2::read_xml(file.path(dir, sprintf("ppt/slideLayouts/slideLayout%d.xml", which(layouts == name))))
+    bg <- xml2::xml_attr(xml2::xml_find_first(layout, "//p:bg//a:srgbClr"), "val")
+    for (sp in xml2::xml_find_all(layout, "//p:sp[.//p:ph]")) {
+      type <- xml2::xml_attr(xml2::xml_find_first(sp, ".//p:ph"), "type")
+      fg <- xml2::xml_attr(xml2::xml_find_first(sp, ".//a:lstStyle//a:defRPr/a:solidFill/a:srgbClr"), "val")
+      expect_false(is.na(fg), label = paste(name, type, "sets its own text colour"))
+      expect_gte(phw_contrast(paste0("#", fg), paste0("#", bg)), 4.5, label = paste(name, type))
+    }
+  }
+})
+
 test_that("a bad plot_scale fails before a slide is added", {
   skip_if_not_installed("officer")
   p <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) + ggplot2::geom_point()

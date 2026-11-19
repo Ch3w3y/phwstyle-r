@@ -686,6 +686,10 @@ says what to change.
   chart, and for two columns that hold text and a chart. Before, those
   slides fell back to pandoc's own plain layout, with a small unstyled
   title.
+* The date from a deck's YAML header is now light on the navy title slide
+  of the PowerPoint template from `phw_reference_pptx()`, like the
+  subtitle. Before, it was grey on navy and hard to read. A footer or slide
+  number on the title slide or a Section Header slide is light too.
 * A grey PNG logo with transparency now works like a colour one in
   `phw_finalise()`, `phw_word_document()`, `phw_pdf_document()`,
   `phw_latex_header()`, `phw_reference_docx()` and `use_phw_quarto()`.
