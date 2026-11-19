@@ -299,6 +299,9 @@ says what to change.
   `accessible = FALSE` without a word, while plain ggplots kept the
   settings. Setting a whole new theme, such as `theme_set(theme_grey())`,
   still sends them back to the defaults.
+* `phw_arrange()` no longer draws the legend of a plot that turned its own
+  legend off with `theme(legend.position = "none")`. Before, collecting
+  legends at `legend` turned it back on and drew it under the figure.
 * `phw_arrange()` draws the figure title, subtitle and source line with
   the settings given to `use_phw_ggplot()`, such as `base_size = 16` or
   `accessible = TRUE`. Before, they kept the `theme_phw()` defaults, so the

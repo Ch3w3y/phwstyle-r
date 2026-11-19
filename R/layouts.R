@@ -55,15 +55,16 @@ phw_arrange <- function(..., plots = NULL, ncol = NULL, nrow = NULL, widths = NU
   share <- if (guides == "keep" && is.null(design)) column_shares(length(all), nrow, ncol, widths) else 1
   all <- Map(wrap_legends, all, share = share,
              MoreArgs = list(position = if (guides == "collect") legend))
+  if (guides == "collect") all <- lapply(all, place_legend, legend)
   out <- patchwork::wrap_plots(all, ncol = ncol, nrow = nrow, widths = widths,
                                heights = heights, design = design, guides = guides)
   ann_theme <- (theme %||% chart_theme()) + ggplot2::theme(
     plot.tag = ggplot2::element_text(face = "bold", colour = phw_colours[["navy"]]))
+  if (guides == "collect") ann_theme <- ann_theme + ggplot2::theme(legend.position = legend)
   out <- out + patchwork::plot_annotation(
     title = title, subtitle = subtitle,
     caption = caption_from(source, date, caption_args),
     tag_levels = tag_levels, theme = ann_theme)
-  if (guides == "collect") out <- out & ggplot2::theme(legend.position = legend)
   if (!is.null(tag_levels)) {
     out <- out & ggplot2::theme(plot.tag = ggplot2::element_text(
       face = "bold", colour = phw_colours[["navy"]], size = ggplot2::rel(1.1)))
@@ -77,6 +78,16 @@ column_shares <- function(n, nrow, ncol, widths) {
   ncol <- ggplot2::wrap_dims(n, nrow, ncol)[2]
   w <- if (is.numeric(widths) && !grid::is.unit(widths)) rep_len(widths, ncol) else rep(1, ncol)
   (w / sum(w))[(seq_len(n) - 1) %% ncol + 1]
+}
+
+# Moves the legend of a plot that shows one to `legend`, where the figure
+# collects it. A plot that turned its own legend off keeps it off.
+place_legend <- function(plot, legend) {
+  moved <- ggplot2::theme(legend.position = legend)
+  if (inherits(plot, "patchwork")) return(plot & moved)
+  if (!inherits(plot, "ggplot")) return(plot)
+  own <- ggplot2::calc_element("legend.position", ggplot2::theme_get() + plot$theme)
+  if (identical(own, "none")) plot else plot + moved
 }
 
 #' PHW title for gridExtra and cowplot layouts
