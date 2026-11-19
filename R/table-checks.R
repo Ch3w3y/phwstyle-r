@@ -7,14 +7,17 @@
 # renderer formats and aligns it as one; hms times of day keep their class.
 # Labels kept in row names, as as.data.frame() gives for a matrix, become a
 # first column with a blank header, as reactable shows them, so no renderer
-# drops them. The row numbers of a plain or filtered data frame are not labels.
+# drops them. The row numbers of a plain or filtered data frame are not labels,
+# nor are row names a column already holds.
 check_table_data <- function(data, arg = "data", call = rlang::caller_env()) {
   data <- check_data_frame(data, as_data_frame_hint, arg, call)
   if (is.character(attr(data, "row.names"))) {
     labels <- row.names(data)
     row.names(data) <- NULL
-    data <- data.frame(labels, data, check.names = FALSE, stringsAsFactors = FALSE)
-    names(data)[1] <- " "
+    if (!labels_in_column(data, labels)) {
+      data <- data.frame(labels, data, check.names = FALSE, stringsAsFactors = FALSE)
+      names(data)[1] <- " "
+    }
   }
   for (j in which(vapply(data, function(v) inherits(v, "difftime") && !inherits(v, "hms"), logical(1)))) {
     data[[j]] <- as.numeric(data[[j]])
@@ -26,6 +29,18 @@ check_table_data <- function(data, arg = "data", call = rlang::caller_env()) {
                      i = "Give each column its own name."), call = call)
   }
   data
+}
+
+# data.frame(x = names(v), n = v) for a named tapply() or sapply() result
+# repeats x in the row names, and rbind() of split data gives "<label>" or
+# "<label>.<n>".
+labels_in_column <- function(data, labels) {
+  stem <- sub("\\.[0-9]+$", "", labels)
+  any(vapply(data, function(v) {
+    if (!is.atomic(v)) return(FALSE)
+    v <- as.character(v)
+    all((labels == v | stem == v) %in% TRUE)
+  }, logical(1)))
 }
 
 # NaN and Inf show as blank cells, as NA does. Left to each renderer, they

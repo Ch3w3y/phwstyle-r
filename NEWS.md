@@ -392,6 +392,9 @@ says what to change.
   `do.call(rbind, ...)` for split data. They show as a first column with a
   blank header, as `phw_reactable()` already showed them. Before, the
   labels were dropped without a word, leaving numbers with no area names.
+  Row names a column already holds, as `data.frame(x = names(v), n = v)`
+  gives for a named `tapply()` or `sapply()` result, are not shown again,
+  and `phw_reactable()` no longer shows them twice.
 * `phw_reactable()` tables close with a navy rule and have a navy spanner.
 * `phw_reactable()` merges your `columns` into a summary table's own column
   settings, so restyling one column keeps the indents, navy headings,
