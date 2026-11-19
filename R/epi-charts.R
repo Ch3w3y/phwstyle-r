@@ -133,6 +133,7 @@ phw_epicurve <- function(data, date, group = NULL, count = NULL,
   interval <- rlang::arg_match(interval)
   position <- rlang::arg_match(position)
   if (!is.null(average)) check_whole_number(average, 1)
+  data <- check_data_frame(data, counts_hint("count"))
   date <- pick_col(rlang::enquo(date), data, "date")
   group <- pick_col(rlang::enquo(group), data, "group", null_ok = TRUE)
   count <- pick_col(rlang::enquo(count), data, "count", null_ok = TRUE)
@@ -252,6 +253,7 @@ phw_epicurve <- function(data, date, group = NULL, count = NULL,
 #' @export
 phw_pyramid <- function(data, age, sex, value = NULL, percent = FALSE, left = NULL, compare = NULL,
                         palette = NULL, compare_colour = phw_colours[["black"]], ...) {
+  data <- check_data_frame(data, counts_hint("value"))
   age <- pick_col(rlang::enquo(age), data, "age")
   sex <- pick_col(rlang::enquo(sex), data, "sex")
   value <- pick_col(rlang::enquo(value), data, "value", null_ok = TRUE)
@@ -291,6 +293,7 @@ phw_pyramid <- function(data, age, sex, value = NULL, percent = FALSE, left = NU
   }
   d <- side(d)
   if (!is.null(compare)) {
+    compare <- check_data_frame(compare, counts_hint("value"), "compare")
     gone <- setdiff(c(age, sex, value), names(compare))
     if (length(gone)) cli::cli_abort("{.arg compare} has no {.field {gone}} column{?s}, which {.arg data} has.")
     if (is.null(value) && !anyDuplicated(as.data.frame(compare)[c(age, sex)])) {
@@ -402,6 +405,7 @@ phw_funnel <- function(data, numerator, denominator, label = NULL, type = c("pro
                        limits = c(0.95, 0.998), point_colour = phw_colours[["grey_mid"]],
                        labels = NULL, ...) {
   type <- rlang::arg_match(type)
+  data <- check_data_frame(data, as_data_frame_hint)
   numerator <- pick_col(rlang::enquo(numerator), data, "numerator")
   denominator <- pick_col(rlang::enquo(denominator), data, "denominator")
   label <- pick_col(rlang::enquo(label), data, "label", null_ok = TRUE)
@@ -524,6 +528,7 @@ phw_spc <- function(data, x, y, type = c("xmr", "run"), improvement = c("none", 
                     baseline = NULL, shift = 7, trend = 6, labels = NULL, ...) {
   type <- rlang::arg_match(type)
   improvement <- rlang::arg_match(improvement)
+  data <- check_data_frame(data, as_data_frame_hint)
   x <- pick_col(rlang::enquo(x), data, "x")
   y <- pick_col(rlang::enquo(y), data, "y")
   data <- as.data.frame(data)

@@ -34,6 +34,7 @@
 #'   ggplot2::labs(title = "Rate by area", x = "Rate per 100,000")
 #' @export
 phw_forest <- function(data, value, lower, upper, label, target = NULL, labels = NULL, ...) {
+  data <- check_data_frame(data, as_data_frame_hint)
   value <- pick_col(rlang::enquo(value), data, "value")
   lower <- pick_col(rlang::enquo(lower), data, "lower")
   upper <- pick_col(rlang::enquo(upper), data, "upper")

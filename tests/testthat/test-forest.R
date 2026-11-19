@@ -77,3 +77,8 @@ test_that("units left off the y axis are not reported as repeats", {
                       message = function(m) { msgs <<- c(msgs, conditionMessage(m)); invokeRestart("muffleMessage") })
   expect_false(any(grepl("more than one row", msgs)))
 })
+
+test_that("phw_forest stops on a matrix and says what to pass", {
+  m <- cbind(est = c(70, 50), lo = c(65, 45), hi = c(75, 55))
+  expect_error(phw_forest(m, est, lo, hi, label = est), "must be a data frame.*as.data.frame")
+})
