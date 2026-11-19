@@ -81,7 +81,9 @@ and source line in one call.
 }
 \details{
 In a PDF document from R Markdown, the table stays where it is in the
-text, and a table wider than the text shrinks to fit it.
+text, a table longer than the page carries on over the next pages with
+its title and column labels repeated, and a table wider than the text
+shrinks to fit it.
 
 Use gt tables in HTML and PDF. In a Word document they get the PHW font
 and colours, but gt can't make the column labels bold or indent the levels
