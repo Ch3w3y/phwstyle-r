@@ -864,3 +864,18 @@ test_that("a secondary axis stays on its own chart in subplot(), and a faceted o
   expect_warning(w <- phw_plotly(g + ggplot2::facet_wrap(~panel)), "faceted")
   expect_false(any(vapply(built(w)$layout, function(a) is.list(a) && !is.null(a$overlaying), logical(1))))
 })
+
+test_that("a ggplot of data with no rows gives the empty chart ggplotly() gives", {
+  none <- data.frame(week = integer(), cases = numeric(), hb = character())
+  g <- ggplot2::ggplot(none, ggplot2::aes(week, cases, fill = hb)) + ggplot2::geom_col()
+  expect_equal(built(phw_plotly(g))$data, built(plotly::ggplotly(g))$data)
+  expect_equal(built(phw_plotly(plotly::ggplotly(g)))$data, built(plotly::ggplotly(g))$data)
+  points <- ggplot2::ggplot(none, ggplot2::aes(week, cases, colour = hb)) + ggplot2::geom_point()
+  expect_length(built(phw_plotly(points))$data, 1)
+  d <- data.frame(week = 1:3, cases = c(3, 5, 9))
+  mixed <- ggplot2::ggplot(d, ggplot2::aes(week, cases)) + ggplot2::geom_point() +
+    ggplot2::geom_point(data = none)
+  traces <- built(phw_plotly(mixed))$data
+  expect_equal(as.vector(traces[[1]]$y), c(3, 5, 9))
+  expect_false(traces[[2]]$visible)
+})
