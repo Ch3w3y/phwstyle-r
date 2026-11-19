@@ -20,6 +20,8 @@ pstack is installed. Load `/pstack:poteto-mode` at the start and follow the play
 
 Write down, in one or two sentences, what changes and what does not. That is the contract for this stage.
 
+**Neighbours.** Fix the defect in every neighbour where a user would hit it in normal use, not only in the issue's repro. Read `brain/codebase/neighbour-paths.md`. Before you change code, run the repro through each neighbour it lists that applies, plus any the issue names. List each one that fails. The same root cause in a neighbour a user would hit in normal use (the bar in the sweep skill's "Normal use only") is part of this issue: fix it in this PR and add a test for it. After the change, run the neighbours again, and one ordinary call through every caller of each helper you changed, and compare with `main`. A neighbour a user would hit in normal use that works on `main` must still work. Any other failing neighbour is out of scope: one that already fails on `main` for a different reason, or that fails only on edge-case input. Name it in the PR body and the yield message.
+
 ## 2. Branch and worktree
 
 `$P` below is the main checkout, wherever this session runs. Set it first:
@@ -102,7 +104,7 @@ Push the branch (`git -C "$W" push -u origin "$B"`, never `--force` on a shared 
 gh pr create --base main --head "$B" --title "<what changes, for users>" --body-file <file>
 ```
 
-The body opens with `## Why` restating the issue in one or two sentences, then what changed and how it was checked, then `Closes #<id>` on its own line, and ends with:
+The body opens with `## Why` restating the issue in one or two sentences, then what changed and how it was checked, then a `## Neighbours` list of each neighbour checked, saying which failed and were fixed here and which fail for another reason or only on edge-case input, then `Closes #<id>` on its own line, and ends with:
 
 ```
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
@@ -122,6 +124,6 @@ Without this the stage only completes on a clean process exit, and interrupted w
 
 - The repository is public. Issues, PRs and comments must not contain local paths, machine names or personal details.
 - Change only what is in scope. No speculative features, defensive code for cases that cannot happen, or compatibility shims nobody asked for.
-- Note out-of-scope problems in your yield message; do not fix them here.
+- Note out-of-scope problems in your yield message; do not fix them here. The same root cause in a neighbour a user would hit in normal use is in scope, and so is keeping one that works on `main` working (section 1); edge-case neighbours are not.
 - If the plan or prompt is wrong or incomplete, say so in the yield message instead of quietly doing something different. If the issue is not a real defect, or a fix would break the scope rules, close it with `gh issue close <id> --reason "not planned" --comment "<why>"`, open no PR, and yield. Closing it takes it out of the backlog.
 - When finishing a plan phase, tick its `- [ ]` box in the plan file as part of the last commit.
