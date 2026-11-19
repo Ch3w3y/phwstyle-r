@@ -744,6 +744,11 @@ says what to change.
   A table that cannot fit even then gives a warning. Before, a summary
   table or cross-tab by the seven health boards ran past the right margin
   and lost its last columns.
+* In a PowerPoint deck made with R Markdown or Quarto, a `phw_flextable()`
+  table wider than the slide now fits the slide's content area, in the
+  same way. A table that cannot fit at 8 pt gives a warning. Before, a
+  summary table by the seven health boards ran off the right edge of the
+  slide and lost its last columns without a warning.
 * In a PDF document, a `phw_gt()` table stays where it is in the text, a
   table longer than the page carries on over the next pages with its title
   and column labels repeated, and a table wider than the text shrinks to
