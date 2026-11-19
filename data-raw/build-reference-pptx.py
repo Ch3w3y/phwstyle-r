@@ -242,6 +242,10 @@ for name in ("Title Slide", "Section Header"):
             rpr.set("sz", "2200")
             fill = etree.SubElement(rpr, f"{{{A}}}solidFill")
             etree.SubElement(fill, f"{{{A}}}srgbClr").set("val", "F0F4F5")
+        elif kind in (13, 15, 16):  # slide number, footer, date: the master's dark grey vanishes on navy
+            lvl = etree.SubElement(ph._element.find(".//a:lstStyle", NS), f"{{{A}}}lvl1pPr")
+            fill = etree.SubElement(etree.SubElement(lvl, f"{{{A}}}defRPr"), f"{{{A}}}solidFill")
+            etree.SubElement(fill, f"{{{A}}}srgbClr").set("val", "F0F4F5")
     # The master's top bar disappears into the navy background.
     layout._element.set("showMasterSp", "0")
 
