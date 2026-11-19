@@ -654,6 +654,30 @@ test_that("row numbers of bound subsets are not shown as a column", {
   for (x in bound) expect_equal(phw_flextable(x)$col_keys, c("area", "rate"))
 })
 
+test_that("every renderer shows a table with no rows left after a filter", {
+  skip_if_not_installed("flextable")
+  skip_if_not_installed("gt")
+  skip_if_not_installed("reactable")
+  skip_if_not_installed("DT")
+  skip_if_not_installed("openxlsx2")
+  d <- data.frame(year = rep(2021:2023, c(3, 2, 4)),
+                  board = c("Powys", "Hywel Dda", "Powys", "Swansea Bay", "Powys",
+                            "Hywel Dda", "Hywel Dda", "Powys", "Swansea Bay"))
+  m <- as.data.frame.matrix(table(d$year, d$board))
+  f <- withr::local_tempfile(fileext = ".xlsx")
+  for (x in list(m[m$Powys > 200, ], mtcars[mtcars$mpg > 100, 1:3])) {
+    expect_type(attr(x, "row.names"), "character")
+    phw_write_xlsx(x, f)
+    for (cols in list(phw_flextable(x)$col_keys, names(phw_gt(x)[["_data"]]),
+                      attr(phw_datatable(x)$x, "colnames"),
+                      vapply(phw_reactable(x)$x$tag$attribs$columns, function(col) col$id, character(1)),
+                      names(openxlsx2::read_xlsx(f)))) {
+      expect_equal(cols, names(x))
+    }
+    expect_equal(nrow(phw_flextable(x)$body$dataset), 0)
+  }
+})
+
 test_that("every renderer shows whole-number labels such as years from table() or tapply()", {
   skip_if_not_installed("flextable")
   skip_if_not_installed("gt")

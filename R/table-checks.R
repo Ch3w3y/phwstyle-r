@@ -43,9 +43,10 @@ check_table_data <- function(data, arg = "data", call = rlang::caller_env()) {
 # end in copies that skip at least as many numbers as there are names before
 # them ("1", "4", "8", "12", "15", "20", "81", "151"). Labels in order fill
 # their range, as weeks 1 to 52 without week 50 do. Anything with a 0 or a
-# leading zero is labels, as row numbers never have one.
+# leading zero is labels, as row numbers never have one. A table with no rows
+# has no row numbers to drop.
 is_row_numbers <- function(x) {
-  if (!all(grepl("^[1-9][0-9]*$", x))) return(FALSE)
+  if (!length(x) || !all(grepl("^[1-9][0-9]*$", x))) return(FALSE)
   copy <- is_copy(x)
   if (!any(copy)) return(FALSE)
   n <- as.numeric(x)
