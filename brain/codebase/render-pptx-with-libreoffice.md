@@ -1,6 +1,6 @@
 # Render PowerPoint output to images
 
-This machine has no LibreOffice, Quarto or Chromium. To see what `phw_pptx()` / `phw_add_slide()` produce, render the .pptx in Docker:
+This machine has no LibreOffice or Chromium. Quarto is installed (see [[codebase/dev-environment]]). To see what `phw_pptx()` / `phw_add_slide()` produce, render the .pptx in Docker:
 
 1. Build the image once (Debian trixie has no `fonts-ubuntu`, so mount the package's own fonts instead):
    `FROM debian:trixie` + `apt-get install -y --no-install-recommends libreoffice-impress poppler-utils`, tagged `phw-lo`.
