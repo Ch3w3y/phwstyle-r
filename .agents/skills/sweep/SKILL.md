@@ -62,10 +62,10 @@ Do not file:
 
 Severity must be high: the output is wrong, missing or crashes for an ordinary input, a check fails, or the package or website does not build. Leave out anything cosmetic.
 
-**Normal use only.** The maintainer asked that the loop fix only defects a general user hits in normal use. Before filing a defect in the user's output, ask: would a typical public health analyst hit this in an ordinary report, using typical data (counts, rates, dates, durations, factors, area codes and missing values, in a data frame, a `table()`, a matrix or an sf object) and the function's default or documented arguments, alone or together? File it only if the answer is clearly yes. List everything else as minor in the yield message. These are edge cases, so do not file them:
+**Normal use only.** The maintainer asked that the loop fix only defects a general user hits in normal use. Before filing a defect in the user's output, ask: would a typical public health analyst hit this in an ordinary report, using typical data (counts, rates, dates, durations, factors, area codes and missing values, in a data frame, a `table()`, a matrix or an sf object, including one a filter has left with no rows) and the function's default or documented arguments, alone or together? File it only if the answer is clearly yes. List everything else as minor in the yield message. These are edge cases, so do not file them:
 - a column with an unusual name that clashes with a name phwstyle uses inside the function, such as `signal`. Common names such as `value`, `n`, `group`, `label`, `date`, `x` or `y` are normal use, so a clash with one of them is filed;
 - a class the help pages do not mention and analysts rarely pass, such as `units`;
-- `NaN`, `Inf`, or a data frame with no rows;
+- `NaN` or `Inf`;
 - arguments combined in a way that contradicts the help pages or relies on undocumented behaviour;
 - global ggplot2 settings changed outside phwstyle, such as `theme_update()`. The documented `phwstyle.*` options and everyday options such as `scipen` are normal use;
 - input contrived so that it could not come from real data.
