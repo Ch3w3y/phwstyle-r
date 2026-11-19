@@ -17,7 +17,9 @@ phw_plotly(
 )
 }
 \arguments{
-\item{p}{A plotly object or a ggplot.}
+\item{p}{A plotly object or a ggplot. For several charts in one figure,
+combine them with \code{\link[plotly:subplot]{plotly::subplot()}}: a patchwork, such as one from
+\code{\link[=phw_arrange]{phw_arrange()}}, is not accepted.}
 
 \item{source, date}{Passed to \code{\link[=phw_caption]{phw_caption()}} and shown under the chart.
 When they and \code{caption_args} give no source line, a ggplot shows its

@@ -124,6 +124,15 @@ test_that("p and caption_args are checked at entry", {
   expect_error(phw_plotly(p, caption_args = list(nope = 1)), "unknown name")
 })
 
+test_that("a patchwork stops and points to subplot()", {
+  skip_if_not_installed("patchwork")
+  g1 <- ggplot2::ggplot(groups_df, ggplot2::aes(week, cases)) + ggplot2::geom_col()
+  g2 <- ggplot2::ggplot(groups_df, ggplot2::aes(week, cases)) + ggplot2::geom_line()
+  expect_error(phw_plotly(phw_arrange(g1, g2, title = "Two charts")), "plotly::subplot")
+  expect_error(phw_plotly(g1 + g2), "draws one chart")
+  expect_error(phw_plotly(g1 / g2), "draws one chart")
+})
+
 test_that("phw_plotly_colorscale takes a function and checks n", {
   sc <- phw_plotly_colorscale(function(n) rep("#123456", n), n = 3)
   expect_equal(sc[[3]][[2]], "#123456")

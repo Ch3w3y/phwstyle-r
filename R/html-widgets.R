@@ -247,7 +247,9 @@ wrap_widget <- function(widget, caption, cap, note = NULL) {
 #' combined figure to `phw_plotly()` too, so each axis stays on its own
 #' chart.
 #'
-#' @param p A plotly object or a ggplot.
+#' @param p A plotly object or a ggplot. For several charts in one figure,
+#'   combine them with [plotly::subplot()]: a patchwork, such as one from
+#'   [phw_arrange()], is not accepted.
 #' @param source,date Passed to [phw_caption()] and shown under the chart.
 #'   When they and `caption_args` give no source line, a ggplot shows its
 #'   own caption there, such as one from `labs(caption = phw_caption(...))`.
@@ -316,6 +318,11 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
   legend <- rlang::arg_match(legend)
   if (!inherits(p, c("plotly", "ggplot"))) {
     cli::cli_abort("{.arg p} must be a plotly chart or a ggplot, not {.obj_type_friendly {p}}.")
+  }
+  # ggplotly() converts only the last plot of a patchwork.
+  if (inherits(p, "patchwork")) {
+    cli::cli_abort(c("{.fn phw_plotly} draws one chart, not a patchwork such as one from {.fn phw_arrange}.",
+                     "i" = "Style each chart and combine them: {.code phw_plotly(plotly::subplot(phw_plotly(g1), phw_plotly(g2)))}."))
   }
   cap <- caption_from(source, date, caption_args)
   subtitle <- NULL
