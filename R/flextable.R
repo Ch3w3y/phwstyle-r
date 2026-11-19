@@ -145,9 +145,11 @@ align_by_type <- function(ft) {
 #'   [flextable::set_header_labels()].
 #' @param autofit Fit column widths to their content? In a Word or PDF
 #'   document, a table wider than the page is narrowed to fit the text width
-#'   either way: its headings wrap first, then its cells, and its text
-#'   shrinks to no less than 8 pt if the words alone are still too wide. A
-#'   table that cannot fit even then gives a warning.
+#'   either way, and in a PowerPoint deck made with R Markdown or Quarto, a
+#'   table wider than the slide's content area is narrowed to fit that: its
+#'   headings wrap first, then its cells, and its text shrinks to no less
+#'   than 8 pt if the words alone are still too wide. A table that cannot fit
+#'   even then gives a warning.
 #' @param ... Passed to [phw_flextable_theme()].
 #' @return A flextable.
 #' @examples
@@ -209,6 +211,9 @@ knit_print.phw_flextable <- function(x, ...) {
   if (knitr::pandoc_to("pptx")) {
     check_no_images(x)
     x <- caption_as_header(x)
+    # flextable puts the table ft.left inches from the slide's left edge.
+    left <- knitr::opts_current$get("ft.left") %||% 1
+    x <- fit_table_to_width(x, slide_width - left - slide_margins[["side"]], where = "the slide")
   }
   if (knitr::is_latex_output()) {
     # LaTeX adds \tabcolsep points either side of each column's width.
@@ -241,12 +246,15 @@ print.phw_flextable <- function(x, preview = "html", align = "center", ...) {
 # format, in inches.
 page_text_width <- (210 - 2 * 20) / 25.4
 
+# The width of a slide in the PHW reference deck, in inches.
+slide_width <- 13.333
+
 # Narrows a table wider than `width` by letting its text wrap at spaces: the
 # headings first, then the body cells. Each column gives up a share of the
 # width it can lose, and keeps at least its widest word. If the words alone
 # are too wide, the text shrinks as well, down to `min_size` points for the
 # largest text, as on slides.
-fit_table_to_width <- function(ft, width, min_size = 8) {
+fit_table_to_width <- function(ft, width, min_size = 8, where = "the page") {
   if (sum(ft$body$colwidths) <= width) return(ft)
   parts <- c("header", "body", "footer")
   wrapped <- function(ft, parts) {
@@ -273,7 +281,7 @@ fit_table_to_width <- function(ft, width, min_size = 8) {
   least <- min(min_size / largest, 1)
   smallest <- sum(wrapped(resize(ft, least), parts))
   if (smallest > width) {
-    cli::cli_warn(c("The table's {length(ft$col_keys)} columns are too wide for the page, even with their text wrapped and at {min_size} pt, so the table runs past the margin.",
+    cli::cli_warn(c("The table's {length(ft$col_keys)} columns are too wide for {where}, even with their text wrapped and at {min_size} pt, so the table runs past the margin.",
                     i = "Show fewer columns, or split the table in two."))
     scale <- least
   } else {

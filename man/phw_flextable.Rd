@@ -46,9 +46,11 @@ or \code{Blwyddyn}. These show as 2021, not 2,021.}
 
 \item{autofit}{Fit column widths to their content? In a Word or PDF
 document, a table wider than the page is narrowed to fit the text width
-either way: its headings wrap first, then its cells, and its text
-shrinks to no less than 8 pt if the words alone are still too wide. A
-table that cannot fit even then gives a warning.}
+either way, and in a PowerPoint deck made with R Markdown or Quarto, a
+table wider than the slide's content area is narrowed to fit that: its
+headings wrap first, then its cells, and its text shrinks to no less
+than 8 pt if the words alone are still too wide. A table that cannot fit
+even then gives a warning.}
 
 \item{number_prefix}{Word before the number.}
 

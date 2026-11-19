@@ -538,6 +538,45 @@ test_that("phw_gt tables fit the text width and page length of a PDF document", 
   expect_false(any(grepl("too large", log, fixed = TRUE)))
 })
 
+test_that("a table by health board fits the content area of a PowerPoint deck", {
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("flextable")
+  skip_if_not(rmarkdown::pandoc_available("2.4"), "pandoc 2.4 or later is not available")
+  local_ggplot_state()
+  dir <- withr::local_tempdir()
+  ref <- phw_reference_pptx()
+  pptx <- rmarkdown::render(board_table_rmd(dir), rmarkdown::powerpoint_presentation(reference_doc = ref),
+                            quiet = TRUE)
+  layout <- officer::layout_properties(officer::read_pptx(ref), "Title and Content")
+  body <- layout[layout$type == "body", ]
+  unzipped <- withr::local_tempdir()
+  utils::unzip(pptx, exdir = unzipped)
+  slides <- list.files(file.path(unzipped, "ppt", "slides"), pattern = "\\.xml$", full.names = TRUE)
+  frames <- unlist(lapply(slides, function(s) xml2::xml_find_all(xml2::read_xml(s), "//p:graphicFrame")),
+                   recursive = FALSE)
+  expect_length(frames, 2)
+  inches <- function(x) as.numeric(x) / 914400
+  left <- vapply(frames, function(f) inches(xml2::xml_attr(xml2::xml_find_first(f, ".//a:off"), "x")), 0)
+  widths <- lapply(frames, function(f) inches(xml2::xml_attr(xml2::xml_find_all(f, ".//a:gridCol"), "w")))
+  expect_lte(left[1] + sum(widths[[1]]), body$offx + body$cx + 0.01)
+  # A table that already fits keeps the widths it was given.
+  small <- phw_flextable(head(mtcars[, 1:4]))
+  expect_equal(widths[[2]], small$body$colwidths, tolerance = 0.01, ignore_attr = TRUE)
+})
+
+test_that("a table too wide for a slide even with its text wrapped gives a warning", {
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("flextable")
+  wide <- as.data.frame(matrix(1000000, 2, 20, dimnames = list(NULL, paste0("Unbreakable", 1:20))))
+  ft <- phw_flextable(wide)
+  withr::local_options(knitr.in.progress = TRUE)
+  old <- knitr::opts_knit$get("rmarkdown.pandoc.to")
+  knitr::opts_knit$set(rmarkdown.pandoc.to = "pptx")
+  withr::defer(knitr::opts_knit$set(rmarkdown.pandoc.to = old))
+  expect_warning(knitr::knit_print(ft), "too wide for the slide")
+})
+
 test_that("a table too wide for the page even with its text wrapped gives a warning", {
   skip_if_not_installed("knitr")
   skip_if_not_installed("flextable")
