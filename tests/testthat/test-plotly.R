@@ -197,6 +197,20 @@ test_that("a colour key keeps missing groups visible in grey", {
   expect_equal(trace_colours(p)[["NA"]], plotly::toRGB("#000000"))
 })
 
+test_that("unnamed colors keep missing groups visible in grey", {
+  na <- data.frame(x = 1:4, y = 1:4, grp = c("A", "B", NA, "A"))
+  grey <- plotly::toRGB(phw_colours[["grey_light"]])
+  p <- plotly::plot_ly(na, x = ~x, y = ~y, color = ~grp, colors = phw_pal(2), type = "scatter", mode = "markers")
+  expect_equal(trace_colours(p), c(A = plotly::toRGB(phw_pal(2)[[1]]), B = plotly::toRGB(phw_pal(2)[[2]]), "NA" = grey))
+  short <- plotly::plot_ly(na, x = ~x, y = ~y, color = ~factor(grp, c("A", "B", "C")), colors = c("#000000", "#FFFFFF"),
+                           type = "scatter", mode = "markers")
+  full <- plotly::plot_ly(na[!is.na(na$grp), ], x = ~x, y = ~y, color = ~factor(grp, c("A", "B", "C")),
+                          colors = c("#000000", "#FFFFFF"), type = "scatter", mode = "markers")
+  expect_equal(trace_colours(short), c(trace_colours(full), "NA" = grey))
+  brewer <- plotly::plot_ly(na, x = ~x, y = ~y, color = ~grp, colors = "Set1", type = "scatter", mode = "markers")
+  expect_equal(trace_colours(brewer)[["NA"]], grey)
+})
+
 test_that("plot_ly gives each of many groups its own colour, with a warning", {
   withr::local_options(rlib_warning_verbosity = "verbose")
   many <- data.frame(x = 1:14, y = 1:14, grp = sprintf("G%02d", 1:14))
