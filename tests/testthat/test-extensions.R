@@ -102,6 +102,17 @@ test_that("phw_finalise keeps every panel, the title and the tags of a phw_arran
   expect_true("phw-footer" %in% f$layout$name)
 })
 
+test_that("phw_finalise draws a phw_arrange figure of plots that keep their shape", {
+  skip_if_not_installed("patchwork")
+  skip_if_not_installed("png")
+  library(ggplot2)
+  p <- ggplot(mpg, aes(displ, hwy)) + geom_point() + coord_fixed()
+  f <- phw_finalise(phw_arrange(p, p), source = "S", logo = FALSE)
+  out <- withr::local_tempfile(fileext = ".png")
+  expect_no_error(phw_save(f, out, width = 8, height = 5, dpi = 72))
+  expect_true(file.exists(out))
+})
+
 test_that("phw_finalise and phw_title_grob work with gridExtra", {
   skip_if_not_installed("gridExtra")
   library(ggplot2)

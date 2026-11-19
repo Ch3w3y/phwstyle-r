@@ -796,6 +796,9 @@ plot_gtable <- function(plot) {
 
 add_footer <- function(g, footer) {
   g <- gtable::gtable_add_rows(g, grid::grobHeight(footer))
+  # gtable_add_rows() leaves a per-cell respect matrix (patchwork sets one for
+  # maps) a row short, and the figure then fails to draw.
+  if (is.matrix(g$respect)) g$respect <- rbind(g$respect, 0)
   gtable::gtable_add_grob(g, footer, t = nrow(g), l = 1, r = ncol(g),
                           clip = "off", name = "phw-footer")
 }
