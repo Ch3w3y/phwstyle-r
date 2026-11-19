@@ -146,7 +146,7 @@ phw_reactable <- function(data, ..., caption = NULL, source = NULL, date = NULL,
   }
   if (!is.null(group_col)) {
     rows <- heat_rows(data)
-    cols <- phw_colour_key(group_levels(data[[group_col]][rows]), name = key, palette = palette)
+    cols <- phw_colour_key(table_group_levels(data[[group_col]][rows], data), name = key, palette = palette)
     under <- base_cols[[group_col]]$style
     style_fun <- function(value, index) {
       st <- if (!is.null(under)) under(value, index)

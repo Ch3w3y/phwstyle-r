@@ -157,6 +157,16 @@ heat_rows <- function(x) {
   which(types %in% c("level", "level0"))
 }
 
+# Groups in the order a chart of the same data gives them. A summary table's
+# label columns are text, so sorting them would put "15-44" before "5-14":
+# its level rows are already in factor order, so they keep the order they
+# have in the table. `x` holds the values of the rows heat_rows() picks.
+table_group_levels <- function(x, data) {
+  if (is.factor(x) || length(attr(data, "row_type")) != nrow(data)) return(group_levels(x))
+  lv <- unique(as.character(x))
+  lv[!is.na(lv)]
+}
+
 # Columns of `j` that share one heat scale. A summary table's total columns
 # stay out of a scale shared with other columns, as its total rows do. Chosen
 # on their own, they get a scale of their own.
