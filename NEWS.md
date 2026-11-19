@@ -421,7 +421,10 @@ says what to change.
   `phw_flextable_groups()` and `phw_reactable(group_col = )` colour only the
   level rows. Before, the Total row took the next colour, so it read as one
   more group, and "Total" was added to the colour key. `phw_reactable()`
-  also kept its own style for the label column and coloured no rows.
+  also kept its own style for the label column and coloured no rows. The
+  groups take the order of the table's level rows, which is the factor
+  order, as in a chart of the same data. Before, they were sorted as text,
+  so age groups such as "5-14" and "15-44" got each other's colours.
 * `phw_datatable()` keeps the `columnDefs` you give in `options` for a
   summary table. Before, the table's own column settings replaced them.
 * `phw_datatable()` accepts columns renamed with a named `colnames`, such as

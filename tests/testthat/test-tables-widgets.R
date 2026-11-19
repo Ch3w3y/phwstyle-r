@@ -739,6 +739,28 @@ test_that("group colours on a summary table skip the total and keep it out of th
   expect_equal(names(phw_key("t_boards2")), boards)
 })
 
+test_that("groups in a summary table get the chart's colours, in factor order", {
+  ages <- c("0-4", "5-14", "15-44", "45-64", "65+")
+  d <- data.frame(age_group = factor(rep(ages, 2), ages), hb = rep(c("Powys", "Swansea Bay"), each = 5))
+  chart <- stats::setNames(phw_pal(5), ages)
+  tabs <- list(phw_crosstab(d, age_group, hb), phw_group_table(d, rows = age_group, cols = hb),
+               phw_summary_table(d, age_group, by = hb))
+  if (requireNamespace("flextable", quietly = TRUE)) {
+    for (tab in tabs) {
+      ft <- phw_flextable_groups(phw_flextable(tab), j = 1)
+      lv <- tab[[1]] %in% ages
+      expect_equal(ft$body$styles$cells$background.color$data[lv, 1], unname(chart[tab[[1]][lv]]))
+    }
+  }
+  skip_if_not_installed("reactable")
+  for (tab in tabs) {
+    attr(tab, "note") <- NULL
+    style <- phw_reactable(tab, group_col = 1)$x$tag$attribs$columns[[1]]$style
+    lv <- tab[[1]] %in% ages
+    expect_equal(vapply(style[lv], function(s) s$background, ""), unname(chart[tab[[1]][lv]]))
+  }
+})
+
 test_that("renderers show phw_group_table(digits = ) unless given their own", {
   x <- phw_group_table(data.frame(g = c("A", "B"), v = c(1.23456, 2.5)), g, value = v, digits = 3)
   skip_if_not_installed("flextable")
