@@ -778,6 +778,10 @@ says what to change.
   `<name>-band.png`, and points the header at it. Before, the header pointed
   at a temporary image that was gone in the next R session, so a saved
   header stopped the PDF build with "File not found".
+* In `phw_pdf_document()`, a document whose sections are `##` headings, as
+  in the R Markdown file RStudio creates, is numbered 1, 2, 3, and its
+  sections look like top-level sections. Before, they were numbered 0.1,
+  0.2, 0.3. The top heading level a document uses is numbered from 1.
 * `phw_pdf_document()` keeps the `dev` you give it instead of always using
   `"ragg_png"`.
 * `phw_pdf_document()` uses `fontsize`, `documentclass`, `geometry` and

@@ -339,6 +339,25 @@ test_that("a phw_flextable caption in a PDF document is numbered once", {
   expect_false(any(grepl("\\caption{", tex, fixed = TRUE) | grepl("\\caption[]{", tex, fixed = TRUE)))
 })
 
+test_that("a PDF document numbers its top heading level from 1", {
+  skip_if_not_installed("rmarkdown")
+  skip_if_not(rmarkdown::pandoc_available(), "pandoc is not available")
+  local_ggplot_state()
+  dir <- withr::local_tempdir()
+  rmd <- file.path(dir, "report.Rmd")
+  sections <- function(lines, ...) {
+    writeLines(c("---", "title: Report", "---", "", lines), rmd)
+    tex <- readLines(rmarkdown::render(rmd, phw_pdf_document(...), output_file = "report.tex",
+                                       quiet = TRUE), warn = FALSE)
+    unlist(regmatches(tex, gregexpr("\\\\(sub)*section\\{[^}]*\\}", tex)))
+  }
+  expect_equal(sections(c("## Summary", "", "### Detail", "", "## Weekly cases")),
+               c("\\section{Summary}", "\\subsection{Detail}", "\\section{Weekly cases}"))
+  expect_equal(sections(c("# Summary", "", "## Detail")),
+               c("\\section{Summary}", "\\subsection{Detail}"))
+  expect_equal(sections(c("## Summary"), number_sections = FALSE), "\\subsection{Summary}")
+})
+
 test_that("a phw_flextable in a plain HTML document brings the Ubuntu web font", {
   skip_if_not_installed("rmarkdown")
   skip_if_not_installed("knitr")
