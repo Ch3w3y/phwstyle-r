@@ -197,6 +197,40 @@ test_that("a colour key keeps missing groups visible in grey", {
   expect_equal(trace_colours(p)[["NA"]], plotly::toRGB("#000000"))
 })
 
+test_that("unnamed colors keep missing groups visible in grey", {
+  na <- data.frame(x = 1:4, y = 1:4, grp = c("A", "B", NA, "A"))
+  grey <- plotly::toRGB(phw_colours[["grey_light"]])
+  p <- plotly::plot_ly(na, x = ~x, y = ~y, color = ~grp, colors = phw_pal(2), type = "scatter", mode = "markers")
+  expect_equal(trace_colours(p), c(A = plotly::toRGB(phw_pal(2)[[1]]), B = plotly::toRGB(phw_pal(2)[[2]]), "NA" = grey))
+  short <- plotly::plot_ly(na, x = ~x, y = ~y, color = ~factor(grp, c("A", "B", "C")), colors = c("#000000", "#FFFFFF"),
+                           type = "scatter", mode = "markers")
+  full <- plotly::plot_ly(na[!is.na(na$grp), ], x = ~x, y = ~y, color = ~factor(grp, c("A", "B", "C")),
+                          colors = c("#000000", "#FFFFFF"), type = "scatter", mode = "markers")
+  expect_equal(trace_colours(short), c(trace_colours(full), "NA" = grey))
+  brewer <- plotly::plot_ly(na, x = ~x, y = ~y, color = ~grp, colors = "Set1", type = "scatter", mode = "markers")
+  expect_equal(trace_colours(brewer)[["NA"]], grey)
+  later <- plotly::add_markers(plotly::plot_ly(na, x = ~x, y = ~y, colors = phw_pal(2)), color = ~grp)
+  expect_equal(trace_colours(later), trace_colours(p))
+  line_colours <- function(d) {
+    tr <- built(phw_plotly(plotly::add_lines(plotly::plot_ly(d, x = ~x, y = ~y, colors = phw_pal(2)), color = ~grp)))$data
+    stats::setNames(vapply(tr, function(t) t$line$color, ""), vapply(tr, function(t) t$name, ""))
+  }
+  expect_equal(line_colours(na), c(line_colours(na[!is.na(na$grp), ]), "NA" = grey))
+})
+
+test_that("a colour scale on one trace leaves missing groups on another grey", {
+  grey <- plotly::toRGB(phw_colours[["grey_light"]])
+  tiles <- data.frame(x = rep(1:2, 2), y = rep(1:2, each = 2), z = 1:4)
+  pts <- data.frame(x = 1:3, y = 1:3, grp = c("A", "B", NA))
+  for (scale in list(phw_plotly_colorscale("teals"), "Viridis")) {
+    p <- plotly::add_heatmap(plotly::plot_ly(), data = tiles, x = ~x, y = ~y, z = ~z, colorscale = scale)
+    tr <- built(phw_plotly(plotly::add_markers(p, data = pts, x = ~x, y = ~y, color = ~grp)))$data
+    expect_equal(tr[[1]]$colorscale, scale)
+    expect_equal(tr[[4]]$name, "NA")
+    expect_equal(tr[[4]]$marker$color, grey, ignore_attr = TRUE)
+  }
+})
+
 test_that("plot_ly gives each of many groups its own colour, with a warning", {
   withr::local_options(rlib_warning_verbosity = "verbose")
   many <- data.frame(x = 1:14, y = 1:14, grp = sprintf("G%02d", 1:14))

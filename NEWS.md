@@ -200,7 +200,8 @@ says what to change.
   be orange in one pie and teal in the next, and the shared legend showed
   the wrong colour for it.
 * `phw_plotly()` draws rows with a missing group in grey when the chart
-  sets `colors = phw_colour_key(...)`. Before, they were invisible: the
+  sets `colors`, either as a key such as `phw_colour_key(...)` or as a
+  plain vector such as `phw_pal()`. Before, they were invisible: the
   legend showed "NA" with no line or markers. A key that gives `"NA"` its
   own colour keeps it.
 * `phw_plotly()` colours a `plot_ly()` chart by a number with the same

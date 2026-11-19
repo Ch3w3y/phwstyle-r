@@ -935,50 +935,66 @@ plotly_scale_types <- c("heatmap", "contour", "histogram2d", "histogram2dcontour
 # Every trace takes the same key, and a trace with no `colors` takes those of
 # the first trace that has them, as plotly colours all traces from the first
 # one's.
-# A trace with its own key, such as one from phw_colour_key(), keeps it, with
-# "NA" added in grey when a value is missing.
+# A trace with its own `colors`, such as phw_colour_key() or phw_pal(), keeps
+# them, with "NA" added in grey when a value is missing.
 # A subplot()'s traces are already built and colour_built() colours them.
 colour_mapped <- function(p, palette) {
   todo <- unbuilt_attrs(p)
   if (!any(todo)) return(p)
   attrs <- p$x$attrs[todo]
   values <- Map(function(a, id) {
-    if (is.null(a$colorscale) && !is.null(a$color)) mapped_values(a$color, p, id)
+    if (is.null(a[["colorscale"]]) && !is.null(a[["color"]])) mapped_values(a[["color"]], p, id)
   }, attrs, rlang::names2(attrs))
-  own <- vapply(attrs, function(a) !is.null(a$colors), logical(1))
-  keyed <- vapply(attrs, function(a) is.character(a$colors) && rlang::is_named(a$colors), logical(1))
   missing <- vapply(values, function(v) !is.numeric(v) && anyNA(v), logical(1))
+  if (any(missing)) {
+    groups <- Filter(function(v) !is.null(v) && !is.numeric(v), values)
+    attrs <- lapply(attrs, function(a) {
+      if (!is.null(a[["colors"]]) && !rlang::is_named(a[["colors"]])) a[["colors"]] <- colours_by_group(a[["colors"]], groups)
+      a
+    })
+  }
+  own <- vapply(attrs, function(a) !is.null(a[["colors"]]), logical(1))
+  keyed <- vapply(attrs, function(a) is.character(a[["colors"]]) && rlang::is_named(a[["colors"]]), logical(1))
   groups <- Filter(function(v) !is.null(v) && !is.numeric(v), values[!own])
   key <- if (length(groups)) group_colours(groups, palette)
   keyed_na <- any(keyed & missing)
   attrs <- Map(function(a, v, keyed) {
     if (keyed && keyed_na) {
-      if (!"NA" %in% names(a$colors)) a$colors[["NA"]] <- phw_colours[["grey_light"]]
-      if (!is.numeric(v) && anyNA(v)) a$color <- na_as_group(a$color)
+      if (!"NA" %in% names(a[["colors"]])) a[["colors"]][["NA"]] <- phw_colours[["grey_light"]]
+      if (!is.numeric(v) && anyNA(v)) a[["color"]] <- na_as_group(a[["color"]])
     }
-    if (!is.null(a$colors) || !is.null(a$colorscale)) return(a)
-    if (is.null(a$color)) {
-      if (isTRUE(a$type %in% plotly_scale_types)) a$colors <- phw_continuous_auto
+    if (!is.null(a[["colors"]]) || !is.null(a[["colorscale"]])) return(a)
+    if (is.null(a[["color"]])) {
+      if (isTRUE(a[["type"]] %in% plotly_scale_types)) a[["colors"]] <- phw_continuous_auto
       return(a)
     }
     if (is.null(v)) return(a)
     if (is.numeric(v)) {
-      a$colors <- phw_continuous_auto
+      a[["colors"]] <- phw_continuous_auto
     } else {
-      a$colors <- key
-      if (anyNA(v)) a$color <- na_as_group(a$color)
+      a[["colors"]] <- key
+      if (anyNA(v)) a[["color"]] <- na_as_group(a[["color"]])
     }
     a
   }, attrs, values, keyed)
   shared <- Find(Negate(is.null), lapply(attrs, `[[`, "colors"))
   if (!is.null(shared)) {
     attrs <- lapply(attrs, function(a) {
-      if (is.null(a$colors)) a$colors <- shared
+      if (is.null(a[["colors"]])) a[["colors"]] <- shared
       a
     })
   }
   p$x$attrs[todo] <- attrs
   p
+}
+
+# plotly spreads unnamed `colors`, such as phw_pal() or a palette name, over
+# the groups as below. Naming each colour by its group lets a missing group
+# be added in grey.
+colours_by_group <- function(colors, values) {
+  all <- unlist(values)
+  lv <- if (is.factor(all)) levels(all) else sort(unique(all))
+  stats::setNames(scales::col_factor(colors, levels = lv)(lv), lv)
 }
 
 # The attributes plotly has yet to evaluate. A built figure, such as a
