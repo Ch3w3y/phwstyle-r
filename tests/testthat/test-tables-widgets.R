@@ -569,6 +569,31 @@ test_that("every renderer asks for a data frame when given a table or a matrix",
   expect_s3_class(phw_flextable(as.data.frame(m)), "flextable")
 })
 
+test_that("every renderer shows labels kept in row names as a first column", {
+  skip_if_not_installed("flextable")
+  skip_if_not_installed("gt")
+  skip_if_not_installed("reactable")
+  skip_if_not_installed("DT")
+  skip_if_not_installed("openxlsx2")
+  hb <- c("Betsi Cadwaladr", "Powys Teaching", "Hywel Dda")
+  d <- as.data.frame(matrix(c(171, 108.3, 164.2, 180.1, 112.4, 170), 3,
+                            dimnames = list(hb, c("2023", "2024"))))
+  expect_equal(phw_flextable(d)$body$dataset[[1]], hb)
+  expect_equal(phw_gt(d)[["_data"]][[1]], hb)
+  expect_equal(phw_datatable(d)$x$data[[1]], hb)
+  expect_equal(jsonlite::fromJSON(as.character(phw_reactable(d)$x$tag$attribs$data))[[1]], hb)
+  f <- withr::local_tempfile(fileext = ".xlsx")
+  phw_write_xlsx(d, f)
+  expect_equal(openxlsx2::read_xlsx(f)[[1]], hb)
+  for (cols in list(phw_flextable(d)$col_keys, names(phw_gt(d)[["_data"]]),
+                    attr(phw_datatable(d)$x, "colnames"))) {
+    expect_equal(cols, c(" ", "2023", "2024"))
+  }
+
+  plain <- data.frame(area = c("A", "B", "C"), n = 1:3)
+  expect_equal(phw_flextable(plain[plain$n > 1, ])$col_keys, c("area", "n"))
+})
+
 test_that("phw_datatable rounds and styles columns renamed with a named colnames", {
   skip_if_not_installed("DT")
   renders <- function(w) {

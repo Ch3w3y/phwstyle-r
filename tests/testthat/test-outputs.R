@@ -113,7 +113,8 @@ test_that("phw_write_xlsx writes styled sheets", {
   expect_true(file.exists(f))
   expect_equal(openxlsx2::wb_load(f)$get_sheet_names()[[1]], "Grouped")
   d <- openxlsx2::read_xlsx(f, sheet = "Cars", rows = 3:9)
-  expect_equal(names(d)[1], "mpg")
+  expect_equal(names(d)[1:2], c(" ", "mpg"))
+  expect_equal(d[[1]][1], "Mazda RX4")
   expect_equal(d$mpg[1], 21)
 })
 
