@@ -218,3 +218,28 @@ test_that("map labels show in plotly, in the text colour of their area", {
   expect_setequal(text, paste(areas$name, d$rate))
   expect_equal(text[colour == "rgba(255,255,255,1)"], "Area 4 40")
 })
+
+licence <- paste("Source: Office for National Statistics licensed under the Open Government",
+                 "Licence v3.0. Contains OS data (c) Crown copyright and database right.")
+
+# Taller than wide, as Wales is, so a longer caption makes it narrower.
+licensed_map <- function() {
+  areas <- tiny_areas()
+  sf::st_geometry(areas) <- sf::st_geometry(areas) * matrix(c(1, 0, 0, 1.5), 2)
+  attr(areas, "attribution") <- licence
+  phw_map(data.frame(area = areas$code, rate = c(52, 61, 47, 70)), by = area, fill = rate, level = areas)
+}
+
+test_that("a map saved at half-page width keeps its whole licence line on the image", {
+  m <- licensed_map()
+  for (fig in list(m, phw_finalise(m, logo = FALSE))) {
+    lines <- saved_caption_lines(fig, licence, width = 8, height = 9)
+    expect_caption_within(lines, licence, 0, 8 / 2.54)
+  }
+})
+
+test_that("two maps side by side each keep their whole licence line, clear of the other", {
+  skip_if_not_installed("patchwork")
+  m <- licensed_map()
+  expect_captions_side_by_side(saved_caption_lines(phw_arrange(m, m), licence), licence, 16 / 2.54)
+})

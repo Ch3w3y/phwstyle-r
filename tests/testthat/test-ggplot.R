@@ -581,3 +581,13 @@ test_that("phw_finalise of a finished chart keeps both footers when drawn", {
                         source = "Outer", logo = FALSE)
   expect_equal(sum(grid::makeContext(twice)$layout$name == "phw-footer"), 2)
 })
+
+test_that("each panel's source line in an arranged figure stays whole and clear of the other", {
+  skip_if_not_installed("patchwork")
+  cap <- phw_caption("CDSC surveillance system, Public Health Wales", date = as.Date("2025-06-30"))
+  p <- ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) + ggplot2::geom_point() +
+    ggplot2::labs(caption = cap) + theme_phw()
+  for (fig in list(phw_arrange(p, p), phw_finalise(phw_arrange(p, p), logo = FALSE))) {
+    expect_captions_side_by_side(saved_caption_lines(fig, cap), cap, 16 / 2.54)
+  }
+})

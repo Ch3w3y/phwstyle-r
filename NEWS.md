@@ -241,6 +241,14 @@ says what to change.
 
 ## Charts and maps
 
+* A chart's caption, such as the OS and ONS licence line of `phw_map()` or
+  a `phw_caption()` source line, now wraps to the width the chart is drawn
+  at by `phw_save()`, `phw_finalise()`, `phw_add_slide()` and the
+  `phw_*_document()` formats. In a `phw_arrange()` figure, each plot's
+  caption wraps to the room under that plot. Captions are right-aligned, so
+  before, a line wider than its room lost its start off the left edge or
+  printed over the caption beside it: two maps side by side, or one map
+  saved at half-page width, cut off their licence line.
 * A legend of groups across the bottom or top of a chart takes more rows
   when one row is wider than the chart. Before, a legend of health boards
   at the default sizes stayed on one row and its last boards were cut off.
