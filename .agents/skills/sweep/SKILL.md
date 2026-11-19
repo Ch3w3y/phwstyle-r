@@ -120,7 +120,7 @@ Set `R_USER_CACHE_DIR` to a scratch folder for every probe. Never delete the use
 
 - The repository is public. Issues, PRs and comments must not contain local paths, machine names or personal details.
 
-Check each finding yourself before filing it, by running its repro. Group findings that share one root cause into one issue. For each issue:
+Check each finding yourself before filing it, by running its repro. Then run the repro through the neighbours in `brain/codebase/neighbour-paths.md` that apply, and put each one that fails in the same issue under `Also fails in:`. Group findings that share one root cause into one issue. For each issue:
 
 ```sh
 gh issue create --label noodle --title "<function>: <what goes wrong>" --body-file <file>

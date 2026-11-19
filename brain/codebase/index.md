@@ -9,3 +9,4 @@
 - [[codebase/plotly-attrs-traps]]
 - [[codebase/ci-check-traps]]
 - [[codebase/ggplot2-legend-hooks]]
+- [[codebase/neighbour-paths]]
