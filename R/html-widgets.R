@@ -514,7 +514,8 @@ ggplotly_phw <- function(p, palette) {
   # ggplotly(tooltip = "text").
   mappings <- c(list(p$mapping), lapply(p$layers, function(l) l$mapping))
   tooltip <- if (any(vapply(mappings, function(m) "text" %in% names(m), logical(1)))) "text" else "all"
-  w <- plain_legend(plotly::ggplotly(unrepel(p), tooltip = tooltip), keys)
+  w <- plotly::ggplotly(unrepel(p), tooltip = tooltip)
+  w$x$data <- plain_legend(w$x$data, keys)
   w <- secondary_axes(w, b)
   # ggplotly() gives the legend a title even when the theme blanks it.
   if (inherits(ggplot2::calc_element("legend.title", ggplot2::theme_get() + p$theme), "element_blank")) {
@@ -613,8 +614,7 @@ geom2trace.GeomPhwPlotlyText <- function(data, params, p) {
 # the static legend does, and show each group in the legend once, by a
 # trace that was named plainly when there is one: a forest plot's points
 # and their shapes rather than the error bars.
-plain_legend <- function(p, keys) {
-  traces <- p$x$data
+plain_legend <- function(traces, keys) {
   renamed <- logical(length(traces))
   for (i in seq_along(traces)) {
     nm <- traces[[i]]$name
@@ -627,7 +627,7 @@ plain_legend <- function(p, keys) {
       renamed[i] <- TRUE
     }
   }
-  if (!any(renamed)) return(p)
+  if (!any(renamed)) return(traces)
   shown <- vapply(traces, function(t) isTRUE(t$showlegend), logical(1))
   group <- vapply(traces, function(t) t$legendgroup %||% NA_character_, "")
   for (g in unique(group[renamed])) {
@@ -635,8 +635,25 @@ plain_legend <- function(p, keys) {
     keep <- c(idx[!renamed[idx]], idx)[1]
     for (i in setdiff(idx, keep)) traces[[i]]$showlegend <- FALSE
   }
-  p$x$data <- traces
-  p
+  traces
+}
+
+# A subplot() keeps no data to find the legend keys in. ggplotly() puts the
+# panel number in the place of a scale a layer lacks, the same number for
+# every trace of a panel, where a second legend gives the traces different
+# levels. So when every "(A,1)" of a panel ends in the same number, the
+# rest of each name is a key.
+panel_keys <- function(traces) {
+  nm <- unlist(lapply(traces, `[[`, "name"))
+  tuple <- nm[grepl("^\\(.*\\)$", nm)]
+  if (!length(tuple) || !all(grepl(",[0-9]+\\)$", tuple)) || length(unique(sub("^.*,", "", tuple))) > 1) {
+    return(character())
+  }
+  sub(",[0-9]+\\)$", "", substring(tuple, 2))
+}
+
+trace_panels <- function(traces) {
+  vapply(traces, function(t) paste(t$xaxis %||% "x", t$yaxis %||% "y"), "")
 }
 
 # A chart made with ggplotly() comes without its ggplot, but its `attrs` keep
@@ -647,8 +664,17 @@ tidy_ggplotly <- function(p) {
   keys <- unlist(lapply(ggplotly_values(p, legend_aes), function(v) {
     if (is.factor(v)) levels(v) else if (is.character(v) || is.logical(v)) unique(as.character(v))
   }))
+  if (length(keys)) {
+    p$x$data <- plain_legend(p$x$data, keys)
+  } else {
+    panel <- trace_panels(p$x$data)
+    for (pn in unique(panel)) {
+      i <- panel == pn
+      p$x$data[i] <- plain_legend(p$x$data[i], panel_keys(p$x$data[i]))
+    }
+  }
   texts <- unlist(lapply(ggplotly_values(p, "text"), format, justify = "none"))
-  text_hover(plain_legend(p, keys), unique(texts))
+  text_hover(p, unique(texts))
 }
 
 ggplotly_values <- function(p, aes) {
@@ -1036,7 +1062,7 @@ colour_built <- function(p, palette, colorway) {
   colorway <- unname(colorway)
   coloured <- vapply(p$x$data, function(t) any(rapply(t, is_group_colour, how = "unlist")), logical(1))
   grouped <- !own & coloured
-  panel <- vapply(p$x$data, function(t) paste(t$xaxis %||% "x", t$yaxis %||% "y"), "")
+  panel <- trace_panels(p$x$data)
   trace_names <- vapply(p$x$data, function(t) t$name %||% NA_character_, "")
   # A panel's own colours leave its missing group transparent as well, in a
   # trace named NA.
@@ -1057,12 +1083,13 @@ colour_built <- function(p, palette, colorway) {
     way <- colorway[[(i - 1) %% length(colorway) + 1]]
     group <- if (grouped[[i]]) if (is.na(trace_names[[i]])) way else key[[trace_names[[i]]]]
     rapply(p$x$data[[i]], function(x) {
+      gg_group <- if (is_plain_rgba(x)) gg[ggplot_id(panel[[i]], rgb_of(x), trace_names[[i]])]
       new <- if (inherits(x, "colorway")) {
         plotly::toRGB(way, rgba_alpha(x))
       } else if (!is.null(group) && !own && is_group_colour(x)) {
         plotly::toRGB(group, rgba_alpha(x))
-      } else if (is_plain_rgba(x) && !is.na(gg[paste(panel[[i]], rgb_of(x))])) {
-        plotly::toRGB(key[[gg[[paste(panel[[i]], rgb_of(x))]]]], rgba_alpha(x))
+      } else if (!is.null(gg_group) && !is.na(gg_group)) {
+        plotly::toRGB(key[[gg_group]], rgba_alpha(x))
       } else if (!own && is_default(x) && is.matrix(x)) {
         scale
       } else if (!is.null(gradient)) {
@@ -1101,24 +1128,33 @@ is_missing_colour <- function(x) is_default(x) && identical(unclass(x), "transpa
 # groups come out in ggplot2's default hue colours, with no class: plotly
 # marks only the colours it picks itself. The trace name is not the colour
 # group: a trace split by colour and shape is named "(A,1)". A panel holds
-# one ggplot, in which each hue colour is one colour level, so group by
+# one ggplot, in which each hue colour is one level of a scale, so group by
 # panel and hue colour, and name the group by the part every one of its
-# trace names shares, for the same group in other panels to match. Returns
-# the group names, keyed by panel and hue colour.
+# trace names shares, for the same group in other panels to match. A fill
+# and a colour scale both start at the same hue, so a plainly named trace,
+# such as an average line next to filled bars, is a group of its own.
+# Returns the group names, keyed by ggplot_id().
 ggplot_groups <- function(traces, panel) {
   plain <- lapply(traces, function(t) unique(rgb_of(unlist(rapply(t, function(x) if (is_plain_rgba(x)) unclass(x), how = "list")))))
   hue <- ggplot_hue(length(unique(unlist(plain))))
   rows <- do.call(rbind, Map(function(cols, pn, nm) {
     cols <- intersect(cols, hue)
-    data.frame(id = paste(rep(pn, length(cols)), cols), panel = rep(pn, length(cols)), name = rep(nm, length(cols)))
+    data.frame(id = ggplot_id(rep(pn, length(cols)), cols, rep(nm, length(cols))),
+               colour = cols, panel = rep(pn, length(cols)), name = rep(nm, length(cols)))
   }, plain, panel, vapply(traces, function(t) t$name %||% NA_character_, "")))
   if (is.null(rows) || !nrow(rows)) return(character())
   ids <- unique(rows$id)
   labels <- vapply(ids, function(id) shared_name(rows$name[rows$id == id]), "")
-  pn <- rows$panel[match(ids, rows$id)]
-  clash <- !is.na(labels) & (duplicated(paste(pn, labels)) | duplicated(paste(pn, labels), fromLast = TRUE))
+  at <- match(ids, rows$id)
+  label_in_panel <- paste(rows$panel[at], labels)
+  colours <- tapply(rows$colour[at], label_in_panel, function(x) length(unique(x)))
+  clash <- !is.na(labels) & colours[label_in_panel] > 1
   labels[is.na(labels) | clash] <- paste0("\u001f", ids[is.na(labels) | clash])
   labels
+}
+
+ggplot_id <- function(panel, colour, name) {
+  paste(panel, colour, ifelse(is.na(name) | grepl("^\\(.*\\)$", name), "", name))
 }
 
 # The one value all of a group's trace names share, where ggplotly() names a

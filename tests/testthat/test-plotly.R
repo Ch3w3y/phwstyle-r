@@ -446,6 +446,46 @@ test_that("subplot() of ggplots gives groups the PHW colours, the same in every 
                c("rgba(255,0,0,1)", "rgba(0,0,255,1)", "rgba(0,0,0,1)"))
 })
 
+test_that("subplot() of ggplots with an average line keeps plain legend names and one colour per group", {
+  skip_if_not_installed("ggplot2")
+  names_colours <- function(w) {
+    tr <- built(w)$data
+    stats::setNames(vapply(tr, function(t) unclass(t$marker$color %||% t$line$color), ""),
+                    vapply(tr, function(t) t$name, ""))
+  }
+  cases <- data.frame(onset = as.Date("2026-01-01") + rep(0:20, 3), area = rep(c("A", "B", "C"), each = 21))
+  e <- phw_epicurve(cases, onset, group = area, average = 3)
+  bars <- ggplot2::ggplot(cases, ggplot2::aes(onset, fill = area)) + ggplot2::geom_histogram(bins = 5)
+  alone <- names_colours(phw_plotly(e))
+  both <- names_colours(phw_plotly(plotly::subplot(e, bars)))
+  expect_equal(names(both), c("A", "B", "C", "3-week average", "A", "B", "C"))
+  expect_equal(both[1:4], alone)
+  expect_equal(both[5:7], alone[1:3])
+
+  # The average maps a colour of its own, which ggplot2 gives the hue of the
+  # first fill group.
+  tot <- data.frame(onset = unique(cases$onset), n = 3)
+  hand <- ggplot2::ggplot(cases, ggplot2::aes(onset)) + ggplot2::geom_bar(ggplot2::aes(fill = area)) +
+    ggplot2::geom_line(data = tot, ggplot2::aes(onset, n, colour = "Average"))
+  both <- names_colours(phw_plotly(plotly::subplot(hand, bars)))
+  expect_equal(names(both), c("A", "B", "C", "Average", "A", "B", "C"))
+  expect_equal(both[5:7], both[1:3])
+  expect_false(both[["Average"]] %in% both[1:3])
+
+  two <- data.frame(x = 1:4, y = 1:4, a = c("A", "A", "B", "B"), s = c("1", "2", "1", "2"))
+  shapes <- ggplot2::ggplot(two, ggplot2::aes(x, y, colour = a, shape = s)) + ggplot2::geom_point()
+  expect_equal(names(names_colours(phw_plotly(plotly::subplot(shapes, shapes))))[1:4],
+               c("(A,1)", "(A,2)", "(B,1)", "(B,2)"))
+
+  # A line named "A" and points named "(A,1)" are one group.
+  two$s <- c("a", "b", "a", "b")
+  lined <- ggplot2::ggplot(two, ggplot2::aes(x, y, colour = a)) + ggplot2::geom_point(ggplot2::aes(shape = s)) +
+    ggplot2::geom_line()
+  joined <- names_colours(phw_plotly(plotly::ggplotly(lined)))
+  expect_equal(names(joined), c("(a,A)", "(a,B)", "(b,A)", "(b,B)", "A", "B"))
+  expect_equal(unname(joined[5:6]), unname(joined[1:2]))
+})
+
 test_that("ggplotly() charts coloured by a number take the PHW blues, as phw_plotly(g) does", {
   skip_if_not_installed("ggplot2")
   d <- expand.grid(week = 1:4, area = c("A", "B", "C"))
