@@ -1,0 +1,7 @@
+# Fitting captions to the drawn size
+
+- `fit_captions()` wraps captions where phwstyle draws a chart at a known size: `phw_save()`, `phw_finalise()` (in `makeContext`), `phw_add_slide()` and the knitr render hook. Plain `print()` and `ggsave()` still get the fixed 70-character wrap of `wrap_caption()`.
+- **patchwork flattens captions into its own gtable.** Plot k's caption is the cell `caption-k`, the figure caption is `caption`. The last plot of a patchwork is the patchwork object itself; `patches$plots` holds the others. A grob patch has a `zeroGrob` caption cell.
+- **Resolve a gtable's layout with grid, not by hand.** Push `viewport(layout = grid.layout(nrow, ncol, widths, heights, respect))`, then a child viewport with `layout.pos.row/col`, and read `deviceLoc()`. This handles null units, respect matrices and the centring of fixed-shape charts.
+- **Right-aligned captions under side-by-side fixed-shape panels may have no fit.** The right caption can only be as wide as the gap between the two panels' right edges, and each extra line makes the map shorter and so narrower. A 2:1 tall map in 16 x 10 cm has no wrapping that fits, and looping until it fits collapses to one word per line. Keep the pass that runs over least.
+- **Testing drawn text positions:** `rvg::dml_pptx()` works as a `phw_save(device =)` function and writes each drawn line as a `p:sp` with `a:off` x and `a:ext` cx in EMU (914400 per inch). Set `raster_prefix` to a temp folder or colour bars land in the working directory. Its font metrics differ slightly from ragg's.
