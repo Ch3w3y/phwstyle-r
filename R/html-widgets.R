@@ -322,7 +322,7 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
   # ggplotly() converts only the last plot of a patchwork.
   if (inherits(p, "patchwork")) {
     cli::cli_abort(c("{.fn phw_plotly} draws one chart, not a patchwork such as one from {.fn phw_arrange}.",
-                     "i" = "Style each chart and combine them: {.code phw_plotly(plotly::subplot(phw_plotly(g1), phw_plotly(g2)))}."))
+                     "i" = "Combine the charts with {.fn plotly::subplot} instead: {.code phw_plotly(plotly::subplot(g1, g2), title = \"...\", source = \"...\")}."))
   }
   cap <- caption_from(source, date, caption_args)
   subtitle <- NULL

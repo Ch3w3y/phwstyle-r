@@ -133,6 +133,20 @@ test_that("a patchwork stops and points to subplot()", {
   expect_error(phw_plotly(g1 / g2), "draws one chart")
 })
 
+test_that("the recipe a patchwork error suggests gives a group one colour in every panel", {
+  skip_if_not_installed("patchwork")
+  g1 <- ggplot2::ggplot(groups_df, ggplot2::aes(week, cases, fill = group)) + ggplot2::geom_col()
+  g2 <- ggplot2::ggplot(subset(groups_df, group != "A"), ggplot2::aes(week, cases, colour = group)) +
+    ggplot2::geom_line()
+  err <- tryCatch(phw_plotly(phw_arrange(g1, g2)), error = identity)
+  recipe <- regmatches(err$body, regexpr("phw_plotly\\(plotly::subplot.*\\)", err$body))
+  tr <- built(eval(parse(text = recipe)))$data
+  colour <- vapply(tr, function(t) t$marker$color %||% t$line$color, "")
+  by_group <- tapply(colour, vapply(tr, function(t) t$name, ""), function(x) length(unique(x)))
+  expect_true(all(by_group == 1))
+  expect_length(by_group, length(unique(groups_df$group)))
+})
+
 test_that("phw_plotly_colorscale takes a function and checks n", {
   sc <- phw_plotly_colorscale(function(n) rep("#123456", n), n = 3)
   expect_equal(sc[[3]][[2]], "#123456")

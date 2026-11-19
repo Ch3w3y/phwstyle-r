@@ -13,7 +13,8 @@ says what to change.
   without the bars and gave no warning.
 * `phw_plotly()` stops with a message for a patchwork, such as a figure
   from `phw_arrange()` or `g1 + g2`, and shows how to combine the charts
-  with `plotly::subplot()`. Before, it drew only the last chart and dropped
+  with `phw_plotly(plotly::subplot(g1, g2))`, which gives a group the same
+  colour in every panel. Before, it drew only the last chart and dropped
   the others, the figure title and the source without a word.
 * The default palette `"main"` now has six colours: navy, teal, orange,
   pink, green and gold. Charts with five or six groups change colour, and
