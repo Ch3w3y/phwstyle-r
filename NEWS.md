@@ -427,9 +427,11 @@ says what to change.
   gives for a named `tapply()` or `sapply()` result, are not shown again,
   and `phw_reactable()` no longer shows them twice. Whole-number labels,
   such as the years, weeks or ages of a `table()` or `tapply()` result, show
-  too. Row numbers are not labels and are not shown, including those
-  `rbind()` keeps as text, such as `"31"`, when filtered subsets share row
-  numbers.
+  too, in either order. Row numbers are not labels and are not shown,
+  including those `rbind()` keeps as text, such as `"31"`, when filtered
+  subsets share row numbers. Labels from 1 with a gap that end between 11
+  and 19, such as weeks 1 to 13 with one week missing, look the same as
+  those row numbers and are not shown: put them in a column instead.
 * `phw_flextable()`, `phw_gt()`, `phw_reactable()` and `phw_write_xlsx()`
   show a column whose name is missing, as a crosstab made with
   `table(useNA = "ifany")` or `xtabs(addNA = TRUE)` has, under the header

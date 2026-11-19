@@ -671,6 +671,16 @@ test_that("every renderer shows whole-number labels such as years from table() o
     x <- as.data.frame.matrix(table(labels, labels %% 2))
     expect_equal(phw_flextable(x)$body$dataset[[1]], as.character(labels))
   }
+
+  newest_first <- list(as.data.frame.matrix(table(factor(d$year, levels = 2023:2021), d$board)),
+                       as.data.frame.matrix(table(d$year, d$board))[3:1, ],
+                       as.data.frame(rev(tapply(d$board == "Powys", d$year, sum))))
+  for (x in newest_first) {
+    expect_equal(phw_flextable(x)$body$dataset[[1]], rev(years))
+  }
+  weeks <- setdiff(52:1, 30)
+  x <- as.data.frame.matrix(table(factor(weeks, levels = weeks), weeks %% 2))
+  expect_equal(phw_flextable(x)$body$dataset[[1]], as.character(weeks))
 })
 
 test_that("every renderer shows a crosstab column for missing values under the header NA", {

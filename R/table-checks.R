@@ -37,20 +37,21 @@ check_table_data <- function(data, arg = "data", call = rlang::caller_env()) {
 
 # rbind() stores row numbers as text only when subsets share some, and makes
 # them unique as make.unique() does: "3" again becomes "31", then "32". So
-# they are out of order, or in order but ending in such copies. Labels from
-# table(), tapply() or a matrix, such as years, are sorted, as numbers or as
-# text. A run with no gap, such as weeks 1 to 12, is labels, and so is
-# anything with a 0 or a leading zero, which row numbers never have.
+# they always hold such a copy, and are either out of order or in order but
+# ending in copies. Labels from table(), tapply() or a matrix, such as years,
+# are sorted as numbers or as text, or are in reverse order with no copy. A
+# run with no gap, such as weeks 1 to 12, is labels, and so is anything with
+# a 0 or a leading zero, which row numbers never have.
 is_row_numbers <- function(x) {
   if (!all(grepl("^[1-9][0-9]*$", x))) return(FALSE)
-  n <- as.numeric(x)
-  if (is.unsorted(n, strictly = TRUE)) return(is.unsorted(x, strictly = TRUE))
-  if (all(diff(n) == 1)) return(FALSE)
   copy <- c(FALSE, vapply(seq_along(x)[-1], function(i) {
     s <- x[seq_len(i - 1)]
     any(startsWith(x[i], s) & grepl("^[1-9]", substring(x[i], nchar(s) + 1)))
   }, logical(1)))
-  any(copy) && all(copy[which.max(copy):length(x)])
+  if (!any(copy)) return(FALSE)
+  n <- as.numeric(x)
+  if (is.unsorted(n, strictly = TRUE)) return(is.unsorted(x, strictly = TRUE))
+  !all(diff(n) == 1) && all(copy[which.max(copy):length(x)])
 }
 
 # data.frame(x = names(v), n = v) for a named tapply() or sapply() result
