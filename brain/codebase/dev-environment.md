@@ -2,7 +2,7 @@
 
 ```sh
 RB=~/.uvr/r-versions/4.5.3/bin                       # R is not on PATH
-D=~/.cache/phwstyle-dev                               # shared, READ-ONLY
+D=~/.cache/phwstyle-dev                               # shared; read-only except $D/wt/ and the TinyTeX reinstall (below)
 export R_LIBS="<your own lib>:$D/rlib"                # every dependency, testthat, roxygen2, pkgload, rcmdcheck
 export PATH="$D/tools/pandoc-3.6.4/bin:$PATH"         # Pandoc
 ```
