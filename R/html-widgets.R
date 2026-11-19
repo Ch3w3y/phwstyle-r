@@ -1022,7 +1022,7 @@ spare_colorway <- function(colorway, p) {
 # in trace order, a colour key by trace name, grey for a missing group and
 # the PHW sequential scale. Colours a panel set itself are marked
 # "plotly_default" too, so when any panel sets its own, groups and scales
-# keep the colours they were built with. A ggplot's groups come unmarked, in
+# keep the colours they were built with, and only a missing group turns grey. A ggplot's groups come unmarked, in
 # ggplot2's default colours, and take the colour key too.
 colour_built <- function(p, palette, colorway) {
   if (!length(p$x$data)) return(p)
@@ -1034,10 +1034,15 @@ colour_built <- function(p, palette, colorway) {
     ))
   }
   colorway <- unname(colorway)
-  grouped <- !own & vapply(p$x$data, function(t) any(rapply(t, is_group_colour, how = "unlist")), logical(1))
-  missing <- !own & vapply(p$x$data, function(t) any(rapply(t, is_missing_colour, how = "unlist")), logical(1))
+  coloured <- vapply(p$x$data, function(t) any(rapply(t, is_group_colour, how = "unlist")), logical(1))
+  grouped <- !own & coloured
   panel <- vapply(p$x$data, function(t) paste(t$xaxis %||% "x", t$yaxis %||% "y"), "")
   trace_names <- vapply(p$x$data, function(t) t$name %||% NA_character_, "")
+  # A panel's own colours leave its missing group transparent as well, in a
+  # trace named NA.
+  na_named <- vapply(p$x$data, function(t) identical(t$name, NA_character_) || identical(t$name, "NA"), logical(1))
+  missing <- (!own | na_named) &
+    vapply(p$x$data, function(t) any(rapply(t, is_missing_colour, how = "unlist")), logical(1))
   gg <- ggplot_groups(p$x$data, panel)
   lv <- unique(c(trace_names[grouped & !is.na(trace_names)], gg))
   key <- if (length(lv)) group_colours(list(factor(lv, lv)), palette)
@@ -1046,7 +1051,7 @@ colour_built <- function(p, palette, colorway) {
   gradient <- if (uses_ggplot_gradient(p$x$data)) ggplot_gradient()
   p$x$data <- lapply(seq_along(p$x$data), function(i) {
     if (missing[[i]]) {
-      like <- p$x$data[grouped & panel == panel[[i]]]
+      like <- p$x$data[coloured & panel == panel[[i]]]
       return(grey_missing(p$x$data[[i]], if (length(like)) like[[1]]))
     }
     way <- colorway[[(i - 1) %% length(colorway) + 1]]
