@@ -601,6 +601,24 @@ test_that("phw_arrange wraps a collected legend of health boards", {
   expect_lte(legend_cm(g), 16)
 })
 
+test_that("phw_arrange collects only the legends its plots show", {
+  skip_if_not_installed("patchwork")
+  library(ggplot2)
+  d <- data.frame(board = c("Cardiff", "Powys", "Hywel Dda"), cases = c(10, 20, 15))
+  bars <- ggplot(d, aes(board, cases)) + geom_col() + theme_phw()
+  filled <- ggplot(d, aes(board, cases, fill = board)) + geom_col() + theme_phw()
+  hidden <- filled + theme(legend.position = "none")
+  legend_boxes <- function(g) {
+    drawn <- !vapply(g$grobs, inherits, logical(1), what = "zeroGrob")
+    g$layout[grepl("^guide-box", g$layout$name) & drawn, ]
+  }
+  expect_equal(nrow(legend_boxes(patchwork::patchworkGrob(phw_arrange(bars, hidden)))), 0)
+  g <- patchwork::patchworkGrob(phw_arrange(hidden, filled, legend = "right"))
+  box <- legend_boxes(g)
+  expect_equal(nrow(box), 1)
+  expect_gt(box$l, max(g$layout$r[grepl("^panel", g$layout$name)]))
+})
+
 test_that("a second legend below the chart gets a row of its own and fits", {
   skip_if_not_installed("ragg")
   library(ggplot2)
