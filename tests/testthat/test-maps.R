@@ -223,11 +223,11 @@ licence <- paste("Source: Office for National Statistics licensed under the Open
                  "Licence v3.0. Contains OS data (c) Crown copyright and database right.")
 
 # Taller than wide, as Wales is, so a longer caption makes it narrower.
-licensed_map <- function() {
+licensed_map <- function(...) {
   areas <- tiny_areas()
   sf::st_geometry(areas) <- sf::st_geometry(areas) * matrix(c(1, 0, 0, 1.5), 2)
   attr(areas, "attribution") <- licence
-  phw_map(data.frame(area = areas$code, rate = c(52, 61, 47, 70)), by = area, fill = rate, level = areas)
+  phw_map(data.frame(area = areas$code, rate = c(52, 61, 47, 70)), by = area, fill = rate, level = areas, ...)
 }
 
 test_that("a map saved at half-page width keeps its whole licence line on the image", {
@@ -242,4 +242,33 @@ test_that("two maps side by side each keep their whole licence line, clear of th
   skip_if_not_installed("patchwork")
   m <- licensed_map()
   expect_captions_side_by_side(saved_caption_lines(phw_arrange(m, m), licence), licence, 16 / 2.54)
+})
+
+test_that("a map beside a chart, or two maps finalised, keep their size and whole licence line", {
+  skip_if_not_installed("patchwork")
+  chart <- ggplot2::ggplot(data.frame(year = c("2024", "2025"), cases = c(300, 340)),
+                           ggplot2::aes(year, cases, fill = year)) +
+    ggplot2::geom_col() + ggplot2::labs(title = "Total") + theme_phw()
+  figures <- function(m) {
+    list(phw_arrange(m, chart, title = "Map and chart", source = "PHW"),
+         phw_finalise(phw_arrange(m, chart, title = "Map and chart"), source = "PHW"),
+         phw_finalise(phw_arrange(m, m, title = "Two maps"), source = "PHW"))
+  }
+  m <- licensed_map() + ggplot2::labs(title = "Rate")
+  uncaptioned <- figures(m + ggplot2::labs(caption = NULL))
+  for (i in seq_along(uncaptioned)) {
+    fig <- figures(m)[[i]]
+    expect_caption_within(saved_caption_lines(fig, licence), licence, 0, 16 / 2.54)
+    expect_gt(min(drawn_panel_widths(fig)), min(drawn_panel_widths(uncaptioned[[i]])) / 2)
+  }
+})
+
+test_that("the titles of two maps with different legends stay apart", {
+  skip_if_not_installed("patchwork")
+  titles <- c("Rate by area", "Binned")
+  fig <- phw_arrange(licensed_map() + ggplot2::labs(title = titles[1]),
+                     licensed_map(bins = c(45, 55, 65, 75)) + ggplot2::labs(title = titles[2]))
+  drawn <- saved_caption_lines(fig, paste(titles, collapse = "\n"))
+  expect_setequal(drawn$text, titles)
+  expect_lt(drawn$right[drawn$text == titles[1]], drawn$left[drawn$text == titles[2]])
 })

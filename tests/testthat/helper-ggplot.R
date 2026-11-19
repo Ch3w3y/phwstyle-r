@@ -37,3 +37,21 @@ expect_captions_side_by_side <- function(lines, caption, width) {
   expect_caption_within(lines[left, ], caption, 0, min(lines$left[!left]))
   expect_caption_within(lines[!left, ], caption, max(lines$right[left]), width)
 }
+
+# The width in inches of each panel of `plot` laid out as phw_save() draws it.
+drawn_panel_widths <- function(plot, width = 16, height = 10) {
+  width <- width / 2.54
+  height <- height / 2.54
+  if (!inherits(plot, "phw_finalised")) plot <- fit_captions(plot, width, height)
+  grDevices::pdf(NULL, width = width, height = height)
+  on.exit(grDevices::dev.off())
+  g <- if (inherits(plot, "phw_finalised")) grid::makeContext(plot) else plot_gtable(plot)
+  grid::pushViewport(grid::viewport(layout = grid::grid.layout(
+    nrow(g), ncol(g), widths = g$widths, heights = g$heights, respect = g$respect)))
+  panels <- g$layout[grepl("^panel", g$layout$name) & g$layout$name != "panel-area", ]
+  vapply(seq_len(nrow(panels)), function(i) {
+    grid::pushViewport(grid::viewport(layout.pos.row = panels$t[i]:panels$b[i], layout.pos.col = panels$l[i]:panels$r[i]))
+    on.exit(grid::popViewport())
+    grid::convertWidth(grid::unit(1, "npc"), "in", valueOnly = TRUE)
+  }, numeric(1))
+}
