@@ -311,3 +311,11 @@ test_that("the titles of two maps with different legends stay apart", {
   expect_setequal(drawn$text, titles)
   expect_lt(drawn$right[drawn$text == titles[1]], drawn$left[drawn$text == titles[2]])
 })
+
+test_that("phw_map stops on a table() and says what to pass", {
+  areas <- tiny_areas()
+  counts <- table(code = c("A1", "A1", "A2", "A4"))
+  expect_error(phw_map(counts, code, Freq, level = areas), "must be a data frame.*fill = Freq")
+  p <- phw_map(as.data.frame(as.table(counts)), code, Freq, level = areas)
+  expect_equal(p$data$Freq, c(2, 1, 1))
+})

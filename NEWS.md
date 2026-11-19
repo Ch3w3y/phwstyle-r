@@ -272,6 +272,13 @@ says what to change.
 
 ## Charts and maps
 
+* `phw_pyramid()`, `phw_epicurve()`, `phw_map()`, `phw_funnel()`,
+  `phw_spc()` and `phw_forest()` stop when given a `table()` or a matrix
+  and say what to pass instead. Before, they failed with "Can't select
+  within an unnamed vector" or "Column doesn't exist". For counts in a
+  `table()`, pass `as.data.frame(as.table(x))` with `value = Freq` to
+  `phw_pyramid()`, `count = Freq` to `phw_epicurve()` or `fill = Freq` to
+  `phw_map()`.
 * A chart's caption, such as the OS and ONS licence line of `phw_map()` or
   a `phw_caption()` source line, now wraps to the width the chart is drawn
   at by `phw_save()`, `phw_finalise()`, `phw_add_slide()` and the

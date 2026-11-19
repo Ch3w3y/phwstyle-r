@@ -65,6 +65,7 @@
 phw_map <- function(data, by, fill, level, bins = NULL, palette = NULL, key = NULL, label = NULL,
                     detail = "generalised", ...) {
   rlang::check_installed("sf")
+  data <- check_data_frame(data, counts_hint("fill"))
   by <- pick_col(rlang::enquo(by), data, "by")
   fill <- pick_col(rlang::enquo(fill), data, "fill")
   quo_label <- rlang::enquo(label)

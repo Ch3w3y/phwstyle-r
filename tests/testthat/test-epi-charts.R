@@ -439,3 +439,25 @@ test_that("phw_spc leaves out missing values and needs at least two points", {
   expect_error(phw_spc(d, t, v, baseline = 1), "2 or more")
   expect_error(phw_spc(transform(d, v = as.character(v)), t, v), "numeric column")
 })
+
+test_that("the epi charts stop on a table() or a matrix and say what to pass", {
+  set.seed(1)
+  cases <- data.frame(age = sample(c("0-4", "5-14", "15+"), 100, TRUE),
+                      sex = sample(c("Female", "Male"), 100, TRUE),
+                      onset = as.Date("2025-01-01") + sample(0:30, 100, TRUE))
+  tb <- table(age = cases$age, sex = cases$sex)
+  expect_error(phw_pyramid(tb, age, sex, value = Freq), "`data` must be a data frame.*value = Freq")
+  pop <- as.data.frame(as.table(tb))
+  expect_error(phw_pyramid(pop, age, sex, value = Freq, compare = tb), "`compare` must be a data frame.*value = Freq")
+  p <- phw_pyramid(pop, age, sex, value = Freq)
+  expect_equal(sum(abs(p$data$x)), 100)
+
+  onsets <- table(onset = cases$onset)
+  expect_error(phw_epicurve(onsets, onset, count = Freq), "must be a data frame.*count = Freq")
+  p <- phw_epicurve(as.data.frame(as.table(onsets)), onset, count = Freq)
+  expect_equal(sum(ggplot2::layer_data(p)$y), 100)
+
+  m <- cbind(n = c(5, 8, 12), d = c(100, 120, 140))
+  expect_error(phw_funnel(m, n, d), "must be a data frame.*as.data.frame")
+  expect_error(phw_spc(cbind(x = 1:12, y = 1:12), x, y), "must be a data frame.*as.data.frame")
+})

@@ -378,7 +378,7 @@ phw_summary_table <- function(data, vars = NULL, by = NULL, labels = list(),
 phw_crosstab <- function(data, rows, cols, count = NULL,
                          percent = c("none", "row", "column", "total"), totals = TRUE,
                          missing = "Unknown", digits = 1, labels = list()) {
-  data <- check_data_frame(data, "For counts in a {.fn table} or a matrix, pass {.code as.data.frame(as.table(x))} with {.code count = Freq}.")
+  data <- check_data_frame(data, counts_hint("count"))
   percent <- rlang::arg_match(percent)
   rows <- pick_col(rlang::enquo(rows), data, "rows")
   cols <- pick_col(rlang::enquo(cols), data, "cols")
