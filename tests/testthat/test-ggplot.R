@@ -500,7 +500,7 @@ test_that("phw_save wraps a bottom legend of health boards to fit the default si
   expect_lte(legend_cm(ggplotGrob(saved)), 16)
 })
 
-test_that("legends that fit, a set number of rows and colour bars are left as they are", {
+test_that("legends that fit and a set number of rows are left as they are", {
   skip_if_not_installed("ragg")
   library(ggplot2)
   local_ggplot_state()
@@ -517,8 +517,65 @@ test_that("legends that fit, a set number of rows and colour bars are left as th
   expect_equal(rows(ggplot(mpg, aes(displ, hwy, colour = drv)) + geom_point()), 1)
   wide <- board_chart() + theme(legend.position = "right")
   expect_identical(wrap_legends(wide), wide)
-  bar <- wrap_legends(ggplot(mpg, aes(displ, hwy, colour = cty)) + geom_point())
-  expect_s3_class(ggplot_build(bar)$plot$guides$guides[[1]], "GuideColourbar")
+})
+
+# Room in cm between neighbouring labels of the colour bar across the bottom
+# of `g`, and between the end labels and the edges of the legend.
+bar_label_room <- function(g) {
+  cm <- function(u) grid::convertWidth(u, "cm", valueOnly = TRUE)
+  box <- g$grobs[[which(g$layout$name == "guide-box-bottom")]]
+  guide <- box$grobs[[which(box$layout$name == "guides")]]
+  bar <- guide$layout[guide$layout$name == "bar", ]
+  text <- guide$grobs[[grep("^label", guide$layout$name)]]$children[[1]]
+  width <- vapply(text$label, function(l) cm(grid::grobWidth(grid::textGrob(l, gp = text$gp))), numeric(1))
+  centre <- sum(cm(guide$widths[seq_len(bar$l - 1)])) + as.numeric(text$x) * cm(sum(guide$widths[bar$l:bar$r]))
+  n <- length(centre)
+  list(between = (centre[-1] - width[-1] / 2) - (centre[-n] + width[-n] / 2),
+       ends = c(centre[1] - width[1] / 2, sum(cm(guide$widths)) - centre[n] - width[n] / 2))
+}
+
+test_that("a colour bar or steps across the bottom has room for its labels", {
+  skip_if_not_installed("ragg")
+  library(ggplot2)
+  local_ggplot_state()
+  d <- expand.grid(week = 1:10, hb = c("Cardiff", "Swansea", "Powys"))
+  d$rate <- seq(600, 1600, length.out = 30)
+  d$change <- seq(-25, 25, length.out = 30)
+  tiles <- ggplot(d, aes(week, hb, fill = rate)) + geom_tile() + theme_phw()
+  saved <- NULL
+  local_mocked_bindings(ggsave = function(filename, plot, ...) saved <<- plot, .package = "ggplot2")
+  phw_save(tiles, "heat.png")
+  plots <- list(
+    tiles + scale_fill_phw_c(),
+    tiles + scale_fill_phw_b(),
+    tiles + scale_fill_phw_c(labels = scales::label_comma(scale = 1000)),
+    ggplot(d, aes(week, hb, fill = change)) + geom_tile() + scale_fill_phw_div() + theme_phw(),
+    ggplot(d, aes(week, rate, colour = rate)) + geom_point() + scale_colour_phw_c() + theme_phw(),
+    saved
+  )
+  use_phw_ggplot()
+  phw_save(ggplot(d, aes(week, hb, fill = rate)) + geom_tile(), "heat.png")
+  plots <- c(plots, list(saved))
+  local_size()
+  for (p in plots) {
+    room <- bar_label_room(ggplotGrob(p))
+    expect_gt(min(room$between), 0)
+    expect_gte(min(room$ends), -1e-9)
+  }
+})
+
+test_that("a colour bar on the right is the length ggplot2 gives it", {
+  library(ggplot2)
+  local_ggplot_state()
+  p <- ggplot(faithfuld, aes(waiting, eruptions, fill = density)) + geom_raster() +
+    theme_phw(legend = "right")
+  size <- function(p) {
+    g <- ggplotGrob(p)
+    box <- g$grobs[[which(g$layout$name == "guide-box-right")]]
+    c(grid::convertWidth(gtable::gtable_width(box), "cm", valueOnly = TRUE),
+      grid::convertHeight(gtable::gtable_height(box), "cm", valueOnly = TRUE))
+  }
+  expect_equal(size(p + scale_fill_phw_c()), size(p + scale_fill_gradientn(colours = phw_palettes$blues)))
 })
 
 test_that("a phw_finalise() chart wraps its legend to the size it is drawn at", {
