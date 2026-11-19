@@ -436,6 +436,11 @@ says what to change.
   repeated, so a sheet could get another sheet's title.
 * `phw_flextable_heat(symbols = TRUE)` keeps the table's number format, so
   `phw_flextable(digits = 1)` shows "▼ 92.3", not "▼ 92.34568".
+* In a PDF report, the ▲ ■ ▼ shapes that `phw_flextable_heat()` adds to red,
+  amber and green cells show as they do in HTML and Word. The Ubuntu font
+  has no such shapes, so the PDF sets them in DejaVu Sans, or in Latin
+  Modern Math when DejaVu Sans is not installed. Before, each shape was a
+  missing-character box.
 * On a summary, cross-tab or group table, `phw_flextable_heat()` and
   `phw_col_heat()` colour only the level rows. Before, totals and subtotals
   were coloured too and set the top of the scale, so every other cell came
