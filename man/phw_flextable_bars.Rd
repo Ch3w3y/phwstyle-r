@@ -16,8 +16,8 @@ phw_flextable_bars(
 \arguments{
 \item{x}{A flextable.}
 
-\item{j}{Columns, chosen as in \code{\link[dplyr:select]{dplyr::select()}}: unquoted names,
-positions or strings.}
+\item{j}{Columns, chosen from the columns the table shows as in
+\code{\link[dplyr:select]{dplyr::select()}}: unquoted names, positions or strings.}
 
 \item{colour}{Bar colour.}
 

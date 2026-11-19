@@ -571,6 +571,10 @@ says what to change.
   `phw_flextable_bars()`, `phw_col_heat()` and `phw_col_bar()`. Before, its
   rows set the top of the scale, so the group levels came out pale with
   short bars. The block looks the same as before.
+* `phw_flextable_heat()` and `phw_flextable_bars()` choose `j` from the
+  columns the table shows, so `j = -1` or `where(is.numeric)` works on a
+  table whose `col_keys` hides a column. Before, they stopped with an error
+  from flextable about the hidden column.
 * Bars from `phw_flextable_bars()` show in a Word report made with
   `phw_word_document()`, as do links in a flextable. Before, Word called the
   file corrupt, and flextable's warning was printed in the report. A

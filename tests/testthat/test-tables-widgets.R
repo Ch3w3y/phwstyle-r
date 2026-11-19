@@ -979,6 +979,32 @@ test_that("heat leaves total columns out of a scale shared with other columns", 
   expect_true(top %in% heated[, setdiff(names(g)[-1], totals)])
 })
 
+test_that("heat and bars choose among the columns col_keys shows", {
+  skip_if_not_installed("flextable")
+  bg <- function(ft) ft$body$styles$cells$background.color$data
+  bar_cols <- function(ft) {
+    chunks <- flextable::information_data_chunk(ft)
+    unique(chunks$.col_id[chunks$.part == "body" & !is.na(chunks$width)])
+  }
+  d <- data.frame(Board = c("Cardiff and Vale", "Powys", "Hywel Dda"),
+                  Female = c(10, 4, 7), Male = c(12, 3, 9), Unknown = c(1, 0, 2))
+  ft <- phw_flextable(d, flextable_args = list(col_keys = c("Board", "Female", "Male")))
+  heated <- bg(phw_flextable_heat(ft, -1))
+  expect_true(all(heated[, c("Female", "Male")] != "transparent"))
+  expect_identical(heated, bg(phw_flextable_heat(ft, where(is.numeric))))
+  expect_setequal(bar_cols(phw_flextable_bars(ft, -1)), c("Female", "Male"))
+  expect_error(phw_flextable_heat(ft, Unknown), "doesn't exist")
+
+  dat <- data.frame(group = rep(c("A", "B", "C"), times = c(10, 20, 30)),
+                    type = rep(c("x", "y", "z"), 20))
+  ct <- phw_crosstab(dat, group, type)
+  ft <- phw_flextable(ct, flextable_args = list(col_keys = c("group", "x", "y", "Total")))
+  heated <- bg(phw_flextable_heat(ft, -1))
+  expect_true(all(heated[1:3, c("x", "y")] != "transparent"))
+  expect_equal(unname(heated[, "Total"]), rep("transparent", 4))
+  expect_setequal(bar_cols(phw_flextable_bars(ft, -1)), c("x", "y", "Total"))
+})
+
 test_that("phw_col_heat colours only the level rows of a summary table", {
   skip_if_not_installed("reactable")
   dat <- data.frame(group = rep(c("A", "B", "C"), times = c(10, 20, 30)),

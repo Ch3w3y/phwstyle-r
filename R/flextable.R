@@ -380,8 +380,9 @@ use_phw_flextable <- function(style = "booktabs", font_size = 10, ...) {
 #' Choose only total columns to colour them on a scale of their own.
 #'
 #' @param x A flextable.
-#' @param j Columns to colour, chosen as in [dplyr::select()]: unquoted
-#'   names such as `c(rate, cases)`, positions such as `2:5`, or strings.
+#' @param j Columns to colour, chosen from the columns the table shows as
+#'   in [dplyr::select()]: unquoted names such as `c(rate, cases)`, positions
+#'   such as `2:5`, or strings.
 #' @param palette A sequential or diverging palette name, a vector of
 #'   colours, `"rag"` or `"rag_accessible"` (navy instead of green).
 #' @param domain Range of values the palette spans. Defaults to the range of
@@ -413,7 +414,8 @@ phw_flextable_heat <- function(x, j, palette = "teals", domain = NULL, breaks = 
   rlang::check_installed("flextable")
   check_flextable(x)
   data <- x$body$dataset
-  j <- pick_cols(rlang::enquo(j), data, "j")
+  # Choose among the columns shown: `col_keys` can hide some.
+  j <- pick_cols(rlang::enquo(j), data[intersect(names(data), x$col_keys)], "j")
   rows <- heat_rows(data)
   j <- value_cols(data[rows, , drop = FALSE], heat_cols(data, j), "j")
   if (!length(j)) return(x)
@@ -622,8 +624,8 @@ check_summary_keys <- function(x, keys, call = rlang::caller_env()) {
 #' with a message for a table with bars.
 #'
 #' @param x A flextable.
-#' @param j Columns, chosen as in [dplyr::select()]: unquoted names,
-#'   positions or strings.
+#' @param j Columns, chosen from the columns the table shows as in
+#'   [dplyr::select()]: unquoted names, positions or strings.
 #' @param colour Bar colour.
 #' @param width,height Bar size in inches.
 #' @param digits Decimal places for the value.
@@ -639,7 +641,8 @@ phw_flextable_bars <- function(x, j, colour = phw_colours[["light_teal"]], width
   rlang::check_installed("flextable")
   check_flextable(x)
   data <- x$body$dataset
-  j <- pick_cols(rlang::enquo(j), data, "j")
+  # Choose among the columns shown: `col_keys` can hide some.
+  j <- pick_cols(rlang::enquo(j), data[intersect(names(data), x$col_keys)], "j")
   rows <- heat_rows(data)
   j <- value_cols(data[rows, , drop = FALSE], j, "j")
   for (col in j) check_bar_values(data[[col]][rows], col, "j")
