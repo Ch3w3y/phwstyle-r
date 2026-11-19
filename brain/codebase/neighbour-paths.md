@@ -17,6 +17,6 @@ A neighbour is in scope when it fails for the same root cause and a user would h
 - **Chart extras:** a second legend (an average line, the epicurve average), a continuous or binned colour legend, a legend one panel turns off, `phw_sec_axis()`, facets and a long caption or source.
 - **Interactive charts:** `phw_plotly()` on a ggplot, on the package's own charts (`phw_epicurve()`, `phw_pyramid()`, `phw_funnel()`, `phw_map()`), on `plot_ly()`, on `ggplotly()`, on `plotly::subplot()` and on a `phw_arrange()` figure. Colours from `phw_pal()`, from `phw_colour_key()`, or none. `color` set in `plot_ly()` or in a later `add_*()`.
 - **Maps:** `phw_map()` and `phw_leaflet_polygons()` at full and half width, alone and arranged.
-- **Input shapes:** a data frame, a tibble, `table()`, a matrix and an sf object. Data frames from `aggregate()` or `tapply()`, from `rbind()` of subsets, and with row names. Factors with unused levels. NA in groups, values and labels. A crosstab with a total row or column, or an NA column.
+- **Input shapes:** a data frame, a tibble, `table()`, a matrix and an sf object. Data frames from `aggregate()` or `tapply()`, from `rbind()` of subsets, and with row names. Factors with unused levels. NA in groups, values and labels. A crosstab with a total row or column, or an NA column. A data frame a filter left with no rows, as in a scheduled report where nothing matched this week.
 
 This list is a start. Add the neighbours the code in hand has.
