@@ -867,16 +867,20 @@ wrap_lines <- function(lines, room, measure) {
 # off the image, or over the caption of the plot beside it. Where phwstyle
 # draws a chart at a known size, lines too wide wrap to their room (see
 # refit_captions()), measured with the chart laid out at that size on an
-# off-screen device: a map keeps its shape, so it is often narrower than the
-# image. A map's attribution, wrapped for the screen, is wrapped again as one
-# line. A longer caption makes a map shorter and so narrower, so the passes
-# go on until every line fits. Where no wrapping fits, such as a tall map in a
-# short figure, the narrowing would not stop, so the pass that runs over least
-# is kept.
+# off-screen device (ragg's, or pdf() when ragg is not installed): a map keeps
+# its shape, so it is often narrower than the image. A map's attribution,
+# wrapped for the screen, is wrapped again as one line. A longer caption makes
+# a map shorter and so narrower, so the passes go on until every line fits.
+# Where no wrapping fits, such as a tall map in a short figure, the narrowing
+# would not stop, so the pass that runs over least is kept.
 fit_captions <- function(plot, width, height) {
   if (!inherits(plot, "ggplot") || !length(caption_slots(plot))) return(plot)
   old <- grDevices::dev.cur()
-  ragg::agg_capture(width = width, height = height, units = "in")
+  if (requireNamespace("ragg", quietly = TRUE)) {
+    ragg::agg_capture(width = width, height = height, units = "in")
+  } else {
+    grDevices::pdf(NULL, width = width, height = height)
+  }
   on.exit({
     grDevices::dev.off()
     if (old > 1) grDevices::dev.set(old)
