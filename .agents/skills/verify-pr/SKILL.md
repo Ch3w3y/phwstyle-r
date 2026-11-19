@@ -35,7 +35,7 @@ Pin the review to the head SHA you read now. If the head changes while you revie
 1. Read the issue, the PR description and the full diff from `main` to the head SHA.
 2. Check, in this order:
    - Does it fix the issue, proven by running the issue's repro on the PR head?
-   - Does it fix the neighbours? Run the repro through each neighbour in `brain/codebase/neighbour-paths.md` that applies and each one the PR's `## Neighbours` list names, on the head and on `main`. FAIL if the same root cause is left in a neighbour a user would hit in normal use (the sweep skill's "Normal use only" bar), or if a neighbour that works on `main` breaks on the head. A neighbour that fails for a different reason, or only on edge-case input, is a NOTE, not a FAIL.
+   - Does it fix the neighbours? Run the repro through each neighbour in `brain/codebase/neighbour-paths.md` that applies and each one the PR's `## Neighbours` list names, on the head and on `main`. FAIL for a neighbour a user would hit in normal use (the sweep skill's "Normal use only" bar) when the head leaves the issue's root cause in it, or when it works on `main` and breaks on the head. Any other failing neighbour is a NOTE, not a FAIL: one that already fails on `main` for a different reason, or that fails only on edge-case input.
    - Does it change behaviour on ordinary inputs? Run the help-page examples of every function it touches and compare the output and messages with `main`.
    - Breaking changes that NEWS.md does not call out.
    - CRAN suitability, and nothing from `.agents`, `brain`, `adapters` or `.noodle*` in the build tarball.

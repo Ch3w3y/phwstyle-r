@@ -8,7 +8,7 @@ A fix that works for the issue's repro often leaves the same defect one step awa
 - #339 fixed row-name labels being dropped, which caused #352 (`tapply()` labels shown twice) and #365 (row numbers of `rbind()` subsets shown as a column).
 - #341 and #342 fixed `phw_plotly()` legends and missing-group colours on single charts, and #355 and #356 found the same defects in `plotly::subplot()`.
 
-A neighbour counts when it fails for the same root cause and a user would hit it in normal use (the bar in the sweep skill's "Normal use only"). For any fix, run the repro, or the call the change touches, through each neighbour below that applies. Then find every caller of each helper you change (`grep -rn "<helper>(" R/`) and run one ordinary call through each caller.
+A neighbour is in scope when it fails for the same root cause and a user would hit it in normal use (the bar in the sweep skill's "Normal use only"). For any fix, run the repro, or the call the change touches, through each neighbour below that applies. Then find every caller of each helper you change (`grep -rn "<helper>(" R/`) and run one ordinary call through each caller.
 
 - **Summary builders:** `phw_summary_table()`, `phw_crosstab()`, `phw_group_table()` and `phw_as_summary()`, whose output every renderer takes.
 - **Table renderers:** `phw_flextable()`, `phw_gt()`, `phw_reactable()`, `phw_datatable()`, `phw_write_xlsx()`, and the flextable variants `phw_flextable_groups()`, `phw_flextable_heat()` and `phw_flextable_bars()`.
