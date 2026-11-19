@@ -643,6 +643,15 @@ test_that("row numbers of bound subsets are not shown as a column", {
   in_order <- list(rbind(y23[2:3, ], y24[2:3, ]), rbind(y23[3, ], y24[3, ]),
                    rbind(y23[3, ], y24[3, ], y23[3, ]))
   for (x in in_order) expect_equal(phw_flextable(x)$col_keys, c("area", "rate"))
+
+  areas <- data.frame(area = paste("Area", 1:22), rate = 40)
+  areas$rate[c(1, 4, 8, 12, 15, 20)] <- c(52, 53, 60, 51, 58, 62)
+  later <- transform(areas, rate = rate - 5)
+  boards <- data.frame(area = paste("Board", 1:7), rate = 1:7)
+  bound <- list(rbind(areas[areas$rate > 50, ], later[later$rate > 50, ]),
+                rbind(boards[c(2, 3, 5), ], boards[5:7, ]),
+                rbind(boards[c(2, 5), ], boards[5, ], boards[5, ]))
+  for (x in bound) expect_equal(phw_flextable(x)$col_keys, c("area", "rate"))
 })
 
 test_that("every renderer shows whole-number labels such as years from table() or tapply()", {
@@ -667,7 +676,8 @@ test_that("every renderer shows whole-number labels such as years from table() o
     expect_equal(phw_flextable(x)$col_keys[1], " ")
   }
 
-  for (labels in list(0:15, 1:12, setdiff(1:52, 30), c(2019, 2021, 2023))) {
+  for (labels in list(0:15, 1:12, setdiff(1:52, 30), c(2019, 2021, 2023), setdiff(1:12, 10),
+                      setdiff(1:13, 6), setdiff(1:52, 50))) {
     x <- as.data.frame.matrix(table(labels, labels %% 2))
     expect_equal(phw_flextable(x)$body$dataset[[1]], as.character(labels))
   }
