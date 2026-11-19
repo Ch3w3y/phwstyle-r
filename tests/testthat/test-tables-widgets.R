@@ -639,6 +639,38 @@ test_that("row numbers of bound subsets are not shown as a column", {
                     names(openxlsx2::read_xlsx(f)))) {
     expect_equal(cols, c("area", "rate"))
   }
+
+  in_order <- list(rbind(y23[2:3, ], y24[2:3, ]), rbind(y23[3, ], y24[3, ]),
+                   rbind(y23[3, ], y24[3, ], y23[3, ]))
+  for (x in in_order) expect_equal(phw_flextable(x)$col_keys, c("area", "rate"))
+})
+
+test_that("every renderer shows whole-number labels such as years from table() or tapply()", {
+  skip_if_not_installed("flextable")
+  skip_if_not_installed("gt")
+  skip_if_not_installed("reactable")
+  skip_if_not_installed("DT")
+  skip_if_not_installed("openxlsx2")
+  d <- data.frame(year = rep(2021:2023, c(3, 2, 4)),
+                  board = c("Powys", "Hywel Dda", "Powys", "Swansea Bay", "Powys",
+                            "Hywel Dda", "Hywel Dda", "Powys", "Swansea Bay"))
+  years <- c("2021", "2022", "2023")
+  f <- withr::local_tempfile(fileext = ".xlsx")
+  for (x in list(as.data.frame.matrix(table(d$year, d$board)),
+                 as.data.frame(tapply(d$board == "Powys", d$year, sum)))) {
+    phw_write_xlsx(x, f)
+    expect_equal(phw_flextable(x)$body$dataset[[1]], years)
+    expect_equal(phw_gt(x)[["_data"]][[1]], years)
+    expect_equal(phw_datatable(x)$x$data[[1]], years)
+    expect_equal(jsonlite::fromJSON(as.character(phw_reactable(x)$x$tag$attribs$data))[[1]], years)
+    expect_equal(as.character(openxlsx2::read_xlsx(f)[[1]]), years)
+    expect_equal(phw_flextable(x)$col_keys[1], " ")
+  }
+
+  for (labels in list(0:15, 1:12, setdiff(1:52, 30), c(2019, 2021, 2023))) {
+    x <- as.data.frame.matrix(table(labels, labels %% 2))
+    expect_equal(phw_flextable(x)$body$dataset[[1]], as.character(labels))
+  }
 })
 
 test_that("every renderer shows a crosstab column for missing values under the header NA", {

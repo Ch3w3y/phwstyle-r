@@ -10,13 +10,14 @@
 # drops them. The row numbers of a plain or filtered data frame are not labels,
 # even when rbind() of subsets stores them as text such as "31", nor are row
 # names a column already holds. A column named NA, as a crosstab made with
-# table(useNA = "ifany") has, is named "NA", as R prints it.
+# table(useNA = "ifany") has, is named "NA", as R prints it. Whole numbers such
+# as years are labels.
 check_table_data <- function(data, arg = "data", call = rlang::caller_env()) {
   data <- check_data_frame(data, as_data_frame_hint, arg, call)
   if (is.character(attr(data, "row.names"))) {
     labels <- row.names(data)
     row.names(data) <- NULL
-    if (!all(grepl("^[0-9]+$", labels)) && !labels_in_column(data, labels)) {
+    if (!is_row_numbers(labels) && !labels_in_column(data, labels)) {
       data <- data.frame(labels, data, check.names = FALSE, stringsAsFactors = FALSE)
       names(data)[1] <- " "
     }
@@ -32,6 +33,24 @@ check_table_data <- function(data, arg = "data", call = rlang::caller_env()) {
                      i = "Give each column its own name."), call = call)
   }
   data
+}
+
+# rbind() stores row numbers as text only when subsets share some, and makes
+# them unique as make.unique() does: "3" again becomes "31", then "32". So
+# they are out of order, or in order but ending in such copies. Labels from
+# table(), tapply() or a matrix, such as years, are sorted, as numbers or as
+# text. A run with no gap, such as weeks 1 to 12, is labels, and so is
+# anything with a 0 or a leading zero, which row numbers never have.
+is_row_numbers <- function(x) {
+  if (!all(grepl("^[1-9][0-9]*$", x))) return(FALSE)
+  n <- as.numeric(x)
+  if (is.unsorted(n, strictly = TRUE)) return(is.unsorted(x, strictly = TRUE))
+  if (all(diff(n) == 1)) return(FALSE)
+  copy <- c(FALSE, vapply(seq_along(x)[-1], function(i) {
+    s <- x[seq_len(i - 1)]
+    any(startsWith(x[i], s) & grepl("^[1-9]", substring(x[i], nchar(s) + 1)))
+  }, logical(1)))
+  any(copy) && all(copy[which.max(copy):length(x)])
 }
 
 # data.frame(x = names(v), n = v) for a named tapply() or sapply() result
