@@ -783,6 +783,11 @@ says what to change.
   unrounded number such as "x: -240000". A ggplot that maps the `text`
   aesthetic now shows only that text on hover, as
   `plotly::ggplotly(tooltip = "text")` does.
+* `phw_plotly()` gives a chart converted with `plotly::ggplotly()` first
+  the same legend names and hover as the ggplot itself. Before,
+  `phw_plotly(plotly::ggplotly(g))` read "(Cardiff,1)" and "(Target,1)"
+  in the legend, and the hover of `phw_pyramid()` showed the left-hand sex
+  as negative values.
 * `phw_plotly()` draws the secondary axis of a ggplot, such as one from
   `phw_sec_axis()`, on the right (or the top) with its own breaks and
   title, and it stays with its own chart in a `plotly::subplot()` figure

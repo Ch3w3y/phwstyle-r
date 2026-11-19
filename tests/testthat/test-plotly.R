@@ -657,6 +657,35 @@ test_that("a ggplot that maps text shows only that text on hover", {
   expect_match(plain$data[[1]]$text, "^x: 1<br />y: 3$|^x: 2<br />y: 4$")
 })
 
+test_that("a chart made with ggplotly() gets the legend names and hover of its ggplot", {
+  legend_of <- function(w) {
+    traces <- Filter(function(t) isTRUE(t$showlegend), built(w)$data)
+    vapply(traces, function(t) t$name, "")
+  }
+  hover_of <- function(w) unlist(lapply(built(w)$data, function(t) as.vector(t$hovertext %||% t$text)))
+  d <- data.frame(week = rep(1:3, 2), cases = c(3, 5, 9, 2, 4, 6), hb = rep(c("Powys", "Cardiff"), each = 3))
+  target <- ggplot2::ggplot(d, ggplot2::aes(week, cases, fill = hb)) + ggplot2::geom_col() +
+    ggplot2::geom_hline(ggplot2::aes(yintercept = 15, linetype = "Target"))
+  expect_equal(legend_of(phw_plotly(plotly::ggplotly(target))), c("Cardiff", "Powys", "Target"))
+  areas <- data.frame(area = c("X", "Y", "Z"), value = c(70, 60, 50), lower = c(65, 55, 45), upper = c(75, 65, 55))
+  forest <- phw_forest(areas, value, lower, upper, area, target = 60)
+  expect_equal(legend_of(phw_plotly(plotly::ggplotly(forest))), c("Higher", "Similar", "Lower"))
+  two <- data.frame(x = 1:4, y = 1:4, a = c("A", "A", "B", "B"), s = c("1", "2", "1", "2"))
+  both <- ggplot2::ggplot(two, ggplot2::aes(x, y, colour = a, shape = s)) + ggplot2::geom_point()
+  expect_equal(legend_of(phw_plotly(plotly::ggplotly(both))), c("(A,1)", "(A,2)", "(B,1)", "(B,2)"))
+
+  py <- data.frame(age = factor(rep(c("0-4", "5-9"), 2)), sex = rep(c("Female", "Male"), each = 2), n = c(5, 8, 6, 7))
+  pyramid <- phw_pyramid(py, age, sex, value = n, compare = py)
+  expect_equal(hover_of(phw_plotly(plotly::ggplotly(pyramid))), hover_of(phw_plotly(pyramid)))
+  expect_match(hover_of(phw_plotly(plotly::ggplotly(pyramid, tooltip = "x")))[1], "^x: -5$")
+  labelled <- ggplot2::ggplot(two, ggplot2::aes(x, y, text = a)) + ggplot2::geom_point() +
+    ggplot2::geom_text(ggplot2::aes(label = s))
+  w <- built(phw_plotly(plotly::ggplotly(labelled)))$data
+  expect_equal(as.vector(w[[1]]$text), c("A", "A", "B", "B"))
+  expect_equal(as.vector(w[[2]]$text), c("1", "2", "1", "2"))
+  expect_equal(as.vector(w[[2]]$hovertext), c("A", "A", "B", "B"))
+})
+
 test_that("a ggplot's secondary axis is drawn over the main one, with its own breaks and title", {
   d <- data.frame(week = 1:20, cases = 4 + 180 * exp(-((1:20 - 9) / 4)^2))
   d$positivity <- 2 + 28 * exp(-((d$week - 10) / 5)^2)
