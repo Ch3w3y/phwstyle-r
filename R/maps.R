@@ -32,7 +32,10 @@
 #' @param label Text to print on each area: a column of `data`, unquoted, or
 #'   an expression built from its columns such as `paste(name, rate)`. The
 #'   columns of `data` and the boundary `name` are available. With ggrepel
-#'   installed, labels that would overlap on small areas are moved apart.
+#'   installed, labels that would overlap on small areas are moved apart,
+#'   with a line to their area, and every label is drawn. To let ggrepel
+#'   leave out labels it cannot place clear of the others, set
+#'   `options(ggrepel.max.overlaps = 10)`.
 #' @param detail Level of detail for [phw_boundaries()].
 #' @param ... Passed to [ggplot2::geom_sf()], for example `colour` or
 #'   `linewidth` for the outlines.
@@ -108,13 +111,15 @@ phw_map <- function(data, by, fill, level, bins = NULL, palette = NULL, key = NU
     pts$.label <- text
     if (requireNamespace("ggrepel", quietly = TRUE)) {
       # Boxes in the area's own fill keep a label readable after ggrepel moves it off a small area.
-      p <- p + ggrepel::geom_label_repel(
+      labels <- ggrepel::geom_label_repel(
         ggplot2::aes(geometry = .data$geometry, label = .data$.label, fill = .data[[fill]],
                      colour = ggplot2::after_scale(phw_text_on(.data$fill))),
         data = pts, stat = "sf_coordinates", size = 2.8, family = phw_font(),
         label.padding = grid::unit(0.12, "lines"), label.r = grid::unit(0.08, "lines"), box.padding = 0.1,
         point.size = NA, min.segment.length = 0, segment.colour = phw_colours[["text_secondary"]],
-        seed = 1, inherit.aes = FALSE, show.legend = FALSE, na.rm = TRUE)
+        max.overlaps = getOption("ggrepel.max.overlaps", Inf), seed = 1, inherit.aes = FALSE, show.legend = FALSE, na.rm = TRUE)
+      labels$geom <- map_label_geom(labels$geom)
+      p <- p + labels
     } else {
       # The text layer maps fill only so after_scale() can read it; ggplot2 warns that it is unknown.
       p <- p + withCallingHandlers(ggplot2::geom_sf_text(
@@ -125,6 +130,45 @@ phw_map <- function(data, by, fill, level, bins = NULL, palette = NULL, key = NU
     }
   }
   p
+}
+
+# ggrepel's label geom, tagging its grob so the labels can be checked once
+# ggrepel has placed them at the size the map is drawn.
+map_label_geom <- function(geom) {
+  ggplot2::ggproto("GeomPhwMapLabel", geom,
+    parameters = function(self, extra = FALSE) geom$parameters(extra),
+    draw_panel = function(self, ...) {
+      grob <- ggplot2::ggproto_parent(geom, self)$draw_panel(...)
+      if (!is.null(grob)) class(grob) <- c("phw_map_labels", class(grob))
+      grob
+    })
+}
+
+# Names the labels ggrepel could not move clear of each other, and says how
+# to make room for them.
+#' @exportS3Method grid::makeContent
+makeContent.phw_map_labels <- function(x) {
+  x <- NextMethod()
+  boxes <- Filter(function(g) inherits(g, "roundrect"), x$children)
+  if (length(boxes) < 2) return(x)
+  edges <- vapply(boxes, function(g) {
+    w <- grid::convertWidth(g$width, "in", valueOnly = TRUE)
+    h <- grid::convertHeight(g$height, "in", valueOnly = TRUE)
+    left <- grid::convertX(g$x, "in", valueOnly = TRUE) - g$just[[1]] * w
+    bottom <- grid::convertY(g$y, "in", valueOnly = TRUE) - g$just[[2]] * h
+    c(left, left + w, bottom, bottom + h)
+  }, numeric(4))
+  shared <- function(lo, hi) outer(hi, hi, pmin) - outer(lo, lo, pmax)
+  # More than a hundredth of an inch, so boxes that only touch do not count.
+  hit <- shared(edges[1, ], edges[2, ]) > 0.01 & shared(edges[3, ], edges[4, ]) > 0.01
+  diag(hit) <- FALSE
+  if (any(hit)) {
+    i <- as.integer(sub("rectrepelgrob", "", vapply(boxes, `[[`, "", "name")))
+    crowded <- x$lab[i][rowSums(hit) > 0]
+    cli::cli_inform(c("phw_map(): {length(crowded)} label{?s} overlap{?s/} at this size: {.val {crowded}}.",
+                      i = "Save the map larger, or label fewer areas."))
+  }
+  x
 }
 
 # Checks for a code drawn twice in one panel at build time, once the facets

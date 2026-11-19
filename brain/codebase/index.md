@@ -11,3 +11,4 @@
 - [[codebase/ggplot2-legend-hooks]]
 - [[codebase/neighbour-paths]]
 - [[codebase/reference-pptx-build]]
+- [[codebase/ggrepel-labels]]

@@ -163,6 +163,13 @@ says what to change.
 * `phw_map()` checks `bins` as `phw_leaflet_polygons()` does: a single
   number below 2 stops with a clear error. Before, `bins = 1` gave an
   error from another package and `bins = 0` never returned.
+* `phw_map(label = )` draws a label for every area, moving a label off a
+  small area with a line to it where needed. Where labels still overlap at
+  the size the map is drawn, a message names them and suggests saving the
+  map larger or labelling fewer areas. Before, labels in crowded parts of
+  the map, such as Caerphilly and Rhondda Cynon Taf, were left out without
+  a word. To leave out labels that cannot be placed clear of the others,
+  set `options(ggrepel.max.overlaps = 10)`.
 * `phw_plotly()` colours the groups of a `plot_ly()` chart as the PHW
   ggplot2 scales do: unused levels are left out, `NA` is grey instead of
   invisible, groups such as "Unknown" are grey, and every group gets its own
