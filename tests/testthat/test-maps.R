@@ -219,6 +219,45 @@ test_that("map labels show in plotly, in the text colour of their area", {
   expect_equal(text[colour == "rgba(255,255,255,1)"], "Area 4 40")
 })
 
+# Sixteen small areas in a cluster beside one large one, as in the south Wales valleys.
+clustered_areas <- function() {
+  skip_if_not_installed("sf")
+  square <- function(x, y, size = 0.1) {
+    sf::st_polygon(list(rbind(c(x, y), c(x + size, y), c(x + size, y + size), c(x, y + size), c(x, y))))
+  }
+  xy <- expand.grid(x = 0:3 / 10, y = 0:3 / 10)
+  sf::st_sf(code = paste0("A", 1:17), name = paste("Area", 1:17),
+            geometry = sf::st_sfc(c(Map(square, xy$x, xy$y), list(square(0, 0.5, 2)))))
+}
+
+drawn_labels <- function(p, width, height) {
+  ragg::agg_png(tempfile(fileext = ".png"), width = width, height = height, units = "cm", res = 96)
+  on.exit(grDevices::dev.off())
+  print(p)
+  suppressMessages(grid::grid.force())
+  sum(grepl("^textrepelgrob", grid::grid.ls(print = FALSE)$name))
+}
+
+test_that("phw_map draws every label, and names those still overlapping at the size drawn", {
+  skip_if_not_installed("ggrepel")
+  skip_if_not_installed("ragg")
+  areas <- clustered_areas()
+  m <- phw_map(data.frame(code = areas$code, rate = 1:17), code, rate, areas, label = name)
+  expect_message(n <- drawn_labels(m, 8, 8), "overlap at this size: .*Area")
+  expect_equal(n, 17)
+  expect_no_message(n <- drawn_labels(m, 40, 40))
+  expect_equal(n, 17)
+})
+
+test_that("phw_map leaves out crowded labels when ggrepel.max.overlaps is set", {
+  skip_if_not_installed("ggrepel")
+  skip_if_not_installed("ragg")
+  areas <- clustered_areas()
+  withr::local_options(ggrepel.max.overlaps = 10)
+  m <- phw_map(data.frame(code = areas$code, rate = 1:17), code, rate, areas, label = name)
+  expect_lt(suppressMessages(drawn_labels(m, 8, 8)), 17)
+})
+
 licence <- paste("Source: Office for National Statistics licensed under the Open Government",
                  "Licence v3.0. Contains OS data (c) Crown copyright and database right.")
 

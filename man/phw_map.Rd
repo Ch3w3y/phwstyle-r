@@ -52,7 +52,10 @@ highest values, rounded out to tidy numbers.}
 \item{label}{Text to print on each area: a column of \code{data}, unquoted, or
 an expression built from its columns such as \code{paste(name, rate)}. The
 columns of \code{data} and the boundary \code{name} are available. With ggrepel
-installed, labels that would overlap on small areas are moved apart.}
+installed, labels that would overlap on small areas are moved apart,
+with a line to their area, and every label is drawn. To let ggrepel
+leave out labels it cannot place clear of the others, set
+\code{options(ggrepel.max.overlaps = 10)}.}
 
 \item{detail}{Level of detail for \code{\link[=phw_boundaries]{phw_boundaries()}}.}
 
