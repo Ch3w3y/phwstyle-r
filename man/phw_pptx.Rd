@@ -103,14 +103,16 @@ or later. Text you gave an exact size in your own \code{theme()} keeps it.
 A grob keeps the sizes it was drawn with.}
 
 \item{table_fit}{Enlarge a table built here from a data frame or summary
-table so it fills the width of the slide's content area? The text grows
-with it, by up to 1.6 times, and a narrow table is widened by at most
-another 80\% (more for a table with more columns). A tall table tightens
-its row spacing so the text can grow. \code{FALSE} keeps the table at the
-size \code{\link[=phw_flextable]{phw_flextable()}} gives it, with its text at 12 pt. A flextable you
-pass in is never enlarged. Either way, a table too wide for the area
-wraps its headings, then its cells, and one still too wide gives a
-warning. The text never shrinks below 12 pt.}
+table, or made with \code{\link[=phw_flextable]{phw_flextable()}}, so it fills the slide's content
+area? Its text grows from 12 pt up to 18 pt, as far as the area has
+room, and its columns widen with it. A narrow table is then widened by
+at most another 80\% (more for a table with more columns), never past
+the area. A table that continues on further slides grows only as far as
+it can without taking more slides, and shows the same size on each.
+\code{FALSE} keeps the text at 12 pt. A flextable you made with
+\code{\link[flextable:flextable]{flextable::flextable()}} is never enlarged. Either way, a table too wide
+for the area wraps its headings, then its cells, and one still too wide
+gives a warning. The text never shrinks below 12 pt.}
 
 \item{continued}{Text added after the caption, or after the title if the
 table has no caption, on the slides a long table continues on. \code{NULL}

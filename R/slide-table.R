@@ -2,22 +2,27 @@
 # in points.
 slide_min_size <- 12
 
+# A table with room on its slide grows its text up to this size, in points,
+# the usual size of projected body text.
+slide_max_size <- 18
+
 # A table as it goes on slides, as a list of flextables, one per slide. Its
 # caption becomes the top row, its text is at least `slide_min_size` points,
 # and a table wider than `width` wraps its headings, then its cells. A table
 # taller than `height` tightens its row spacing and then shares its body rows
 # out over as many slides as it takes. Each slide repeats the header rows,
 # with the caption marked `continued` after the first, and the footer (the
-# source line) goes on the last.
-slide_table_pages <- function(ft, width, height, continued = NULL, where = "the slide") {
+# source line) goes on the last. With `grow`, a table with room to spare
+# grows to fill the space (see grow_to_area()).
+slide_table_pages <- function(ft, width, height, continued = NULL, where = "the slide", grow = FALSE) {
   continued <- continued %||% attr(ft, "phw_continued") %||% "(continued)"
   caption <- caption_text(ft)
   ft <- caption_as_header(ft)
   ft <- slide_text_size(ft)
   ft <- fit_table_to_width(ft, width, min_size = slide_min_size, where = where, floor = "all")
+  if (grow) ft <- grow_to_area(ft, width, height)
   ft <- fit_rows_to_height(ft, height)
-  keep <- attr(ft, "phw_keep")
-  rows <- slide_rows(ft, height, if (length(keep) == flextable::nrow_part(ft, "body")) keep)
+  rows <- slide_rows(ft, height, keep_rows(ft))
   if (length(rows) == 1) return(list(ft))
   body <- seq_len(flextable::nrow_part(ft, "body"))
   last <- length(body)
@@ -64,6 +69,63 @@ slide_text_size <- function(ft) {
     })
   }
   flextable::width(ft, j = seq_along(grow), width = ft$body$colwidths * grow)
+}
+
+# Grows the text of a table with room to spare, and its column widths with
+# it, to the largest size up to `slide_max_size` points, in steps of `step`,
+# at which the table still takes no more slides than before and no taller a
+# part of one. A table over several slides grows as one, so each slide shows
+# the same size. Then the columns widen to fill more of `width`, by at most
+# `max_pad` times, and a little more for each column past two.
+grow_to_area <- function(ft, width, height, step = 0.5, max_pad = 1.8) {
+  parts <- Filter(function(part) flextable::nrow_part(ft, part) > 0, c("header", "body", "footer"))
+  top <- max(unlist(lapply(parts, function(part) ft[[part]]$styles$text$font.size$data)), na.rm = TRUE)
+  most <- min(slide_max_size, top * width / sum(ft$body$colwidths))
+  if (most >= top + step && flextable::nrow_part(ft, "body")) {
+    keep <- keep_rows(ft)
+    layout <- function(ft) {
+      ft <- fit_rows_to_height(ft, height)
+      rows <- slide_rows(ft, height, keep)
+      body <- ft$body$rowheights
+      tall <- vapply(rows, function(r) sum(body[r]), numeric(1))
+      tall[length(tall)] <- tall[length(tall)] + sum(ft$footer$rowheights)
+      c(slides = length(rows), tallest = sum(ft$header$rowheights) + max(tall))
+    }
+    before <- layout(ft)
+    fits <- function(size) {
+      after <- layout(scale_text(ft, parts, size / top))
+      after[["slides"]] <= before[["slides"]] && after[["tallest"]] <= max(height, before[["tallest"]]) + 0.001
+    }
+    sizes <- seq(top, most, by = step)
+    lo <- 1
+    hi <- length(sizes)
+    while (lo < hi) {
+      mid <- ceiling((lo + hi) / 2)
+      if (fits(sizes[mid])) lo <- mid else hi <- mid - 1
+    }
+    ft <- scale_text(ft, parts, sizes[lo] / top)
+  }
+  widths <- ft$body$colwidths
+  pad <- max(min(width / sum(widths), max_pad + 0.3 * max(length(widths) - 2, 0)), 1)
+  flextable::width(ft, j = seq_along(widths), width = widths * pad)
+}
+
+# Multiplies every text size, and each column's width, by `scale`.
+scale_text <- function(ft, parts, scale) {
+  for (part in parts) {
+    ft[[part]]$styles$text$font.size$data[] <- ft[[part]]$styles$text$font.size$data * scale
+    ft[[part]]$content$data[] <- lapply(ft[[part]]$content$data, function(chunks) {
+      chunks$font.size <- chunks$font.size * scale
+      chunks
+    })
+  }
+  flextable::width(ft, j = seq_along(ft$col_keys), width = ft$body$colwidths * scale)
+}
+
+# The body rows a slide must not end on, such as a group's heading.
+keep_rows <- function(ft) {
+  keep <- attr(ft, "phw_keep")
+  if (length(keep) == flextable::nrow_part(ft, "body")) keep
 }
 
 # Sets each row to the height its text needs, wrapped at the column widths.

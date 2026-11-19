@@ -579,10 +579,13 @@ test_that("a table by health board fits the content area of a PowerPoint deck", 
   left <- vapply(frames, function(f) inches(xml2::xml_attr(xml2::xml_find_first(f, ".//a:off"), "x")), 0)
   widths <- lapply(frames, function(f) inches(xml2::xml_attr(xml2::xml_find_all(f, ".//a:gridCol"), "w")))
   expect_lte(left[1] + sum(widths[[1]]), body$offx + body$cx + 0.01)
-  # A table that already fits keeps its column widths, widened as much as
-  # its 10 pt text grows to 12 pt on a slide.
-  small <- phw_flextable(head(mtcars[, 1:4]))
-  expect_equal(widths[[2]], small$body$colwidths * 1.2, tolerance = 0.01, ignore_attr = TRUE)
+  # A small table grows to fill the space, up to 18 pt, and stays inside it.
+  sizes <- as.numeric(xml2::xml_attr(xml2::xml_find_all(frames[[2]], ".//a:rPr[@sz]"), "sz")) / 100
+  expect_equal(unique(sizes), 18)
+  expect_lte(left[2] + sum(widths[[2]]), body$offx + body$cx + 0.01)
+  top <- inches(xml2::xml_attr(xml2::xml_find_first(frames[[2]], ".//a:off"), "y"))
+  heights <- inches(xml2::xml_attr(xml2::xml_find_all(frames[[2]], ".//a:tr"), "h"))
+  expect_lte(top + sum(heights), 7.5 - 0.95 + 0.001)
 })
 
 test_that("a table too long for a slide continues on the next slide of a knitted deck", {
@@ -617,9 +620,13 @@ test_that("a table too long for a slide continues on the next slide of a knitted
   expect_false(any(grepl("Source", unlist(rows[[1]]))))
   expect_equal(rows[[2]][[length(rows[[2]])]][1], "Source: Example data")
   inches <- function(x) as.numeric(x) / 914400
+  # Both slides of the table grow to the same size.
+  sizes <- lapply(tables, function(t) unique(as.numeric(xml2::xml_attr(xml2::xml_find_all(t, ".//a:rPr[@sz]"), "sz"))))
+  expect_length(sizes[[1]], 1)
+  expect_equal(sizes[[2]], sizes[[1]])
+  expect_gt(sizes[[1]], 1200)
+  expect_lte(sizes[[1]], 1800)
   for (t in tables) {
-    sizes <- as.numeric(xml2::xml_attr(xml2::xml_find_all(t, ".//a:rPr[@sz]"), "sz"))
-    expect_gte(min(sizes), 1200)
     top <- inches(xml2::xml_attr(xml2::xml_find_first(t, ".//a:off"), "y"))
     expect_lte(top + sum(inches(xml2::xml_attr(xml2::xml_find_all(t, ".//a:tr"), "h"))), 7.5 - 0.95 + 0.001)
   }
@@ -636,6 +643,16 @@ test_that("a table too wide for a slide even with its text wrapped gives a warni
   knitr::opts_knit$set(rmarkdown.pandoc.to = "pptx")
   withr::defer(knitr::opts_knit$set(rmarkdown.pandoc.to = old))
   expect_warning(knitr::knit_print(ft), "too wide for the slide")
+})
+
+test_that("a table with no rows knits into a deck without a warning", {
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("flextable")
+  withr::local_options(knitr.in.progress = TRUE)
+  old <- knitr::opts_knit$get("rmarkdown.pandoc.to")
+  knitr::opts_knit$set(rmarkdown.pandoc.to = "pptx")
+  withr::defer(knitr::opts_knit$set(rmarkdown.pandoc.to = old))
+  expect_no_warning(knitr::knit_print(phw_flextable(mtcars[0, 1:3], caption = "None this week")))
 })
 
 test_that("a table too wide for the page even with its text wrapped gives a warning", {

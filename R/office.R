@@ -506,14 +506,16 @@ phw_pptx <- function(template = NULL) {
 #'   or later. Text you gave an exact size in your own `theme()` keeps it.
 #'   A grob keeps the sizes it was drawn with.
 #' @param table_fit Enlarge a table built here from a data frame or summary
-#'   table so it fills the width of the slide's content area? The text grows
-#'   with it, by up to 1.6 times, and a narrow table is widened by at most
-#'   another 80% (more for a table with more columns). A tall table tightens
-#'   its row spacing so the text can grow. `FALSE` keeps the table at the
-#'   size [phw_flextable()] gives it, with its text at 12 pt. A flextable you
-#'   pass in is never enlarged. Either way, a table too wide for the area
-#'   wraps its headings, then its cells, and one still too wide gives a
-#'   warning. The text never shrinks below 12 pt.
+#'   table, or made with [phw_flextable()], so it fills the slide's content
+#'   area? Its text grows from 12 pt up to 18 pt, as far as the area has
+#'   room, and its columns widen with it. A narrow table is then widened by
+#'   at most another 80% (more for a table with more columns), never past
+#'   the area. A table that continues on further slides grows only as far as
+#'   it can without taking more slides, and shows the same size on each.
+#'   `FALSE` keeps the text at 12 pt. A flextable you made with
+#'   [flextable::flextable()] is never enlarged. Either way, a table too wide
+#'   for the area wraps its headings, then its cells, and one still too wide
+#'   gives a warning. The text never shrinks below 12 pt.
 #' @param continued Text added after the caption, or after the title if the
 #'   table has no caption, on the slides a long table continues on. `NULL`
 #'   uses the `continued` text of a [phw_flextable()], or `"(continued)"`.
@@ -754,12 +756,10 @@ slide_value <- function(value, kind, area, editable, plot_scale, table_fit, cove
     return(value)
   }
   if (kind == "table") {
-    if (!inherits(value, "flextable")) {
-      value <- phw_flextable(value)
-      if (table_fit) value <- fit_table_to_area(value, area$width, area$height)
-    }
+    if (!inherits(value, "flextable")) value <- phw_flextable(value)
     return(slide_table_pages(value, area$width, area$height, continued,
-                             where = "the slide's content area"))
+                             where = "the slide's content area",
+                             grow = table_fit && inherits(value, "phw_flextable")))
   }
   if (cover) {
     return(do.call(officer::block_list, lapply(value, function(t) officer::fpar(officer::ftext(t)))))
@@ -812,48 +812,6 @@ scaled_text_theme <- function(theme, scale) {
     }
   }
   out
-}
-
-# Grows a table's text so it fills the area, then widens its columns. A tall
-# table is bound by height, so it squeezes its vertical padding. The text
-# grows by as much as its lines, at the text size, line count and padding
-# that fit_rows_to_height() also uses, leave room for. A table already too
-# wide for the area is left for slide_table_pages() to wrap.
-fit_table_to_area <- function(ft, width, height, max_grow = 1.6, max_pad = 1.8,
-                              line_height = 1.25, tight_pad = 1) {
-  grow_w <- width / sum(flextable::flextable_dim(ft)$widths)
-  if (grow_w < 1) return(ft)
-  parts <- Filter(function(part) flextable::nrow_part(ft, part) > 0, c("header", "body", "footer"))
-  sizes <- lapply(parts, function(part) apply(ft[[part]]$styles$text$font.size$data, 1, max))
-  lines <- lapply(parts, function(part) {
-    txt <- vapply(ft[[part]]$content$data, function(chunks) paste(chunks$txt, collapse = ""), "")
-    lines <- nchar(gsub("[^\n]", "", txt)) + 1
-    apply(matrix(lines, nrow = flextable::nrow_part(ft, part)), 1, max)
-  })
-  pad_pt <- sum(unlist(lapply(parts, function(part) {
-    pars <- ft[[part]]$styles$pars
-    apply(pars$padding.top$data, 1, max) + apply(pars$padding.bottom$data, 1, max)
-  })))
-  text_pt <- sum(unlist(sizes) * unlist(lines)) * line_height
-  grow_for <- function(pad_pt) (height * 72 - pad_pt) / text_pt
-  wanted <- min(grow_w, max_grow)
-  if (grow_for(pad_pt) < wanted) {
-    pad_pt <- 2 * tight_pad * length(unlist(sizes))
-    ft <- flextable::padding(ft, padding.top = tight_pad, padding.bottom = tight_pad, part = "all")
-  }
-  grow <- max(min(wanted, grow_for(pad_pt)), 1)
-  if (grow != 1) {
-    for (k in seq_along(parts)) {
-      for (i in seq_along(sizes[[k]])) {
-        ft <- flextable::fontsize(ft, i = i, size = sizes[[k]][i] * grow, part = parts[k])
-      }
-    }
-    ft <- flextable::autofit(ft)
-  }
-  widths <- ft$body$colwidths
-  max_pad <- max_pad + 0.3 * max(length(widths) - 2, 0)
-  pad <- min(width / sum(widths), max_pad)
-  flextable::width(ft, j = seq_along(widths), width = widths * pad)
 }
 
 # officer's ph_with() takes alt text only for ggplot images, so editable

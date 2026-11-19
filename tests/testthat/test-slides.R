@@ -180,13 +180,20 @@ test_that("a table too long for the slide continues on further slides", {
   expect_equal(slide_titles(deck), c("Tall", rep("Tall (continued)", length(deck) - 1)))
   info <- officer::pptx_summary(deck)
   expect_equal(unique(info$slide_id[grepl("Source: Survey", info$text)]), length(deck))
+  shown_sizes <- list()
   for (i in seq_along(deck)) {
     xml <- as.character(deck_xml(deck, i))
     sizes <- as.numeric(gsub("\\D", "", regmatches(xml, gregexpr('sz="[0-9]+"', xml))[[1]]))
     expect_gte(min(sizes), 1200)
+    shown_sizes[[i]] <- unique(as.numeric(xml2::xml_attr(xml2::xml_find_all(deck_xml(deck, i), "//a:tbl//a:rPr[@sz]"), "sz")))
     heights <- as.numeric(gsub("\\D", "", regmatches(xml, gregexpr('<a:tr h="[0-9]+"', xml))[[1]]))
     expect_lte(sum(heights) / 914400, 4.9 + 0.001)
   }
+  # The table grows as one, so every slide of it shows the same size.
+  expect_length(unique(shown_sizes), 1)
+  expect_gt(shown_sizes[[1]], 1200)
+  at_12 <- phw_add_slide(phw_pptx(), "Tall", table = tall, source = "Survey", table_fit = FALSE)
+  expect_length(deck, length(at_12))
 
   welsh <- phw_add_slide(phw_pptx(), "Achosion", table = tall, continued = "(parhad)")
   expect_equal(slide_titles(welsh)[2], "Achosion (parhad)")

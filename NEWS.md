@@ -61,6 +61,18 @@ says what to change.
   `phw_add_slide()` warned how many fit. A continued slide in a knitted
   deck has no title, and `phw_add_slide()` repeats the title, marked
   "(continued)" when the table has no caption.
+* A table on a PowerPoint slide grows to fill the space it has. In a deck
+  made with R Markdown or the Quarto `phw-pptx` format, a `phw_flextable()`
+  with room to spare below `ft.top` now grows its text from 12 pt up to
+  18 pt, and its columns widen with it, never past the slide's content area.
+  Before, it stayed at 12 pt and a short table filled a small corner of the
+  slide. `phw_add_slide()` grows a table up to 18 pt too, instead of 1.6
+  times its size, and now grows a `phw_flextable()` you pass in as well as a
+  data frame; `table_fit = FALSE` keeps it at 12 pt. A table that continues
+  on further slides grows only as far as it can without taking more slides,
+  and shows the same size on each. A table that fits on one slide only with
+  its row spacing squeezed below the 12 pt layout now continues on a second
+  slide at a larger size.
 * `phw_add_slide()` stops when given more content than the layout has room
   for, instead of silently using only the plot. It also refuses a chart or
   table on the navy Title Slide and Section Header layouts.

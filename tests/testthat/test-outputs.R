@@ -378,14 +378,19 @@ test_that("phw_add_slide fills the content area with a table", {
   fitted <- widths(tab)
   plain <- widths(tab, table_fit = FALSE)
   expect_gt(fitted$width, 0.8 * area)
-  expect_lte(fitted$width, area)
+  expect_lte(fitted$width, area + 0.001)
   expect_gt(fitted$size, plain$size)
-  expect_lte(fitted$size, 16)
+  expect_lte(fitted$size, 18)
   expect_equal(plain$size, 12)
   narrow <- widths(data.frame(a = 1:3, b = 4:6))
   expect_lt(narrow$width, 0.3 * area)
+  expect_equal(narrow$size, 18)
   expect_no_warning(long <- widths(head(mtcars, 25)))
   expect_lte(long$width, area + 0.001)
+  # A phw_flextable() grows as a knitted deck's does; a plain flextable keeps its look.
+  styled <- phw_flextable(data.frame(a = 1:3, b = 4:6), caption = "Cases")
+  expect_equal(widths(styled)$size, 18)
+  expect_equal(widths(styled, table_fit = FALSE)$size, 12)
   own <- flextable::flextable(head(mtcars[, 1:3]))
   expect_equal(widths(own)$width, widths(own, table_fit = FALSE)$width)
 })
@@ -394,8 +399,8 @@ test_that("phw_add_slide wraps a wide table rather than shrink its text below 12
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
   half <- 5.867
-  slide <- function(table) {
-    xml <- slide_xml(phw_add_slide(phw_pptx(), "Wide", table = table, text = "x", layout = "Two Content"))
+  slide <- function(table, ...) {
+    xml <- slide_xml(phw_add_slide(phw_pptx(), "Wide", table = table, text = "x", layout = "Two Content", ...))
     list(widths = xml_numbers(xml, '<a:gridCol w="[0-9]+"') / 914400,
          sizes = setdiff(xml_numbers(xml, 'sz="[0-9]+"'), c(2000, 2800)) / 100)
   }
@@ -411,6 +416,9 @@ test_that("phw_add_slide wraps a wide table rather than shrink its text below 12
                   check.names = FALSE)
   expect_warning(wide <- slide(m), "13 columns are too wide for the slide's content area.*at 12 pt")
   expect_equal(min(wide$sizes), 12)
+  # Its columns keep the width its words need rather than being squeezed.
+  expect_warning(plain <- slide(m, table_fit = FALSE), "too wide")
+  expect_equal(wide$widths, plain$widths)
 })
 
 test_that("phw_add_slide makes a tall table readable and keeps it inside the placeholder", {
