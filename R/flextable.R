@@ -145,11 +145,22 @@ align_by_type <- function(ft) {
 #'   [flextable::set_header_labels()].
 #' @param autofit Fit column widths to their content? In a Word or PDF
 #'   document, a table wider than the page is narrowed to fit the text width
-#'   either way, and in a PowerPoint deck made with R Markdown or Quarto, a
-#'   table wider than the slide's content area is narrowed to fit that: its
-#'   headings wrap first, then its cells, and its text shrinks to no less
-#'   than 8 pt if the words alone are still too wide. A table that cannot fit
-#'   even then gives a warning.
+#'   either way: its headings wrap first, then its cells, and its text
+#'   shrinks to no less than 8 pt if the words alone are still too wide.
+#'
+#'   In a PowerPoint deck made with R Markdown or Quarto, or with
+#'   [phw_add_slide()], text is never smaller than 12 pt, so the table can
+#'   be read when projected: smaller text, such as the 10 pt default, is
+#'   shown at 12 pt. A table wider than the slide's content area wraps its
+#'   headings, then its cells. A table too long for the slide tightens its
+#'   row spacing, and if it still does not fit, its rows continue on further
+#'   slides. Each slide repeats the header row, the caption is marked with
+#'   `continued` after the first slide, and the source goes on the last
+#'   slide. A table too wide to fit even with its text wrapped gives a
+#'   warning.
+#' @param continued Text added after the caption on the slides a long table
+#'   continues on, in a PowerPoint deck. Give your own wording, for example
+#'   in Welsh.
 #' @param ... Passed to [phw_flextable_theme()].
 #' @return A flextable.
 #' @examples
@@ -160,8 +171,10 @@ align_by_type <- function(ft) {
 phw_flextable <- function(data, caption = NULL, number = NULL, source = NULL,
                           date = NULL, style = "booktabs", digits = 1,
                           col_labels = NULL, autofit = TRUE, number_prefix = "Table",
-                          caption_args = list(), flextable_args = list(), ...) {
+                          caption_args = list(), flextable_args = list(),
+                          continued = "(continued)", ...) {
   rlang::check_installed(c("flextable", "officer"))
+  check_one_string(continued)
   data <- check_table_data(data)
   data <- blank_non_finite(data)
   if (missing(digits)) digits <- attr(data, "digits") %||% digits
@@ -176,7 +189,10 @@ phw_flextable <- function(data, caption = NULL, number = NULL, source = NULL,
   if (any(is_dbl)) ft <- flextable::colformat_double(ft, j = names(data)[is_dbl], digits = digits, big.mark = ",", na_str = "")
   if (!is.null(col_labels)) ft <- do.call(flextable::set_header_labels, c(list(ft), col_labels))
   ft <- phw_flextable_theme(ft, style = style, ...)
-  if (inherits(data, "phw_summary")) ft <- style_summary_ft(ft, data, names(col_labels))
+  if (inherits(data, "phw_summary")) {
+    ft <- style_summary_ft(ft, data, names(col_labels))
+    attr(ft, "phw_keep") <- summary_rows(data)$keep
+  }
 
   if (!is.null(caption)) {
     title <- if (is.null(number)) caption else paste(number_prefix, number, caption)
@@ -199,6 +215,7 @@ phw_flextable <- function(data, caption = NULL, number = NULL, source = NULL,
     ft <- flextable::align(ft, i = k, align = "right", part = "footer")
   }
   if (autofit) ft <- flextable::autofit(ft)
+  attr(ft, "phw_continued") <- continued
   class(ft) <- c("phw_flextable", class(ft))
   ft
 }
@@ -208,13 +225,7 @@ phw_flextable <- function(data, caption = NULL, number = NULL, source = NULL,
 #' @exportS3Method knitr::knit_print
 knit_print.phw_flextable <- function(x, ...) {
   if (knitr::pandoc_to("docx")) x <- fit_table_to_width(x, page_text_width)
-  if (knitr::pandoc_to("pptx")) {
-    check_no_images(x)
-    x <- caption_as_header(x)
-    # flextable puts the table ft.left inches from the slide's left edge.
-    left <- knitr::opts_current$get("ft.left") %||% 1
-    x <- fit_table_to_width(x, slide_width - left - slide_margins[["side"]], where = "the slide")
-  }
+  if (knitr::pandoc_to("pptx")) return(knit_slide_table(x, ...))
   if (knitr::is_latex_output()) {
     # LaTeX adds \tabcolsep points either side of each column's width.
     sep <- knitr::opts_current$get("ft.tabcolsep") %||% x$properties$opts_pdf$tabcolsep
@@ -228,6 +239,22 @@ knit_print.phw_flextable <- function(x, ...) {
     attr(out, "knit_meta") <- c(attr(out, "knit_meta"), list(phw_font_dependency()))
   }
   out
+}
+
+# flextable puts the table ft.left inches from the slide's left edge and
+# ft.top inches from its top. A table too long for the slide continues on
+# slides that a horizontal rule starts.
+knit_slide_table <- function(x, ...) {
+  check_no_images(x)
+  left <- knitr::opts_current$get("ft.left") %||% 1
+  top <- knitr::opts_current$get("ft.top") %||% 2
+  pages <- slide_table_pages(x, slide_width - left - slide_margins[["side"]],
+                             slide_height - top - slide_margins[["bottom"]])
+  out <- lapply(pages, function(page) {
+    class(page) <- setdiff(class(page), "phw_flextable")
+    knitr::knit_print(page, ...)
+  })
+  knitr::asis_output(paste(unlist(out), collapse = "\n\n---\n\n"))
 }
 
 #' @exportS3Method htmltools::as.tags
@@ -246,15 +273,16 @@ print.phw_flextable <- function(x, preview = "html", align = "center", ...) {
 # format, in inches.
 page_text_width <- (210 - 2 * 20) / 25.4
 
-# The width of a slide in the PHW reference deck, in inches.
+# The size of a slide in the PHW reference deck, in inches.
 slide_width <- 13.333
+slide_height <- 7.5
 
 # Narrows a table wider than `width` by letting its text wrap at spaces: the
 # headings first, then the body cells. Each column gives up a share of the
 # width it can lose, and keeps at least its widest word. If the words alone
 # are too wide, the text shrinks as well, down to `min_size` points for the
-# largest text, as on slides.
-fit_table_to_width <- function(ft, width, min_size = 8, where = "the page") {
+# largest text, or with `floor = "all"`, as on slides, for all of it.
+fit_table_to_width <- function(ft, width, min_size = 8, where = "the page", floor = "largest") {
   if (sum(ft$body$colwidths) <= width) return(ft)
   parts <- c("header", "body", "footer")
   wrapped <- function(ft, parts) {
@@ -277,8 +305,8 @@ fit_table_to_width <- function(ft, width, min_size = 8, where = "the page") {
     for (part in parts) ft[[part]]$styles$text$font.size$data[] <- ft[[part]]$styles$text$font.size$data * scale
     ft
   }
-  largest <- max(unlist(lapply(parts, function(part) ft[[part]]$styles$text$font.size$data)), na.rm = TRUE)
-  least <- min(min_size / largest, 1)
+  sizes <- unlist(lapply(parts, function(part) ft[[part]]$styles$text$font.size$data))
+  least <- min(min_size / if (floor == "all") min(sizes, na.rm = TRUE) else max(sizes, na.rm = TRUE), 1)
   smallest <- sum(wrapped(resize(ft, least), parts))
   if (smallest > width) {
     cli::cli_warn(c("The table's {length(ft$col_keys)} columns are too wide for {where}, even with their text wrapped and at {min_size} pt, so the table runs past the margin.",

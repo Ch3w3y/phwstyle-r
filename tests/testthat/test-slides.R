@@ -153,12 +153,68 @@ test_that("title and section slide runs keep the PHW font and bold, and title_si
   }
 })
 
-test_that("a table too tall for the slide warns with how many rows fit", {
+# The rows of the table on each slide of a deck, as cell text.
+slide_table_rows <- function(deck) {
+  lapply(seq_along(deck), function(i) {
+    rows <- xml2::xml_find_all(deck_xml(deck, i), "//a:tbl/a:tr")
+    lapply(rows, function(r) xml2::xml_text(xml2::xml_find_all(r, "a:tc")))
+  })
+}
+
+slide_titles <- function(deck) {
+  vapply(seq_along(deck), function(i) {
+    xml2::xml_text(xml2::xml_find_first(deck_xml(deck, i), "//p:sp[.//p:ph[@type = 'title']]"))
+  }, "")
+}
+
+test_that("a table too long for the slide continues on further slides", {
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
   tall <- data.frame(n = 1:40, label = rep(letters, length.out = 40))
-  expect_warning(phw_add_slide(phw_pptx(), "Tall", table = tall), "Only 23 of the table's 40 rows fit in the slide's content area")
-  expect_no_warning(phw_add_slide(phw_pptx(), "Short", table = head(tall)))
+  expect_no_warning(deck <- phw_add_slide(phw_pptx(), "Tall", table = tall, source = "Survey"))
+  expect_gt(length(deck), 1)
+  slides <- slide_table_rows(deck)
+  for (rows in slides) expect_equal(rows[[1]], c("n", "label"))
+  shown <- unlist(lapply(slides, function(rows) vapply(rows[-1], `[`, "", 1)))
+  expect_equal(shown, as.character(1:40))
+  expect_equal(slide_titles(deck), c("Tall", rep("Tall (continued)", length(deck) - 1)))
+  info <- officer::pptx_summary(deck)
+  expect_equal(unique(info$slide_id[grepl("Source: Survey", info$text)]), length(deck))
+  for (i in seq_along(deck)) {
+    xml <- as.character(deck_xml(deck, i))
+    sizes <- as.numeric(gsub("\\D", "", regmatches(xml, gregexpr('sz="[0-9]+"', xml))[[1]]))
+    expect_gte(min(sizes), 1200)
+    heights <- as.numeric(gsub("\\D", "", regmatches(xml, gregexpr('<a:tr h="[0-9]+"', xml))[[1]]))
+    expect_lte(sum(heights) / 914400, 4.9 + 0.001)
+  }
+
+  welsh <- phw_add_slide(phw_pptx(), "Achosion", table = tall, continued = "(parhad)")
+  expect_equal(slide_titles(welsh)[2], "Achosion (parhad)")
+  one <- phw_add_slide(phw_pptx(), "One column", table = tall["n"])
+  expect_equal(unlist(lapply(slide_table_rows(one), function(rows) unlist(rows[-1]))), as.character(1:40))
+  expect_no_warning(short <- phw_add_slide(phw_pptx(), "Short", table = head(tall)))
+  expect_length(short, 1)
+})
+
+test_that("a long flextable repeats its caption, marked as continued, and keeps groups together", {
+  skip_if_not_installed("officer")
+  skip_if_not_installed("flextable")
+  set.seed(1)
+  ops <- data.frame(category = sample(paste("Category", LETTERS[1:4]), 600, TRUE),
+                    subgroup = sample(paste("Type", 1:3), 600, TRUE),
+                    year = sample(2023:2024, 600, TRUE))
+  ft <- phw_flextable(phw_group_table(ops, c(category, subgroup), year),
+                      caption = "Cases by group", source = "Example", continued = "(parhad)")
+  deck <- phw_add_slide(phw_pptx(), "Groups", table = ft, table_fit = FALSE)
+  expect_gt(length(deck), 1)
+  slides <- slide_table_rows(deck)
+  captions <- vapply(slides, function(rows) rows[[1]][1], "")
+  expect_equal(captions, c("Cases by group", rep("Cases by group (parhad)", length(deck) - 1)))
+  expect_equal(slide_titles(deck), rep("Groups", length(deck)))
+  labels <- lapply(slides, function(rows) vapply(rows, `[`, "", 1))
+  expect_equal(sum(vapply(labels, function(l) sum(grepl("^Type", l)), 0)), 12)
+  for (l in labels[-length(labels)]) expect_false(grepl("^Category", l[length(l)]))
+  expect_true("Total" %in% labels[[length(labels)]])
 })
 
 test_that("a flextable's caption shows above the table on the slide", {

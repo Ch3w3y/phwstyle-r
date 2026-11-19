@@ -381,42 +381,36 @@ test_that("phw_add_slide fills the content area with a table", {
   expect_lte(fitted$width, area)
   expect_gt(fitted$size, plain$size)
   expect_lte(fitted$size, 16)
-  expect_equal(plain$size, 10)
+  expect_equal(plain$size, 12)
   narrow <- widths(data.frame(a = 1:3, b = 4:6))
   expect_lt(narrow$width, 0.3 * area)
-  expect_warning(long <- widths(head(mtcars, 25)), "23 of the table's 25 rows")
+  expect_no_warning(long <- widths(head(mtcars, 25)))
   expect_lte(long$width, area + 0.001)
   own <- flextable::flextable(head(mtcars[, 1:3]))
   expect_equal(widths(own)$width, widths(own, table_fit = FALSE)$width)
 })
 
-test_that("phw_add_slide shrinks a wide table's text instead of narrowing its columns", {
+test_that("phw_add_slide wraps a wide table rather than shrink its text below 12 pt", {
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
   half <- 5.867
+  slide <- function(table) {
+    xml <- slide_xml(phw_add_slide(phw_pptx(), "Wide", table = table, text = "x", layout = "Two Content"))
+    list(widths = xml_numbers(xml, '<a:gridCol w="[0-9]+"') / 914400,
+         sizes = setdiff(xml_numbers(xml, 'sz="[0-9]+"'), c(2000, 2800)) / 100)
+  }
+  long_names <- data.frame(matrix(1:8, 2, dimnames = list(NULL, paste("Confirmed cases in health board", 1:4))),
+                           check.names = FALSE)
+  expect_no_warning(fits <- slide(long_names))
+  expect_equal(min(fits$sizes), 12)
+  expect_lte(sum(fits$widths), half + 0.001)
+
   set.seed(6)
   m <- data.frame(Area = c("Cardiff", "Swansea", "Newport", "Wrexham", "Powys"),
                   matrix(round(runif(60, 1000, 99999)), 5, dimnames = list(NULL, month.abb)),
                   check.names = FALSE)
-  content <- function(table, size) {
-    ft <- flextable::fontsize(phw_flextable(table), size = size, part = "all")
-    flextable::autofit(ft, add_w = 0)$body$colwidths
-  }
-  slide <- function(table) {
-    xml <- slide_xml(phw_add_slide(phw_pptx(), "Months", table = table, text = "x", layout = "Two Content"))
-    list(widths = xml_numbers(xml, '<a:gridCol w="[0-9]+"') / 914400,
-         size = min(setdiff(xml_numbers(xml, 'sz="[0-9]+"'), c(2000, 2800))) / 100)
-  }
-
-  expect_no_warning(fits <- slide(m[, 1:9]))
-  expect_lt(fits$size, 10)
-  expect_gte(fits$size, 8)
-  expect_equal(sum(fits$widths), half, tolerance = 0.001)
-  expect_true(all(fits$widths >= content(m[, 1:9], fits$size)))
-
-  expect_warning(wide <- slide(m), "13 columns are too wide")
-  expect_equal(wide$size, 8)
-  expect_true(all(wide$widths >= content(m, 8)))
+  expect_warning(wide <- slide(m), "13 columns are too wide for the slide's content area.*at 12 pt")
+  expect_equal(min(wide$sizes), 12)
 })
 
 test_that("phw_add_slide makes a tall table readable and keeps it inside the placeholder", {
@@ -435,9 +429,6 @@ test_that("phw_add_slide makes a tall table readable and keeps it inside the pla
   expect_gte(min(sizes), 12)
   expect_gte(sum(xml_numbers(xml, '<a:gridCol w="[0-9]+"')) / 914400, 0.7 * area_width)
   expect_lte(sum(xml_numbers(xml, '<a:tr h="[0-9]+"')) / 914400, area_height + 0.001)
-  expect_warning(plain <- slide_xml(phw_add_slide(phw_pptx(), "Tall", table = grouped, table_fit = FALSE)),
-                 "rows fit in the slide's content area")
-  expect_gt(sum(xml_numbers(plain, '<a:tr h="[0-9]+"')) / 914400, area_height)
 })
 
 test_that("phw_add_slide keeps a table that fits inside the content area when it enlarges it", {

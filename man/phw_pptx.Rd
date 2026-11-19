@@ -22,7 +22,8 @@ phw_add_slide(
   caption_args = list(),
   alt = NULL,
   plot_scale = 1.5,
-  table_fit = TRUE
+  table_fit = TRUE,
+  continued = NULL
 )
 }
 \arguments{
@@ -39,7 +40,13 @@ result. A grob goes on the slide as a picture.}
 \item{table}{A data frame, flextable or summary table (rendered with
 \code{\link[=phw_flextable]{phw_flextable()}}). It must have at least one row. A flextable's
 caption, such as the one \code{\link[=phw_flextable]{phw_flextable()}} adds, goes in a row at the
-top of the table, because PowerPoint does not show table captions.}
+top of the table, because PowerPoint does not show table captions.
+Text in the table is never smaller than 12 pt, so it can be read when
+projected. A table too long for the slide tightens its row spacing, and
+if it still does not fit, its rows continue on further slides with the
+same title. Each of them repeats the table's header row and marks its
+caption, or the title if the table has none, with \code{continued}. Any
+other content goes on the first of them, and the source on the last.}
 
 \item{text}{Character vector of bullet points. On a title slide or
 section header it is plain lines in the template's own colour and size.}
@@ -99,12 +106,16 @@ A grob keeps the sizes it was drawn with.}
 table so it fills the width of the slide's content area? The text grows
 with it, by up to 1.6 times, and a narrow table is widened by at most
 another 80\% (more for a table with more columns). A tall table tightens
-its row spacing so the text can grow. \code{FALSE} keeps the table at the size \code{\link[=phw_flextable]{phw_flextable()}} gives
-it. A flextable you pass in is never resized. A table too wide for the
-area shrinks its text, down to 8 points, rather than narrowing its
-columns. One still too wide at 8 points keeps its column widths and
-gives a warning. The text never shrinks for height, so a table with too
-many rows for the slide gives a warning that says how many fit.}
+its row spacing so the text can grow. \code{FALSE} keeps the table at the
+size \code{\link[=phw_flextable]{phw_flextable()}} gives it, with its text at 12 pt. A flextable you
+pass in is never enlarged. Either way, a table too wide for the area
+wraps its headings, then its cells, and one still too wide gives a
+warning. The text never shrinks below 12 pt.}
+
+\item{continued}{Text added after the caption, or after the title if the
+table has no caption, on the slides a long table continues on. \code{NULL}
+uses the \code{continued} text of a \code{\link[=phw_flextable]{phw_flextable()}}, or \code{"(continued)"}.
+Give your own wording, for example in Welsh.}
 }
 \value{
 An officer \code{rpptx} object. Save it with \code{print(deck, target = "file.pptx")}.

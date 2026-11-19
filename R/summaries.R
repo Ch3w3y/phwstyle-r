@@ -143,7 +143,9 @@ summary_rows <- function(x) {
     rule = types == "total",
     line = start & sep %in% c("line", "both"),
     space = start & sep %in% c("space", "both"),
-    indent = if (isTRUE(attr(x, "indent") %||% TRUE)) depth else 0L
+    indent = if (isTRUE(attr(x, "indent") %||% TRUE)) depth else 0L,
+    # A heading over the rows below it, kept with them where a table splits.
+    keep = depth < c(depth[-1], 0L)
   )
 }
 

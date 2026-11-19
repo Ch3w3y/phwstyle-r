@@ -46,6 +46,21 @@ says what to change.
   `phw_risk_table()` handle missing values as before.
 * `phw_reactable()` rows are no longer striped by default, to match the
   other tables. Pass `striped = TRUE` to stripe them.
+* Tables on PowerPoint slides stay readable when projected. Text in a table
+  is never smaller than 12 pt, in a deck made with `phw_add_slide()`, R
+  Markdown or the Quarto `phw-pptx` format, so `phw_flextable()`'s 10 pt
+  text shows at 12 pt there. A table too long for the slide tightens its
+  row spacing, and if it still does not fit, its rows continue on further
+  slides. Each slide repeats the header row and the caption, marked
+  "(continued)", and the source goes on the last slide. A group or variable
+  heading stays on the same slide as its first row. The source line
+  `phw_add_slide()` puts at the bottom of a slide is 12 pt too. Set your own wording
+  with the new `continued` argument of `phw_flextable()` and
+  `phw_add_slide()`, for example for Welsh. Before, rows past the bottom of
+  the slide were lost: a knitted deck dropped them without a warning, and
+  `phw_add_slide()` warned how many fit. A continued slide in a knitted
+  deck has no title, and `phw_add_slide()` repeats the title, marked
+  "(continued)" when the table has no caption.
 * `phw_add_slide()` stops when given more content than the layout has room
   for, instead of silently using only the plot. It also refuses a chart or
   table on the navy Title Slide and Section Header layouts.
@@ -721,8 +736,8 @@ says what to change.
   and table fill the left and right areas. Before, the first went into the
   small heading above the left area.
 * `phw_add_slide()` checks its arguments before it adds a slide, so a call
-  that stops leaves the deck unchanged. It warns when a table has more rows
-  than fit on the slide, and accepts a `phw_finalise()` chart as a picture.
+  that stops leaves the deck unchanged. It accepts a `phw_finalise()` chart
+  as a picture.
 * `phw_add_slide(table_fit = TRUE)` no longer grows a table that fits the
   slide until it runs off the bottom. Before, tables of about 10 to 12 rows
   grew past the content area, and the warning asked you to split them. A
@@ -730,9 +745,9 @@ says what to change.
   is sized.
 * `phw_add_slide(table_fit = TRUE)` no longer narrows the columns of a table
   that is wider than the content area until numbers and labels break across
-  lines. It shrinks the text instead, down to 8 points. A table still too
-  wide at 8 points keeps its column widths and gives a warning that names
-  how many columns it has.
+  lines. Its headings wrap first, then its cells, at no less than 12 points.
+  A table still too wide gives a warning that names how many columns it
+  has.
 * `phw_add_slide()` scales the text of a `phw_arrange()` figure as one: every
   panel, the figure title and the source line. Before, only the last panel
   was scaled.
@@ -762,7 +777,8 @@ says what to change.
   and lost its last columns.
 * In a PowerPoint deck made with R Markdown or Quarto, a `phw_flextable()`
   table wider than the slide now fits the slide's content area, in the
-  same way. A table that cannot fit at 8 pt gives a warning. Before, a
+  same way, except that its text stays at 12 pt or larger. A table that
+  cannot fit gives a warning. Before, a
   summary table by the seven health boards ran off the right edge of the
   slide and lost its last columns without a warning.
 * In a PDF document, a `phw_gt()` table stays where it is in the text, a
