@@ -327,6 +327,8 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
     p <- ggplotly_phw(p, palette)
     # ggplotly() draws the facet strips above the top panels in pixels.
     strip <- max(0, unlist(lapply(p$x$layout$shapes, function(s) if (identical(s$ysizemode, "pixel")) s$y1)))
+  } else {
+    p <- tidy_ggplotly(p)
   }
   p <- overlay_own_panel(p)
   col <- phw_colours
@@ -634,6 +636,58 @@ plain_legend <- function(p, keys) {
     for (i in setdiff(idx, keep)) traces[[i]]$showlegend <- FALSE
   }
   p$x$data <- traces
+  p
+}
+
+# A chart made with ggplotly() comes without its ggplot, but its `attrs` keep
+# each layer's mapping and `visdat` the layer's data. Give it the legend
+# names and the hover that phw_plotly() gives the ggplot.
+tidy_ggplotly <- function(p) {
+  legend_aes <- c("colour", "fill", "shape", "linetype", "linewidth", "size", "alpha")
+  keys <- unlist(lapply(ggplotly_values(p, legend_aes), function(v) {
+    if (is.factor(v)) levels(v) else if (is.character(v) || is.logical(v)) unique(as.character(v))
+  }))
+  texts <- unlist(lapply(ggplotly_values(p, "text"), format, justify = "none"))
+  text_hover(plain_legend(p, keys), unique(texts))
+}
+
+ggplotly_values <- function(p, aes) {
+  unlist(lapply(names(p$x$attrs), function(id) {
+    a <- p$x$attrs[[id]]
+    data <- p$x$visdat[[id]]
+    if (!inherits(a, "plotly_eval") || !is.function(data)) return(NULL)
+    data <- data()
+    lapply(a[intersect(names(a), aes)], function(f) {
+      if (rlang::is_formula(f)) tryCatch(rlang::eval_tidy(rlang::f_rhs(f), data), error = function(e) NULL)
+    })
+  }), recursive = FALSE)
+}
+
+# ggplotly() puts every aesthetic in the hover unless it is given
+# `tooltip = "text"`: "x: -5<br />sex: Female<br />Female, 0-4: 5". The
+# mapped text is the one line without a name in front. When the hover holds
+# it and more, show only the text, and no hover on layers without one, as
+# for a ggplot that maps `text`. A text layer's own `text` is its label.
+text_hover <- function(p, texts) {
+  if (!length(texts)) return(p)
+  field <- vapply(p$x$data, function(t) {
+    if ("hovertext" %in% names(t) || grepl("text", t$mode %||% "")) "hovertext" else "text"
+  }, "")
+  hover <- Map(function(t, f) if (is.character(t[[f]]) && !identical(t$hoverinfo, "skip")) t[[f]], p$x$data, field)
+  shown <- lapply(hover, function(h) {
+    if (is.null(h)) return(NULL)
+    seg <- strsplit(h, "<br />", fixed = TRUE)
+    line <- rep(seq_along(seg), lengths(seg))
+    seg <- unlist(seg)
+    hit <- which(seg %in% texts)
+    hit <- hit[!duplicated(line[hit])]
+    out <- rep("", length(h))
+    out[line[hit]] <- seg[hit]
+    ifelse(h %in% texts, h, out)
+  })
+  cut <- any(unlist(Map(function(h, s) !is.null(h) && any(s != "" & s != h), hover, shown)))
+  if (!cut) return(p)
+  for (i in which(!vapply(shown, is.null, logical(1)))) p$x$data[[i]][[field[[i]]]] <- shown[[i]]
   p
 }
 
