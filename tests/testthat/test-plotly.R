@@ -390,9 +390,31 @@ test_that("subplot() panels take the PHW colours, and a group keeps its colour a
   expect_equal(vapply(tr[1:3], function(t) t$marker$color, ""), unname(key))
   expect_equal(vapply(tr[4:5], function(t) t$line$color, ""), unname(key[c("b", "c")]))
   expect_equal(unclass(tr[[4]]$fillcolor), plotly::toRGB(phw_colour_key(c("a", "b", "c"))[["b"]], 0.5))
-  expect_equal(unclass(tr[[6]]$line$color), plotly::toRGB(phw_pal(6)[6]))
+  expect_equal(unclass(tr[[6]]$line$color), plotly::toRGB(phw_pal(9)[9]))
   alone <- built(phw_plotly(plotly::plot_ly(z = volcano, type = "heatmap")))$data[[1]]$colorscale
   expect_equal(tr[[7]]$colorscale[, 2], alone[, 2])
+})
+
+test_that("a subplot() trace that maps no colour never takes a group's colour", {
+  wales <- data.frame(week = 1:3, cases = 2:4)
+  line <- plotly::plot_ly(wales, x = ~week, y = ~cases, name = "Wales", type = "scatter", mode = "lines")
+  hb <- function(...) plotly::plot_ly(groups_df, x = ~week, y = ~cases, type = "scatter", mode = "lines", ...)
+  gg <- plotly::ggplotly(ggplot2::ggplot(groups_df, ggplot2::aes(week, cases, colour = group)) + ggplot2::geom_line())
+  colours <- function(s) {
+    tr <- built(phw_plotly(s))$data
+    stats::setNames(vapply(tr, function(t) t$line$color, ""), vapply(tr, function(t) t$name, ""))
+  }
+  key <- plotly::toRGB(phw_colour_key(c("A", "B")))
+  for (s in list(plotly::subplot(line, hb(color = ~group)),
+                 plotly::subplot(hb(color = ~group), line),
+                 # plotly warns that both figures have a config.
+                 suppressWarnings(plotly::subplot(line, gg)),
+                 plotly::subplot(line, hb(color = ~group, colors = phw_colour_key(c("A", "B")))),
+                 plotly::subplot(phw_plotly(line), phw_plotly(hb(color = ~group))))) {
+    cols <- colours(s)
+    expect_equal(unname(cols[c("A", "B")]), unname(key))
+    expect_false(cols[["Wales"]] %in% key)
+  }
 })
 
 test_that("subplot() colours groups from the data when a column shares a name with an object", {
