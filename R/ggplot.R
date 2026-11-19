@@ -242,11 +242,68 @@ phw_guide_legend <- function(share = 1) {
     })
 }
 
+# A colour bar (`type = "colourbar"`) or colour steps (`"coloursteps"`)
+# guide that, when it runs across the chart, is twice ggplot2's length or
+# more, up to six times, so that neighbouring labels don't touch, with room
+# for the end labels inside the legend. Upright bars are as in ggplot2.
+phw_guide_bar <- function(type = c("colourbar", "coloursteps")) {
+  type <- rlang::arg_match(type)
+  parent <- switch(type, colourbar = ggplot2::GuideColourbar, coloursteps = ggplot2::GuideColoursteps)
+  ggplot2::ggproto(NULL, parent,
+    params = switch(type, colourbar = ggplot2::guide_colourbar(),
+                    coloursteps = ggplot2::guide_coloursteps())$params,
+    setup_elements = function(self, params, elements, theme) {
+      setup <- ggplot2::ggproto_parent(parent, self)$setup_elements
+      if (params$direction != "horizontal") return(setup(params, elements, theme))
+      cm <- function(u) grid::convertWidth(u, "cm", valueOnly = TRUE)
+      text <- ggplot2::calc_element("legend.text", theme)
+      key <- params$key[!is.na(params$key$.value), , drop = FALSE]
+      key <- key[order(key$.value), , drop = FALSE]
+      width <- vapply(seq_len(nrow(key)), function(i) {
+        cm(grid::grobWidth(ggplot2::element_grob(text, label = key$.label[[i]])))
+      }, numeric(1))
+      at <- key$.value
+      gap <- cm(grid::unit(text$size, "pt"))
+      key_width <- cm(ggplot2::calc_element("legend.key.width", theme))
+      len <- key_width * 10
+      n <- length(at)
+      if (n > 1) {
+        need <- (width[-n] + width[-1]) / 2 + gap
+        # Breaks bunched at one end would otherwise make the bar wider
+        # than the chart.
+        len <- min(max(len, need / diff(at)), key_width * 30)
+      }
+      # ggplot2 makes a bar five keys long.
+      theme$legend.key.width <- grid::unit(len / 5, "cm")
+      if (n) {
+        margin <- cm(ggplot2::calc_element("legend.margin", theme))
+        over <- width[c(n, 1)] / 2 - c(1 - at[n], at[1]) * len
+        margin[c(2, 4)] <- pmax(margin[c(2, 4)], over)
+        theme$legend.margin <- do.call(ggplot2::margin, c(as.list(margin), unit = "cm"))
+      }
+      setup(params, elements, theme)
+    })
+}
+
+bar_type <- function(guide) {
+  if (!is.character(guide) || length(guide) != 1) return(NULL)
+  switch(guide, colourbar = , colorbar = "colourbar", coloursteps = , colorsteps = "coloursteps", NULL)
+}
+
+# Gives a scale that would draw ggplot2's colour bar or colour steps
+# phw_guide_bar() instead.
+with_bar_guide <- function(scale) {
+  type <- bar_type(scale$guide)
+  if (!is.null(type)) scale$guide <- phw_guide_bar(type)
+  scale
+}
+
 # Gives each legend for groups that ggplot2 would draw by default, across the
-# top or bottom of the chart, phw_guide_legend(). A theme can't choose a
-# legend, so phwstyle does this wherever it draws a chart. `position` is the
-# legend position the chart will be drawn with, when it isn't the chart's own,
-# and `share` its share of the width it is drawn at (see phw_guide_legend()).
+# top or bottom of the chart, phw_guide_legend(), and each default colour bar
+# or steps phw_guide_bar(). A theme can't choose a legend, so phwstyle does
+# this wherever it draws a chart. `position` is the legend position the
+# chart will be drawn with, when it isn't the chart's own, and `share` its
+# share of the width it is drawn at (see phw_guide_legend()).
 wrap_legends <- function(plot, position = NULL, share = 1) {
   if (!inherits(plot, "ggplot") || inherits(plot, "patchwork")) return(plot)
   position <- position %||% ggplot2::calc_element("legend.position", ggplot2::theme_get() + plot$theme)
@@ -256,10 +313,18 @@ wrap_legends <- function(plot, position = NULL, share = 1) {
                     error = function(e) NULL)
   if (is.null(built)) return(plot)
   scales <- built$plot$scales$non_position_scales()$scales
-  aes <- unlist(lapply(scales, function(s) if (s$is_discrete() && identical(s$guide, "legend")) s$aesthetics))
-  aes <- setdiff(aes, names(plot$guides$guides))
-  if (!length(aes)) return(plot)
-  plot + do.call(ggplot2::guides, stats::setNames(rep(list(phw_guide_legend(share)), length(aes)), aes))
+  guides <- unlist(lapply(scales, function(s) {
+    type <- bar_type(s$guide)
+    guide <- if (s$is_discrete() && identical(s$guide, "legend")) {
+      phw_guide_legend(share)
+    } else if (!is.null(type)) {
+      phw_guide_bar(type)
+    }
+    if (!is.null(guide)) stats::setNames(rep(list(guide), length(s$aesthetics)), s$aesthetics)
+  }), recursive = FALSE)
+  guides <- guides[setdiff(names(guides), names(plot$guides$guides))]
+  if (!length(guides)) return(plot)
+  plot + do.call(ggplot2::guides, guides)
 }
 
 #' PHW map theme
@@ -431,16 +496,16 @@ seq_cols <- function(palette, reverse, call = rlang::caller_env()) {
 #' @export
 scale_colour_phw_c <- function(palette = "blues", reverse = FALSE, aesthetics = "colour",
                                na.value = phw_colours[["grey_light"]], ...) {
-  ggplot2::scale_colour_gradientn(colours = seq_cols(palette, reverse), aesthetics = aesthetics,
-                                  na.value = na.value, ...)
+  with_bar_guide(ggplot2::scale_colour_gradientn(colours = seq_cols(palette, reverse), aesthetics = aesthetics,
+                                                 na.value = na.value, ...))
 }
 
 #' @rdname phw_scales
 #' @export
 scale_fill_phw_c <- function(palette = "blues", reverse = FALSE, aesthetics = "fill",
                              na.value = phw_colours[["grey_light"]], ...) {
-  ggplot2::scale_fill_gradientn(colours = seq_cols(palette, reverse), aesthetics = aesthetics,
-                                na.value = na.value, ...)
+  with_bar_guide(ggplot2::scale_fill_gradientn(colours = seq_cols(palette, reverse), aesthetics = aesthetics,
+                                               na.value = na.value, ...))
 }
 
 #' @rdname phw_scales
@@ -451,16 +516,16 @@ scale_color_phw_c <- scale_colour_phw_c
 #' @export
 scale_colour_phw_b <- function(palette = "blues", reverse = FALSE, aesthetics = "colour",
                                na.value = phw_colours[["grey_light"]], ...) {
-  ggplot2::scale_colour_stepsn(colours = seq_cols(palette, reverse), aesthetics = aesthetics,
-                               na.value = na.value, ...)
+  with_bar_guide(ggplot2::scale_colour_stepsn(colours = seq_cols(palette, reverse), aesthetics = aesthetics,
+                                              na.value = na.value, ...))
 }
 
 #' @rdname phw_scales
 #' @export
 scale_fill_phw_b <- function(palette = "blues", reverse = FALSE, aesthetics = "fill",
                              na.value = phw_colours[["grey_light"]], ...) {
-  ggplot2::scale_fill_stepsn(colours = seq_cols(palette, reverse), aesthetics = aesthetics,
-                             na.value = na.value, ...)
+  with_bar_guide(ggplot2::scale_fill_stepsn(colours = seq_cols(palette, reverse), aesthetics = aesthetics,
+                                            na.value = na.value, ...))
 }
 
 #' @rdname phw_scales
@@ -490,8 +555,8 @@ centre_on_midpoint <- function(scale, midpoint, call = rlang::caller_env()) {
 #' @export
 scale_fill_phw_div <- function(midpoint = 0, palette = "orange_navy", reverse = FALSE,
                                aesthetics = "fill", na.value = phw_colours[["grey_light"]], ...) {
-  scale <- ggplot2::scale_fill_gradientn(colours = seq_cols(palette, reverse),
-                                         aesthetics = aesthetics, na.value = na.value, ...)
+  scale <- with_bar_guide(ggplot2::scale_fill_gradientn(colours = seq_cols(palette, reverse),
+                                                        aesthetics = aesthetics, na.value = na.value, ...))
   centre_on_midpoint(scale, midpoint)
 }
 
@@ -499,8 +564,8 @@ scale_fill_phw_div <- function(midpoint = 0, palette = "orange_navy", reverse = 
 #' @export
 scale_colour_phw_div <- function(midpoint = 0, palette = "orange_navy", reverse = FALSE,
                                  aesthetics = "colour", na.value = phw_colours[["grey_light"]], ...) {
-  scale <- ggplot2::scale_colour_gradientn(colours = seq_cols(palette, reverse),
-                                           aesthetics = aesthetics, na.value = na.value, ...)
+  scale <- with_bar_guide(ggplot2::scale_colour_gradientn(colours = seq_cols(palette, reverse),
+                                                          aesthetics = aesthetics, na.value = na.value, ...))
   centre_on_midpoint(scale, midpoint)
 }
 
@@ -597,7 +662,7 @@ phw_default_scale <- function(aesthetic, type, ...) {
                     ordinal = ggplot2::scale_colour_viridis_d,
                     continuous = ggplot2::scale_colour_gradient,
                     binned = ggplot2::scale_colour_steps)
-    return(rlang::exec(scale, !!!args))
+    return(with_bar_guide(rlang::exec(scale, !!!args)))
   }
   # rlang::exec() rather than do.call(), which would run the `call` that
   # ggplot2 passes along for its error messages.
@@ -607,8 +672,8 @@ phw_default_scale <- function(aesthetic, type, ...) {
       args$na.value <- args$na.value %||% "grey50"
       rlang::exec(ggplot2::discrete_scale, !!!args, palette = phw_discrete_auto)
     },
-    continuous = rlang::exec(ggplot2::scale_colour_gradientn, !!!args, colours = phw_continuous_auto),
-    binned = rlang::exec(ggplot2::scale_colour_stepsn, !!!args, colours = phw_continuous_auto))
+    continuous = with_bar_guide(rlang::exec(ggplot2::scale_colour_gradientn, !!!args, colours = phw_continuous_auto)),
+    binned = with_bar_guide(rlang::exec(ggplot2::scale_colour_stepsn, !!!args, colours = phw_continuous_auto)))
 }
 
 # Default colours for layers that don't map one. These are set the same way

@@ -266,6 +266,17 @@ says what to change.
   the first legend and cut off. With `phw_arrange(guides = "keep")`, each
   plot's legend now wraps to the width of that plot instead of the whole
   figure, so the legends no longer overprint each other.
+* A colour bar or colour steps legend across the bottom or top of a chart
+  is long enough for its labels to be read. Before, it was about 2 cm
+  long, so labels such as 600 to 1600 ran into each other and the first
+  was cut off at the left edge. The bar is now at least twice as long, and
+  longer when its labels need the room. This applies to
+  `scale_*_phw_c()`, `scale_*_phw_b()` and `scale_*_phw_div()` wherever
+  the chart is drawn, and to any colour bar in a chart saved with
+  `phw_save()`, finished with `phw_finalise()`, arranged with
+  `phw_arrange()`, placed with `phw_add_slide()` or drawn in a
+  `phw_*_document()`. A bar on the right, as in `phw_map()`, and a bar
+  given its own `guide`, keep their size.
 * `phw_funnel()` draws the same chart whatever the columns are called.
   Before, a denominator column named `value` was replaced by the computed
   percentage, so the points were drawn at the wrong place along the x-axis,
