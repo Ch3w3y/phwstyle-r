@@ -124,6 +124,6 @@ Without this the stage only completes on a clean process exit, and interrupted w
 
 - The repository is public. Issues, PRs and comments must not contain local paths, machine names or personal details.
 - Change only what is in scope. No speculative features, defensive code for cases that cannot happen, or compatibility shims nobody asked for.
-- Note out-of-scope problems in your yield message; do not fix them here. The same root cause in a neighbour a user would hit in normal use is in scope (section 1); edge-case neighbours are not.
+- Note out-of-scope problems in your yield message; do not fix them here. The same root cause in a neighbour a user would hit in normal use is in scope, and so is keeping one that works on `main` working (section 1); edge-case neighbours are not.
 - If the plan or prompt is wrong or incomplete, say so in the yield message instead of quietly doing something different. If the issue is not a real defect, or a fix would break the scope rules, close it with `gh issue close <id> --reason "not planned" --comment "<why>"`, open no PR, and yield. Closing it takes it out of the backlog.
 - When finishing a plan phase, tick its `- [ ]` box in the plan file as part of the last commit.
