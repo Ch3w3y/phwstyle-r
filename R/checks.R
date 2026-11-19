@@ -21,6 +21,12 @@ check_data_frame <- function(data, hint, arg = "data", call = rlang::caller_env(
   data
 }
 
+# The check_data_frame() hint for a function that takes counts in `arg`.
+counts_hint <- function(arg) {
+  paste0("For counts in a {.fn table} or a matrix, pass {.code as.data.frame(as.table(x))} with {.code ",
+         arg, " = Freq}.")
+}
+
 check_numeric_col <- function(data, col, arg = col, call = rlang::caller_env()) {
   x <- data[[col]]
   if (!is.numeric(x)) {
