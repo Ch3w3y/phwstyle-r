@@ -424,6 +424,11 @@ says what to change.
   and `phw_reactable()` no longer shows them twice. Row numbers are not
   labels and are not shown, including those `rbind()` keeps as text, such
   as `"31"`, when filtered subsets share row numbers.
+* `phw_flextable()`, `phw_gt()`, `phw_reactable()` and `phw_write_xlsx()`
+  show a column whose name is missing, as a crosstab made with
+  `table(useNA = "ifany")` or `xtabs(addNA = TRUE)` has, under the header
+  "NA", as `phw_datatable()` already did. Before, they failed with an error
+  from another package. Rename the column to show another header.
 * `phw_reactable()` tables close with a navy rule and have a navy spanner.
 * `phw_reactable()` merges your `columns` into a summary table's own column
   settings, so restyling one column keeps the indents, navy headings,
