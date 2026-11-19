@@ -943,7 +943,7 @@ colour_mapped <- function(p, palette) {
   if (!any(todo)) return(p)
   attrs <- p$x$attrs[todo]
   values <- Map(function(a, id) {
-    if (is.null(a$colorscale) && !is.null(a$color)) mapped_values(a$color, p, id)
+    if (is.null(a$colorscale) && !is.null(a[["color"]])) mapped_values(a[["color"]], p, id)
   }, attrs, rlang::names2(attrs))
   missing <- vapply(values, function(v) !is.numeric(v) && anyNA(v), logical(1))
   if (any(missing)) {

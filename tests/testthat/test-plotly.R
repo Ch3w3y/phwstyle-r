@@ -209,6 +209,8 @@ test_that("unnamed colors keep missing groups visible in grey", {
   expect_equal(trace_colours(short), c(trace_colours(full), "NA" = grey))
   brewer <- plotly::plot_ly(na, x = ~x, y = ~y, color = ~grp, colors = "Set1", type = "scatter", mode = "markers")
   expect_equal(trace_colours(brewer)[["NA"]], grey)
+  later <- plotly::add_markers(plotly::plot_ly(na, x = ~x, y = ~y, colors = phw_pal(2)), color = ~grp)
+  expect_equal(trace_colours(later), trace_colours(p))
 })
 
 test_that("plot_ly gives each of many groups its own colour, with a warning", {
