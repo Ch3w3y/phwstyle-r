@@ -435,6 +435,10 @@ heat_fill <- function(palette, domain) {
 #' charts. With a `key`, each group keeps its colour across tables, charts
 #' and reports (see [phw_colour_key()]).
 #'
+#' On a summary table from [phw_flextable()], only the level rows are
+#' coloured. Headings, subtotals and totals keep their own styling and are
+#' not added to the key.
+#'
 #' @param x A flextable.
 #' @param j Column that holds the groups, unquoted as in dplyr. A string or
 #'   a position works too.
@@ -462,13 +466,14 @@ phw_flextable_groups <- function(x, j, key = NULL, palette = phw_default_palette
   check_flextable(x)
   data <- x$body$dataset
   j <- pick_col(rlang::enquo(j), data, "j")
-  groups <- data[[j]]
+  lv <- heat_rows(data)
+  groups <- data[[j]][lv]
   cols <- phw_colour_key(group_levels(groups), name = key, palette = palette, fixed = values)
   fill <- unname(cols[as.character(groups)])
   # A missing group has no colour: leave its row as it is.
-  i <- which(!is.na(fill))
+  i <- lv[!is.na(fill)]
   if (!length(i)) return(x)
-  fill <- fill[i]
+  fill <- fill[!is.na(fill)]
   target <- if (rows) x$col_keys else j
   for (k in target) {
     if (what == "background") {
