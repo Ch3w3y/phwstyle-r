@@ -47,7 +47,7 @@ Work in your own detached worktree under `~/.cache/phwstyle-dev/wt/` and remove 
 
 - The repository is public. Issues, PRs and comments must not contain local paths, machine names or personal details.
 
-Block only on real defects: wrong behaviour, a broken install or check, a regression, the same root cause left in a neighbour a user would hit in normal use, a scope breach or a leak of private data. Do not block on style preferences.
+Block only on real defects: wrong behaviour, a broken install or check, a regression on input a user would hit in normal use, the same root cause left in a neighbour a user would hit in normal use, a scope breach or a leak of private data. Do not block on style preferences.
 
 ## Verdict
 
