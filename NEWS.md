@@ -418,7 +418,9 @@ says what to change.
   labels were dropped without a word, leaving numbers with no area names.
   Row names a column already holds, as `data.frame(x = names(v), n = v)`
   gives for a named `tapply()` or `sapply()` result, are not shown again,
-  and `phw_reactable()` no longer shows them twice.
+  and `phw_reactable()` no longer shows them twice. Row numbers are not
+  labels and are not shown, including those `rbind()` keeps as text, such
+  as `"31"`, when filtered subsets share row numbers.
 * `phw_reactable()` tables close with a navy rule and have a navy spanner.
 * `phw_reactable()` merges your `columns` into a summary table's own column
   settings, so restyling one column keeps the indents, navy headings,

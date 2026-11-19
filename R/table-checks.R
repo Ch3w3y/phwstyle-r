@@ -8,13 +8,14 @@
 # Labels kept in row names, as as.data.frame() gives for a matrix, become a
 # first column with a blank header, as reactable shows them, so no renderer
 # drops them. The row numbers of a plain or filtered data frame are not labels,
-# nor are row names a column already holds.
+# even when rbind() of subsets stores them as text such as "31", nor are row
+# names a column already holds.
 check_table_data <- function(data, arg = "data", call = rlang::caller_env()) {
   data <- check_data_frame(data, as_data_frame_hint, arg, call)
   if (is.character(attr(data, "row.names"))) {
     labels <- row.names(data)
     row.names(data) <- NULL
-    if (!labels_in_column(data, labels)) {
+    if (!all(grepl("^[0-9]+$", labels)) && !labels_in_column(data, labels)) {
       data <- data.frame(labels, data, check.names = FALSE, stringsAsFactors = FALSE)
       names(data)[1] <- " "
     }

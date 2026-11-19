@@ -621,6 +621,26 @@ test_that("row names a column already holds are not shown a second time", {
   expect_equal(phw_flextable(data.frame(n = c(a = 1, b = 2)))$col_keys, c(" ", "n"))
 })
 
+test_that("row numbers of bound subsets are not shown as a column", {
+  skip_if_not_installed("flextable")
+  skip_if_not_installed("gt")
+  skip_if_not_installed("reactable")
+  skip_if_not_installed("DT")
+  skip_if_not_installed("openxlsx2")
+  y23 <- data.frame(area = c("Cardiff", "Swansea", "Newport", "Wrexham"), rate = c(40.2, 61.5, 72.3, 30.1))
+  y24 <- transform(y23, rate = c(55, 48.9, 80.4, 66.6))
+  high <- rbind(y23[y23$rate > 50, ], y24[y24$rate > 50, ])
+  expect_type(attr(high, "row.names"), "character")
+  f <- withr::local_tempfile(fileext = ".xlsx")
+  phw_write_xlsx(high, f)
+  for (cols in list(phw_flextable(high)$col_keys, names(phw_gt(high)[["_data"]]),
+                    attr(phw_datatable(high)$x, "colnames"),
+                    names(jsonlite::fromJSON(as.character(phw_reactable(high)$x$tag$attribs$data))),
+                    names(openxlsx2::read_xlsx(f)))) {
+    expect_equal(cols, c("area", "rate"))
+  }
+})
+
 test_that("phw_datatable rounds and styles columns renamed with a named colnames", {
   skip_if_not_installed("DT")
   renders <- function(w) {
