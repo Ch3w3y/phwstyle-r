@@ -801,13 +801,17 @@ add_footer <- function(g, footer) {
 }
 
 # phw_finalise() can't know the size the chart is drawn at, and its legend
-# wraps to that width (see phw_guide_legend()), so the chart is built again
-# when it is drawn. Its warnings were shown when it was first built.
+# and captions wrap to that size (see phw_guide_legend() and fit_captions()),
+# so the chart is built again when it is drawn. Its warnings were shown when
+# it was first built.
 #' @exportS3Method grid::makeContext
 makeContext.phw_finalised <- function(x) {
   if (is.null(x$phw_plot)) return(NextMethod())
   footer <- x$grobs[[which(x$layout$name == "phw-footer")]]
-  g <- suppressMessages(suppressWarnings(plot_gtable(x$phw_plot)))
+  grid::pushViewport(grid::viewport(y = 1, just = "top", height = grid::unit(1, "npc") - grid::grobHeight(footer)))
+  plot <- fit_captions_here(x$phw_plot)
+  grid::popViewport()
+  g <- suppressMessages(suppressWarnings(plot_gtable(plot)))
   grid::makeContext(add_footer(g, footer))
 }
 
@@ -857,6 +861,118 @@ wrap_lines <- function(lines, room, measure) {
     out
   })
   paste(unlist(wrapped), collapse = "\n")
+}
+
+# A caption is right-aligned, so a line wider than the room to its left runs
+# off the image, or over the caption of the plot beside it. Where phwstyle
+# draws a chart at a known size, lines too wide wrap to their room (see
+# refit_captions()), measured with the chart laid out at that size on an
+# off-screen device (ragg's, or pdf() when ragg is not installed): a map keeps
+# its shape, so it is often narrower than the image. A map's attribution,
+# wrapped for the screen, is wrapped again as one line. A longer caption makes
+# a map shorter and so narrower, so the passes go on until every line fits.
+# Where no wrapping fits, such as a tall map in a short figure, the narrowing
+# would not stop, so the pass that runs over least is kept.
+fit_captions <- function(plot, width, height) {
+  if (!inherits(plot, "ggplot") || !length(caption_slots(plot))) return(plot)
+  old <- grDevices::dev.cur()
+  if (requireNamespace("ragg", quietly = TRUE)) {
+    ragg::agg_capture(width = width, height = height, units = "in")
+  } else {
+    grDevices::pdf(NULL, width = width, height = height)
+  }
+  on.exit({
+    grDevices::dev.off()
+    if (old > 1) grDevices::dev.set(old)
+  })
+  fit_captions_here(plot)
+}
+
+# As fit_captions(), for a chart drawn in the current viewport.
+fit_captions_here <- function(plot) {
+  slots <- caption_slots(plot)
+  if (!length(slots)) return(plot)
+  best <- list(plot = plot, over = Inf)
+  for (pass in 1:10) {
+    # Any warning or error comes again when the chart is drawn.
+    g <- tryCatch(suppressMessages(suppressWarnings(plot_gtable(plot))), error = function(e) NULL)
+    if (is.null(g)) break
+    fit <- refit_captions(g, slots)
+    if (fit$over < best$over) best <- list(plot = plot, over = fit$over)
+    if (!length(fit$labels)) break
+    for (cell in names(fit$labels)) plot <- slots[[cell]]$set(plot, fit$labels[[cell]])
+  }
+  best$plot
+}
+
+# The captions of a chart, or of each plot in a patchwork and of the figure,
+# named by the gtable cell each is drawn in. Each has its text as given and a
+# way to replace it.
+caption_slots <- function(plot) {
+  slot <- function(caption, set) {
+    if (!is.character(caption) || length(caption) != 1) return(NULL)
+    list(text = strsplit(attr(caption, "phw_unwrapped") %||% caption, "\n", fixed = TRUE)[[1]], set = set)
+  }
+  last <- function(p, label) p + ggplot2::labs(caption = label)
+  if (!inherits(plot, "patchwork")) return(Filter(Negate(is.null), list(caption = slot(plot$labels$caption, last))))
+  # The last plot of a patchwork is the patchwork itself.
+  plots <- plot$patches$plots
+  slots <- lapply(seq_along(plots), function(k) {
+    p <- plots[[k]]
+    if (inherits(p, "ggplot") && !inherits(p, "patchwork")) {
+      slot(p$labels$caption, function(pw, label) {
+        pw$patches$plots[[k]] <- pw$patches$plots[[k]] + ggplot2::labs(caption = label)
+        pw
+      })
+    }
+  })
+  slots <- c(slots, list(slot(plot$labels$caption, last)))
+  names(slots) <- paste0("caption-", seq_along(slots))
+  slots$caption <- slot(plot$patches$annotation$caption, function(pw, label) {
+    pw$patches$annotation$caption <- label
+    pw
+  })
+  Filter(Negate(is.null), slots)
+}
+
+# New labels for the captions in the gtable `g` with a line too wide, laid
+# out in the current viewport, and by how many inches in all they run over.
+# A caption has the room from its right edge to the caption drawn to its left
+# in the same row, or else to the left of the viewport, less the width of the
+# chart's left margin.
+refit_captions <- function(g, slots) {
+  grid::pushViewport(grid::viewport(layout = grid::grid.layout(
+    nrow(g), ncol(g), widths = g$widths, heights = g$heights, respect = g$respect)))
+  on.exit(grid::popViewport())
+  # Inches from the left of the device to the left and right of the viewport.
+  x <- function() grid::convertX(grid::deviceLoc(grid::unit(0:1, "npc"), grid::unit(0:1, "npc"))$x, "in", valueOnly = TRUE)
+  edges <- function(cell) {
+    grid::pushViewport(grid::viewport(layout.pos.row = cell$t, layout.pos.col = cell$l:cell$r))
+    on.exit(grid::popViewport())
+    x()
+  }
+  start <- x()[1]
+  gap <- diff(edges(list(t = 1, l = 1, r = 1)))
+  drawn <- g$layout[grepl("^caption(-[0-9]+)?$", g$layout$name), ]
+  texts <- lapply(g$grobs[match(drawn$name, g$layout$name)], function(grob) Find(function(k) inherits(k, "text"), grob$children))
+  keep <- !vapply(texts, is.null, logical(1))
+  drawn <- drawn[keep, ]
+  texts <- texts[keep]
+  drawn$right <- vapply(seq_len(nrow(drawn)), function(i) edges(drawn[i, ])[2], numeric(1))
+  labels <- list()
+  over <- 0
+  for (i in which(drawn$name %in% names(slots))) {
+    cell <- drawn[i, ]
+    before <- drawn$right[drawn$t == cell$t & drawn$right < cell$right]
+    room <- cell$right - max(start, before) - gap
+    measure <- function(s) grid::convertWidth(grid::grobWidth(grid::editGrob(texts[[i]], label = s)), "in", valueOnly = TRUE)
+    widest <- max(vapply(strsplit(texts[[i]]$label, "\n", fixed = TRUE)[[1]], measure, numeric(1)))
+    if (widest > room) {
+      over <- over + widest - room
+      labels[[cell$name]] <- wrap_lines(slots[[cell$name]]$text, room, measure)
+    }
+  }
+  list(labels = labels, over = over)
 }
 
 #' @exportS3Method grid::heightDetails
@@ -926,8 +1042,11 @@ phw_save <- function(plot = ggplot2::last_plot(), filename, width = 16, height =
     pdf = grDevices::cairo_pdf,
     eps = , ps = grDevices::cairo_ps,
     NULL)
+  units <- rlang::arg_match(units, c("cm", "mm", "in", "px"))
   if (!is.null(bg)) plot <- blank_background(plot)
   plot <- wrap_legends(plot)
+  size <- c(width, height) / switch(units, "in" = 1, cm = 2.54, mm = 25.4, px = if (is.numeric(dpi)) dpi else NA)
+  if (!anyNA(size)) plot <- fit_captions(plot, size[1], size[2])
   ggplot2::ggsave(filename, plot = plot, width = width, height = height, units = units,
                   dpi = dpi, device = device, bg = bg %||% if (!inherits(plot, "ggplot")) "white", ...)
   invisible(filename)

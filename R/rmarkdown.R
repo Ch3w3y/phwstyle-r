@@ -109,10 +109,12 @@ phw_knitr_setup <- function(palette = NULL) {
   }
 }
 
-# Prints each chunk value as knitr does by default, with the legends of a
-# ggplot wrapped to the figure width (see wrap_legends()).
+# Prints each chunk value as knitr does by default, with the legends and
+# captions of a ggplot wrapped to the figure size (see wrap_legends() and
+# fit_captions()).
 phw_knit_render <- function(x, ...) {
-  res <- withVisible(knitr::knit_print(wrap_legends(x), ...))
+  opts <- knitr::opts_current$get()
+  res <- withVisible(knitr::knit_print(fit_captions(wrap_legends(x), opts$fig.width, opts$fig.height), ...))
   # As knitr's own default: the class lets knitr add a figure caption.
   if (inherits(x, "htmlwidget")) class(res$value) <- c(class(res$value), "knit_asis_htmlwidget")
   if (res$visible) res$value else invisible(res$value)

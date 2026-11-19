@@ -716,7 +716,7 @@ slide_value <- function(value, kind, area, editable, plot_scale, table_fit, cove
       phw_save(value, file, width = area$width, height = area$height, units = "in", dpi = 200)
       return(officer::external_img(file, width = area$width, height = area$height))
     }
-    value <- wrap_plot_caption(wrap_legends(scale_plot_text(value, plot_scale)), area$width, area$height)
+    value <- fit_captions(wrap_legends(scale_plot_text(value, plot_scale)), area$width, area$height)
     if (editable && requireNamespace("rvg", quietly = TRUE)) {
       return(rvg::dml(ggobj = value, fonts = list(sans = phw_font())))
     }
@@ -778,54 +778,6 @@ scale_plot_text <- function(plot, scale) {
     plot$patches$annotation$theme <- annotation + scaled_text_theme(annotation, scale)
   }
   plot + scaled_text_theme(plot$theme, scale)
-}
-
-# The caption is right-aligned, so a line too wide runs off the left of the
-# area and is cut off. Lines too wide wrap to the room left of the caption's
-# right edge when the chart is drawn in the area, laid out on an off-screen
-# device: a map keeps its shape, so it is often narrower than the area and
-# centred in it. A map's attribution, wrapped for the screen, is wrapped again
-# as one line. A longer caption makes a map shorter and so narrower, hence the
-# further passes.
-wrap_plot_caption <- function(plot, width, height) {
-  caption <- plot$labels$caption
-  if (inherits(plot, "patchwork") || !is.character(caption) || length(caption) != 1) return(plot)
-  el <- ggplot2::calc_element("plot.caption", ggplot2::theme_get() + plot$theme)
-  if (!inherits(el, "element_text")) return(plot)
-  old <- grDevices::dev.cur()
-  ragg::agg_capture(width = width, height = height, units = "in")
-  on.exit({
-    grDevices::dev.off()
-    if (old > 1) grDevices::dev.set(old)
-  })
-  gp <- grid::gpar(fontfamily = el$family, fontface = el$face, fontsize = el$size)
-  measure <- function(s) grid::convertWidth(grid::grobWidth(grid::textGrob(s, gp = gp)), "in", valueOnly = TRUE)
-  text <- strsplit(attr(caption, "phw_unwrapped") %||% caption, "\n", fixed = TRUE)[[1]]
-  for (pass in 1:3) {
-    room <- caption_room(plot, width, height)
-    lines <- strsplit(plot$labels$caption, "\n", fixed = TRUE)[[1]]
-    if (all(vapply(lines, measure, numeric(1)) <= room)) break
-    plot <- plot + ggplot2::labs(caption = wrap_lines(text, room, measure))
-  }
-  plot
-}
-
-# Inches from the chart's left margin to the caption's right edge when the
-# chart is drawn on the device. A panel with a fixed shape scales its null
-# widths and heights together, and the chart is centred.
-caption_room <- function(plot, width, height) {
-  # Any warning or error comes again when the chart is drawn.
-  gt <- tryCatch(suppressMessages(suppressWarnings(ggplot2::ggplotGrob(plot))),
-                 error = function(e) NULL)
-  cell <- if (!is.null(gt)) gt$layout[gt$layout$name == "caption", ]
-  if (is.null(cell) || !nrow(cell)) return(Inf)
-  null <- function(u) ifelse(grid::unitType(u) == "null", as.numeric(u), 0)
-  fixed_w <- grid::convertWidth(gt$widths, "in", valueOnly = TRUE)
-  fixed_h <- grid::convertHeight(gt$heights, "in", valueOnly = TRUE)
-  per_null <- (width - sum(fixed_w)) / sum(null(gt$widths))
-  if (isTRUE(gt$respect)) per_null <- min(per_null, (height - sum(fixed_h)) / sum(null(gt$heights)))
-  w <- fixed_w + max(per_null, 0) * null(gt$widths)
-  (width - sum(w)) / 2 + sum(w[seq_len(cell$r[1])]) - w[1]
 }
 
 scaled_text_theme <- function(theme, scale) {
