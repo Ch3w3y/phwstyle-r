@@ -77,6 +77,7 @@ Project rules agents have been corrected on:
 
 - phwstyle standardises how outputs look, not their content. A fix may add input checks, clearer messages, NA handling, placement or consistent styling. It may not add statistical methods, reference data or data preparation, and never guesses a date format or recodes data. `phw_rate_table()`, `phw_risk_table()` and `phw_poisson_ci()` are legacy: fix crashes only.
 - Welsh is translated by hand: any text written into an output must be replaceable by the user.
+- Slides are projected, so keep them readable. Text in a table on a PowerPoint slide is never below 12 pt, whether the deck is knitted or built with `phw_add_slide()`. A table too long for one slide continues on further slides, with its header row repeated. Never shrink slide text below 12 pt, or drop rows, to make a table fit. Word and PDF keep their own fitting rules.
 - Shared entry checks live in `R/checks.R` (`check_has_rows()`, `check_numeric_col()`, `as_date_col()`, `drop_missing()`, `check_colours()` and friends). Use them rather than writing new ones.
 - Keep the package CRAN-suitable. `vignettes/phwstyle.Rmd` is the only shipped vignette and must build with optional packages missing; `vignettes/articles/` is pkgdown-only.
 - Column arguments are tidyverse-style (unquoted names, `c(a, b)`, tidyselect helpers). Keep new functions consistent.
