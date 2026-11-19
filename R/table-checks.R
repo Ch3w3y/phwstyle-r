@@ -10,13 +10,14 @@
 # drops them. The row numbers of a plain or filtered data frame are not labels,
 # even when rbind() of subsets stores them as text such as "31", nor are row
 # names a column already holds. A column named NA, as a crosstab made with
-# table(useNA = "ifany") has, is named "NA", as R prints it.
+# table(useNA = "ifany") has, is named "NA", as R prints it. Whole numbers such
+# as years are labels.
 check_table_data <- function(data, arg = "data", call = rlang::caller_env()) {
   data <- check_data_frame(data, as_data_frame_hint, arg, call)
   if (is.character(attr(data, "row.names"))) {
     labels <- row.names(data)
     row.names(data) <- NULL
-    if (!all(grepl("^[0-9]+$", labels)) && !labels_in_column(data, labels)) {
+    if (!is_row_numbers(labels) && !labels_in_column(data, labels)) {
       data <- data.frame(labels, data, check.names = FALSE, stringsAsFactors = FALSE)
       names(data)[1] <- " "
     }
@@ -32,6 +33,44 @@ check_table_data <- function(data, arg = "data", call = rlang::caller_env()) {
                      i = "Give each column its own name."), call = call)
   }
   data
+}
+
+# rbind() stores row numbers as text only when subsets share some, and makes
+# them unique as make.unique() does: "3" again becomes "31", then "32". So
+# they always hold such a copy. Labels from table() or tapply(), such as
+# years, are in order, and newest first they hold no copy, so names out of
+# order with a copy are row numbers. Names in order are row numbers when they
+# end in copies that skip at least as many numbers as there are names before
+# them ("1", "4", "8", "12", "15", "20", "81", "151"). Labels in order fill
+# their range, as weeks 1 to 52 without week 50 do. Anything with a 0 or a
+# leading zero is labels, as row numbers never have one. A table with no rows
+# has no row numbers to drop.
+is_row_numbers <- function(x) {
+  if (!length(x) || !all(grepl("^[1-9][0-9]*$", x))) return(FALSE)
+  copy <- is_copy(x)
+  if (!any(copy)) return(FALSE)
+  n <- as.numeric(x)
+  if (is.unsorted(n, strictly = TRUE)) return(TRUE)
+  from <- which(rev(cumprod(rev(copy))) == 1)
+  skipped <- n[length(n)] - n[from - 1] - 1 - (length(n) - from)
+  any(skipped >= from - 1)
+}
+
+# Which of x are make.unique() copies: "31" of an earlier "3", and "32" too
+# when "31" is in use, as make.unique() counts up past names in use. Longest
+# bases first keep the counts to check small.
+is_copy <- function(x) {
+  copy <- logical(length(x))
+  for (k in rev(seq_len(max(nchar(x)) - 1))) {
+    base <- substr(x, 1, k)
+    count <- as.numeric(substring(x, k + 1))
+    ok <- (!copy & nchar(x) > k & !startsWith(substring(x, k + 1), "0") &
+      match(base, x) < seq_along(x) & count <= length(x)) %in% TRUE
+    lower <- rep(which(ok), count[ok] - 1)
+    ok[lower[!paste0(base[lower], sequence(count[ok] - 1)) %in% x]] <- FALSE
+    copy <- copy | ok
+  }
+  copy
 }
 
 # data.frame(x = names(v), n = v) for a named tapply() or sapply() result

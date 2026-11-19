@@ -639,6 +639,82 @@ test_that("row numbers of bound subsets are not shown as a column", {
                     names(openxlsx2::read_xlsx(f)))) {
     expect_equal(cols, c("area", "rate"))
   }
+
+  in_order <- list(rbind(y23[2:3, ], y24[2:3, ]), rbind(y23[3, ], y24[3, ]),
+                   rbind(y23[3, ], y24[3, ], y23[3, ]))
+  for (x in in_order) expect_equal(phw_flextable(x)$col_keys, c("area", "rate"))
+
+  areas <- data.frame(area = paste("Area", 1:22), rate = 40)
+  areas$rate[c(1, 4, 8, 12, 15, 20)] <- c(52, 53, 60, 51, 58, 62)
+  later <- transform(areas, rate = rate - 5)
+  boards <- data.frame(area = paste("Board", 1:7), rate = 1:7)
+  bound <- list(rbind(areas[areas$rate > 50, ], later[later$rate > 50, ]),
+                rbind(boards[c(2, 3, 5), ], boards[5:7, ]),
+                rbind(boards[c(2, 5), ], boards[5, ], boards[5, ]))
+  for (x in bound) expect_equal(phw_flextable(x)$col_keys, c("area", "rate"))
+})
+
+test_that("every renderer shows a table with no rows left after a filter", {
+  skip_if_not_installed("flextable")
+  skip_if_not_installed("gt")
+  skip_if_not_installed("reactable")
+  skip_if_not_installed("DT")
+  skip_if_not_installed("openxlsx2")
+  d <- data.frame(year = rep(2021:2023, c(3, 2, 4)),
+                  board = c("Powys", "Hywel Dda", "Powys", "Swansea Bay", "Powys",
+                            "Hywel Dda", "Hywel Dda", "Powys", "Swansea Bay"))
+  m <- as.data.frame.matrix(table(d$year, d$board))
+  f <- withr::local_tempfile(fileext = ".xlsx")
+  for (x in list(m[m$Powys > 200, ], mtcars[mtcars$mpg > 100, 1:3])) {
+    expect_type(attr(x, "row.names"), "character")
+    phw_write_xlsx(x, f)
+    for (cols in list(phw_flextable(x)$col_keys, names(phw_gt(x)[["_data"]]),
+                      attr(phw_datatable(x)$x, "colnames"),
+                      vapply(phw_reactable(x)$x$tag$attribs$columns, function(col) col$id, character(1)),
+                      names(openxlsx2::read_xlsx(f)))) {
+      expect_equal(cols, names(x))
+    }
+    expect_equal(nrow(phw_flextable(x)$body$dataset), 0)
+  }
+})
+
+test_that("every renderer shows whole-number labels such as years from table() or tapply()", {
+  skip_if_not_installed("flextable")
+  skip_if_not_installed("gt")
+  skip_if_not_installed("reactable")
+  skip_if_not_installed("DT")
+  skip_if_not_installed("openxlsx2")
+  d <- data.frame(year = rep(2021:2023, c(3, 2, 4)),
+                  board = c("Powys", "Hywel Dda", "Powys", "Swansea Bay", "Powys",
+                            "Hywel Dda", "Hywel Dda", "Powys", "Swansea Bay"))
+  years <- c("2021", "2022", "2023")
+  f <- withr::local_tempfile(fileext = ".xlsx")
+  for (x in list(as.data.frame.matrix(table(d$year, d$board)),
+                 as.data.frame(tapply(d$board == "Powys", d$year, sum)))) {
+    phw_write_xlsx(x, f)
+    expect_equal(phw_flextable(x)$body$dataset[[1]], years)
+    expect_equal(phw_gt(x)[["_data"]][[1]], years)
+    expect_equal(phw_datatable(x)$x$data[[1]], years)
+    expect_equal(jsonlite::fromJSON(as.character(phw_reactable(x)$x$tag$attribs$data))[[1]], years)
+    expect_equal(as.character(openxlsx2::read_xlsx(f)[[1]]), years)
+    expect_equal(phw_flextable(x)$col_keys[1], " ")
+  }
+
+  for (labels in list(0:15, 1:12, setdiff(1:52, 30), c(2019, 2021, 2023), setdiff(1:12, 10),
+                      setdiff(1:13, 6), setdiff(1:52, 50))) {
+    x <- as.data.frame.matrix(table(labels, labels %% 2))
+    expect_equal(phw_flextable(x)$body$dataset[[1]], as.character(labels))
+  }
+
+  newest_first <- list(as.data.frame.matrix(table(factor(d$year, levels = 2023:2021), d$board)),
+                       as.data.frame.matrix(table(d$year, d$board))[3:1, ],
+                       as.data.frame(rev(tapply(d$board == "Powys", d$year, sum))))
+  for (x in newest_first) {
+    expect_equal(phw_flextable(x)$body$dataset[[1]], rev(years))
+  }
+  weeks <- setdiff(52:1, 30)
+  x <- as.data.frame.matrix(table(factor(weeks, levels = weeks), weeks %% 2))
+  expect_equal(phw_flextable(x)$body$dataset[[1]], as.character(weeks))
 })
 
 test_that("every renderer shows a crosstab column for missing values under the header NA", {

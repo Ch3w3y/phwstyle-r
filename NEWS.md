@@ -435,9 +435,14 @@ says what to change.
   labels were dropped without a word, leaving numbers with no area names.
   Row names a column already holds, as `data.frame(x = names(v), n = v)`
   gives for a named `tapply()` or `sapply()` result, are not shown again,
-  and `phw_reactable()` no longer shows them twice. Row numbers are not
-  labels and are not shown, including those `rbind()` keeps as text, such
-  as `"31"`, when filtered subsets share row numbers.
+  and `phw_reactable()` no longer shows them twice. Whole-number labels,
+  such as the years, weeks or ages of a `table()` or `tapply()` result, show
+  too, oldest or newest first. Row numbers are not labels and are not shown,
+  including those `rbind()` keeps as text, such as `"31"`, when filtered
+  subsets share row numbers. Whole-number labels out of number order, such
+  as rows sorted by a count, or sparse ones whose last few jump far above
+  the rest, can look the same as those row numbers and are not shown: put
+  them in a column instead.
 * `phw_flextable()`, `phw_gt()`, `phw_reactable()` and `phw_write_xlsx()`
   show a column whose name is missing, as a crosstab made with
   `table(useNA = "ifany")` or `xtabs(addNA = TRUE)` has, under the header
