@@ -406,6 +406,22 @@ test_that("subplot() draws a missing group in grey, as each panel alone does", {
   expect_equal(colours(missing[[1]])[1:2], c(plotly::toRGB(grey), plotly::toRGB(grey, 0.6)))
 })
 
+test_that("subplot() draws a missing group in grey when the panels set their own colours", {
+  d <- data.frame(week = rep(1:2, 3), y = 1:6, g = rep(c("a", "b", NA), each = 2))
+  colours <- function(t) unlist(lapply(list(t$line$color, t$fillcolor, t$marker$color), unclass))
+  for (cols in list(phw_colour_key(d$g), phw_pal())) {
+    lines <- plotly::plot_ly(d, x = ~week, y = ~y, color = ~g, colors = cols, type = "scatter",
+                             mode = "lines", fill = "tozeroy", alpha = 0.6)
+    bars <- plotly::plot_ly(d, x = ~week, y = ~y, color = ~g, colors = cols, type = "bar")
+    tr <- built(phw_plotly(plotly::subplot(lines, bars)))$data
+    na <- vapply(tr, function(t) identical(t$name, "NA"), logical(1))
+    expect_equal(lapply(tr[na], colours),
+                 list(colours(built(phw_plotly(lines))$data[[3]]), colours(built(phw_plotly(bars))$data[[3]])))
+    expect_equal(lapply(tr[!na], colours),
+                 lapply(c(built(phw_plotly(lines))$data[1:2], built(phw_plotly(bars))$data[1:2]), colours))
+  }
+})
+
 test_that("subplot() of ggplots gives groups the PHW colours, the same in every panel", {
   skip_if_not_installed("ggplot2")
   d <- data.frame(x = rep(1:3, 3), y = 1:9, g = rep(c("A", "B", "C"), each = 3))

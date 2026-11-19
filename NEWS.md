@@ -183,7 +183,9 @@ says what to change.
   gradient, which runs from dark to light, so the shading ran the other way.
 * `phw_plotly()` draws a missing group (`NA`) in grey in a figure combined
   with `plotly::subplot()`, as it does in a single chart. Before, its lines,
-  bars and markers were invisible and its legend entry had no colour.
+  bars and markers were invisible and its legend entry had no colour. This
+  includes panels that set their own `colors`, such as `phw_colour_key()`
+  or `phw_pal()`.
 * `phw_plotly()` colours a figure combined with `plotly::subplot()` from
   its data when a colour column shares its name with an object or a
   function, such as `class`. Before, it stopped with an error, or warned
