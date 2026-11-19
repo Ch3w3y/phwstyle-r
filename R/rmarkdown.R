@@ -59,6 +59,8 @@
 #'   here: use the plain rmarkdown format for your own.
 #' @param toc Include a table of contents?
 #' @param number_sections Number the headings (1, 1.1, ...) like PHW reports?
+#'   In a PDF, the top heading level the document uses is numbered from 1, so
+#'   a report whose sections are `##` headings is numbered 1, 2, ...
 #' @param fig_width,fig_height Default figure size in inches.
 #' @param style_plots Apply [use_phw_ggplot()] and [use_phw_flextable()]
 #'   while knitting?
@@ -233,6 +235,9 @@ phw_pdf_document <- function(..., toc = FALSE, number_sections = TRUE,
   # A metadata file, unlike --variable, gives way to the document's YAML and
   # to the user's -V and --metadata-file.
   args$pandoc_args <- c("--metadata-file", phw_file("rmarkdown", "resources", "phw-pdf-defaults.yaml"),
+                        if (isTRUE(number_sections)) {
+                          c("--lua-filter", phw_file("rmarkdown", "resources", "top-heading-level.lua"))
+                        },
                         dots$pandoc_args)
   fmt <- do.call(rmarkdown::pdf_document, args)
   # rmarkdown adds 1in margins unless it sees a geometry or documentclass, and

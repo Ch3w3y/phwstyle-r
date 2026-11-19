@@ -49,7 +49,9 @@ here: use the plain rmarkdown format for your own.}
 
 \item{toc}{Include a table of contents?}
 
-\item{number_sections}{Number the headings (1, 1.1, ...) like PHW reports?}
+\item{number_sections}{Number the headings (1, 1.1, ...) like PHW reports?
+In a PDF, the top heading level the document uses is numbered from 1, so
+a report whose sections are \verb{##} headings is numbered 1, 2, ...}
 
 \item{fig_width, fig_height}{Default figure size in inches.}
 
