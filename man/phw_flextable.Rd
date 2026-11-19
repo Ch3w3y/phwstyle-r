@@ -53,13 +53,15 @@ shrinks to no less than 8 pt if the words alone are still too wide.
 In a PowerPoint deck made with R Markdown or Quarto, or with
 \code{\link[=phw_add_slide]{phw_add_slide()}}, text is never smaller than 12 pt, so the table can
 be read when projected: smaller text, such as the 10 pt default, is
-shown at 12 pt. A table wider than the slide's content area wraps its
-headings, then its cells. A table too long for the slide tightens its
-row spacing, and if it still does not fit, its rows continue on further
-slides. Each slide repeats the header row, the caption is marked with
-\code{continued} after the first slide, and the source goes on the last
-slide. A table too wide to fit even with its text wrapped gives a
-warning.}
+shown at 12 pt. A table with room to spare grows to fill the slide's
+content area, with its text up to 18 pt (see the \code{table_fit} argument
+of \code{\link[=phw_add_slide]{phw_add_slide()}}). A table wider than the slide's content area
+wraps its headings, then its cells. A table too long for the slide
+tightens its row spacing, and if it still does not fit, its rows
+continue on further slides. Each slide repeats the header row, the
+caption is marked with \code{continued} after the first slide, and the source
+goes on the last slide. A table too wide to fit even with its text
+wrapped gives a warning.}
 
 \item{number_prefix}{Word before the number.}
 

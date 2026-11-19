@@ -151,13 +151,15 @@ align_by_type <- function(ft) {
 #'   In a PowerPoint deck made with R Markdown or Quarto, or with
 #'   [phw_add_slide()], text is never smaller than 12 pt, so the table can
 #'   be read when projected: smaller text, such as the 10 pt default, is
-#'   shown at 12 pt. A table wider than the slide's content area wraps its
-#'   headings, then its cells. A table too long for the slide tightens its
-#'   row spacing, and if it still does not fit, its rows continue on further
-#'   slides. Each slide repeats the header row, the caption is marked with
-#'   `continued` after the first slide, and the source goes on the last
-#'   slide. A table too wide to fit even with its text wrapped gives a
-#'   warning.
+#'   shown at 12 pt. A table with room to spare grows to fill the slide's
+#'   content area, with its text up to 18 pt (see the `table_fit` argument
+#'   of [phw_add_slide()]). A table wider than the slide's content area
+#'   wraps its headings, then its cells. A table too long for the slide
+#'   tightens its row spacing, and if it still does not fit, its rows
+#'   continue on further slides. Each slide repeats the header row, the
+#'   caption is marked with `continued` after the first slide, and the source
+#'   goes on the last slide. A table too wide to fit even with its text
+#'   wrapped gives a warning.
 #' @param continued Text added after the caption on the slides a long table
 #'   continues on, in a PowerPoint deck. Give your own wording, for example
 #'   in Welsh.
@@ -249,7 +251,7 @@ knit_slide_table <- function(x, ...) {
   left <- knitr::opts_current$get("ft.left") %||% 1
   top <- knitr::opts_current$get("ft.top") %||% 2
   pages <- slide_table_pages(x, slide_width - left - slide_margins[["side"]],
-                             slide_height - top - slide_margins[["bottom"]])
+                             slide_height - top - slide_margins[["bottom"]], grow = TRUE)
   out <- lapply(pages, function(page) {
     class(page) <- setdiff(class(page), "phw_flextable")
     knitr::knit_print(page, ...)
