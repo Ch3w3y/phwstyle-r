@@ -943,44 +943,44 @@ colour_mapped <- function(p, palette) {
   if (!any(todo)) return(p)
   attrs <- p$x$attrs[todo]
   values <- Map(function(a, id) {
-    if (is.null(a$colorscale) && !is.null(a[["color"]])) mapped_values(a[["color"]], p, id)
+    if (is.null(a[["colorscale"]]) && !is.null(a[["color"]])) mapped_values(a[["color"]], p, id)
   }, attrs, rlang::names2(attrs))
   missing <- vapply(values, function(v) !is.numeric(v) && anyNA(v), logical(1))
   if (any(missing)) {
     groups <- Filter(function(v) !is.null(v) && !is.numeric(v), values)
     attrs <- lapply(attrs, function(a) {
-      if (!is.null(a$colors) && !rlang::is_named(a$colors)) a$colors <- colours_by_group(a$colors, groups)
+      if (!is.null(a[["colors"]]) && !rlang::is_named(a[["colors"]])) a[["colors"]] <- colours_by_group(a[["colors"]], groups)
       a
     })
   }
-  own <- vapply(attrs, function(a) !is.null(a$colors), logical(1))
-  keyed <- vapply(attrs, function(a) is.character(a$colors) && rlang::is_named(a$colors), logical(1))
+  own <- vapply(attrs, function(a) !is.null(a[["colors"]]), logical(1))
+  keyed <- vapply(attrs, function(a) is.character(a[["colors"]]) && rlang::is_named(a[["colors"]]), logical(1))
   groups <- Filter(function(v) !is.null(v) && !is.numeric(v), values[!own])
   key <- if (length(groups)) group_colours(groups, palette)
   keyed_na <- any(keyed & missing)
   attrs <- Map(function(a, v, keyed) {
     if (keyed && keyed_na) {
-      if (!"NA" %in% names(a$colors)) a$colors[["NA"]] <- phw_colours[["grey_light"]]
-      if (!is.numeric(v) && anyNA(v)) a$color <- na_as_group(a$color)
+      if (!"NA" %in% names(a[["colors"]])) a[["colors"]][["NA"]] <- phw_colours[["grey_light"]]
+      if (!is.numeric(v) && anyNA(v)) a[["color"]] <- na_as_group(a[["color"]])
     }
-    if (!is.null(a$colors) || !is.null(a$colorscale)) return(a)
-    if (is.null(a$color)) {
-      if (isTRUE(a$type %in% plotly_scale_types)) a$colors <- phw_continuous_auto
+    if (!is.null(a[["colors"]]) || !is.null(a[["colorscale"]])) return(a)
+    if (is.null(a[["color"]])) {
+      if (isTRUE(a[["type"]] %in% plotly_scale_types)) a[["colors"]] <- phw_continuous_auto
       return(a)
     }
     if (is.null(v)) return(a)
     if (is.numeric(v)) {
-      a$colors <- phw_continuous_auto
+      a[["colors"]] <- phw_continuous_auto
     } else {
-      a$colors <- key
-      if (anyNA(v)) a$color <- na_as_group(a$color)
+      a[["colors"]] <- key
+      if (anyNA(v)) a[["color"]] <- na_as_group(a[["color"]])
     }
     a
   }, attrs, values, keyed)
   shared <- Find(Negate(is.null), lapply(attrs, `[[`, "colors"))
   if (!is.null(shared)) {
     attrs <- lapply(attrs, function(a) {
-      if (is.null(a$colors)) a$colors <- shared
+      if (is.null(a[["colors"]])) a[["colors"]] <- shared
       a
     })
   }

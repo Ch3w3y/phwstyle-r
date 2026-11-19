@@ -211,6 +211,24 @@ test_that("unnamed colors keep missing groups visible in grey", {
   expect_equal(trace_colours(brewer)[["NA"]], grey)
   later <- plotly::add_markers(plotly::plot_ly(na, x = ~x, y = ~y, colors = phw_pal(2)), color = ~grp)
   expect_equal(trace_colours(later), trace_colours(p))
+  line_colours <- function(d) {
+    tr <- built(phw_plotly(plotly::add_lines(plotly::plot_ly(d, x = ~x, y = ~y, colors = phw_pal(2)), color = ~grp)))$data
+    stats::setNames(vapply(tr, function(t) t$line$color, ""), vapply(tr, function(t) t$name, ""))
+  }
+  expect_equal(line_colours(na), c(line_colours(na[!is.na(na$grp), ]), "NA" = grey))
+})
+
+test_that("a colour scale on one trace leaves missing groups on another grey", {
+  grey <- plotly::toRGB(phw_colours[["grey_light"]])
+  tiles <- data.frame(x = rep(1:2, 2), y = rep(1:2, each = 2), z = 1:4)
+  pts <- data.frame(x = 1:3, y = 1:3, grp = c("A", "B", NA))
+  for (scale in list(phw_plotly_colorscale("teals"), "Viridis")) {
+    p <- plotly::add_heatmap(plotly::plot_ly(), data = tiles, x = ~x, y = ~y, z = ~z, colorscale = scale)
+    tr <- built(phw_plotly(plotly::add_markers(p, data = pts, x = ~x, y = ~y, color = ~grp)))$data
+    expect_equal(tr[[1]]$colorscale, scale)
+    expect_equal(tr[[4]]$name, "NA")
+    expect_equal(tr[[4]]$marker$color, grey, ignore_attr = TRUE)
+  }
 })
 
 test_that("plot_ly gives each of many groups its own colour, with a warning", {
