@@ -9,7 +9,8 @@
 # first column with a blank header, as reactable shows them, so no renderer
 # drops them. The row numbers of a plain or filtered data frame are not labels,
 # even when rbind() of subsets stores them as text such as "31", nor are row
-# names a column already holds.
+# names a column already holds. A column named NA, as a crosstab made with
+# table(useNA = "ifany") has, is named "NA", as R prints it.
 check_table_data <- function(data, arg = "data", call = rlang::caller_env()) {
   data <- check_data_frame(data, as_data_frame_hint, arg, call)
   if (is.character(attr(data, "row.names"))) {
@@ -23,6 +24,7 @@ check_table_data <- function(data, arg = "data", call = rlang::caller_env()) {
   for (j in which(vapply(data, function(v) inherits(v, "difftime") && !inherits(v, "hms"), logical(1)))) {
     data[[j]] <- as.numeric(data[[j]])
   }
+  names(data)[is.na(names(data))] <- "NA"
   nms <- names(data)
   dup <- unique(nms[duplicated(nms)])
   if (length(dup)) {

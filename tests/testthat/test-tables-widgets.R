@@ -641,6 +641,29 @@ test_that("row numbers of bound subsets are not shown as a column", {
   }
 })
 
+test_that("every renderer shows a crosstab column for missing values under the header NA", {
+  skip_if_not_installed("flextable")
+  skip_if_not_installed("gt")
+  skip_if_not_installed("reactable")
+  skip_if_not_installed("DT")
+  skip_if_not_installed("openxlsx2")
+  d <- as.data.frame.matrix(table(c("a", "b", NA), c("x", NA, "y"), useNA = "ifany"))
+  expect_true(anyNA(names(d)))
+  f <- withr::local_tempfile(fileext = ".xlsx")
+  phw_write_xlsx(d, f)
+  for (cols in list(phw_flextable(d)$col_keys, names(phw_gt(d)[["_data"]]),
+                    attr(phw_datatable(d)$x, "colnames"),
+                    names(jsonlite::fromJSON(as.character(phw_reactable(d)$x$tag$attribs$data))),
+                    names(openxlsx2::read_xlsx(f)))) {
+    expect_equal(cols, c(" ", "x", "y", "NA"))
+  }
+  expect_equal(phw_flextable(d)$body$dataset[["NA"]], c(0, 1, 0))
+
+  both <- data.frame(1, 2, check.names = FALSE)
+  names(both) <- c("NA", NA)
+  expect_error(phw_gt(both), "more than one column named")
+})
+
 test_that("phw_datatable rounds and styles columns renamed with a named colnames", {
   skip_if_not_installed("DT")
   renders <- function(w) {
