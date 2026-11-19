@@ -140,7 +140,10 @@ test_that("the recipe a patchwork error suggests gives a group one colour in eve
     ggplot2::geom_line()
   err <- tryCatch(phw_plotly(phw_arrange(g1, g2)), error = identity)
   recipe <- regmatches(err$body, regexpr("phw_plotly\\(plotly::subplot.*\\)", err$body))
-  tr <- built(eval(parse(text = recipe)))$data
+  b <- built(eval(parse(text = recipe)))
+  expect_equal(b$layout$title$font$color, phw_colours[["navy"]])
+  expect_equal(b$layout$title$x, 0)
+  tr <- b$data
   colour <- vapply(tr, function(t) t$marker$color %||% t$line$color, "")
   by_group <- tapply(colour, vapply(tr, function(t) t$name, ""), function(x) length(unique(x)))
   expect_true(all(by_group == 1))
