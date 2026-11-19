@@ -219,8 +219,10 @@ phw_continuous_auto <- phw_palettes$blues[2:6]
 # chart. ggplot2 lays a legend out while the device it is drawn on is open,
 # so the width that matters is known then. With no device open, or with
 # rows or columns set, the legend stays as it is. `share` is the chart's
-# share of the device width, when it is one panel of a figure.
-phw_guide_legend <- function(share = 1) {
+# share of the device width, when it is one panel of a figure. `room`, a
+# function giving the width in cm on the open device or NULL, is for a
+# legend drawn somewhere other than its own chart (see collected_room()).
+phw_guide_legend <- function(share = 1, room = NULL) {
   ggplot2::ggproto("GuidePhwLegend", ggplot2::GuideLegend,
     params = ggplot2::guide_legend()$params,
     draw = function(self, theme, position = NULL, direction = NULL, params = self$params) {
@@ -230,10 +232,12 @@ phw_guide_legend <- function(share = 1) {
         is.null(params$nrow) && is.null(params$ncol) && grDevices::dev.cur() > 1
       if (!wraps) return(grob)
       cm <- function(u) grid::convertWidth(u, "cm", valueOnly = TRUE)
-      room <- share * cm(grid::unit(1, "npc")) - cm(sum(ggplot2::calc_element("plot.margin", theme)[c(2, 4)]))
+      limit <- if (is.function(room)) room()
+      limit <- limit %||% (share * cm(grid::unit(1, "npc")) -
+                             cm(sum(ggplot2::calc_element("plot.margin", theme)[c(2, 4)])))
       n <- nrow(params$key)
       rows <- ceiling(n / 5)
-      while (cm(gtable::gtable_width(grob)) > room && rows < n) {
+      while (cm(gtable::gtable_width(grob)) > limit && rows < n) {
         rows <- rows + 1
         params$nrow <- rows
         grob <- draw(theme, position, direction, params)
@@ -302,9 +306,9 @@ with_bar_guide <- function(scale) {
 # top or bottom of the chart, phw_guide_legend(), and each default colour bar
 # or steps phw_guide_bar(). A theme can't choose a legend, so phwstyle does
 # this wherever it draws a chart. `position` is the legend position the
-# chart will be drawn with, when it isn't the chart's own, and `share` its
-# share of the width it is drawn at (see phw_guide_legend()).
-wrap_legends <- function(plot, position = NULL, share = 1) {
+# chart will be drawn with, when it isn't the chart's own, and `share` and
+# `room` the width it has (see phw_guide_legend()).
+wrap_legends <- function(plot, position = NULL, share = 1, room = NULL) {
   if (!inherits(plot, "ggplot") || inherits(plot, "patchwork")) return(plot)
   position <- position %||% ggplot2::calc_element("legend.position", ggplot2::theme_get() + plot$theme)
   if (!identical(position, "bottom") && !identical(position, "top")) return(plot)
@@ -316,7 +320,7 @@ wrap_legends <- function(plot, position = NULL, share = 1) {
   guides <- unlist(lapply(scales, function(s) {
     type <- bar_type(s$guide)
     guide <- if (s$is_discrete() && identical(s$guide, "legend")) {
-      phw_guide_legend(share)
+      phw_guide_legend(share, room)
     } else if (!is.null(type)) {
       phw_guide_bar(type)
     }
