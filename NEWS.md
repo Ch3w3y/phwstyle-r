@@ -386,6 +386,11 @@ says what to change.
   are shaded unless `highlight = FALSE`. `phw_datatable()` gains the
   spanner, two-level column headers, group separators and right-aligned
   statistics.
+* `phw_flextable()`, `phw_gt()`, `phw_datatable()` and `phw_write_xlsx()`
+  keep labels held in row names, as `as.data.frame()` gives for a matrix or
+  `do.call(rbind, ...)` for split data. They show as a first column with a
+  blank header, as `phw_reactable()` already showed them. Before, the
+  labels were dropped without a word, leaving numbers with no area names.
 * `phw_reactable()` tables close with a navy rule and have a navy spanner.
 * `phw_reactable()` merges your `columns` into a summary table's own column
   settings, so restyling one column keeps the indents, navy headings,
