@@ -95,7 +95,9 @@ phw_reactable_theme <- function(font_size = 14, header = c("booktabs", "navy", "
 #' @param group_col,key,palette Colour the cells of the column `group_col`
 #'   (unquoted as in dplyr, or a string) by group, with the same colours as
 #'   your charts. `key` and `palette` are
-#'   passed to [phw_colour_key()].
+#'   passed to [phw_colour_key()]. On a summary table, only the level rows
+#'   are coloured: headings, subtotals and totals are left as they are and
+#'   are not added to the key.
 #' @return An htmlwidget (or a tag list when a caption or source is given).
 #' @examples
 #' if (requireNamespace("reactable", quietly = TRUE)) {
@@ -134,27 +136,32 @@ phw_reactable <- function(data, ..., caption = NULL, source = NULL, date = NULL,
                      format = reactable::colFormat(separators = TRUE),
                      headerVAlign = "bottom"))
   own_format <- !is.null(args[["defaultColDef"]][["format"]])
+  base_cols <- list()
   if (inherits(data, "phw_summary")) {
     sm <- summary_reactable_args(data)
-    args$columns <- merge_col_defs(sm$columns, args$columns)
+    base_cols <- sm$columns
     sm$columns <- NULL
     for (nm in names(sm)) if (is.null(args[[nm]])) args[[nm]] <- sm[[nm]]
     note <- attr(data, "note")
-    data <- as.data.frame(unclass(data)[names(data)], check.names = FALSE)
   }
+  if (!is.null(group_col)) {
+    rows <- heat_rows(data)
+    cols <- phw_colour_key(group_levels(data[[group_col]][rows]), name = key, palette = palette)
+    under <- base_cols[[group_col]]$style
+    style_fun <- function(value, index) {
+      st <- if (!is.null(under)) under(value, index)
+      bg <- if (index %in% rows) unname(cols[as.character(value)]) else NA
+      if (is.na(bg)) return(st)
+      c(st, list(background = bg, color = phw_text_on(bg), fontWeight = 500))
+    }
+    group_def <- stats::setNames(list(reactable::colDef(style = style_fun)), group_col)
+    base_cols <- merge_col_defs(base_cols, group_def)
+  }
+  args$columns <- merge_col_defs(base_cols, args$columns)
+  if (inherits(data, "phw_summary")) data <- as.data.frame(unclass(data)[names(data)], check.names = FALSE)
   data <- local_times(data)
   for (nm in names(defaults)) if (is.null(args[[nm]])) args[[nm]] <- defaults[[nm]]
   if (!own_format) args$columns <- with_number_formats(args$columns, data, digits)
-  if (!is.null(group_col)) {
-    cols <- phw_colour_key(group_levels(data[[group_col]]), name = key, palette = palette)
-    style_fun <- function(value) {
-      bg <- unname(cols[as.character(value)])
-      if (is.na(bg)) return(NULL)
-      list(background = bg, color = phw_text_on(bg), fontWeight = 500)
-    }
-    group_def <- stats::setNames(list(reactable::colDef(style = style_fun)), group_col)
-    args$columns <- merge_col_defs(group_def, args$columns)
-  }
   tbl <- do.call(reactable::reactable, c(list(data), args))
   tbl$dependencies <- c(tbl$dependencies, list(phw_font_dependency()))
   wrap_widget(tbl, caption, caption_from(source, date, caption_args), note)

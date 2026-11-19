@@ -689,6 +689,29 @@ test_that("table group colours match the chart's colours", {
   expect_equal(group_def(r)$name, "Group")
 })
 
+test_that("group colours on a summary table skip the total and keep it out of the key", {
+  d <- data.frame(board = rep(c("Powys", "Hywel Dda", "Cardiff and Vale"), each = 4),
+                  sex = rep(c("Female", "Male"), 6))
+  ct <- phw_crosstab(d, board, sex)
+  boards <- c("Cardiff and Vale", "Hywel Dda", "Powys")
+  chart <- phw_colour_key(boards)
+  phw_key_reset(c("t_boards", "t_boards2"))
+  withr::defer(phw_key_reset(c("t_boards", "t_boards2")))
+  if (requireNamespace("flextable", quietly = TRUE)) {
+    plain <- phw_flextable(ct)
+    ft <- phw_flextable_groups(plain, board, key = "t_boards")
+    bg <- ft$body$styles$cells$background.color$data[, "board"]
+    expect_equal(bg[1:3], unname(chart[ct$board[1:3]]))
+    expect_equal(bg[[4]], plain$body$styles$cells$background.color$data[[4, "board"]])
+    expect_equal(names(phw_key("t_boards")), boards)
+  }
+  skip_if_not_installed("reactable")
+  styles <- phw_reactable(ct, group_col = board, key = "t_boards2")$x$tag$attribs$columns[[1]]$style
+  expect_equal(vapply(styles[1:3], function(s) s$background, ""), unname(chart[ct$board[1:3]]))
+  expect_null(styles[[4]]$background)
+  expect_equal(names(phw_key("t_boards2")), boards)
+})
+
 test_that("renderers show phw_group_table(digits = ) unless given their own", {
   x <- phw_group_table(data.frame(g = c("A", "B"), v = c(1.23456, 2.5)), g, value = v, digits = 3)
   skip_if_not_installed("flextable")

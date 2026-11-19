@@ -35,6 +35,11 @@ Colours cells by the group they contain, using the same colours as your
 charts. With a \code{key}, each group keeps its colour across tables, charts
 and reports (see \code{\link[=phw_colour_key]{phw_colour_key()}}).
 }
+\details{
+On a summary table from \code{\link[=phw_flextable]{phw_flextable()}}, only the level rows are
+coloured. Headings, subtotals and totals keep their own styling and are
+not added to the key.
+}
 \examples{
 if (requireNamespace("flextable", quietly = TRUE)) {
   df <- data.frame(Group = c("Group A", "Group B", "Group C", "Unknown"),

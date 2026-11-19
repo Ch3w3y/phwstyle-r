@@ -49,7 +49,9 @@ A column you format yourself in \code{columns} keeps your format, and a
 \item{group_col, key, palette}{Colour the cells of the column \code{group_col}
 (unquoted as in dplyr, or a string) by group, with the same colours as
 your charts. \code{key} and \code{palette} are
-passed to \code{\link[=phw_colour_key]{phw_colour_key()}}.}
+passed to \code{\link[=phw_colour_key]{phw_colour_key()}}. On a summary table, only the level rows
+are coloured: headings, subtotals and totals are left as they are and
+are not added to the key.}
 }
 \value{
 An htmlwidget (or a tag list when a caption or source is given).
