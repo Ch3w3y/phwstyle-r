@@ -482,6 +482,15 @@ legend_cm <- function(g) {
   grid::convertWidth(gtable::gtable_width(box), "cm", valueOnly = TRUE)
 }
 
+# Where a legend collected by patchwork ends, in cm from the left of `g`.
+collected_legend_end <- function(g) {
+  i <- which(g$layout$name == "guide-box")
+  left <- vapply(seq_len(g$layout$l[i] - 1), function(j) {
+    grid::convertWidth(g$widths[j], "cm", valueOnly = TRUE)
+  }, numeric(1))
+  sum(left) + legend_cm(g)
+}
+
 test_that("phw_save wraps a bottom legend of health boards to fit the default size", {
   skip_if_not_installed("ragg")
   library(ggplot2)
@@ -598,7 +607,28 @@ test_that("phw_arrange wraps a collected legend of health boards", {
   use_phw_ggplot()
   local_size(16, 16)
   g <- patchwork::patchworkGrob(phw_arrange(board_chart(), board_chart(), ncol = 1))
-  expect_lte(legend_cm(g), 16)
+  expect_lte(collected_legend_end(g), 16)
+})
+
+test_that("phw_arrange wraps a collected legend to the room beside the y axis", {
+  skip_if_not_installed("ragg")
+  skip_if_not_installed("patchwork")
+  library(ggplot2)
+  local_ggplot_state()
+  use_phw_ggplot()
+  counts <- data.frame(board = c("Aneurin Bevan UHB", "Betsi Cadwaladr UHB", "Cardiff and Vale UHB",
+                                 "Cwm Taf Morgannwg UHB", "Hywel Dda UHB", "Powys THB",
+                                 "Swansea Bay UHB", "Unknown"), cases = 150 + 1:8)
+  bars <- ggplot(counts, aes(board, cases, fill = board)) + geom_col() +
+    theme(axis.text.x = element_blank())
+  figures <- list(phw_arrange(board_chart(7), board_chart(7)),
+                  phw_arrange(board_chart(7), board_chart(7), ncol = 1),
+                  phw_arrange(bars, bars),
+                  phw_arrange(bars, bars, legend = "top", title = "Cases", tag_levels = "A"))
+  for (size in list(c(16, 10), c(12.7, 9))) {
+    local_size(size[1], size[2])
+    for (fig in figures) expect_lte(collected_legend_end(patchwork::patchworkGrob(fig)), size[1])
+  }
 })
 
 test_that("phw_arrange collects only the legends its plots show", {
@@ -639,7 +669,7 @@ test_that("phw_arrange fits legends that don't merge, and kept legends to their 
   use_phw_ggplot()
   local_size()
   drives <- ggplot(mpg, aes(displ, hwy, shape = drv)) + geom_point()
-  expect_lte(legend_cm(patchwork::patchworkGrob(phw_arrange(board_chart(7), drives))), 16)
+  expect_lte(collected_legend_end(patchwork::patchworkGrob(phw_arrange(board_chart(7), drives))), 16)
   g <- patchwork::patchworkGrob(phw_arrange(board_chart(7), board_chart(7), guides = "keep"))
   for (i in 1:2) {
     box <- g$grobs[[which(g$layout$name == paste0("guide-box-bottom-", i))]]

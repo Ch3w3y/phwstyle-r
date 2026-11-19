@@ -51,25 +51,50 @@ phw_arrange <- function(..., plots = NULL, ncol = NULL, nrow = NULL, widths = NU
     cli::cli_abort(c("Each plot must be a ggplot or a grob.",
                      x = "Plot {bad[1]} is {.cls {class(all[[bad[1]]])[1]}}."))
   }
-  # A collected legend spans the figure; a kept one only its own plot.
-  share <- if (guides == "keep" && is.null(design)) column_shares(length(all), nrow, ncol, widths) else 1
-  all <- Map(wrap_legends, all, share = share,
-             MoreArgs = list(position = if (guides == "collect") legend))
-  if (guides == "collect") all <- lapply(all, place_legend, legend)
-  out <- patchwork::wrap_plots(all, ncol = ncol, nrow = nrow, widths = widths,
-                               heights = heights, design = design, guides = guides)
   ann_theme <- (theme %||% chart_theme()) + ggplot2::theme(
     plot.tag = ggplot2::element_text(face = "bold", colour = phw_colours[["navy"]]))
   if (guides == "collect") ann_theme <- ann_theme + ggplot2::theme(legend.position = legend)
-  out <- out + patchwork::plot_annotation(
-    title = title, subtitle = subtitle,
-    caption = caption_from(source, date, caption_args),
-    tag_levels = tag_levels, theme = ann_theme)
-  if (!is.null(tag_levels)) {
-    out <- out & ggplot2::theme(plot.tag = ggplot2::element_text(
+  arrange <- function(plots) {
+    out <- patchwork::wrap_plots(plots, ncol = ncol, nrow = nrow, widths = widths,
+                                 heights = heights, design = design, guides = guides)
+    out <- out + patchwork::plot_annotation(
+      title = title, subtitle = subtitle,
+      caption = caption_from(source, date, caption_args),
+      tag_levels = tag_levels, theme = ann_theme)
+    if (is.null(tag_levels)) return(out)
+    out & ggplot2::theme(plot.tag = ggplot2::element_text(
       face = "bold", colour = phw_colours[["navy"]], size = ggplot2::rel(1.1)))
   }
-  out
+  if (guides == "keep") {
+    share <- if (is.null(design)) column_shares(length(all), nrow, ncol, widths) else 1
+    return(arrange(Map(wrap_legends, all, share = share)))
+  }
+  all <- lapply(all, place_legend, legend)
+  room <- collected_room(arrange(all))
+  arrange(lapply(all, wrap_legends, position = legend, room = room))
+}
+
+# The width, in cm, that patchwork gives a legend collected from `figure`
+# when drawn on the open device: from the left of the first panel to the
+# right of the last, less the y axes and the figure margins. As a function,
+# because the width is known only when the figure is drawn. NULL when the
+# figure has no collected legend across it. Each legend in the figure asks,
+# so the width is kept for each kind and size of device.
+collected_room <- function(figure) {
+  known <- list()
+  function() {
+    key <- paste(names(grDevices::dev.cur()), paste(grDevices::dev.size("cm"), collapse = "x"))
+    if (key %in% names(known)) return(known[[key]])
+    g <- suppressMessages(suppressWarnings(patchwork::patchworkGrob(figure)))
+    i <- which(g$layout$name == "guide-box")
+    cm <- function(u) grid::convertWidth(u, "cm", valueOnly = TRUE)
+    room <- if (length(i) == 1) {
+      outside <- setdiff(seq_along(g$widths), g$layout$l[i]:g$layout$r[i])
+      cm(grid::unit(1, "npc")) - sum(vapply(outside, function(j) cm(g$widths[j]), numeric(1)))
+    }
+    known[key] <<- list(room)
+    room
+  }
 }
 
 # Each plot's share of the figure width, in a grid filled row by row as
