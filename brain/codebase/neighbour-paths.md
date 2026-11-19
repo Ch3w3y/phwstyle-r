@@ -5,7 +5,7 @@ A fix that works for the issue's repro often leaves the same defect one step awa
 - #328 fixed a bottom legend that ran off the chart, and #334 found the same problem with a second legend.
 - #330 fixed a gt table that ran off the PDF page, and its fix made a table longer than a page leave page 1 blank (#337).
 - #335 fixed the licence line on a half-width map, and #353 found it running off on maps side by side.
-- #339 fixed row-name labels being dropped, which caused #352 (`tapply()` labels shown twice) and #365 (row numbers of `rbind()` subsets shown as a column).
+- #339 fixed row-name labels being dropped, which caused #352 (`tapply()` labels shown twice) and #365 (row numbers of `rbind()` subsets shown as a column), whose fix dropped year labels from `table()` (#375).
 - #341 and #342 fixed `phw_plotly()` legends and missing-group colours on single charts, and #355 and #356 found the same defects in `plotly::subplot()`.
 
 A neighbour is in scope when it fails for the same root cause and a user would hit it in normal use (the bar in the sweep skill's "Normal use only"). A fix must also not break a neighbour a user would hit in normal use that works on `main`. Any other failing neighbour is out of scope. For any fix, run the repro, or the call the change touches, through each neighbour below that applies. Then find every caller of each helper you change (`grep -rn "<helper>(" R/`) and run one ordinary call through each caller.
