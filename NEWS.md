@@ -847,6 +847,11 @@ says what to change.
 
 ## Interactive outputs and colours
 
+* `phw_plotly()` draws an empty chart for a ggplot whose data a filter left
+  with no rows, as `plotly::ggplotly()` does, so a scheduled report still
+  knits in a week where nothing matched. Before, it stopped with the error
+  "values must be length 1". The same holds for a layer with no rows next
+  to layers with data, and for a chart made with `plotly::ggplotly()`.
 * `phw_reactable()` and `phw_plotly()` now bring the Ubuntu web font into
   the page, as `phw_datatable()` and `phw_leaflet()` do. Before, a table
   without a caption and every chart fell back to Arial.

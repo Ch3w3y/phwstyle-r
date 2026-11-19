@@ -661,8 +661,10 @@ panel_keys <- function(traces) {
   sub(",[0-9]+\\)$", "", substring(tuple, 2))
 }
 
+# ggplotly() gives a layer with no rows an invisible trace whose axes are
+# character(0), which %||% keeps.
 trace_panels <- function(traces) {
-  vapply(traces, function(t) paste(t$xaxis %||% "x", t$yaxis %||% "y"), "")
+  vapply(traces, function(t) paste(c(t$xaxis, "x")[1], c(t$yaxis, "y")[1]), "")
 }
 
 # A chart made with ggplotly() comes without its ggplot, but its `attrs` keep
