@@ -17,6 +17,7 @@ phw_flextable(
   number_prefix = "Table",
   caption_args = list(),
   flextable_args = list(),
+  continued = "(continued)",
   ...
 )
 }
@@ -46,11 +47,19 @@ or \code{Blwyddyn}. These show as 2021, not 2,021.}
 
 \item{autofit}{Fit column widths to their content? In a Word or PDF
 document, a table wider than the page is narrowed to fit the text width
-either way, and in a PowerPoint deck made with R Markdown or Quarto, a
-table wider than the slide's content area is narrowed to fit that: its
-headings wrap first, then its cells, and its text shrinks to no less
-than 8 pt if the words alone are still too wide. A table that cannot fit
-even then gives a warning.}
+either way: its headings wrap first, then its cells, and its text
+shrinks to no less than 8 pt if the words alone are still too wide.
+
+In a PowerPoint deck made with R Markdown or Quarto, or with
+\code{\link[=phw_add_slide]{phw_add_slide()}}, text is never smaller than 12 pt, so the table can
+be read when projected: smaller text, such as the 10 pt default, is
+shown at 12 pt. A table wider than the slide's content area wraps its
+headings, then its cells. A table too long for the slide tightens its
+row spacing, and if it still does not fit, its rows continue on further
+slides. Each slide repeats the header row, the caption is marked with
+\code{continued} after the first slide, and the source goes on the last
+slide. A table too wide to fit even with its text wrapped gives a
+warning.}
 
 \item{number_prefix}{Word before the number.}
 
@@ -60,6 +69,10 @@ even then gives a warning.}
 \item{flextable_args}{List of arguments for \code{\link[flextable:flextable]{flextable::flextable()}},
 e.g. \code{list(col_keys = c("area", "rate"))}. For a summary table,
 \code{col_keys} must start with its label columns.}
+
+\item{continued}{Text added after the caption on the slides a long table
+continues on, in a PowerPoint deck. Give your own wording, for example
+in Welsh.}
 
 \item{...}{Passed to \code{\link[=phw_flextable_theme]{phw_flextable_theme()}}.}
 }

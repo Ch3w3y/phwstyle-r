@@ -461,6 +461,12 @@ phw_pptx <- function(template = NULL) {
 #'   [phw_flextable()]). It must have at least one row. A flextable's
 #'   caption, such as the one [phw_flextable()] adds, goes in a row at the
 #'   top of the table, because PowerPoint does not show table captions.
+#'   Text in the table is never smaller than 12 pt, so it can be read when
+#'   projected. A table too long for the slide tightens its row spacing, and
+#'   if it still does not fit, its rows continue on further slides with the
+#'   same title. Each of them repeats the table's header row and marks its
+#'   caption, or the title if the table has none, with `continued`. Any
+#'   other content goes on the first of them, and the source on the last.
 #' @param text Character vector of bullet points. On a title slide or
 #'   section header it is plain lines in the template's own colour and size.
 #' @param source,date Passed to [phw_caption()] and shown at the bottom, in
@@ -503,12 +509,15 @@ phw_pptx <- function(template = NULL) {
 #'   table so it fills the width of the slide's content area? The text grows
 #'   with it, by up to 1.6 times, and a narrow table is widened by at most
 #'   another 80% (more for a table with more columns). A tall table tightens
-#'   its row spacing so the text can grow. `FALSE` keeps the table at the size [phw_flextable()] gives
-#'   it. A flextable you pass in is never resized. A table too wide for the
-#'   area shrinks its text, down to 8 points, rather than narrowing its
-#'   columns. One still too wide at 8 points keeps its column widths and
-#'   gives a warning. The text never shrinks for height, so a table with too
-#'   many rows for the slide gives a warning that says how many fit.
+#'   its row spacing so the text can grow. `FALSE` keeps the table at the
+#'   size [phw_flextable()] gives it, with its text at 12 pt. A flextable you
+#'   pass in is never enlarged. Either way, a table too wide for the area
+#'   wraps its headings, then its cells, and one still too wide gives a
+#'   warning. The text never shrinks below 12 pt.
+#' @param continued Text added after the caption, or after the title if the
+#'   table has no caption, on the slides a long table continues on. `NULL`
+#'   uses the `continued` text of a [phw_flextable()], or `"(continued)"`.
+#'   Give your own wording, for example in Welsh.
 #' @param title_size Title font size. On a title slide or section header the
 #'   template sets the size and colour, and this applies only when you give it.
 #' @param caption_args List of other [phw_caption()] arguments.
@@ -521,7 +530,7 @@ phw_add_slide <- function(x, title = NULL, plot = NULL, table = NULL, text = NUL
                           source = NULL, date = NULL, layout = "Title and Content",
                           master = NULL, editable = TRUE, title_size = 28,
                           caption_args = list(), alt = NULL,
-                          plot_scale = 1.5, table_fit = TRUE) {
+                          plot_scale = 1.5, table_fit = TRUE, continued = NULL) {
   rlang::check_installed("officer")
   if (!inherits(x, "rpptx")) {
     cli::cli_abort("{.arg x} must be a deck from {.fn phw_pptx}, not {.obj_type_friendly {x}}.")
@@ -530,6 +539,7 @@ phw_add_slide <- function(x, title = NULL, plot = NULL, table = NULL, text = NUL
   check_one_string(alt, allow_null = TRUE)
   check_one_string(layout)
   check_one_string(master, allow_null = TRUE)
+  check_one_string(continued, allow_null = TRUE)
   check_true_false(editable)
   check_true_false(table_fit)
   check_positive_number(plot_scale)
@@ -565,48 +575,69 @@ phw_add_slide <- function(x, title = NULL, plot = NULL, table = NULL, text = NUL
   }
   values <- Map(slide_value, contents, names(contents), areas,
                 MoreArgs = list(editable = editable, plot_scale = plot_scale,
-                                table_fit = table_fit, cover = cover))
+                                table_fit = table_fit, cover = cover, continued = continued))
+  look <- list(title_type = title_type, title_size = title_size, cover = cover,
+               cover_size = if (!missing(title_size)) title_size, layout = layout, master = master)
+  # A table comes as one flextable per slide it takes.
+  pages <- values$table %||% list(NULL)
+  marked <- if (!inherits(table, "flextable") || is.null(caption_text(table))) {
+    continued %||% attr(table, "phw_continued") %||% "(continued)"
+  }
 
-  x <- officer::add_slide(x, layout = layout, master = master)
-  index <- x$cursor
+  added <- integer()
   tryCatch({
-    if (!is.null(title)) {
-      # Cover layouts set their own title colour and size, often for a dark
-      # background, so the run leaves both to the placeholder.
-      title_props <- if (!cover) {
-        officer::fp_text(font.family = phw_font(), font.size = title_size, bold = TRUE,
-                         color = phw_colours[["navy"]])
-      }
-      x <- officer::ph_with(x, officer::fpar(officer::ftext(title, title_props)),
-                            location = officer::ph_location_type(title_type))
-      if (cover) x <- set_cover_runs(x, bold = TRUE, size = if (!missing(title_size)) title_size)
-    }
-    for (i in seq_along(values)) {
-      shape_alt <- if (i == 1) alt
-      if (!is.null(shape_alt) && inherits(values[[i]], "ggplot")) {
-        x <- officer::ph_with(x, values[[i]], location = areas[[i]]$location, alt_text = shape_alt)
-      } else {
-        x <- officer::ph_with(x, values[[i]], location = areas[[i]]$location)
-        if (names(values)[i] == "text" && isTRUE(areas[[i]]$free)) x <- set_slide_bullets(x)
-        if (names(values)[i] == "text" && cover) x <- set_cover_runs(x)
-        x <- set_slide_alt(x, shape_alt)
-      }
-    }
-    if (!is.null(cap)) {
-      size <- officer::slide_size(x)
-      fp <- officer::fp_text(font.family = phw_font(), font.size = 10, bold = TRUE,
-                             color = phw_text_on(layout_background(x, layout, master)))
-      x <- officer::ph_with(x, officer::fpar(officer::ftext(gsub("\n", " | ", cap), fp),
-                                             fp_p = officer::fp_par(text.align = "right")),
-                            location = officer::ph_location(left = 0.6, top = size$height - 0.6,
-                                                            width = size$width - 1.2, height = 0.4))
+    for (k in seq_along(pages)) {
+      shown <- seq_along(values)
+      if (k > 1) shown <- which(names(values) == "table")
+      if (!is.null(pages[[k]])) values$table <- pages[[k]]
+      x <- officer::add_slide(x, layout = layout, master = master)
+      added <- c(added, x$cursor)
+      x <- fill_slide(x, if (k > 1 && !is.null(marked) && !is.null(title)) paste(title, marked) else title,
+                      values[shown], areas[shown], if (1 %in% shown) alt, if (k == length(pages)) cap, look)
     }
     x
   }, error = function(e) {
-    # The deck changes in place, so a failure part way would leave a half-built slide.
-    officer::remove_slide(x, index = index)
+    # The deck changes in place, so a failure part way would leave half-built slides.
+    for (index in rev(added)) officer::remove_slide(x, index = index)
     stop(e)
   })
+}
+
+# Puts the title, contents and source line on the slide just added.
+fill_slide <- function(x, title, values, areas, alt, cap, look) {
+  cover <- look$cover
+  if (!is.null(title)) {
+    # Cover layouts set their own title colour and size, often for a dark
+    # background, so the run leaves both to the placeholder.
+    title_props <- if (!cover) {
+      officer::fp_text(font.family = phw_font(), font.size = look$title_size, bold = TRUE,
+                       color = phw_colours[["navy"]])
+    }
+    x <- officer::ph_with(x, officer::fpar(officer::ftext(title, title_props)),
+                          location = officer::ph_location_type(look$title_type))
+    if (cover) x <- set_cover_runs(x, bold = TRUE, size = look$cover_size)
+  }
+  for (i in seq_along(values)) {
+    shape_alt <- if (i == 1) alt
+    if (!is.null(shape_alt) && inherits(values[[i]], "ggplot")) {
+      x <- officer::ph_with(x, values[[i]], location = areas[[i]]$location, alt_text = shape_alt)
+    } else {
+      x <- officer::ph_with(x, values[[i]], location = areas[[i]]$location)
+      if (names(values)[i] == "text" && isTRUE(areas[[i]]$free)) x <- set_slide_bullets(x)
+      if (names(values)[i] == "text" && cover) x <- set_cover_runs(x)
+      x <- set_slide_alt(x, shape_alt)
+    }
+  }
+  if (!is.null(cap)) {
+    size <- officer::slide_size(x)
+    fp <- officer::fp_text(font.family = phw_font(), font.size = slide_min_size, bold = TRUE,
+                           color = phw_text_on(layout_background(x, look$layout, look$master)))
+    x <- officer::ph_with(x, officer::fpar(officer::ftext(gsub("\n", " | ", cap), fp),
+                                           fp_p = officer::fp_par(text.align = "right")),
+                          location = officer::ph_location(left = 0.6, top = size$height - 0.6,
+                                                          width = size$width - 1.2, height = 0.4))
+  }
+  x
 }
 
 # The solid background colour of a layout, from the layout or else its master,
@@ -709,7 +740,7 @@ slide_areas <- function(props, size, layout, cover, kinds, call = rlang::caller_
 }
 
 # The officer value for one content, sized for its area.
-slide_value <- function(value, kind, area, editable, plot_scale, table_fit, cover) {
+slide_value <- function(value, kind, area, editable, plot_scale, table_fit, cover, continued) {
   if (kind == "plot") {
     if (!inherits(value, "ggplot")) {
       file <- tempfile(fileext = ".png")
@@ -723,19 +754,12 @@ slide_value <- function(value, kind, area, editable, plot_scale, table_fit, cove
     return(value)
   }
   if (kind == "table") {
-    ft <- if (inherits(value, "flextable")) {
-      caption_as_header(value)
-    } else {
-      built <- phw_flextable(value)
-      if (table_fit) fit_table_to_area(built, area$width, area$height) else built
+    if (!inherits(value, "flextable")) {
+      value <- phw_flextable(value)
+      if (table_fit) value <- fit_table_to_area(value, area$width, area$height)
     }
-    n <- flextable::nrow_part(ft, "body")
-    fits <- table_rows_that_fit(ft, area$height)
-    if (fits < n) {
-      cli::cli_warn(c("Only {fits} of the table's {n} rows fit in the slide's content area, so the table runs past it.",
-                      i = "Split the table over more slides, or show fewer rows."))
-    }
-    return(ft)
+    return(slide_table_pages(value, area$width, area$height, continued,
+                             where = "the slide's content area"))
   }
   if (cover) {
     return(do.call(officer::block_list, lapply(value, function(t) officer::fpar(officer::ftext(t)))))
@@ -747,9 +771,8 @@ slide_value <- function(value, kind, area, editable, plot_scale, table_fit, cove
 # PowerPoint does not draw a flextable caption, so it becomes the table's top
 # row, in the caption style of phw_flextable().
 caption_as_header <- function(ft) {
-  caption <- ft$caption$value
-  text <- if (is.character(caption)) caption else paste(caption$txt, collapse = "")
-  if (!length(text) || !nzchar(text)) return(ft)
+  text <- caption_text(ft)
+  if (is.null(text)) return(ft)
   ft <- flextable::add_header_lines(ft, values = text)
   ft <- flextable::style(
     ft, i = 1, part = "header",
@@ -759,13 +782,6 @@ caption_as_header <- function(ft) {
                             border = officer::fp_border(width = 0)))
   ft <- flextable::align(ft, i = 1, align = "left", part = "header")
   flextable::padding(ft, i = 1, padding.bottom = 4, part = "header")
-}
-
-# Slides treat row heights as minimums, so the set heights tell how far down
-# the table reaches.
-table_rows_that_fit <- function(ft, height) {
-  fixed <- sum(ft$header$rowheights, ft$footer$rowheights)
-  sum(fixed + cumsum(ft$body$rowheights) <= height + 0.001)
 }
 
 # Each panel of a patchwork, and its annotation, is scaled from its own theme:
@@ -799,15 +815,14 @@ scaled_text_theme <- function(theme, scale) {
 }
 
 # Grows a table's text so it fills the area, then widens its columns. A tall
-# table is bound by height, so it squeezes its vertical padding. Row heights
-# come from the text size, line count and padding, the same model that decides
-# how far the text can grow: the heights flextable measures are larger than
-# the text needs, and slides treat them as minimums. A table too wide for the
-# area shrinks its text instead of its columns, down to `min_size` points for
-# the largest text. Column widths are close to linear in the text size, so the
-# size that fits is read off the widths at full and smallest size.
+# table is bound by height, so it squeezes its vertical padding. The text
+# grows by as much as its lines, at the text size, line count and padding
+# that fit_rows_to_height() also uses, leave room for. A table already too
+# wide for the area is left for slide_table_pages() to wrap.
 fit_table_to_area <- function(ft, width, height, max_grow = 1.6, max_pad = 1.8,
-                              line_height = 1.25, tight_pad = 1, min_size = 8) {
+                              line_height = 1.25, tight_pad = 1) {
+  grow_w <- width / sum(flextable::flextable_dim(ft)$widths)
+  if (grow_w < 1) return(ft)
   parts <- Filter(function(part) flextable::nrow_part(ft, part) > 0, c("header", "body", "footer"))
   sizes <- lapply(parts, function(part) apply(ft[[part]]$styles$text$font.size$data, 1, max))
   lines <- lapply(parts, function(part) {
@@ -815,53 +830,27 @@ fit_table_to_area <- function(ft, width, height, max_grow = 1.6, max_pad = 1.8,
     lines <- nchar(gsub("[^\n]", "", txt)) + 1
     apply(matrix(lines, nrow = flextable::nrow_part(ft, part)), 1, max)
   })
-  pads <- lapply(parts, function(part) {
+  pad_pt <- sum(unlist(lapply(parts, function(part) {
     pars <- ft[[part]]$styles$pars
     apply(pars$padding.top$data, 1, max) + apply(pars$padding.bottom$data, 1, max)
-  })
+  })))
   text_pt <- sum(unlist(sizes) * unlist(lines)) * line_height
   grow_for <- function(pad_pt) (height * 72 - pad_pt) / text_pt
-  grow_w <- flextable::flextable_dim(ft)$widths
-  grow_w <- width / grow_w
   wanted <- min(grow_w, max_grow)
-  pad_pt <- sum(unlist(pads))
-  tall <- grow_for(pad_pt) < wanted
-  if (tall) {
-    pads <- lapply(pads, function(p) rep(2 * tight_pad, length(p)))
-    pad_pt <- sum(unlist(pads))
+  if (grow_for(pad_pt) < wanted) {
+    pad_pt <- 2 * tight_pad * length(unlist(sizes))
     ft <- flextable::padding(ft, padding.top = tight_pad, padding.bottom = tight_pad, part = "all")
   }
-  resize <- function(ft, scale) {
+  grow <- max(min(wanted, grow_for(pad_pt)), 1)
+  if (grow != 1) {
     for (k in seq_along(parts)) {
       for (i in seq_along(sizes[[k]])) {
-        ft <- flextable::fontsize(ft, i = i, size = sizes[[k]][i] * scale, part = parts[k])
+        ft <- flextable::fontsize(ft, i = i, size = sizes[[k]][i] * grow, part = parts[k])
       }
     }
-    flextable::autofit(ft)
-  }
-  too_wide <- FALSE
-  if (grow_w < 1) {
-    full <- sum(ft$body$colwidths)
-    least <- min(min_size / max(unlist(sizes)), 1)
-    smallest <- sum(resize(ft, least)$body$colwidths)
-    too_wide <- smallest > width
-    grow <- if (too_wide) least else 1 - (1 - least) * (full - width) / (full - smallest)
-  } else {
-    grow <- max(min(wanted, grow_for(pad_pt)), 1)
-  }
-  if (grow != 1) ft <- resize(ft, grow)
-  if (tall || grow != 1) {
-    for (k in seq_along(parts)) {
-      ft <- flextable::height(ft, i = seq_along(sizes[[k]]), part = parts[k], unit = "in",
-                              height = (sizes[[k]] * lines[[k]] * grow * line_height + pads[[k]]) / 72)
-    }
+    ft <- flextable::autofit(ft)
   }
   widths <- ft$body$colwidths
-  if (too_wide) {
-    cli::cli_warn(c("The table's {length(widths)} columns are too wide for the slide's content area, even with {min_size} pt text, so the table runs past it.",
-                    i = "Split the columns over more slides, or show fewer columns."))
-    return(ft)
-  }
   max_pad <- max_pad + 0.3 * max(length(widths) - 2, 0)
   pad <- min(width / sum(widths), max_pad)
   flextable::width(ft, j = seq_along(widths), width = widths * pad)

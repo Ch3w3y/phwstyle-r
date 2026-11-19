@@ -579,9 +579,51 @@ test_that("a table by health board fits the content area of a PowerPoint deck", 
   left <- vapply(frames, function(f) inches(xml2::xml_attr(xml2::xml_find_first(f, ".//a:off"), "x")), 0)
   widths <- lapply(frames, function(f) inches(xml2::xml_attr(xml2::xml_find_all(f, ".//a:gridCol"), "w")))
   expect_lte(left[1] + sum(widths[[1]]), body$offx + body$cx + 0.01)
-  # A table that already fits keeps the widths it was given.
+  # A table that already fits keeps its column widths, widened as much as
+  # its 10 pt text grows to 12 pt on a slide.
   small <- phw_flextable(head(mtcars[, 1:4]))
-  expect_equal(widths[[2]], small$body$colwidths, tolerance = 0.01, ignore_attr = TRUE)
+  expect_equal(widths[[2]], small$body$colwidths * 1.2, tolerance = 0.01, ignore_attr = TRUE)
+})
+
+test_that("a table too long for a slide continues on the next slide of a knitted deck", {
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("flextable")
+  skip_if_not(rmarkdown::pandoc_available("2.4"), "pandoc 2.4 or later is not available")
+  local_ggplot_state()
+  dir <- withr::local_tempdir()
+  rmd <- file.path(dir, "weeks.Rmd")
+  writeLines(c("---", "title: Weeks", "---", "", "## Cases", "",
+               "```{r, echo = FALSE}",
+               "set.seed(1)",
+               "wk <- data.frame(Week = 30:45, Cases = rpois(16, 40),",
+               "                 `Rate per 100,000` = round(rnorm(16, 12, 2), 1), check.names = FALSE)",
+               "phwstyle::phw_flextable(wk, caption = 'Cases by week', source = 'Example data')",
+               "```", "", "## Next", "", "Text"), rmd)
+  pptx <- rmarkdown::render(rmd, rmarkdown::powerpoint_presentation(reference_doc = phw_reference_pptx()),
+                            quiet = TRUE)
+  unzipped <- withr::local_tempdir()
+  utils::unzip(pptx, exdir = unzipped)
+  slides <- file.path(unzipped, "ppt", "slides", paste0("slide", 2:4, ".xml"))
+  tables <- lapply(slides[1:2], function(s) xml2::xml_find_first(xml2::read_xml(s), "//p:graphicFrame"))
+  rows <- lapply(tables, function(t) {
+    lapply(xml2::xml_find_all(t, ".//a:tr"), function(r) xml2::xml_text(xml2::xml_find_all(r, "a:tc")))
+  })
+  expect_equal(rows[[1]][[1]][1], "Cases by week")
+  expect_equal(rows[[2]][[1]][1], "Cases by week (continued)")
+  for (r in rows) expect_equal(r[[2]], c("Week", "Cases", "Rate per 100,000"))
+  weeks <- unlist(lapply(rows, function(r) vapply(r[-(1:2)], `[`, "", 1)))
+  expect_equal(weeks[weeks != "Source: Example data"], as.character(30:45))
+  expect_false(any(grepl("Source", unlist(rows[[1]]))))
+  expect_equal(rows[[2]][[length(rows[[2]])]][1], "Source: Example data")
+  inches <- function(x) as.numeric(x) / 914400
+  for (t in tables) {
+    sizes <- as.numeric(xml2::xml_attr(xml2::xml_find_all(t, ".//a:rPr[@sz]"), "sz"))
+    expect_gte(min(sizes), 1200)
+    top <- inches(xml2::xml_attr(xml2::xml_find_first(t, ".//a:off"), "y"))
+    expect_lte(top + sum(inches(xml2::xml_attr(xml2::xml_find_all(t, ".//a:tr"), "h"))), 7.5 - 0.95 + 0.001)
+  }
+  expect_match(paste(readLines(slides[3], warn = FALSE), collapse = ""), ">Next<")
 })
 
 test_that("a table too wide for a slide even with its text wrapped gives a warning", {
