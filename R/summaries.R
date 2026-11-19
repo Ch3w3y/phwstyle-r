@@ -158,13 +158,16 @@ heat_rows <- function(x) {
 }
 
 # Groups in the order a chart of the same data gives them. A summary table's
-# label columns are text, so sorting them would put "15-44" before "5-14":
-# its level rows are already in factor order, so they keep the order they
-# have in the table. `x` holds the values of the rows heat_rows() picks.
+# label columns are text, so sorting them would put "15-44" before "5-14".
+# A group table repeats its innermost levels in every group, and a group can
+# lack the first of them, so it records their factor order in "level_order".
+# Other labels keep the order they first appear in. `x` holds the values of
+# the rows heat_rows() picks.
 table_group_levels <- function(x, data) {
   if (is.factor(x) || length(attr(data, "row_type")) != nrow(data)) return(group_levels(x))
   lv <- unique(as.character(x))
-  lv[!is.na(lv)]
+  lv <- lv[!is.na(lv)]
+  lv[order(match(lv, attr(data, "level_order")))]
 }
 
 # Columns of `j` that share one heat scale. A summary table's total columns

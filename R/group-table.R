@@ -293,6 +293,7 @@ phw_group_table <- function(data, rows, cols = NULL, value = NULL, fun = sum,
   attr(res, "separate") <- separate
   attr(res, "highlight") <- highlight
   attr(res, "digits") <- digits
+  attr(res, "level_order") <- levels(grp[[rows[k]]])
   attr(res, "total_cols") <- col_names[total_cols]
   if (length(cols) > 1) attr(res, "col_header") <- `colnames<-`(col_header, col_names)
   res

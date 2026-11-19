@@ -469,7 +469,10 @@ says what to change.
   also kept its own style for the label column and coloured no rows. The
   groups take the order of the table's level rows, which is the factor
   order, as in a chart of the same data. Before, they were sorted as text,
-  so age groups such as "5-14" and "15-44" got each other's colours.
+  so age groups such as "5-14" and "15-44" got each other's colours. In a
+  table from `phw_group_table()`, each level keeps its colour when the first
+  group has no rows for a level. Before, every level took the colour of the
+  one before it.
 * `phw_datatable()` keeps the `columnDefs` you give in `options` for a
   summary table. Before, the table's own column settings replaced them.
 * `phw_datatable()` accepts columns renamed with a named `colnames`, such as
