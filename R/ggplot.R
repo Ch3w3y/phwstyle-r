@@ -940,7 +940,11 @@ wrap_lines <- function(lines, room, measure) {
 # wrapped for the screen, is wrapped again as one line. A longer caption makes
 # a map shorter and so narrower, so the passes go on until every line fits.
 # Where no wrapping fits, such as a tall map in a short figure, the narrowing
-# would not stop, so the pass that runs over least is kept.
+# would not stop, so the pass that runs over least is kept. In a patchwork,
+# a map's caption may have only the map's width, which no wrapping fits
+# beside another panel, or the wrapped caption may make the maps so narrow
+# that their titles meet. Then the plots' captions go under the whole figure
+# instead (see gather_captions()).
 fit_captions <- function(plot, width, height) {
   if (!inherits(plot, "ggplot") || !length(caption_slots(plot))) return(plot)
   old <- grDevices::dev.cur()
@@ -958,8 +962,22 @@ fit_captions <- function(plot, width, height) {
 
 # As fit_captions(), for a chart drawn in the current viewport.
 fit_captions_here <- function(plot) {
+  fit <- wrap_captions(plot)
+  if (fit$over > 0) {
+    gathered <- gather_captions(plot)
+    if (!is.null(gathered)) {
+      alt <- wrap_captions(gathered)
+      if (alt$over < fit$over) fit <- alt
+    }
+  }
+  fit$plot
+}
+
+# The passes of fit_captions(): the plot with its captions wrapped, and by
+# how many inches the lines still run over.
+wrap_captions <- function(plot) {
   slots <- caption_slots(plot)
-  if (!length(slots)) return(plot)
+  if (!length(slots)) return(list(plot = plot, over = 0))
   best <- list(plot = plot, over = Inf)
   for (pass in 1:10) {
     # Any warning or error comes again when the chart is drawn.
@@ -970,7 +988,21 @@ fit_captions_here <- function(plot) {
     if (!length(fit$labels)) break
     for (cell in names(fit$labels)) plot <- slots[[cell]]$set(plot, fit$labels[[cell]])
   }
-  best$plot
+  best
+}
+
+# The patchwork `plot` with the captions of its plots moved under the
+# figure, after the figure's own caption, each text once. NULL when no plot
+# has a caption.
+gather_captions <- function(plot) {
+  if (!inherits(plot, "patchwork")) return(NULL)
+  slots <- caption_slots(plot)
+  own <- slots[names(slots) != "caption"]
+  if (!length(own)) return(NULL)
+  for (s in own) plot <- s$set(plot, NULL)
+  texts <- vapply(own, function(s) paste(s$text, collapse = "\n"), character(1))
+  plot$patches$annotation$caption <- paste(unique(c(slots$caption$text, texts)), collapse = "\n")
+  plot
 }
 
 # The captions of a chart, or of each plot in a patchwork and of the figure,
@@ -1007,7 +1039,9 @@ caption_slots <- function(plot) {
 # out in the current viewport, and by how many inches in all they run over.
 # A caption has the room from its right edge to the caption drawn to its left
 # in the same row, or else to the left of the viewport, less the width of the
-# chart's left margin.
+# chart's left margin. Captions so tall that no room is left for a panel give
+# no labels and run over without end. A plot's title or subtitle that reaches
+# the one beside it in a patchwork runs over too.
 refit_captions <- function(g, slots) {
   grid::pushViewport(grid::viewport(layout = grid::grid.layout(
     nrow(g), ncol(g), widths = g$widths, heights = g$heights, respect = g$respect)))
@@ -1019,10 +1053,23 @@ refit_captions <- function(g, slots) {
     on.exit(grid::popViewport())
     x()
   }
+  collapsed <- function(cell) {
+    grid::pushViewport(grid::viewport(layout.pos.row = cell$t:cell$b, layout.pos.col = cell$l:cell$r))
+    on.exit(grid::popViewport())
+    min(grid::convertWidth(grid::unit(1, "npc"), "in", valueOnly = TRUE),
+        grid::convertHeight(grid::unit(1, "npc"), "in", valueOnly = TRUE)) <= 0
+  }
+  panels <- g$layout[grepl("^panel", g$layout$name), ]
+  if (any(vapply(seq_len(nrow(panels)), function(i) collapsed(panels[i, ]), logical(1)))) {
+    return(list(labels = list(), over = Inf))
+  }
   start <- x()[1]
   gap <- diff(edges(list(t = 1, l = 1, r = 1)))
+  text_in <- function(cells) {
+    lapply(g$grobs[match(cells$name, g$layout$name)], function(grob) Find(function(k) inherits(k, "text"), grob$children))
+  }
   drawn <- g$layout[grepl("^caption(-[0-9]+)?$", g$layout$name), ]
-  texts <- lapply(g$grobs[match(drawn$name, g$layout$name)], function(grob) Find(function(k) inherits(k, "text"), grob$children))
+  texts <- text_in(drawn)
   keep <- !vapply(texts, is.null, logical(1))
   drawn <- drawn[keep, ]
   texts <- texts[keep]
@@ -1039,6 +1086,18 @@ refit_captions <- function(g, slots) {
       over <- over + widest - room
       labels[[cell$name]] <- wrap_lines(slots[[cell$name]]$text, room, measure)
     }
+  }
+  heads <- g$layout[grepl("^(sub)?title-[0-9]+$", g$layout$name), ]
+  head_texts <- text_in(heads)
+  keep <- !vapply(head_texts, is.null, logical(1))
+  heads <- heads[keep, ]
+  head_texts <- head_texts[keep]
+  heads$left <- vapply(seq_len(nrow(heads)), function(i) edges(heads[i, ])[1], numeric(1))
+  for (i in seq_len(nrow(heads))) {
+    after <- heads$left[heads$t == heads$t[i] & heads$left > heads$left[i]]
+    if (!length(after)) next
+    width <- grid::convertWidth(grid::grobWidth(head_texts[[i]]), "in", valueOnly = TRUE)
+    over <- over + max(0, heads$left[i] + width - min(after))
   }
   list(labels = labels, over = over)
 }

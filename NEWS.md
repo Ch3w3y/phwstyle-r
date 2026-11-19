@@ -255,6 +255,15 @@ says what to change.
   before, a line wider than its room lost its start off the left edge or
   printed over the caption beside it: two maps side by side, or one map
   saved at half-page width, cut off their licence line.
+* A `phw_arrange()` figure moves its plots' captions under the whole
+  figure, each text once, when they do not fit under their plots: a map's
+  licence line beside a chart, or under two maps finished with
+  `phw_finalise()`. They also move when the room the captions take makes
+  maps so narrow that their titles run into each other. Before, the
+  captions wrapped narrower on each try and the maps shrank with them: the
+  figure collapsed into a strip with titles printed over each other, a map
+  became a thumbnail with its licence line cut off at the left, or drawing
+  stopped with the error "Viewport has zero dimension(s)".
 * A legend of groups across the bottom or top of a chart takes more rows
   when one row is wider than the chart. Before, a legend of health boards
   at the default sizes stayed on one row and its last boards were cut off.
