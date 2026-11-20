@@ -19,6 +19,7 @@ saved_caption_lines <- function(plot, caption, width = 16, height = 10) {
   inches <- function(path, attr) as.numeric(xml2::xml_attr(xml2::xml_find_first(shapes, path), attr)) / 914400
   out <- data.frame(text = xml2::xml_text(shapes), left = inches(".//a:off", "x"), top = inches(".//a:off", "y"))
   out$right <- out$left + inches(".//a:ext", "cx")
+  out$bottom <- out$top + inches(".//a:ext", "cy")
   part <- vapply(out$text, function(t) grepl("[A-Za-z]", t) && grepl(t, caption, fixed = TRUE), logical(1))
   out[part, ]
 }

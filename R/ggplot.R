@@ -819,6 +819,8 @@ phw_finalise <- function(plot, source = NULL, date = NULL, logo = "blue",
     plot <- plot + patchwork::plot_annotation(caption = NULL)
   } else if (inherits(plot, "ggplot")) {
     kept <- plot$labels$caption
+    # A map's licence, wrapped for the chart, wraps again in the footer.
+    kept <- attr(kept, "phw_unwrapped") %||% kept
     plot <- wrap_legends(plot + ggplot2::labs(caption = NULL))
   } else if (!inherits(plot, "grob")) {
     cli::cli_abort("{.arg plot} must be a ggplot, a patchwork or a grob, not {.cls {class(plot)}}.")
@@ -902,7 +904,34 @@ makeContext.phw_finalised <- function(x) {
   plot <- fit_captions_here(x$phw_plot)
   grid::popViewport()
   g <- suppressMessages(suppressWarnings(plot_gtable(plot)))
-  grid::makeContext(add_footer(g, footer))
+  grid::makeContext(add_fitted_footer(g, footer))
+}
+
+# The footer is drawn as wide as the chart, and a map keeps its shape, so it
+# is often narrower than the image. The footer's height, and so the map's
+# size, depends on that width: a narrower footer wraps or stacks its text and
+# grows taller, which makes the map shorter and narrower again. The footer is
+# laid out at the width it is drawn at, until that width stops shrinking.
+add_fitted_footer <- function(g, footer) {
+  footer$width <- NULL
+  out <- add_footer(g, footer)
+  for (pass in 1:5) {
+    width <- footer_cell_width(out)
+    if (!is.null(footer$width) && width >= footer$width - 0.01) break
+    footer$width <- width
+    out <- add_footer(g, footer)
+  }
+  out
+}
+
+# The width in cm of the footer, the last row of `g`, laid out in the current
+# viewport.
+footer_cell_width <- function(g) {
+  grid::pushViewport(grid::viewport(layout = grid::grid.layout(
+    nrow(g), ncol(g), widths = g$widths, heights = g$heights, respect = g$respect)))
+  grid::pushViewport(grid::viewport(layout.pos.row = nrow(g), layout.pos.col = seq_len(ncol(g))))
+  on.exit(grid::popViewport(2))
+  grid::convertWidth(grid::unit(1, "npc"), "cm", valueOnly = TRUE)
 }
 
 #' @export
@@ -912,7 +941,8 @@ print.phw_finalised <- function(x, ...) {
   invisible(x)
 }
 
-# The footer is laid out when drawn, because only then is its width known.
+# The footer is laid out when drawn, because only then is its width known
+# (`x$width` in cm, set by add_fitted_footer(), or else the viewport's).
 # The text stays beside the logo when every line fits there as written;
 # otherwise it moves above the logo and wraps to the full width.
 footer_layout <- function(x) {
@@ -920,7 +950,7 @@ footer_layout <- function(x) {
   text <- x$children$text
   logo <- x$children$logo
   measure <- function(s) cm(grid::grobWidth(grid::textGrob(s, gp = text$gp)))
-  room <- cm(grid::unit(1, "npc")) - 2 * x$margin
+  room <- (x$width %||% cm(grid::unit(1, "npc"))) - 2 * x$margin
   beside <- room - if (is.null(logo)) 0 else cm(grid::grobWidth(logo)) + x$margin
   lines <- strsplit(text$label, "\n", fixed = TRUE)[[1]]
   stacked <- !is.null(logo) && any(vapply(lines, measure, numeric(1)) > beside)
