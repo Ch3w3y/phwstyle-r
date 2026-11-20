@@ -902,6 +902,35 @@ test_that("group table levels keep the chart's colours when the first group lack
   expect_equal(vapply(style[lv], function(s) s$background, ""), unname(chart[tab[[1]][lv]]))
 })
 
+test_that("outer columns of a columns-layout group table colour each level row by its group", {
+  d <- data.frame(board = rep(c("Powys", "Hywel Dda"), 6), sex = rep(c("Female", "Male"), each = 6),
+                  age = rep(c("0-15", "16+"), each = 3, length.out = 12))
+  g <- phw_group_table(d, rows = c(board, sex), layout = "columns")
+  g3 <- phw_group_table(d, rows = c(board, sex, age), layout = "columns")
+  boards <- c("Hywel Dda", "Powys")
+  # Each case: the table, the column, and the group each level row sits under.
+  cases <- list(list(g, "board", rep(boards, each = 2)),
+                list(g3, "board", rep(boards, each = 4)),
+                list(g3, "sex", rep(rep(c("Female", "Male"), each = 2), 2)))
+  if (requireNamespace("flextable", quietly = TRUE)) {
+    for (t in cases) {
+      tab <- t[[1]]; j <- t[[2]]; under <- t[[3]]
+      ft <- phw_flextable_groups(phw_flextable(tab), all_of(j))
+      lv <- attr(tab, "row_type") == "level"
+      expect_equal(ft$body$styles$cells$background.color$data[lv, j],
+                   unname(phw_colour_key(unique(under))[under]))
+    }
+  }
+  skip_if_not_installed("reactable")
+  for (t in cases) {
+    tab <- t[[1]]; j <- t[[2]]; under <- t[[3]]
+    style <- phw_reactable(tab, group_col = all_of(j))$x$tag$attribs$columns[[match(j, names(tab))]]$style
+    lv <- attr(tab, "row_type") == "level"
+    expect_equal(vapply(style[lv], function(s) s$background, ""),
+                 unname(phw_colour_key(unique(under))[under]))
+  }
+})
+
 test_that("renderers show phw_group_table(digits = ) unless given their own", {
   x <- phw_group_table(data.frame(g = c("A", "B"), v = c(1.23456, 2.5)), g, value = v, digits = 3)
   skip_if_not_installed("flextable")
