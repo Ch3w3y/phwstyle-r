@@ -562,7 +562,7 @@ phw_flextable_groups <- function(x, j, key = NULL, palette = phw_default_palette
   data <- x$body$dataset
   j <- pick_col(rlang::enquo(j), data, "j")
   lv <- heat_rows(data)
-  groups <- data[[j]][lv]
+  groups <- table_groups(data, j)
   cols <- phw_colour_key(table_group_levels(groups, data), name = key, palette = palette, fixed = values)
   fill <- unname(cols[as.character(groups)])
   # A missing group has no colour: leave its row as it is.

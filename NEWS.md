@@ -533,6 +533,11 @@ says what to change.
   table from `phw_group_table()`, each level keeps its colour when the first
   group has no rows for a level. Before, every level took the colour of the
   one before it.
+* `phw_flextable_groups()` and `phw_reactable(group_col = )` can colour a
+  table from `phw_group_table(layout = "columns")` by an outer column, such
+  as the board in `rows = c(board, sex)`. Each level row takes the colour of
+  the group it sits under. Before, both stopped with a message about a group
+  with an empty name.
 * `phw_datatable()` keeps the `columnDefs` you give in `options` for a
   summary table. Before, the table's own column settings replaced them.
 * `phw_datatable()` accepts columns renamed with a named `colnames`, such as
