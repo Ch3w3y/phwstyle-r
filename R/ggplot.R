@@ -996,9 +996,13 @@ wrap_lines <- function(lines, room, measure) {
 # a map's caption may have only the map's width, which no wrapping fits
 # beside another panel, or the wrapped caption may make the maps so narrow
 # that their titles meet. Then the plots' captions go under the whole figure
-# instead (see gather_captions()).
+# instead (see gather_captions()). When that still runs over, the titles and
+# subtitles of a patchwork's plots wrap too, as a fixed-shape panel, such as
+# a map beside a chart, may leave its title less room than its text. They
+# wrap only after the captions, as a narrow figure may have no room for
+# both.
 fit_captions <- function(plot, width, height) {
-  if (!inherits(plot, "ggplot") || !length(caption_slots(plot))) return(plot)
+  if (!inherits(plot, "ggplot") || !length(caption_slots(plot, all_text))) return(plot)
   old <- grDevices::dev.cur()
   if (requireNamespace("ragg", quietly = TRUE)) {
     ragg::agg_capture(width = width, height = height, units = "in")
@@ -1014,6 +1018,7 @@ fit_captions <- function(plot, width, height) {
 
 # As fit_captions(), for a chart drawn in the current viewport.
 fit_captions_here <- function(plot) {
+  if (!length(caption_slots(plot, all_text))) return(plot)
   fit <- wrap_captions(plot)
   if (fit$over > 0) {
     gathered <- gather_captions(plot)
@@ -1022,14 +1027,17 @@ fit_captions_here <- function(plot) {
       if (alt$over < fit$over) fit <- alt
     }
   }
+  if (fit$over > 0) {
+    alt <- wrap_captions(fit$plot, all_text)
+    if (alt$over < fit$over) fit <- alt
+  }
   fit$plot
 }
 
-# The passes of fit_captions(): the plot with its captions wrapped, and by
-# how many inches the lines still run over.
-wrap_captions <- function(plot) {
-  slots <- caption_slots(plot)
-  if (!length(slots)) return(list(plot = plot, over = 0))
+# The passes of fit_captions(): the plot with the texts in `fields` wrapped,
+# and by how many inches the lines still run over.
+wrap_captions <- function(plot, fields = "caption") {
+  slots <- caption_slots(plot, fields)
   best <- list(plot = plot, over = Inf)
   for (pass in 1:10) {
     # Any warning or error comes again when the chart is drawn.
@@ -1058,28 +1066,33 @@ gather_captions <- function(plot) {
 }
 
 # The captions of a chart, or of each plot in a patchwork and of the figure,
-# named by the gtable cell each is drawn in. Each has its text as given and a
-# way to replace it.
-caption_slots <- function(plot) {
-  slot <- function(caption, set) {
-    if (!is.character(caption) || length(caption) != 1) return(NULL)
-    list(text = strsplit(attr(caption, "phw_unwrapped") %||% caption, "\n", fixed = TRUE)[[1]], set = set)
+# named by the gtable cell each is drawn in, and with `fields = all_text` the
+# titles and subtitles of the plots in a patchwork too. Each has its text as
+# given and a way to replace it.
+caption_slots <- function(plot, fields = "caption") {
+  slot <- function(label, set) {
+    if (!is.character(label) || length(label) != 1) return(NULL)
+    list(text = strsplit(attr(label, "phw_unwrapped") %||% label, "\n", fixed = TRUE)[[1]], set = set)
   }
-  last <- function(p, label) p + ggplot2::labs(caption = label)
-  if (!inherits(plot, "patchwork")) return(Filter(Negate(is.null), list(caption = slot(plot$labels$caption, last))))
+  relabel <- function(p, field, label) p + do.call(ggplot2::labs, stats::setNames(list(label), field))
+  last <- function(field) function(p, label) relabel(p, field, label)
+  if (!inherits(plot, "patchwork")) return(Filter(Negate(is.null), list(caption = slot(plot$labels$caption, last("caption")))))
   # The last plot of a patchwork is the patchwork itself.
   plots <- plot$patches$plots
-  slots <- lapply(seq_along(plots), function(k) {
-    p <- plots[[k]]
-    if (inherits(p, "ggplot") && !inherits(p, "patchwork")) {
-      slot(p$labels$caption, function(pw, label) {
-        pw$patches$plots[[k]] <- pw$patches$plots[[k]] + ggplot2::labs(caption = label)
-        pw
-      })
-    }
+  slots <- lapply(fields, function(field) {
+    own <- lapply(seq_along(plots), function(k) {
+      p <- plots[[k]]
+      if (inherits(p, "ggplot") && !inherits(p, "patchwork")) {
+        slot(p$labels[[field]], function(pw, label) {
+          pw$patches$plots[[k]] <- relabel(pw$patches$plots[[k]], field, label)
+          pw
+        })
+      }
+    })
+    own <- c(own, list(slot(plot$labels[[field]], last(field))))
+    stats::setNames(own, paste0(field, "-", seq_along(own)))
   })
-  slots <- c(slots, list(slot(plot$labels$caption, last)))
-  names(slots) <- paste0("caption-", seq_along(slots))
+  slots <- unlist(slots, recursive = FALSE)
   slots$caption <- slot(plot$patches$annotation$caption, function(pw, label) {
     pw$patches$annotation$caption <- label
     pw
@@ -1087,13 +1100,18 @@ caption_slots <- function(plot) {
   Filter(Negate(is.null), slots)
 }
 
-# New labels for the captions in the gtable `g` with a line too wide, laid
-# out in the current viewport, and by how many inches in all they run over.
+all_text <- c("caption", "title", "subtitle")
+
+# New labels for the captions and titles in the gtable `g` with a line too
+# wide, laid out in the current viewport, and by how many inches in all they
+# run over.
 # A caption has the room from its right edge to the caption drawn to its left
 # in the same row, or else to the left of the viewport, less the width of the
 # chart's left margin. Captions so tall that no room is left for a panel give
-# no labels and run over without end. A plot's title or subtitle that reaches
-# the one beside it in a patchwork runs over too.
+# no labels and run over without end. A plot's title or subtitle in a
+# patchwork is left-aligned, so it has the room from its left edge to the
+# title drawn to its right in the same row, or else to the right of the
+# viewport, less the width of the chart's right margin.
 refit_captions <- function(g, slots) {
   grid::pushViewport(grid::viewport(layout = grid::grid.layout(
     nrow(g), ncol(g), widths = g$widths, heights = g$heights, respect = g$respect)))
@@ -1145,11 +1163,17 @@ refit_captions <- function(g, slots) {
   heads <- heads[keep, ]
   head_texts <- head_texts[keep]
   heads$left <- vapply(seq_len(nrow(heads)), function(i) edges(heads[i, ])[1], numeric(1))
+  end <- x()[2] - diff(edges(list(t = 1, l = ncol(g), r = ncol(g))))
   for (i in seq_len(nrow(heads))) {
-    after <- heads$left[heads$t == heads$t[i] & heads$left > heads$left[i]]
-    if (!length(after)) next
-    width <- grid::convertWidth(grid::grobWidth(head_texts[[i]]), "in", valueOnly = TRUE)
-    over <- over + max(0, heads$left[i] + width - min(after))
+    cell <- heads[i, ]
+    after <- heads$left[heads$t == cell$t & heads$left > cell$left]
+    room <- min(after, end) - cell$left
+    measure <- function(s) grid::convertWidth(grid::grobWidth(grid::editGrob(head_texts[[i]], label = s)), "in", valueOnly = TRUE)
+    widest <- grid::convertWidth(grid::grobWidth(head_texts[[i]]), "in", valueOnly = TRUE)
+    if (widest > room) {
+      over <- over + widest - room
+      if (cell$name %in% names(slots)) labels[[cell$name]] <- wrap_lines(slots[[cell$name]]$text, room, measure)
+    }
   }
   list(labels = labels, over = over)
 }

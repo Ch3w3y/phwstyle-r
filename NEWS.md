@@ -315,6 +315,16 @@ says what to change.
   figure collapsed into a strip with titles printed over each other, a map
   became a thumbnail with its licence line cut off at the left, or drawing
   stopped with the error "Viewport has zero dimension(s)".
+* In a `phw_arrange()` figure, a plot's title or subtitle wraps when it is
+  wider than the room it has, up to the next title in its row or the right
+  edge of the figure. Before, a map beside a chart with a legend of groups,
+  such as `phw_arrange(phw_epicurve(..., group = board), map)`, lost the
+  end of the map's title off the right edge, or printed it over the
+  chart's title when the map was on the left.
+* When a map makes a `phw_arrange()` figure narrower than the image, as
+  it does stacked with `ncol = 1`, the legend collected under the figure
+  wraps to the room from the figure's left edge to the right edge of the
+  image. Before, a legend of health boards ran off the right edge.
 * A legend of groups across the bottom or top of a chart takes more rows
   when one row is wider than the chart. Before, a legend of health boards
   at the default sizes stayed on one row and its last boards were cut off.
