@@ -60,7 +60,9 @@ says what to change.
   the slide were lost: a knitted deck dropped them without a warning, and
   `phw_add_slide()` warned how many fit. A continued slide in a knitted
   deck has no title, and `phw_add_slide()` repeats the title, marked
-  "(continued)" when the table has no caption.
+  "(continued)" when the table has no caption. A table with no rows, such
+  as one a filter left empty in a scheduled report, goes on one slide with
+  its caption, header row and source, as in Word and HTML.
 * A table on a PowerPoint slide grows to fill the space it has. In a deck
   made with R Markdown or the Quarto `phw-pptx` format, a `phw_flextable()`
   with room to spare below `ft.top` now grows its text from 12 pt up to

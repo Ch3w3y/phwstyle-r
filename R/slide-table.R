@@ -146,12 +146,14 @@ fit_rows_to_height <- function(ft, height, tight_pad = 2) {
 # The body rows on each slide: as few slides as the rows need, the rows
 # shared out evenly between them where their heights allow. The footer goes
 # with the last row, and a slide doesn't end on a row marked in `keep`, such
-# as a group's heading. A row too tall for a slide alone still gets one.
+# as a group's heading. A row too tall for a slide alone still gets one, and
+# a table with no rows gets one slide for its header and footer.
 slide_rows <- function(ft, height, keep = NULL) {
   keep <- keep %||% logical(length(ft$body$rowheights))
   head <- sum(ft$header$rowheights)
   need <- ft$body$rowheights
   n <- length(need)
+  if (!n) return(list(integer()))
   need[n] <- need[n] + sum(ft$footer$rowheights)
   pages <- function(most) {
     out <- list()
