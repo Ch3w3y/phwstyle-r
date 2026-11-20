@@ -250,8 +250,9 @@ knit_slide_table <- function(x, ...) {
   check_no_images(x)
   left <- knitr::opts_current$get("ft.left") %||% 1
   top <- knitr::opts_current$get("ft.top") %||% 2
-  pages <- slide_table_pages(x, slide_width - left - slide_margins[["side"]],
-                             slide_height - top - slide_margins[["bottom"]], grow = TRUE)
+  size <- knit_slide_size()
+  pages <- slide_table_pages(x, size[["width"]] - left - slide_margins[["side"]],
+                             size[["height"]] - top - slide_margins[["bottom"]], grow = TRUE)
   out <- lapply(pages, function(page) {
     class(page) <- setdiff(class(page), "phw_flextable")
     knitr::knit_print(page, ...)
@@ -275,9 +276,63 @@ print.phw_flextable <- function(x, preview = "html", align = "center", ...) {
 # format, in inches.
 page_text_width <- (210 - 2 * 20) / 25.4
 
-# The size of a slide in the PHW reference deck, in inches.
+# The size of a slide in the PHW reference deck, in inches, taken for a
+# knitted deck whose own size can't be read.
 slide_width <- 13.333
 slide_height <- 7.5
+
+# The slide size, in inches, of the deck being knitted: that of its reference
+# deck, or of pandoc's own reference deck when it names none.
+knit_slide_size <- function() {
+  size <- tryCatch({
+    deck <- knit_reference_deck()
+    if (!is.null(deck)) unlist(officer::slide_size(officer::read_pptx(deck)))
+  }, error = function(e) NULL)
+  size %||% c(width = slide_width, height = slide_height)
+}
+
+# The reference deck of the format being knitted, a copy of pandoc's own when
+# the format names none, or NULL when Quarto's format can't be found. Quarto
+# gives its path from the document's folder, and R Markdown from the folder it
+# knits in.
+knit_reference_deck <- function() {
+  if (is.null(knitr::opts_knit$get("quarto.version"))) {
+    args <- knitr::opts_knit$get("rmarkdown.pandoc.args")
+    i <- match("--reference-doc", args)
+    deck <- if (!is.na(i)) args[[i + 1]]
+    base <- knitr::opts_knit$get("output.dir") %||% "."
+  } else {
+    format <- quarto_format()
+    if (is.null(format)) return(NULL)
+    deck <- format$pandoc[["reference-doc"]]
+    base <- dirname(knitr::current_input(dir = TRUE))
+  }
+  if (is.null(deck)) return(pandoc_reference_deck())
+  if (file.exists(file.path(base, deck))) file.path(base, deck) else deck
+}
+
+# The format Quarto is rendering. Recent versions name a file holding it in
+# QUARTO_EXECUTE_INFO; older ones keep it only in their own R function that
+# runs the knit.
+quarto_format <- function() {
+  info <- Sys.getenv("QUARTO_EXECUTE_INFO")
+  if (nzchar(info)) return(jsonlite::read_json(info)$format)
+  for (env in rev(sys.frames())) {
+    format <- get0("format", envir = env, inherits = FALSE)
+    if (is.list(format) && is.list(format$pandoc)) return(format)
+  }
+}
+
+# Written once a session. Under Quarto this is the deck of the pandoc
+# rmarkdown finds, which may not be Quarto's own.
+pandoc_reference_deck <- function() {
+  deck <- file.path(tempdir(), "pandoc-reference.pptx")
+  if (!file.exists(deck)) {
+    status <- system2(rmarkdown::pandoc_exec(), c("--print-default-data-file", "reference.pptx"), stdout = deck)
+    if (!identical(status, 0L)) unlink(deck)
+  }
+  deck
+}
 
 # Narrows a table wider than `width` by letting its text wrap at spaces: the
 # headings first, then the body cells. Each column gives up a share of the

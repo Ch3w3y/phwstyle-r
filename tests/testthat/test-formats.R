@@ -633,6 +633,84 @@ test_that("a table too long for a slide continues on the next slide of a knitted
   expect_match(paste(readLines(slides[3], warn = FALSE), collapse = ""), ">Next<")
 })
 
+deck_table_lines <- function() {
+  c("## Cases", "", "```{r, echo = FALSE}",
+    "hb <- c('Betsi Cadwaladr', 'Powys', 'Hywel Dda', 'Aneurin Bevan', 'Cardiff and Vale',",
+    "        'Cwm Taf Morgannwg', 'Swansea Bay')",
+    "phwstyle::phw_flextable(data.frame(Board = hb, Cases = 1:7 * 10, Rate = 1:7 + 0.5))",
+    "```", "", "## Months", "", "```{r, echo = FALSE}",
+    "ll <- data.frame(board = rep(hb, each = 120), month = factor(rep(month.abb, 70), levels = month.abb))",
+    "phwstyle::phw_flextable(phwstyle::phw_crosstab(ll, board, month))",
+    "```", "", "## Weeks", "", "```{r, echo = FALSE}",
+    "wk <- data.frame(Week = 1:20, Cases = 101:120, Rate = round(1:20 * 1.37, 1))",
+    "phwstyle::phw_flextable(wk, caption = 'Cases by week', source = 'Example data')",
+    "```")
+}
+
+# The slide size of a deck and where each table on its slides ends, in inches.
+deck_tables <- function(pptx) {
+  inches <- function(x) as.numeric(x) / 914400
+  size <- xml2::xml_find_first(xml2::read_xml(unz(pptx, "ppt/presentation.xml")), "//p:sldSz")
+  slides <- grep("^ppt/slides/slide[0-9]+\\.xml$", utils::unzip(pptx, list = TRUE)$Name, value = TRUE)
+  frames <- unlist(lapply(slides, function(s) xml2::xml_find_all(xml2::read_xml(unz(pptx, s)), "//p:graphicFrame")),
+                   recursive = FALSE)
+  ends <- vapply(frames, function(f) {
+    off <- inches(xml2::xml_attrs(xml2::xml_find_first(f, ".//a:off")))
+    c(right = off[[1]] + sum(inches(xml2::xml_attr(xml2::xml_find_all(f, ".//a:gridCol"), "w"))),
+      bottom = off[[2]] + sum(inches(xml2::xml_attr(xml2::xml_find_all(f, ".//a:tr"), "h"))))
+  }, numeric(2))
+  list(width = inches(xml2::xml_attr(size, "cx")), height = inches(xml2::xml_attr(size, "cy")),
+       right = ends["right", ], bottom = ends["bottom", ],
+       text = unlist(lapply(frames, function(f) xml2::xml_text(xml2::xml_find_all(f, ".//a:tc")))))
+}
+
+expect_tables_on_slides <- function(deck) {
+  expect_gt(length(deck$right), 0)
+  expect_true(all(deck$right <= deck$width + 0.001))
+  expect_true(all(deck$bottom <= deck$height + 0.001))
+  expect_true(all(c("Rate", "Dec", "Total", "20", "Source: Example data") %in% deck$text))
+}
+
+test_that("tables knitted into a deck fit the slide size of that deck", {
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("flextable")
+  skip_if_not(rmarkdown::pandoc_available("2.4"), "pandoc 2.4 or later is not available")
+  local_ggplot_state()
+  dir <- withr::local_tempdir()
+  rmd <- file.path(dir, "deck.Rmd")
+  writeLines(c("---", "title: Weekly", "---", "", deck_table_lines()), rmd)
+  # pandoc's own deck, which is smaller than the PHW one.
+  plain <- deck_tables(rmarkdown::render(rmd, rmarkdown::powerpoint_presentation(), quiet = TRUE))
+  expect_lt(plain$width, 13)
+  expect_tables_on_slides(plain)
+  # A 4:3 deck named from the document's folder: the tables use its taller slides.
+  file.copy(system.file("template", "template.pptx", package = "officer"), file.path(dir, "tall.pptx"))
+  tall <- deck_tables(rmarkdown::render(rmd, rmarkdown::powerpoint_presentation(reference_doc = "tall.pptx"),
+                                        output_file = "tall-deck.pptx", quiet = TRUE))
+  expect_equal(tall$height, 7.5)
+  expect_tables_on_slides(tall)
+  expect_gt(max(tall$bottom), plain$height)
+})
+
+test_that("tables knitted into a Quarto deck fit the slide size of that deck", {
+  skip_on_cran()
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("flextable")
+  quarto <- Sys.which("quarto")
+  skip_if(!nzchar(quarto), "Quarto is not installed")
+  dir <- withr::local_tempdir()
+  writeLines(c("---", "title: Weekly", "format: pptx", "---", "", deck_table_lines()), file.path(dir, "deck.qmd"))
+  withr::local_dir(dir)
+  withr::local_envvar(QUARTO_R = R.home("bin"))
+  log <- suppressWarnings(system2(quarto, c("render", "deck.qmd"), stdout = TRUE, stderr = TRUE))
+  if (!file.exists("deck.pptx")) fail(paste(c("quarto render failed:", utils::tail(log, 15)), collapse = "\n"))
+  deck <- deck_tables(file.path(dir, "deck.pptx"))
+  expect_lt(deck$width, 13)
+  expect_tables_on_slides(deck)
+})
+
 test_that("a table too wide for a slide even with its text wrapped gives a warning", {
   skip_if_not_installed("knitr")
   skip_if_not_installed("flextable")
