@@ -185,7 +185,7 @@ phw_flextable <- function(data, caption = NULL, number = NULL, source = NULL,
   if (inherits(data, "phw_summary")) check_summary_keys(data, flextable_args$col_keys)
   ft <- do.call(flextable::flextable, c(list(as.data.frame(data)), flextable_args))
   shown <- names(data) %in% ft$col_keys
-  is_int <- vapply(data, function(v) is.numeric(v) && all(v == round(v), na.rm = TRUE), logical(1)) & shown
+  is_int <- vapply(data, is_whole, logical(1)) & shown
   is_dbl <- vapply(data, is.numeric, logical(1)) & shown & !is_int
   is_year <- year_cols(data) & shown
   if (any(is_year)) ft <- flextable::colformat_num(ft, j = names(data)[is_year], big.mark = "", na_str = "")

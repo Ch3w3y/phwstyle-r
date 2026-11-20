@@ -196,7 +196,7 @@ phw_gt <- function(data, caption = NULL, subtitle = NULL, number = NULL, source 
   }
   x <- do.call(gt::gt, c(list(df), gt_args))
   num <- names(df)[vapply(df, is.numeric, logical(1))]
-  is_int <- vapply(df[num], function(v) all(v == round(v), na.rm = TRUE), logical(1))
+  is_int <- vapply(df[num], is_whole, logical(1))
   is_year <- num %in% names(df)[years]
   if (any(is_year)) x <- gt::fmt_integer(x, columns = gt_cols(num[is_year]), use_seps = FALSE)
   if (any(is_int & !is_year)) x <- gt::fmt_integer(x, columns = gt_cols(num[is_int & !is_year]))

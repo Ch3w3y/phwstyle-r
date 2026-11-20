@@ -162,6 +162,7 @@ phw_page_navbar <- function(..., title = NULL, subtitle = NULL, footer = NULL,
                             theme = phw_bs_theme(), header_args = list(),
                             navbar_bg = phw_colours[["navy"]]) {
   rlang::check_installed("bslib")
+  if (!is.list(header_args)) cli::cli_abort("{.arg header_args} must be a list of {.fn phw_header} arguments.")
   footer <- if (isFALSE(footer)) NULL else htmltools::tags$footer(class = "phw-footer", footer %||% phw_org)
   args <- list(...)
   defaults <- list(title = NULL, window_title = title %||% phw_org, theme = theme,
@@ -177,7 +178,6 @@ phw_page_navbar <- function(..., title = NULL, subtitle = NULL, footer = NULL,
   defaults <- c(defaults, navbar)
   for (nm in names(defaults)) if (!nm %in% names(args)) args[nm] <- list(defaults[[nm]])
   page <- do.call(bslib::page_navbar, args)
-  if (!is.list(header_args)) cli::cli_abort("{.arg header_args} must be a list of {.fn phw_header} arguments.")
   header <- utils::modifyList(list(title = title, subtitle = subtitle), header_args)
   htmltools::tagList(do.call(phw_header, header), page)
 }
