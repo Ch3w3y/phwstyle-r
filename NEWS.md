@@ -799,6 +799,8 @@ says what to change.
   3.9 inches by default, as in `phw_word_document()`. Quarto lays out a
   captioned figure or table in a Word table, which now has the Layout
   Table style from `phw_reference_docx()`, with no rules or cell padding.
+  With Quarto 1.5, whose pandoc cannot style that table, a figure or
+  table on its own is taken out of it instead.
   Run `use_phw_quarto(template = "none", overwrite = TRUE)` to update the
   extension in an existing project.
 * `phw_reference_docx()` writes a document with no text in it. A Word file

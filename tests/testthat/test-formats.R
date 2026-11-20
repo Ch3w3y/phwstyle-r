@@ -286,24 +286,28 @@ test_that("captioned figures in a Quarto Word document fit their cells without r
   styles <- xml2::read_xml(file.path(dir, "word", "styles.xml"))
   page <- function(el, side) as.numeric(xml2::xml_attr(xml2::xml_find_first(doc, paste0("//w:body/w:sectPr/", el)), side))
   text_width <- (page("w:pgSz", "w") - page("w:pgMar", "left") - page("w:pgMar", "right")) / 1440
-  pictures <- xml2::xml_find_all(doc, "//w:tbl//wp:inline")
+  pictures <- xml2::xml_find_all(doc, "//wp:inline")
   expect_length(pictures, 4)
   for (pic in pictures) {
-    id <- xml2::xml_attr(xml2::xml_find_first(xml2::xml_find_first(pic, "ancestor::w:tbl[1]"), "w:tblPr/w:tblStyle"),
-                         "val")
-    style <- xml2::xml_find_first(styles, sprintf("//w:style[@w:styleId='%s']/w:tblPr", id))
-    padding <- sum(as.numeric(xml2::xml_attr(xml2::xml_find_all(style, "w:tblCellMar/*[self::w:left or self::w:right]"),
-                                             "w"))) / 1440
+    # Quarto 1.5's pandoc cannot style the table, so there the figure is left out of it.
+    padding <- 0
+    layout <- xml2::xml_find_first(pic, "ancestor::w:tbl[1]")
+    if (!inherits(layout, "xml_missing")) {
+      id <- xml2::xml_attr(xml2::xml_find_first(layout, "w:tblPr/w:tblStyle"), "val")
+      style <- xml2::xml_find_first(styles, sprintf("//w:style[@w:styleId='%s']/w:tblPr", id))
+      padding <- sum(as.numeric(xml2::xml_attr(
+        xml2::xml_find_all(style, "w:tblCellMar/*[self::w:left or self::w:right]"), "w"))) / 1440
+      rules <- xml2::xml_attr(xml2::xml_find_all(style, "w:tblBorders/*"), "val")
+      expect_true(all(rules %in% c("nil", "none")), info = id)
+    }
     width <- as.numeric(xml2::xml_attr(xml2::xml_find_first(pic, "wp:extent"), "cx")) / 914400
     expect_lte(width, text_width - padding + 0.001)
-    rules <- xml2::xml_attr(xml2::xml_find_all(style, "w:tblBorders/*"), "val")
-    expect_true(all(rules %in% c("nil", "none")), info = id)
   }
   # The knitr figures are drawn at the Word size, so their text isn't shrunk.
-  line <- xml2::xml_find_first(doc, "//w:tbl[.//w:bookmarkStart[@w:name='fig-line']]//wp:extent")
+  line <- xml2::xml_find_first(doc, "//w:bookmarkStart[@w:name='fig-line']/following::wp:extent[1]")
   expect_equal(as.numeric(xml2::xml_attr(line, "cx")) / 914400, 6.3, tolerance = 0.02)
   # A data table keeps its own rules inside the table Quarto lays it out in.
-  data <- xml2::xml_find_first(doc, "//w:tbl[.//w:bookmarkStart[@w:name='tbl-data']]//w:tbl/w:tblPr/w:tblStyle")
+  data <- xml2::xml_find_first(doc, "//w:bookmarkStart[@w:name='tbl-data']/following::w:tbl[1]/w:tblPr/w:tblStyle")
   expect_equal(xml2::xml_attr(data, "val"), "Table")
 })
 
