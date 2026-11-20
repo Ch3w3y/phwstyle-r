@@ -239,12 +239,22 @@ test_that("a flextable's caption shows above the table on the slide", {
   expect_equal(first_cells(phw_flextable(d))[1], "area")
 })
 
-test_that("an empty table stops", {
+test_that("a table with no rows goes on one slide with its caption, header and source", {
   skip_if_not_installed("officer")
   skip_if_not_installed("flextable")
-  expect_error(phw_add_slide(phw_pptx(), "x", table = mtcars[0, ]), "`table` has no rows")
+  skip_if_not_installed("xml2")
+  ob <- data.frame(board = c("Powys", "Hywel Dda"), cases = c(3, 5))
+  none <- ob[ob$cases > 10, ]
+  texts <- function(deck) xml2::xml_text(xml2::xml_find_all(deck_xml(deck), "//a:tc | //p:sp"))
+  ft <- phw_flextable(none, caption = "Outbreaks over 10 cases", source = "PHW")
+  deck <- phw_add_slide(phw_pptx(), "Outbreaks", table = ft)
+  expect_length(deck, 1)
+  expect_true(all(c("Outbreaks over 10 cases", "board", "cases", "Source: PHW") %in% texts(deck)))
+  deck <- phw_add_slide(phw_pptx(), "Outbreaks", table = none, source = "PHW")
+  expect_length(deck, 1)
+  expect_true(all(c("board", "cases", "Source: PHW") %in% texts(deck)))
+  expect_length(phw_add_slide(phw_pptx(), "x", table = flextable::flextable(mtcars[0, 1:2])), 1)
   expect_error(phw_add_slide(phw_pptx(), "x", table = data.frame()), "`table` has no columns")
-  expect_error(phw_add_slide(phw_pptx(), "x", table = flextable::flextable(mtcars[0, 1:2])), "no rows")
 })
 
 test_that("a table with bars stops, as PowerPoint tables cannot show them", {

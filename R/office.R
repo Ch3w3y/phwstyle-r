@@ -458,7 +458,8 @@ phw_pptx <- function(template = NULL) {
 #' @param plot A ggplot, or a grob or gtable such as a [phw_finalise()]
 #'   result. A grob goes on the slide as a picture.
 #' @param table A data frame, flextable or summary table (rendered with
-#'   [phw_flextable()]). It must have at least one row. A flextable's
+#'   [phw_flextable()]). A table with no rows, such as one a filter left
+#'   empty, goes on one slide with its header row. A flextable's
 #'   caption, such as the one [phw_flextable()] adds, goes in a row at the
 #'   top of the table, because PowerPoint does not show table captions.
 #'   Text in the table is never smaller than 12 pt, so it can be read when
@@ -678,12 +679,9 @@ slide_contents <- function(plot, table, text, call = rlang::caller_env()) {
     cli::cli_abort("{.arg plot} must be a ggplot, or a grob such as a {.fn phw_finalise} result, not {.obj_type_friendly {plot}}.",
                    call = call)
   }
-  if (inherits(table, "flextable")) {
-    if (!flextable::nrow_part(table, "body")) cli::cli_abort("{.arg table} has no rows.", call = call)
-  } else if (is.data.frame(table)) {
+  if (is.data.frame(table)) {
     if (!ncol(table)) cli::cli_abort("{.arg table} has no columns.", call = call)
-    check_has_rows(table, "table", call = call)
-  } else if (!is.null(table)) {
+  } else if (!is.null(table) && !inherits(table, "flextable")) {
     cli::cli_abort("{.arg table} must be a data frame, a summary table or a flextable, not {.obj_type_friendly {table}}.",
                    call = call)
   }
