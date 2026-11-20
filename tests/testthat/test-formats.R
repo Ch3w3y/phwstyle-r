@@ -644,6 +644,9 @@ deck_table_lines <- function() {
     "```", "", "## Weeks", "", "```{r, echo = FALSE}",
     "wk <- data.frame(Week = 1:20, Cases = 101:120, Rate = round(1:20 * 1.37, 1))",
     "phwstyle::phw_flextable(wk, caption = 'Cases by week', source = 'Example data')",
+    "```", "", "## Outbreaks", "", "```{r, echo = FALSE}",
+    "ob <- data.frame(board = 'Powys', cases = 3)",
+    "phwstyle::phw_flextable(ob[ob$cases > 10, ], caption = 'Outbreaks over 10 cases', source = 'PHW')",
     "```")
 }
 
@@ -669,6 +672,8 @@ expect_tables_on_slides <- function(deck) {
   expect_true(all(deck$right <= deck$width + 0.001))
   expect_true(all(deck$bottom <= deck$height + 0.001))
   expect_true(all(c("Rate", "Dec", "Total", "20", "Source: Example data") %in% deck$text))
+  # A table a filter left with no rows keeps its caption, header and source.
+  expect_true(all(c("Outbreaks over 10 cases", "board", "cases", "Source: PHW") %in% deck$text))
 }
 
 test_that("tables knitted into a deck fit the slide size of that deck", {
