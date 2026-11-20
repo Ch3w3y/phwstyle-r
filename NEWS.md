@@ -494,6 +494,10 @@ says what to change.
 
 ## Tables
 
+* In a Quarto document, the `caption` of `phw_flextable()` shows above the
+  table in HTML, Word, PDF and Typst output, as it does in R Markdown.
+  Before, Quarto dropped it without a word. A chunk that sets the `tbl-cap`
+  option keeps Quarto's caption instead.
 * `phw_flextable()` brings the Ubuntu web font into an HTML document, a
   Quarto HTML page and the RStudio Viewer, as `phw_gt()`, `phw_reactable()`
   and `phw_datatable()` do. Before, a computer without Ubuntu installed drew

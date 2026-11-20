@@ -126,6 +126,8 @@ align_by_type <- function(ft) {
 #'   tables get bold variable headings, indented levels, a header spanning
 #'   the group columns and a note on the statistics shown.
 #' @param caption Table title, e.g. `"Counts by health board, 2020-2024"`.
+#'   In a Quarto chunk that sets the `tbl-cap` option, Quarto's caption is
+#'   shown instead.
 #' @param number Optional table number. Gives "Table 1 ...".
 #' @param number_prefix Word before the number.
 #' @param source,date Passed to [phw_caption()] and shown under the table.
@@ -226,8 +228,13 @@ phw_flextable <- function(data, caption = NULL, number = NULL, source = NULL,
 # unnumbered \caption* rather than one LaTeX labels "Table N." again.
 #' @exportS3Method knitr::knit_print
 knit_print.phw_flextable <- function(x, ...) {
-  if (knitr::pandoc_to("docx")) x <- fit_table_to_width(x, page_text_width)
   if (knitr::pandoc_to("pptx")) return(knit_slide_table(x, ...))
+  # Under Quarto, flextable leaves the caption to the chunk's tbl-cap and drops
+  # one set with set_caption(), so it goes in the table's top row instead.
+  if (!is.null(knitr::opts_knit$get("quarto.version")) && is.null(knitr::opts_current$get("tbl-cap"))) {
+    x <- caption_as_header(x)
+  }
+  if (knitr::pandoc_to("docx")) x <- fit_table_to_width(x, page_text_width)
   if (knitr::is_latex_output()) {
     # LaTeX adds \tabcolsep points either side of each column's width.
     sep <- knitr::opts_current$get("ft.tabcolsep") %||% x$properties$opts_pdf$tabcolsep
