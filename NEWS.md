@@ -793,6 +793,16 @@ says what to change.
   `phw_finalise()`, `phw_word_document()`, `phw_pdf_document()`,
   `phw_latex_header()`, `phw_reference_docx()` and `use_phw_quarto()`.
   Before, it stopped with "a raster array must have exactly 3 or 4 planes".
+* In the Quarto `phw-docx` format, a captioned figure shows in full, with
+  its source line. Before, the right edge of each chart was cut off, and
+  navy rules were drawn above and below it. Charts are now drawn 6.3 by
+  3.9 inches by default, as in `phw_word_document()`. Quarto lays out a
+  captioned figure or table in a Word table, which now has the Layout
+  Table style from `phw_reference_docx()`, with no rules or cell padding.
+  With Quarto 1.5, whose pandoc cannot style that table, a figure or
+  table on its own is taken out of it instead.
+  Run `use_phw_quarto(template = "none", overwrite = TRUE)` to update the
+  extension in an existing project.
 * `phw_reference_docx()` writes a document with no text in it. A Word file
   made with `officer::read_docx(phw_reference_docx())` now starts with your
   own content. Before, it started with a page of sample text from pandoc.

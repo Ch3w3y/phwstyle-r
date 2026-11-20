@@ -49,7 +49,12 @@ contributes:
       reference-doc: phw-reference.docx
       toc: false
       number-sections: false
+      fig-width: 6.3
+      fig-height: 3.9
       fig-dpi: 300
+      filters:
+        - quarto
+        - phw-layout-tables.lua
     pptx:
       reference-doc: phw-reference.pptx
       fig-dpi: 200

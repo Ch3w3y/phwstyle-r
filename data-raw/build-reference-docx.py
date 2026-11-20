@@ -227,6 +227,35 @@ if tbl is not None:
     fr.append(tcpr)
     el.append(fr)
 
+# Table style for the tables Quarto lays captioned figures out in (set by
+# phw-layout-tables.lua): no rules, and no cell padding, so a picture as
+# wide as the text fits its cell.
+layout = OxmlElement("w:style")
+layout.set(qn("w:type"), "table")
+layout.set(qn("w:customStyle"), "1")
+layout.set(qn("w:styleId"), "LayoutTable")
+name = OxmlElement("w:name")
+name.set(qn("w:val"), "Layout Table")
+layout.append(name)
+layout_pr = OxmlElement("w:tblPr")
+ind = OxmlElement("w:tblInd")
+ind.set(qn("w:w"), "0")
+ind.set(qn("w:type"), "dxa")
+layout_pr.append(ind)
+b = OxmlElement("w:tblBorders")
+for side in ("w:top", "w:left", "w:bottom", "w:right", "w:insideH", "w:insideV"):
+    b.append(border(side, val="nil", sz="0", color="auto"))
+layout_pr.append(b)
+mar = OxmlElement("w:tblCellMar")
+for side in ("w:top", "w:left", "w:bottom", "w:right"):
+    m = OxmlElement(side)
+    m.set(qn("w:w"), "0")
+    m.set(qn("w:type"), "dxa")
+    mar.append(m)
+layout_pr.append(mar)
+layout.append(layout_pr)
+doc.styles.element.append(layout)
+
 # Pandoc's styles tie colours to the Office theme (w:themeColor), which
 # overrides the explicit hex value. Strip those so our colours win.
 for c in doc.styles.element.iter(qn("w:color")):

@@ -259,6 +259,58 @@ test_that("every Quarto format renders its starter document", {
   }
 })
 
+test_that("captioned figures in a Quarto Word document fit their cells without rules", {
+  skip_on_cran()
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("xml2")
+  quarto <- Sys.which("quarto")
+  skip_if(!nzchar(quarto), "Quarto is not installed")
+  dir <- withr::local_tempdir()
+  suppressMessages(use_phw_quarto(dir, "report"))
+  # A wide picture with no resolution set, which pandoc shrinks to the text width.
+  grDevices::png(file.path(dir, "wide.png"), width = 1200, height = 500)
+  graphics::plot(1)
+  grDevices::dev.off()
+  extra <- c("", "```{r}", "#| label: fig-wide", "#| fig-cap: Wide chart", "#| fig-width: 9", "plot(1)", "```",
+             "", "![Saved chart](wide.png){#fig-saved}", "",
+             "| a | b |", "|---|---|", "| 1 | 2 |", "", ": Data table {#tbl-data}")
+  write(extra, file.path(dir, "report.qmd"), append = TRUE)
+  log <- withr::with_dir(dir, withr::with_envvar(
+    c(QUARTO_R = R.home("bin")),
+    suppressWarnings(system2(quarto, c("render", "report.qmd", "--to", "phw-docx"), stdout = TRUE, stderr = TRUE))))
+  docx <- file.path(dir, "report.docx")
+  if (!file.exists(docx)) fail(paste(c("quarto render failed:", utils::tail(log, 15)), collapse = "\n"))
+  utils::unzip(docx, c("word/document.xml", "word/styles.xml"), exdir = dir)
+  doc <- xml2::read_xml(file.path(dir, "word", "document.xml"))
+  styles <- xml2::read_xml(file.path(dir, "word", "styles.xml"))
+  page <- function(el, side) as.numeric(xml2::xml_attr(xml2::xml_find_first(doc, paste0("//w:body/w:sectPr/", el)), side))
+  text_width <- (page("w:pgSz", "w") - page("w:pgMar", "left") - page("w:pgMar", "right")) / 1440
+  pictures <- xml2::xml_find_all(doc, "//wp:inline")
+  expect_length(pictures, 4)
+  for (pic in pictures) {
+    # Quarto 1.5's pandoc cannot style the table, so there the figure is left out of it.
+    padding <- 0
+    layout <- xml2::xml_find_first(pic, "ancestor::w:tbl[1]")
+    if (!inherits(layout, "xml_missing")) {
+      id <- xml2::xml_attr(xml2::xml_find_first(layout, "w:tblPr/w:tblStyle"), "val")
+      style <- xml2::xml_find_first(styles, sprintf("//w:style[@w:styleId='%s']/w:tblPr", id))
+      padding <- sum(as.numeric(xml2::xml_attr(
+        xml2::xml_find_all(style, "w:tblCellMar/*[self::w:left or self::w:right]"), "w"))) / 1440
+      rules <- xml2::xml_attr(xml2::xml_find_all(style, "w:tblBorders/*"), "val")
+      expect_true(all(rules %in% c("nil", "none")), info = id)
+    }
+    width <- as.numeric(xml2::xml_attr(xml2::xml_find_first(pic, "wp:extent"), "cx")) / 914400
+    expect_lte(width, text_width - padding + 0.001)
+  }
+  # The knitr figures are drawn at the Word size, so their text isn't shrunk.
+  line <- xml2::xml_find_first(doc, "//w:bookmarkStart[@w:name='fig-line']/following::wp:extent[1]")
+  expect_equal(as.numeric(xml2::xml_attr(line, "cx")) / 914400, 6.3, tolerance = 0.02)
+  # A data table keeps its own rules inside the table Quarto lays it out in.
+  data <- xml2::xml_find_first(doc, "//w:bookmarkStart[@w:name='tbl-data']/following::w:tbl[1]/w:tblPr/w:tblStyle")
+  expect_equal(xml2::xml_attr(data, "val"), "Table")
+})
+
 test_that("a phw_flextable caption shows in Quarto HTML, Word and PDF", {
   skip_on_cran()
   skip_if_not_installed("knitr")
