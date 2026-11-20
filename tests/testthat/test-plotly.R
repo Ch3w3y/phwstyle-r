@@ -905,3 +905,20 @@ test_that("a line, error bar or boxplot layer with no rows gives an empty chart"
     ggplot2::geom_errorbar(ggplot2::aes(ymin = lo, ymax = hi), data = none) + ggplot2::facet_wrap(~hb)
   expect_length(Filter(function(t) identical(t$mode, "lines"), built(phw_plotly(facets))$data), 2)
 })
+
+test_that("ggplot text keeps the font fallback, so browsers lay out the legend correctly", {
+  withr::local_options(phwstyle.font = "Ubuntu")
+  g <- ggplot2::ggplot(groups_df, ggplot2::aes(week, cases, colour = group)) + ggplot2::geom_line() +
+    ggplot2::facet_wrap(~group) + theme_phw()
+  stack <- "Ubuntu, Arial, sans-serif"
+  figs <- list(phw_plotly(g), phw_plotly(plotly::ggplotly(g)), phw_plotly(plotly::subplot(g, g)),
+               phw_plotly(g, legend = "right"))
+  for (fig in figs) {
+    layout <- built(fig)$layout
+    families <- unlist(rapply(layout, function(x) x, how = "unlist"))
+    families <- families[grepl("(^|\\.)family$", names(families)) & !is.na(families)]
+    expect_true(length(families) > 3)
+    expect_setequal(unique(families), stack)
+    expect_equal(layout$legend$font$family, stack)
+  }
+})

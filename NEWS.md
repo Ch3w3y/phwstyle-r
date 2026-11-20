@@ -880,6 +880,13 @@ says what to change.
 
 ## Interactive outputs and colours
 
+* `phw_plotly()` spaces the legend of a ggplot correctly in Chrome, Edge
+  and the RStudio and Positron Viewer. Before, on a computer without the Ubuntu font installed,
+  each label ran into the next item and the last label was cut off, as in
+  "4-week averag" on an epidemic curve. The legend, axis titles, tick
+  labels and facet strips now fall back to Arial while the Ubuntu font
+  loads, as a `plot_ly()` chart already did. This holds for a chart made
+  with `plotly::ggplotly()` and for a `plotly::subplot()` of ggplots too.
 * `phw_plotly()` draws an empty chart for a ggplot whose data a filter left
   with no rows, as `plotly::ggplotly()` does, so a scheduled report still
   knits in a week where nothing matched. Before, it stopped with the error
