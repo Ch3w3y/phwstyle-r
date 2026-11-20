@@ -768,8 +768,8 @@ slide_value <- function(value, kind, area, editable, plot_scale, table_fit, cove
   officer::unordered_list(str_list = value, level_list = rep(1L, length(value)), style = props)
 }
 
-# PowerPoint does not draw a flextable caption, so it becomes the table's top
-# row, in the caption style of phw_flextable().
+# PowerPoint, and flextable under Quarto, do not draw a flextable caption, so
+# it becomes the table's top row, in the caption style of phw_flextable().
 caption_as_header <- function(ft) {
   text <- caption_text(ft)
   if (is.null(text)) return(ft)
@@ -781,7 +781,14 @@ caption_as_header <- function(ft) {
     pr_c = officer::fp_cell(background.color = "transparent",
                             border = officer::fp_border(width = 0)))
   ft <- flextable::align(ft, i = 1, align = "left", part = "header")
-  flextable::padding(ft, i = 1, padding.bottom = 4, part = "header")
+  ft <- flextable::padding(ft, i = 1, padding.bottom = 4, part = "header")
+  # Word draws the line between two rows from the upper row's bottom border,
+  # so the caption row carries the table's top rule.
+  cells <- ft$header$styles$cells
+  if (nrow(cells$border.width.top$data) < 2) return(ft)
+  rule <- officer::fp_border(color = cells$border.color.top$data[2, 1],
+                             width = cells$border.width.top$data[2, 1])
+  flextable::hline(ft, i = 1, part = "header", border = rule)
 }
 
 # Each panel of a patchwork, and its annotation, is scaled from its own theme:

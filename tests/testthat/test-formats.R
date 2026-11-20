@@ -259,6 +259,54 @@ test_that("every Quarto format renders its starter document", {
   }
 })
 
+test_that("a phw_flextable caption shows in Quarto HTML, Word and PDF", {
+  skip_on_cran()
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("flextable")
+  quarto <- Sys.which("quarto")
+  skip_if(!nzchar(quarto), "Quarto is not installed")
+  dir <- withr::local_tempdir()
+  suppressMessages(use_phw_quarto(dir, "none"))
+  writeLines(c("---", "title: Tables", "keep-tex: true", "---", "",
+               "```{r}", "#| echo: false", "library(phwstyle)",
+               "phw_flextable(head(mtcars[, 1:3]), caption = 'Cases by board', number = 1, source = 'mtcars')",
+               "```", "",
+               "```{r}", "#| echo: false",
+               "phw_flextable_heat(phw_flextable(head(mtcars[, 1:3]), caption = 'Heat caption'), mpg)",
+               "```", "",
+               "```{r}", "#| echo: false", "#| label: tbl-chunk", "#| tbl-cap: Chunk caption",
+               "phw_flextable(head(mtcars[, 1:3]), caption = 'Chunk caption')",
+               "```"), file.path(dir, "tables.qmd"))
+  render <- function(fmt, out) {
+    withr::local_dir(dir)
+    withr::local_envvar(QUARTO_R = R.home("bin"))
+    log <- suppressWarnings(system2(quarto, c("render", "tables.qmd", "--to", fmt), stdout = TRUE, stderr = TRUE))
+    if (!file.exists(out)) fail(paste(c("quarto render failed:", utils::tail(log, 15)), collapse = "\n"))
+    file.path(dir, out)
+  }
+  read <- function(file) paste(readLines(file, warn = FALSE, encoding = "UTF-8"), collapse = " ")
+  count <- function(text, pattern) lengths(regmatches(text, gregexpr(pattern, text, fixed = TRUE)))
+  docx <- render("phw-docx", "tables.docx")
+  outputs <- list(html = gsub("<[^>]+>", " ", read(render("phw-html", "tables.html"))),
+                  docx = docx_text(docx))
+  # Word draws the table's top rule under the caption row from that row's own
+  # bottom border.
+  utils::unzip(docx, "word/document.xml", exdir = dir)
+  xml <- read(file.path(dir, "word", "document.xml"))
+  first_row <- regmatches(xml, regexpr("<w:tr\\b.*?</w:tr>", xml, perl = TRUE))
+  expect_match(first_row, "Table 1 Cases by board", fixed = TRUE)
+  expect_match(first_row, "<w:bottom w:val=\"single\"", fixed = TRUE)
+  if (nzchar(Sys.which("xelatex"))) outputs$pdf <- gsub("\\\\ ", " ", read(render("phw-pdf", "tables.tex")))
+  for (fmt in names(outputs)) {
+    text <- outputs[[fmt]]
+    expect_match(text, "Table 1 Cases by board", fixed = TRUE, info = fmt)
+    expect_match(text, "Heat caption", fixed = TRUE, info = fmt)
+    # A chunk's tbl-cap is Quarto's caption, so the table doesn't repeat it.
+    expect_equal(count(text, "Chunk caption"), 1, info = fmt)
+  }
+})
+
 test_that("a PDF document renders with XeLaTeX", {
   skip_on_cran()
   skip_if_not_installed("rmarkdown")

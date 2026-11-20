@@ -27,7 +27,9 @@ phw_flextable(
 tables get bold variable headings, indented levels, a header spanning
 the group columns and a note on the statistics shown.}
 
-\item{caption}{Table title, e.g. \code{"Counts by health board, 2020-2024"}.}
+\item{caption}{Table title, e.g. \code{"Counts by health board, 2020-2024"}.
+In a Quarto chunk that sets the \code{tbl-cap} option, Quarto's caption is
+shown instead.}
 
 \item{number}{Optional table number. Gives "Table 1 ...".}
 
