@@ -76,12 +76,16 @@ phw_arrange <- function(..., plots = NULL, ncol = NULL, nrow = NULL, widths = NU
 
 # Where a legend collected from `figure` goes when drawn on the open device,
 # in cm: `panels`, the width of the panels, which patchwork puts it under or
-# over, and `left` and `right`, the widths from the figure's edges to them.
-# The edges are where the title and source line end, inside the figure's
-# margins and those of its outer plots. As a function, because the widths
-# are known only when the figure is drawn. NULL when the figure has no
-# collected legend across it. Each legend in the figure asks, so the widths
-# are kept for each kind and size of device.
+# over, `left`, the width from the figure's left edge to them, and `right`,
+# the width from them to the right edge of the image. The edges are inside
+# the figure's margins and those of its outer plots: on the left, where the
+# title and source line start. A fixed-shape panel, such as a map, can make
+# the figure narrower than the image and centre it, and a legend wrapped to
+# that narrower width takes more rows, which narrows it further. So the
+# legend may reach past the source line, as far as the image's edge. As a
+# function, because the widths are known only when the figure is drawn. NULL
+# when the figure has no collected legend across it. Each legend in the
+# figure asks, so the widths are kept for each kind and size of device.
 collected_room <- function(figure) {
   known <- list()
   function() {
@@ -90,18 +94,21 @@ collected_room <- function(figure) {
     g <- suppressMessages(suppressWarnings(patchwork::patchworkGrob(figure)))
     i <- which(g$layout$name == "guide-box")
     room <- if (length(i) == 1) {
-      # Only the panels have relative widths, so the rest are measured.
-      cm <- function(cols) sum(vapply(cols, function(j) {
-        grid::convertWidth(g$widths[j], "cm", valueOnly = TRUE)
-      }, numeric(1)))
-      n <- length(g$widths)
-      l <- g$layout$l[i]
-      r <- g$layout$r[i]
+      x <- function() grid::convertX(grid::deviceLoc(grid::unit(0:1, "npc"), grid::unit(0:1, "npc"))$x, "cm", valueOnly = TRUE)
+      n <- ncol(g)
+      end <- x()[2] - sum(vapply((n - 1):n, function(j) grid::convertWidth(g$widths[j], "cm", valueOnly = TRUE), numeric(1)))
+      grid::pushViewport(grid::viewport(layout = grid::grid.layout(
+        nrow(g), n, widths = g$widths, heights = g$heights, respect = g$respect)))
+      on.exit(grid::popViewport())
+      edges <- function(cols) {
+        grid::pushViewport(grid::viewport(layout.pos.row = 1, layout.pos.col = cols))
+        on.exit(grid::popViewport())
+        x()
+      }
       # patchwork puts the title and source line in columns 3 to n - 2.
-      left <- cm(seq_len(l - 1)[-(1:2)])
-      right <- cm(setdiff(seq_len(n - 2), seq_len(r)))
-      inside <- grid::convertWidth(grid::unit(1, "npc"), "cm", valueOnly = TRUE) - cm(c(1:2, n - 1:0))
-      c(left = left, panels = inside - left - right, right = right)
+      start <- edges(3:(n - 2))[1]
+      panels <- edges(g$layout$l[i]:g$layout$r[i])
+      c(left = panels[1] - start, panels = diff(panels), right = end - panels[2])
     }
     known[key] <<- list(room)
     room

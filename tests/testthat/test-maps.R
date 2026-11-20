@@ -330,6 +330,42 @@ test_that("the titles of two maps with different legends stay apart", {
   expect_lt(drawn$right[drawn$text == titles[1]], drawn$left[drawn$text == titles[2]])
 })
 
+# Weekly cases by health board, whose legend patchwork collects under a figure.
+boards <- c("Aneurin Bevan", "Betsi Cadwaladr", "Cardiff and Vale", "Cwm Taf Morgannwg",
+            "Hywel Dda", "Powys", "Swansea Bay")
+weekly_boards <- function() {
+  wk <- expand.grid(week = as.Date("2025-09-01") + 7 * 0:19, board = boards)
+  wk$cases <- 30
+  phw_epicurve(wk, week, group = board, count = cases) + ggplot2::labs(title = "Weekly cases")
+}
+
+test_that("a map's title beside a chart with a collected legend stays on the image, clear of the chart's", {
+  skip_if_not_installed("patchwork")
+  titles <- c("Weekly cases", "Rate by health board")
+  m <- licensed_map() + ggplot2::labs(title = titles[2])
+  e <- weekly_boards()
+  for (fig in list(phw_arrange(e, m), phw_arrange(m, e))) {
+    drawn <- saved_caption_lines(fig, paste(titles, collapse = "\n"))
+    chart <- drawn$text == titles[1]
+    map <- drawn[!chart, ]
+    expect_equal(paste(map$text[order(map$top)], collapse = " "), titles[2])
+    expect_gte(min(drawn$left), 0)
+    expect_lte(max(drawn$right), 16 / 2.54)
+    beside <- map$top < drawn$bottom[chart]
+    expect_true(all(map$right[beside] <= drawn$left[chart] | map$left[beside] >= drawn$right[chart]))
+  }
+})
+
+test_that("a collected legend under a map stacked on a chart stays on the image", {
+  skip_if_not_installed("patchwork")
+  fig <- phw_arrange(weekly_boards(), licensed_map(), ncol = 1)
+  drawn <- saved_caption_lines(fig, paste(boards, collapse = "\n"), height = 20)
+  drawn <- drawn[drawn$text %in% boards, ]
+  expect_setequal(drawn$text, boards)
+  expect_gte(min(drawn$left), 0)
+  expect_lte(max(drawn$right), 16 / 2.54)
+})
+
 test_that("phw_map stops on a table() and says what to pass", {
   areas <- tiny_areas()
   counts <- table(code = c("A1", "A1", "A2", "A4"))
