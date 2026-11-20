@@ -449,6 +449,13 @@ says what to change.
 * `phw_finalise()` keeps the footer readable on narrow charts. When the
   source does not fit beside the logo or organisation name, it moves above
   them and wraps to the width of the chart.
+* `phw_finalise()` on a map lays the footer out at the width of the map,
+  which is often narrower than the image. The source stays beside the
+  organisation name or logo, or moves above it, the whole footer stays on
+  the image, and the map's licence wraps as one paragraph. Before, at
+  every default `phw_save()` size, the licence was printed over the
+  organisation name, ran off the bottom of the image and left short lines
+  such as "Open".
 * `phw_finalise()` on a `phw_arrange()` figure keeps every panel, the
   figure title and the panel tags. Before, only the last panel was kept.
 * `phw_finalise()` on a `phw_arrange()` figure of maps, or of other plots
