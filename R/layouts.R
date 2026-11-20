@@ -74,12 +74,14 @@ phw_arrange <- function(..., plots = NULL, ncol = NULL, nrow = NULL, widths = NU
   arrange(lapply(all, wrap_legends, position = legend, room = room))
 }
 
-# The width, in cm, that patchwork gives a legend collected from `figure`
-# when drawn on the open device: from the left of the first panel to the
-# right of the last, less the y axes and the figure margins. As a function,
-# because the width is known only when the figure is drawn. NULL when the
-# figure has no collected legend across it. Each legend in the figure asks,
-# so the width is kept for each kind and size of device.
+# The width, in cm, that a legend collected from `figure` has when drawn on
+# the open device: patchwork places it from the left of the first panel, and
+# it may run on to the figure's right margin, where the source line ends.
+# Stopping it at the right of the last panel instead wraps a long legend to
+# more rows than the panels have height to spare. As a function, because the
+# width is known only when the figure is drawn. NULL when the figure has no
+# collected legend across it. Each legend in the figure asks, so the width is
+# kept for each kind and size of device.
 collected_room <- function(figure) {
   known <- list()
   function() {
@@ -89,7 +91,7 @@ collected_room <- function(figure) {
     i <- which(g$layout$name == "guide-box")
     cm <- function(u) grid::convertWidth(u, "cm", valueOnly = TRUE)
     room <- if (length(i) == 1) {
-      outside <- setdiff(seq_along(g$widths), g$layout$l[i]:g$layout$r[i])
+      outside <- c(seq_len(g$layout$l[i] - 1), length(g$widths))
       cm(grid::unit(1, "npc")) - sum(vapply(outside, function(j) cm(g$widths[j]), numeric(1)))
     }
     known[key] <<- list(room)

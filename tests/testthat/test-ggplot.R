@@ -631,6 +631,35 @@ test_that("phw_arrange wraps a collected legend to the room beside the y axis", 
   }
 })
 
+test_that("phw_arrange leaves the panels room under two legends of health boards", {
+  skip_if_not_installed("ragg")
+  skip_if_not_installed("patchwork")
+  library(ggplot2)
+  local_ggplot_state()
+  use_phw_ggplot()
+  boards <- c("Betsi Cadwaladr University Health Board", "Powys Teaching Health Board",
+              "Hywel Dda University Health Board", "Aneurin Bevan University Health Board",
+              "Cardiff and Vale University Health Board", "Cwm Taf Morgannwg University Health Board",
+              "Swansea Bay University Health Board")
+  weekly <- data.frame(week = rep(as.Date("2025-01-06") + 7 * 0:9, 7),
+                       board = factor(rep(boards, each = 10), boards),
+                       cases = rep(seq(30, 48, by = 2), 7))
+  lines <- ggplot(weekly, aes(week, cases, colour = board)) + geom_line()
+  points <- ggplot(weekly, aes(week, cases, colour = board)) + geom_point()
+  bars <- ggplot(weekly, aes(board, cases, fill = board)) + geom_col()
+  local_size()
+  for (fig in list(phw_arrange(lines, bars, title = "Cases by health board", source = "PHW"),
+                   phw_arrange(lines, bars, title = "Cases", legend = "top"),
+                   phw_arrange(lines, points, title = "Cases"))) {
+    g <- patchwork::patchworkGrob(fig)
+    fixed <- sum(vapply(seq_along(g$heights), function(i) {
+      grid::convertHeight(g$heights[i], "cm", valueOnly = TRUE)
+    }, numeric(1)))
+    expect_gt(10 - fixed, 2)
+    expect_lte(collected_legend_end(g), 16)
+  }
+})
+
 test_that("phw_arrange collects only the legends its plots show", {
   skip_if_not_installed("patchwork")
   library(ggplot2)
