@@ -482,14 +482,21 @@ legend_cm <- function(g) {
   grid::convertWidth(gtable::gtable_width(box), "cm", valueOnly = TRUE)
 }
 
-# Where a legend collected by patchwork ends, in cm from the left of `g`.
-collected_legend_end <- function(g) {
+# Where a legend collected by patchwork starts, in cm from the left of `g`:
+# patchwork puts it at the left of the first panel, and phwstyle may move it
+# left from there.
+collected_legend_start <- function(g) {
   i <- which(g$layout$name == "guide-box")
-  left <- vapply(seq_len(g$layout$l[i] - 1), function(j) {
-    grid::convertWidth(g$widths[j], "cm", valueOnly = TRUE)
-  }, numeric(1))
-  sum(left) + legend_cm(g)
+  cm <- function(u) grid::convertWidth(u, "cm", valueOnly = TRUE)
+  left <- vapply(seq_len(g$layout$l[i] - 1), function(j) cm(g$widths[j]), numeric(1))
+  box <- g$grobs[[i]]
+  vp <- box$grobs[[which(box$layout$name == "guides")[1]]]$grobs[[1]]$vp
+  shift <- if (inherits(vp, "viewport")) cm(grid::unit(0.5, "npc") - vp$x) else 0
+  sum(left) - shift
 }
+
+# Where a legend collected by patchwork ends, in cm from the left of `g`.
+collected_legend_end <- function(g) collected_legend_start(g) + legend_cm(g)
 
 test_that("phw_save wraps a bottom legend of health boards to fit the default size", {
   skip_if_not_installed("ragg")
@@ -641,22 +648,32 @@ test_that("phw_arrange leaves the panels room under two legends of health boards
               "Hywel Dda University Health Board", "Aneurin Bevan University Health Board",
               "Cardiff and Vale University Health Board", "Cwm Taf Morgannwg University Health Board",
               "Swansea Bay University Health Board")
-  weekly <- data.frame(week = rep(as.Date("2025-01-06") + 7 * 0:9, 7),
-                       board = factor(rep(boards, each = 10), boards),
-                       cases = rep(seq(30, 48, by = 2), 7))
-  lines <- ggplot(weekly, aes(week, cases, colour = board)) + geom_line()
-  points <- ggplot(weekly, aes(week, cases, colour = board)) + geom_point()
-  bars <- ggplot(weekly, aes(board, cases, fill = board)) + geom_col()
   local_size()
-  for (fig in list(phw_arrange(lines, bars, title = "Cases by health board", source = "PHW"),
-                   phw_arrange(lines, bars, title = "Cases", legend = "top"),
-                   phw_arrange(lines, points, title = "Cases"))) {
-    g <- patchwork::patchworkGrob(fig)
-    fixed <- sum(vapply(seq_along(g$heights), function(i) {
-      grid::convertHeight(g$heights[i], "cm", valueOnly = TRUE)
-    }, numeric(1)))
-    expect_gt(10 - fixed, 2)
-    expect_lte(collected_legend_end(g), 16)
+  # Counts in the tens, hundreds and thousands give y axes of different widths.
+  for (scale in c(1, 10, 100)) {
+    weekly <- data.frame(week = rep(as.Date("2025-01-06") + 7 * 0:9, 7),
+                         board = factor(rep(boards, each = 10), boards),
+                         cases = rep(seq(30, 48, by = 2), 7) * scale)
+    lines <- ggplot(weekly, aes(week, cases, colour = board)) + geom_line()
+    points <- ggplot(weekly, aes(week, cases, colour = board)) + geom_point()
+    bars <- ggplot(weekly, aes(board, cases, fill = board)) + geom_col()
+    for (fig in list(phw_arrange(lines, bars, title = "Cases by health board", source = "PHW"),
+                     phw_arrange(bars, lines, title = "Cases by health board", source = "PHW"),
+                     phw_arrange(lines, bars, title = "Cases", legend = "top"),
+                     phw_arrange(lines, points, title = "Cases"))) {
+      g <- patchwork::patchworkGrob(fig)
+      fixed <- sum(vapply(seq_along(g$heights), function(i) {
+        grid::convertHeight(g$heights[i], "cm", valueOnly = TRUE)
+      }, numeric(1)))
+      expect_gt(10 - fixed, 2)
+      # The legend starts where the title does, as it would on one chart.
+      title <- g$layout$l[g$layout$name == "title"]
+      title_left <- sum(vapply(seq_len(title - 1), function(j) {
+        grid::convertWidth(g$widths[j], "cm", valueOnly = TRUE)
+      }, numeric(1)))
+      expect_equal(collected_legend_start(g), title_left, tolerance = 1e-6)
+      expect_lte(collected_legend_end(g), 16)
+    }
   }
 })
 

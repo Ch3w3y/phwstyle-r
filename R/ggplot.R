@@ -220,8 +220,11 @@ phw_continuous_auto <- phw_palettes$blues[2:6]
 # so the width that matters is known then. With no device open, or with
 # rows or columns set, the legend stays as it is. `share` is the chart's
 # share of the device width, when it is one panel of a figure. `room`, a
-# function giving the width in cm on the open device or NULL, is for a
-# legend drawn somewhere other than its own chart (see collected_room()).
+# function giving the widths in cm on the open device or NULL, is for a
+# legend that patchwork collects under or over the panels of a figure (see
+# collected_room()). With `legend.location = "plot"`, as in theme_phw(), it
+# goes across the whole figure, as ggplot2 puts a chart's legend, rather
+# than across the panels only.
 phw_guide_legend <- function(share = 1, room = NULL) {
   ggplot2::ggproto("GuidePhwLegend", ggplot2::GuideLegend,
     params = ggplot2::guide_legend()$params,
@@ -232,9 +235,19 @@ phw_guide_legend <- function(share = 1, room = NULL) {
         is.null(params$nrow) && is.null(params$ncol) && grDevices::dev.cur() > 1
       if (!wraps) return(grob)
       cm <- function(u) grid::convertWidth(u, "cm", valueOnly = TRUE)
-      limit <- if (is.function(room)) room()
-      limit <- limit %||% (share * cm(grid::unit(1, "npc")) -
-                             cm(sum(ggplot2::calc_element("plot.margin", theme)[c(2, 4)])))
+      span <- if (is.function(room)) room()
+      shift <- 0
+      if (is.null(span)) {
+        limit <- share * cm(grid::unit(1, "npc")) -
+          cm(sum(ggplot2::calc_element("plot.margin", theme)[c(2, 4)]))
+      } else if (identical(ggplot2::calc_element("legend.location", theme), "plot")) {
+        just <- ggplot2::calc_element(paste0("legend.justification.", position), theme)
+        just <- grid::valid.just(just)[1]
+        shift <- (1 - just) * span[["left"]] - just * span[["right"]]
+        limit <- sum(span)
+      } else {
+        limit <- span[["panels"]]
+      }
       n <- nrow(params$key)
       rows <- ceiling(n / 5)
       while (cm(gtable::gtable_width(grob)) > limit && rows < n) {
@@ -242,7 +255,12 @@ phw_guide_legend <- function(share = 1, room = NULL) {
         params$nrow <- rows
         grob <- draw(theme, position, direction, params)
       }
-      grob
+      if (shift == 0) return(grob)
+      # ggplot2 sets each legend's viewport when it packs them, so the shift
+      # goes on a legend inside one of the same size.
+      grob$vp <- grid::viewport(x = grid::unit(0.5, "npc") - grid::unit(shift, "cm"))
+      gtable::gtable_add_grob(gtable::gtable(grob$widths, grob$heights), grob,
+                              t = 1, l = 1, b = -1, r = -1, clip = "off", name = "legend")
     })
 }
 
