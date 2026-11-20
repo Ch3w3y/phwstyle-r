@@ -879,3 +879,29 @@ test_that("a ggplot of data with no rows gives the empty chart ggplotly() gives"
   expect_equal(as.vector(traces[[1]]$y), c(3, 5, 9))
   expect_false(traces[[2]]$visible)
 })
+
+test_that("a line, error bar or boxplot layer with no rows gives an empty chart", {
+  d <- data.frame(week = 1:4, cases = c(3, 5, 9, 4), lo = 1, hi = 12, hb = c("A", "A", "B", "B"))
+  none <- d[d$cases > 100, ]
+  empty <- list(
+    ggplot2::ggplot(none, ggplot2::aes(week, cases)) + ggplot2::geom_line(),
+    ggplot2::ggplot(none, ggplot2::aes(week, cases)) + ggplot2::geom_step(),
+    ggplot2::ggplot(none, ggplot2::aes(week, ymin = lo, ymax = hi)) + ggplot2::geom_errorbar(),
+    ggplot2::ggplot(none, ggplot2::aes(hb, cases)) + ggplot2::geom_boxplot(),
+    ggplot2::ggplot(none, ggplot2::aes(week, cases, ymin = lo, ymax = hi)) + ggplot2::geom_pointrange()
+  )
+  for (g in empty) {
+    w <- built(phw_plotly(g + ggplot2::labs(title = "Weekly cases", x = "Week"), source = "PHW"))
+    expect_false(any(vapply(w$data, function(t) !isFALSE(t$visible), logical(1))))
+    expect_equal(w$layout$title$text, "Weekly cases")
+    expect_equal(w$layout$xaxis$title$text, "Week")
+  }
+  mixed <- ggplot2::ggplot(d, ggplot2::aes(week, cases)) + ggplot2::geom_col() +
+    ggplot2::geom_line(data = none) + ggplot2::geom_errorbar(ggplot2::aes(ymin = lo, ymax = hi), data = none)
+  traces <- built(phw_plotly(mixed))$data
+  expect_equal(as.vector(traces[[1]]$y), d$cases)
+  expect_s3_class(mixed$layers[[2]]$geom, "GeomLine")
+  facets <- ggplot2::ggplot(d, ggplot2::aes(week, cases)) + ggplot2::geom_line() +
+    ggplot2::geom_errorbar(ggplot2::aes(ymin = lo, ymax = hi), data = none) + ggplot2::facet_wrap(~hb)
+  expect_length(Filter(function(t) identical(t$mode, "lines"), built(phw_plotly(facets))$data), 2)
+})
