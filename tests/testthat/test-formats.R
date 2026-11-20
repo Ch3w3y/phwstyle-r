@@ -392,6 +392,32 @@ test_that("a PDF document with two authors renders", {
   expect_true(file.exists(pdf))
 })
 
+test_that("a captioned chart in a PDF document stays under its heading", {
+  skip_on_cran()
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("knitr")
+  skip_if_not(rmarkdown::pandoc_available(), "pandoc is not available")
+  skip_if(!nzchar(Sys.which("xelatex")), "XeLaTeX is not installed")
+  local_ggplot_state()
+  withr::local_options(tinytex.clean = FALSE)
+  dir <- withr::local_tempdir()
+  rmd <- file.path(dir, "charts.Rmd")
+  chart <- function(cap) c(sprintf("```{r, echo = FALSE, fig.cap = '%s'}", cap),
+                           "ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) + ggplot2::geom_point()", "```", "")
+  text <- paste(rep("Cases rose in every health board this week.", 60), collapse = " ")
+  writeLines(c("---", "title: Weekly report", "---", "",
+               "## Epidemic curve", "", chart("First chart"),
+               "## Bar chart", "", chart("Second chart"),
+               "## Summary", "", text, "", "## Notes", "", text), rmd)
+  rmarkdown::render(rmd, phw_pdf_document(), quiet = TRUE)
+  # The .aux file lists figures and sections in the order they are printed.
+  aux <- readLines(file.path(dir, "charts.aux"), warn = FALSE)
+  at <- function(what) grep(what, aux, fixed = TRUE)
+  expect_lt(at("First chart"), at("{2}Bar chart"))
+  expect_gt(at("Second chart"), at("{2}Bar chart"))
+  expect_lt(at("Second chart"), at("{3}Summary"))
+})
+
 test_that("a PDF document draws the shapes in red, amber and green cells", {
   skip_on_cran()
   skip_if_not_installed("rmarkdown")

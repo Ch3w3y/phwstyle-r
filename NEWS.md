@@ -866,6 +866,12 @@ says what to change.
   paragraph that follows it, a table longer than the page ran over the
   footer and lost its last rows and source line, and a summary table by
   health board ran past the right margin and lost its Total column.
+* In `phw_pdf_document()`, and in other LaTeX formats that use
+  `phw_latex_header()`, a captioned chart stays where it is in the text,
+  under its heading, as in Word and HTML. Before, LaTeX could move it past
+  later sections, so a section had no chart and the chart appeared under
+  another heading. Set the chunk option `fig.pos` to place a chart
+  yourself.
 * On the title slide and section header of your own template,
   `phw_add_slide()` gives `text` the template's colour and size, and the
   source line is white only when the slide background is dark. Before, both
