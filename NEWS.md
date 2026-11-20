@@ -329,10 +329,15 @@ says what to change.
   plot's legend now wraps to the width of that plot instead of the whole
   figure, so the legends no longer overprint each other.
 * The legend that `phw_arrange()` collects across the bottom or top of a
-  figure wraps to the width beside the y axis, where the figure places
-  it. Before, it wrapped to the whole figure width, so a legend of health
-  boards at the default size ran off the right edge and its last board
-  was cut off.
+  figure starts at the left of the figure, under the title, and wraps to
+  the figure's width, as the legend of a single chart does with
+  `theme_phw()`. Before, it started at the first chart's y axis but
+  wrapped to the whole figure width, so a legend of health boards at the
+  default size ran off the right edge and its last board was cut off. Two
+  legends of health boards, such as a line chart beside a bar chart, also
+  took so many rows that the charts had no height left. With a theme that
+  sets `legend.location = "panel"`, the legend stays under the charts and
+  wraps to their width.
 * A colour bar or colour steps legend across the bottom or top of a chart
   is long enough for its labels to be read. Before, it was about 2 cm
   long, so labels such as 600 to 1600 ran into each other and the first
