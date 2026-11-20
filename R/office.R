@@ -62,7 +62,7 @@ phw_datatable <- function(data, caption = NULL, source = NULL, date = NULL, digi
   w <- do.call(DT::datatable, args)
   # Columns go to DT by position: a rename in `colnames` changes the names.
   num <- setdiff(which(vapply(data, is.numeric, logical(1))), sm$helper)
-  is_int <- vapply(data[num], function(v) all(v == round(v), na.rm = TRUE), logical(1))
+  is_int <- vapply(data[num], is_whole, logical(1))
   is_year <- year_cols(data)[num]
   if (any(is_year)) w <- DT::formatRound(w, num[is_year], digits = 0, mark = "")
   if (any(is_int & !is_year)) w <- DT::formatRound(w, num[is_int & !is_year], digits = 0)
@@ -330,7 +330,7 @@ phw_write_xlsx <- function(x, file, title = NULL, source = NULL, date = NULL, ca
         fmt <- if (inherits(v, "POSIXt")) "yyyy-mm-dd hh:mm" else if (inherits(v, "Date")) "yyyy-mm-dd" else if (years[j]) {
           "0"
         } else if (is.numeric(v)) {
-          if (places == 0 || all(v == round(v), na.rm = TRUE)) "#,##0" else paste0("#,##0.", strrep("0", places))
+          if (places == 0 || is_whole(v)) "#,##0" else paste0("#,##0.", strrep("0", places))
         }
         if (!is.null(fmt)) wb <- openxlsx2::wb_add_numfmt(wb, sheet, openxlsx2::wb_dims(rows = head_row + seq_len(nr), cols = j), fmt)
       }

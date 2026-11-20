@@ -205,7 +205,7 @@ with_number_formats <- function(columns, data, digits) {
 # Decimal places for a column, as the renderers show it: none for whole
 # numbers, `digits` otherwise.
 col_digits <- function(v, digits) {
-  if (is.numeric(v) && all(v == round(v), na.rm = TRUE)) 0 else digits
+  if (is_whole(v)) 0 else digits
 }
 
 # The title above, then the table, a summary table's note on the statistics
@@ -854,6 +854,7 @@ NULL
 #' @export
 phw_col_bar <- function(data, column, colour = phw_colours[["light_teal"]], digits = 0, ...) {
   rlang::check_installed("reactable")
+  data <- check_data_frame(data, as_data_frame_hint)
   column <- pick_col(rlang::enquo(column), data, "column")
   rows <- heat_rows(data)
   if (!length(value_cols(data[rows, , drop = FALSE], column, "column"))) return(reactable::colDef(align = "right", ...))
@@ -877,6 +878,7 @@ phw_col_bar <- function(data, column, colour = phw_colours[["light_teal"]], digi
 #' @export
 phw_col_heat <- function(data, column, palette = "teals", domain = NULL, digits = 1, ...) {
   rlang::check_installed("reactable")
+  data <- check_data_frame(data, as_data_frame_hint)
   column <- pick_col(rlang::enquo(column), data, "column")
   if (missing(digits)) digits <- col_digits(data[[column]], attr(data, "digits") %||% digits)
   fmt <- reactable::colFormat(separators = TRUE, digits = digits)
@@ -900,9 +902,7 @@ phw_col_rag <- function(breaks, higher_is_better = TRUE, rag_palette = "rag_acce
   if (missing(breaks)) breaks <- NULL
   check_breaks(breaks)
   rag_palette <- rlang::arg_match(rag_palette, c("rag_accessible", "rag"))
-  if (!is.null(data) && !is.data.frame(data)) {
-    cli::cli_abort("{.arg data} must be a data frame, not {.obj_type_friendly {data}}.")
-  }
+  if (!is.null(data)) data <- check_data_frame(data, as_data_frame_hint)
   pal <- phw_palettes[[rag_palette]]
   shapes <- c(red = "\u25BC", amber = "\u25A0", green = "\u25B2")
   status <- function(v) rag_status(v, breaks, higher_is_better)

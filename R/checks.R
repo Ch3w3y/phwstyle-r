@@ -4,6 +4,12 @@
 # Pass `call = rlang::caller_env()` through, as the pick_col() helpers do, so
 # the message names the user's function.
 
+# TRUE for a numeric vector of whole numbers, which every renderer shows
+# without decimal places. A column of only NA counts as whole.
+is_whole <- function(v) {
+  is.numeric(v) && all(v == round(v), na.rm = TRUE)
+}
+
 check_has_rows <- function(data, arg = "data", call = rlang::caller_env()) {
   if (!NROW(data)) cli::cli_abort("{.arg {arg}} has no rows.", call = call)
   invisible(data)

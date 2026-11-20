@@ -324,7 +324,7 @@ phw_key_set <- function(name, values) {
 phw_key_recolour <- function(name, palette = "accessible", neutral = default_neutral) {
   old <- phw_key(name)
   if (!length(old)) cli::cli_abort("No key called {.val {name}}.")
-  keep <- toupper(old) == phw_colours[["grey_mid"]] | tolower(names(old)) %in% tolower(neutral)
+  keep <- toupper(old) == toupper(phw_colours[["grey_mid"]]) | tolower(names(old)) %in% tolower(neutral)
   n <- sum(!keep)
   by_name <- if (!is.function(palette)) palette_named(palette)
   hit <- match(tolower(names(old)), tolower(names(by_name)))

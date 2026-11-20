@@ -251,10 +251,9 @@ phw_group_table <- function(data, rows, cols = NULL, value = NULL, fun = sum,
   body_df <- if (percent == "none") {
     as.data.frame(vals)
   } else {
-    is_whole <- all(vals == round(vals), na.rm = TRUE)
     fmt <- matrix(ifelse(is.na(vals), "",
                          ifelse(dens > 0,
-                                sprintf("%s (%s%%)", if (is_whole) fmt_n(vals) else fmt_num(vals, digits),
+                                sprintf("%s (%s%%)", if (is_whole(vals)) fmt_n(vals) else fmt_num(vals, digits),
                                         fmt_num(100 * vals / dens, digits)),
                                 fmt_n(vals))),
                   nrow(vals))
