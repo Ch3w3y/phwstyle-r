@@ -65,6 +65,11 @@
 \captionsetup{font={small,bf,color=phwnavy}, labelsep=period, justification=raggedright, singlelinecheck=false}
 \captionsetup[table]{position=top}
 
+% Figures stay where they are in the text, under their heading, as in Word
+% and HTML, rather than floating past later sections.
+\usepackage{float}
+\floatplacement{figure}{H}
+
 % Tables
 \usepackage{booktabs}
 \usepackage{colortbl}
