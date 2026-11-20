@@ -343,6 +343,7 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
   col <- phw_colours
   colorway <- plotly_colorway(p, palette)
   font <- list(family = paste0(phw_font(), ", Arial, sans-serif"), size = font_size, color = col[["text"]])
+  p$x$layout <- font_fallback(p$x$layout, phw_font(), font$family)
   # An axis `color` colours its title and tick labels without replacing the
   # title text, which a list title would do when plotly merges layouts.
   axis <- list(color = col[["text_secondary"]], gridcolor = col[["grey_border"]],
@@ -479,6 +480,17 @@ grey_missing_number <- function(trace) {
   }
   if (is.list(trace$line)) trace$line$color <- grey(trace$line$color)
   trace
+}
+
+# ggplotly() gives each text the theme's font family with no fallback.
+# plotly.js measures text before the web font has loaded, and Chrome then
+# measures it in its serif default, so legend items overlap and labels are
+# cut off. Give every `bare` family the fallback stack.
+font_fallback <- function(x, bare, family) {
+  if (!is.list(x) || is.data.frame(x)) return(x)
+  if (identical(x[["family"]], bare)) x[["family"]] <- family
+  x[] <- lapply(x, font_fallback, bare, family)
+  x
 }
 
 # The last title set on the chart, or on one axis, before phw_plotly():
