@@ -159,6 +159,18 @@ heat_rows <- function(x) {
   which(types %in% c("level", "level0"))
 }
 
+# Column `j`'s group for each row heat_rows() picks. In a group table's
+# "columns" layout, an outer label column names its group only on the
+# heading row, so the rows under it take that group.
+table_groups <- function(data, j) {
+  x <- data[[j]]
+  if (match(j, names(data)) < (attr(data, "label_cols") %||% 1L)) {
+    above <- cummax(ifelse(!is.na(x) & x == "", 0L, seq_along(x)))
+    x <- x[replace(above, above == 0L, NA)]
+  }
+  x[heat_rows(data)]
+}
+
 # Groups in the order a chart of the same data gives them. A summary table's
 # label columns are text, so sorting them would put "15-44" before "5-14".
 # A group table repeats its innermost levels in every group, and a group can

@@ -146,11 +146,13 @@ phw_reactable <- function(data, ..., caption = NULL, source = NULL, date = NULL,
   }
   if (!is.null(group_col)) {
     rows <- heat_rows(data)
-    cols <- phw_colour_key(table_group_levels(data[[group_col]][rows], data), name = key, palette = palette)
+    groups <- table_groups(data, group_col)
+    cols <- phw_colour_key(table_group_levels(groups, data), name = key, palette = palette)
+    fill <- stats::setNames(unname(cols[as.character(groups)]), rows)
     under <- base_cols[[group_col]]$style
     style_fun <- function(value, index) {
       st <- if (!is.null(under)) under(value, index)
-      bg <- if (index %in% rows) unname(cols[as.character(value)]) else NA
+      bg <- if (index %in% rows) fill[[as.character(index)]] else NA
       if (is.na(bg)) return(st)
       c(st, list(background = bg, color = phw_text_on(bg), fontWeight = 500))
     }
