@@ -523,7 +523,7 @@ ggplotly_phw <- function(p, palette) {
   # ggplotly(tooltip = "text").
   mappings <- c(list(p$mapping), lapply(p$layers, function(l) l$mapping))
   tooltip <- if (any(vapply(mappings, function(m) "text" %in% names(m), logical(1)))) "text" else "all"
-  w <- plotly::ggplotly(unrepel(p), tooltip = tooltip)
+  w <- plotly::ggplotly(blank_empty(unrepel(p), b), tooltip = tooltip)
   w$x$data <- plain_legend(w$x$data, keys)
   w <- secondary_axes(w, b)
   # ggplotly() gives the legend a title even when the theme blanks it.
@@ -605,6 +605,15 @@ unrepel <- function(p) {
 }
 
 GeomPhwPlotlyText <- ggplot2::ggproto("GeomPhwPlotlyText", ggplot2::GeomText)
+
+# ggplotly() stops on a layer with no rows, such as a line or an error bar
+# of data a filter emptied, which draws nothing. A blank layer in its place
+# keeps the axis titles its mapping gives.
+blank_empty <- function(p, b) {
+  empty <- vapply(b$data, nrow, 1L)[seq_along(p$layers)] == 0
+  p$layers[empty] <- lapply(p$layers[empty], function(l) ggplot2::ggproto(NULL, l, geom = ggplot2::GeomBlank))
+  p
+}
 
 # plotly centres text on its point whatever its hjust and vjust, which would
 # put a label such as phw_funnel()'s over its marker.

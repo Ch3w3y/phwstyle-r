@@ -878,6 +878,11 @@ says what to change.
   knits in a week where nothing matched. Before, it stopped with the error
   "values must be length 1". The same holds for a layer with no rows next
   to layers with data, and for a chart made with `plotly::ggplotly()`.
+* `phw_plotly()` also draws the empty chart, with its title, axis titles and
+  source, for a line, step, error bar, boxplot or point range layer with no
+  rows, alone or next to layers with data. Before, plotly stopped with
+  errors such as "argument 1 is not a vector" or "'by' must specify a
+  uniquely valid column".
 * `phw_reactable()` and `phw_plotly()` now bring the Ubuntu web font into
   the page, as `phw_datatable()` and `phw_leaflet()` do. Before, a table
   without a caption and every chart fell back to Arial.
