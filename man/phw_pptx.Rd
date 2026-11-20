@@ -38,7 +38,8 @@ template. \code{NULL} uses the PHW template from \code{\link[=phw_reference_pptx
 result. A grob goes on the slide as a picture.}
 
 \item{table}{A data frame, flextable or summary table (rendered with
-\code{\link[=phw_flextable]{phw_flextable()}}). It must have at least one row. A flextable's
+\code{\link[=phw_flextable]{phw_flextable()}}). A table with no rows, such as one a filter left
+empty, goes on one slide with its header row. A flextable's
 caption, such as the one \code{\link[=phw_flextable]{phw_flextable()}} adds, goes in a row at the
 top of the table, because PowerPoint does not show table captions.
 Text in the table is never smaller than 12 pt, so it can be read when
