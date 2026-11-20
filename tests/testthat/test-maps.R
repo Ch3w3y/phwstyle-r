@@ -277,6 +277,24 @@ test_that("a map saved at half-page width keeps its whole licence line on the im
   }
 })
 
+test_that("a finalised map's footer fits the map's width and stays on the image", {
+  local_mocked_bindings(phw_logo = function(...) NULL)
+  m <- licensed_map() + ggplot2::labs(title = "Rate")
+  apart <- function(a, b) a$right <= b$left || b$right <= a$left || a$bottom <= b$top || b$bottom <= a$top
+  for (size in list(c(16, 10), c(25, 14))) {
+    drawn <- saved_caption_lines(phw_finalise(m), paste(licence, phw_org, sep = "\n"), size[1], size[2])
+    org <- drawn[drawn$text == phw_org, ]
+    lines <- drawn[drawn$text != phw_org, ]
+    lines <- lines[order(lines$top), ]
+    expect_caption_within(lines, licence, 0, size[1] / 2.54)
+    expect_lte(max(drawn$bottom), size[2] / 2.54)
+    for (i in seq_len(nrow(lines))) expect_true(apart(lines[i, ], org), label = paste(size[1], "cm, line", i))
+    # Wrapped once as a paragraph, so only the last line can be short.
+    widths <- lines$right - lines$left
+    expect_gt(min(head(widths, -1)), max(widths) / 2)
+  }
+})
+
 test_that("two maps side by side each keep their whole licence line, clear of the other", {
   skip_if_not_installed("patchwork")
   m <- licensed_map()
