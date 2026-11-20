@@ -292,9 +292,9 @@ knit_slide_size <- function() {
 }
 
 # The reference deck of the format being knitted, a copy of pandoc's own when
-# the format names none, or NULL when a Quarto too old to say is knitting it.
-# Quarto gives its path from the document's folder, and R Markdown from the
-# folder it knits in.
+# the format names none, or NULL when Quarto's format can't be found. Quarto
+# gives its path from the document's folder, and R Markdown from the folder it
+# knits in.
 knit_reference_deck <- function() {
   if (is.null(knitr::opts_knit$get("quarto.version"))) {
     args <- knitr::opts_knit$get("rmarkdown.pandoc.args")
@@ -302,14 +302,25 @@ knit_reference_deck <- function() {
     deck <- if (!is.na(i)) args[[i + 1]]
     base <- knitr::opts_knit$get("output.dir") %||% "."
   } else {
-    info <- Sys.getenv("QUARTO_EXECUTE_INFO")
-    if (!nzchar(info)) return(NULL)
-    info <- jsonlite::read_json(info)
-    deck <- info$format$pandoc[["reference-doc"]]
-    base <- dirname(info[["document-path"]])
+    format <- quarto_format()
+    if (is.null(format)) return(NULL)
+    deck <- format$pandoc[["reference-doc"]]
+    base <- dirname(knitr::current_input(dir = TRUE))
   }
   if (is.null(deck)) return(pandoc_reference_deck())
   if (file.exists(file.path(base, deck))) file.path(base, deck) else deck
+}
+
+# The format Quarto is rendering. Recent versions name a file holding it in
+# QUARTO_EXECUTE_INFO; older ones keep it only in their own R function that
+# runs the knit.
+quarto_format <- function() {
+  info <- Sys.getenv("QUARTO_EXECUTE_INFO")
+  if (nzchar(info)) return(jsonlite::read_json(info)$format)
+  for (env in rev(sys.frames())) {
+    format <- get0("format", envir = env, inherits = FALSE)
+    if (is.list(format) && is.list(format$pandoc)) return(format)
+  }
 }
 
 # Written once a session. Under Quarto this is the deck of the pandoc
