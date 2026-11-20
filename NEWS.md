@@ -73,6 +73,11 @@ says what to change.
   and shows the same size on each. A table that fits on one slide only with
   its row spacing squeezed below the 12 pt layout now continues on a second
   slide at a larger size.
+* A `phw_flextable()` in a deck made with R Markdown or Quarto is sized and
+  split for the slides of that deck: those of its reference document, or of
+  pandoc's own deck when there is none. Before, tables were sized for the
+  13.33 x 7.5 in PHW deck, so in a 10 in wide deck, such as pandoc's default
+  one, columns ran off the right of the slide and rows off the bottom.
 * `phw_add_slide()` stops when given more content than the layout has room
   for, instead of silently using only the plot. It also refuses a chart or
   table on the navy Title Slide and Section Header layouts.
