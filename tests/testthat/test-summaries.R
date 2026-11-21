@@ -314,6 +314,33 @@ test_that("phw_crosstab says how many rows it leaves out when missing = NULL", {
   expect_equal(tab$Total[tab$area == "Total"], 18)
 })
 
+test_that("phw_crosstab and phw_group_table give a table of zeros for data with no rows", {
+  d <- data.frame(hb = c("Cardiff", "Swansea"),
+                  age = factor(c("0-14", "65+"), levels = c("0-14", "15-64", "65+")),
+                  sex = c("F", "M"))
+  e <- d[d$hb == "Powys", ]
+  expect_no_warning(tab <- phw_crosstab(e, hb, age))
+  expect_equal(names(tab), c("hb", "0-14", "15-64", "65+", "Total"))
+  expect_equal(unlist(tab[1, -1], use.names = FALSE), c(0, 0, 0, 0))
+  expect_equal(attr(tab, "row_type"), "total")
+  tab <- phw_crosstab(e, hb, age, totals = FALSE)
+  expect_equal(names(tab), c("hb", "0-14", "15-64", "65+"))
+  expect_equal(nrow(tab), 0)
+  for (p in c("row", "column", "total")) {
+    expect_no_warning(tab <- phw_crosstab(e, hb, age, percent = p, totals = FALSE))
+    expect_equal(names(tab), c("hb", "0-14", "15-64", "65+"))
+    expect_equal(phw_crosstab(e, hb, age, percent = p)$Total, "0")
+  }
+  expect_equal(names(phw_crosstab(e, hb, sex, totals = FALSE)), "hb")
+  tab <- phw_group_table(e, hb, age, totals = "none", col_totals = "none")
+  expect_equal(names(tab), "hb")
+  expect_equal(nrow(tab), 0)
+  expect_equal(names(phw_group_table(e, c(hb, sex), c(age, sex), totals = "none", col_totals = "none")),
+               "hb / sex")
+  skip_if_not_installed("flextable")
+  expect_s3_class(phw_flextable(phw_crosstab(e, hb, age, totals = FALSE)), "flextable")
+})
+
 test_that("a blank text group counts as missing", {
   d <- data.frame(area = c("Cardiff", "Cardiff", "Newport", "Swansea"),
                   sex = c("Female", "", "Male", " "))

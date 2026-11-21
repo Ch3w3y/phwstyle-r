@@ -699,6 +699,14 @@ says what to change.
 * `phw_group_table(drop = FALSE)` keeps factor levels that have no records,
   such as an empty age band or year, as rows and columns of zeros, as
   `phw_crosstab()` does. Before, it left them out.
+* `phw_crosstab()` gives a table of zeros for data a filter left with no
+  rows, such as a scheduled report in a week when nothing matched, with
+  the levels of a factor column variable as columns. Before, it stopped
+  with "length of 'dimnames' [2] not equal to array extent" when the column
+  variable was a factor, and with a "'names' attribute" error for
+  `totals = FALSE`. `phw_group_table()` with `totals = "none"` and
+  `col_totals = "none"` gives an empty table for such data too, instead of
+  "'data' must be of a vector type".
 * `phw_flextable()`, `phw_gt()`, `phw_reactable()`, `phw_datatable()` and
   `phw_write_xlsx()` show `NaN`, `Inf` and `-Inf` as blank cells, as they
   show `NA`. Before, each showed them its own way, and `phw_write_xlsx()`

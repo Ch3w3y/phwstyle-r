@@ -403,7 +403,7 @@ phw_crosstab <- function(data, rows, cols, count = NULL,
   k <- as_levels(data[[cols]], missing)
   w <- if (is.null(count)) rep(1, nrow(data)) else data[[count]]
   tab <- stats::xtabs(w ~ r + k)
-  m <- matrix(as.numeric(tab), nrow = nrow(tab), dimnames = dimnames(tab))
+  m <- matrix(as.numeric(tab), nrow(tab), ncol(tab), dimnames = dimnames(tab))
   if (totals) {
     m <- cbind(m, Total = rowSums(m))
     m <- rbind(m, Total = colSums(m))
@@ -416,12 +416,12 @@ phw_crosstab <- function(data, rows, cols, count = NULL,
     grand <- if (totals) m[nrow(m), ncol(m)] else sum(m)
     den <- switch(percent,
       row = matrix(row_tot, nrow(m), ncol(m)),
-      column = matrix(col_tot, nrow(m), ncol(m), byrow = TRUE),
+      column = col_tot[col(m)],
       total = matrix(grand, nrow(m), ncol(m)))
-    out <- matrix(fmt_pct(m, den, digits), nrow(m), dimnames = dimnames(m))
+    out <- matrix(fmt_pct(m, den, digits), nrow(m), ncol(m), dimnames = dimnames(m))
     as.data.frame(out, check.names = FALSE, stringsAsFactors = FALSE)
   }
-  df <- cbind(stats::setNames(data.frame(rownames(m), check.names = FALSE), var_label(data, rows, labels)), body)
+  df <- cbind(stats::setNames(data.frame(as.character(rownames(m)), check.names = FALSE), var_label(data, rows, labels)), body)
   types <- rep("level0", nrow(df))
   if (totals) types[nrow(df)] <- "total"
   res <- new_phw_summary(df, types, spanner = var_label(data, cols, labels),
