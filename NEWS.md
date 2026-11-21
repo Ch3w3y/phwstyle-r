@@ -321,6 +321,14 @@ says what to change.
   such as `phw_arrange(phw_epicurve(..., group = board), map)`, lost the
   end of the map's title off the right edge, or printed it over the
   chart's title when the map was on the left.
+* In a `phw_arrange()` figure, a map keeps its size when its title is
+  wider than the map: the title wraps only to the width each plot in the
+  row would have if all were as wide, and the plot beside the map gives up
+  the width the rest needs. Titles side by side also keep a space between them. Before,
+  with `phw_finalise()`, a figure title, a half-slide size or two maps side
+  by side, the map's title wrapped to one word per line and printed over
+  the next title, the map shrank to a thumbnail, and the licence line of
+  two maps could run off the left edge.
 * When a map makes a `phw_arrange()` figure narrower than the image, as
   it does stacked with `ncol = 1`, the legend collected under the figure
   wraps to the room from the figure's left edge to the right edge of the

@@ -356,6 +356,53 @@ test_that("a map's title beside a chart with a collected legend stays on the ima
   }
 })
 
+test_that("a map beside a chart or a map keeps its size, with titles apart, when finalised, titled or small", {
+  skip_if_not_installed("patchwork")
+  local_ggplot_state()
+  named <- tiny_areas()
+  sf::st_geometry(named) <- sf::st_geometry(named) * matrix(c(1, 0, 0, 1.5), 2)
+  attr(named, "attribution") <- licence
+  named$name <- paste(boards[1:4], "University Health Board")
+  rate <- function(...) licensed_map(...) + ggplot2::labs(title = "Rate by health board")
+  boards_map <- function() {
+    phw_map(data.frame(area = named$code, name = named$name), by = area, fill = name, level = named) +
+      ggplot2::labs(title = "Health boards")
+  }
+  bars <- function() {
+    ggplot2::ggplot(ggplot2::mpg, ggplot2::aes(class, fill = drv)) + ggplot2::geom_bar() +
+      ggplot2::labs(title = "Vehicles by class", x = "Vehicle class")
+  }
+  cases <- list(
+    list(plots = function() list(rate(), weekly_boards()),
+         arrange = function(a, b) phw_finalise(phw_arrange(a, b, title = "Cases"))),
+    list(plots = function() list(rate(), weekly_boards()),
+         arrange = function(a, b) phw_arrange(a, b, title = "Cases"), size = c(12, 9)),
+    list(plots = function() list(rate(), boards_map()), arrange = function(a, b) phw_arrange(a, b)),
+    list(plots = function() {
+      use_phw_ggplot(accessible = TRUE)
+      list(rate(bins = c(45, 55, 65, 75)), bars())
+    }, arrange = function(a, b) phw_finalise(phw_arrange(a, b, title = "Figure"), source = "PHW"))
+  )
+  for (case in cases) {
+    plots <- case$plots()
+    size <- case$size %||% c(16, 10)
+    titles <- c(plots[[1]]$labels$title, plots[[2]]$labels$title)
+    fig <- case$arrange(plots[[1]], plots[[2]])
+    drawn <- saved_caption_lines(fig, paste(c(titles, licence), collapse = "\n"), size[1], size[2])
+    # A title's lines, but not legend keys or axis titles made of the same letters.
+    heads <- lapply(titles, function(t) drawn[grepl_words(drawn$text, t), ])
+    for (k in 1:2) expect_equal(paste(heads[[k]]$text[order(heads[[k]]$top)], collapse = " "), titles[k])
+    beside <- heads[[1]]$top < max(heads[[2]]$bottom)
+    expect_true(all(heads[[1]]$right[beside] < min(heads[[2]]$left)), label = paste(titles, collapse = " / "))
+    lines <- drawn[grepl_words(drawn$text, licence) & !grepl_words(drawn$text, paste(titles, collapse = " ")), ]
+    expect_caption_within(lines, licence, 0, size[1] / 2.54)
+    # As wide as with titles of one letter, which take one line.
+    short <- case$arrange(plots[[1]] + ggplot2::labs(title = "A"), plots[[2]] + ggplot2::labs(title = "B"))
+    expect_gt(drawn_panel_widths(fig, size[1], size[2])[1], 0.9 * drawn_panel_widths(short, size[1], size[2])[1],
+              label = paste(titles, collapse = " / "))
+  }
+})
+
 test_that("a collected legend under a map stacked on a chart stays on the image", {
   skip_if_not_installed("patchwork")
   fig <- phw_arrange(weekly_boards(), licensed_map(), ncol = 1)

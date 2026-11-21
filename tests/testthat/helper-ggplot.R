@@ -24,6 +24,11 @@ saved_caption_lines <- function(plot, caption, width = 16, height = 10) {
   out[part, ]
 }
 
+# Whether each of `lines` is whole words of `text`.
+grepl_words <- function(lines, text) {
+  vapply(lines, function(l) grepl(paste0(" ", l, " "), paste0(" ", text, " "), fixed = TRUE), logical(1))
+}
+
 # Every line is inside `from` to `to` inches, and read top to bottom they give
 # the whole caption.
 expect_caption_within <- function(lines, caption, from, to) {
