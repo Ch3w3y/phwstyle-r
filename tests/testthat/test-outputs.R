@@ -46,6 +46,61 @@ test_that("phw_gt tables in Word use the PHW font and suggest phw_flextable on t
   expect_length(xml2::xml_find_all(spanner, "w:rPr/w:b", ns), 1)
 })
 
+gt_chunk <- c("```{r, echo = FALSE}",
+              "phwstyle::phw_gt(data.frame(Area = c('Cardiff', 'Swansea'), Cases = c(105L, 63L)), source = 'Example')",
+              "```")
+
+slide_xml <- function(pptx) {
+  dir <- withr::local_tempdir()
+  utils::unzip(pptx, exdir = dir)
+  slides <- list.files(file.path(dir, "ppt", "slides"), pattern = "\\.xml$", full.names = TRUE)
+  paste(unlist(lapply(slides, readLines, warn = FALSE)), collapse = "")
+}
+
+test_that("phw_gt tables render in Quarto Typst and PowerPoint documents", {
+  skip_on_cran()
+  skip_if_not_installed("gt")
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("rmarkdown")
+  quarto <- Sys.which("quarto")
+  skip_if(!nzchar(quarto), "Quarto is not installed")
+  dir <- withr::local_tempdir()
+  suppressMessages(use_phw_quarto(dir, "none"))
+  render <- function(fmt, out, ...) {
+    writeLines(c("---", "title: T", "---", "", "## Cases", "", gt_chunk), file.path(dir, "t.qmd"))
+    log <- withr::with_dir(dir, withr::with_envvar(
+      c(QUARTO_R = R.home("bin")),
+      suppressWarnings(system2(quarto, c("render", "t.qmd", "--to", fmt, "-o", out, ...),
+                               stdout = TRUE, stderr = TRUE))))
+    if (!file.exists(file.path(dir, out))) fail(paste(c("quarto render failed:", utils::tail(log, 15)), collapse = "\n"))
+    file.path(dir, out)
+  }
+  render("phw-typst", "t.pdf", "-M", "keep-typ:true")
+  typ <- paste(readLines(file.path(dir, "t.typ"), warn = FALSE), collapse = "\n")
+  expect_match(typ, "Cardiff")
+  expect_match(typ, "Source: Example")
+  xml <- slide_xml(render("phw-pptx", "t.pptx"))
+  expect_match(xml, "<a:tbl>.*Cardiff.*Source: Example.*</a:tbl>")
+})
+
+test_that("a phw_gt table in an R Markdown PowerPoint deck renders and suggests phw_flextable", {
+  skip_if_not_installed("gt")
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("knitr")
+  skip_if_not(rmarkdown::pandoc_available("2.4"), "pandoc 2.4 or later is not available")
+  withr::local_options(rlib_message_verbosity = "verbose")
+  dir <- withr::local_tempdir()
+  rmd <- file.path(dir, "deck.Rmd")
+  writeLines(c("---", "title: Deck", "---", "", "## Cases", "", gt_chunk), rmd)
+  console <- utils::capture.output(
+    pptx <- rmarkdown::render(rmd, rmarkdown::powerpoint_presentation(reference_doc = phw_reference_pptx()),
+                              quiet = TRUE),
+    type = "message"
+  )
+  expect_match(paste(console, collapse = "\n"), "Use .?phw_flextable\\(\\).? for tables on slides")
+  expect_no_match(slide_xml(pptx), "phw_flextable|show on")
+})
+
 test_that("phw_gt captions in Word read as in HTML, without gt's own number", {
   skip_if_not_installed("gt")
   skip_if_not_installed("rmarkdown")
