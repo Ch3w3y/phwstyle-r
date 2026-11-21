@@ -890,6 +890,12 @@ says what to change.
   A table that cannot fit even then gives a warning. Before, a summary
   table or cross-tab by the seven health boards ran past the right margin
   and lost its last columns.
+* In the Quarto `phw-typst` format, a `phw_flextable()` table wider than
+  the page fits the text width in the same way, as do the tables from
+  `phw_flextable_heat()`, `phw_flextable_groups()` and
+  `phw_flextable_bars()`. Before, a summary table by four health boards ran
+  off the right edge of the page, cutting off its last columns and its
+  source line.
 * In a PowerPoint deck made with R Markdown or Quarto, a `phw_flextable()`
   table wider than the slide now fits the slide's content area, in the
   same way, except that its text stays at 12 pt or larger. A table that

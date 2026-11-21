@@ -234,7 +234,8 @@ knit_print.phw_flextable <- function(x, ...) {
   if (!is.null(knitr::opts_knit$get("quarto.version")) && is.null(knitr::opts_current$get("tbl-cap"))) {
     x <- caption_as_header(x)
   }
-  if (knitr::pandoc_to("docx")) x <- fit_table_to_width(x, page_text_width)
+  # A Typst column's width includes its cell padding, as a Word column's does.
+  if (knitr::pandoc_to(c("docx", "typst"))) x <- fit_table_to_width(x, page_text_width)
   if (knitr::is_latex_output()) {
     # LaTeX adds \tabcolsep points either side of each column's width.
     sep <- knitr::opts_current$get("ft.tabcolsep") %||% x$properties$opts_pdf$tabcolsep
@@ -282,8 +283,8 @@ print.phw_flextable <- function(x, preview = "html", align = "center", ...) {
   invisible(x)
 }
 
-# A4 less the 2 cm side margins of the PHW Word reference document and PDF
-# format, in inches.
+# A4 less the 2 cm side margins of the PHW Word reference document and the
+# PDF and Typst formats, in inches.
 page_text_width <- (210 - 2 * 20) / 25.4
 
 # The size of a slide in the PHW reference deck, in inches, taken for a
