@@ -341,6 +341,10 @@ says what to change.
   `phw_add_slide()` or drawn in a document made with the `phw_*_document()`
   formats. A legend given its own number of rows or columns, as in
   `guide_legend(nrow = 1)`, keeps them.
+* `theme_phw_map(legend = "bottom")` and `legend = "top"` centre the
+  legend under the map. Before, the legend started at the map's left edge,
+  which is narrower than the image because a map keeps its shape, so a
+  legend of health boards saved at the default size ran off the right edge.
 * `theme_phw()` puts each legend across the bottom or top of a chart on a
   row of its own, so a second legend no longer runs off the right edge.
   Before, the average line's key in `phw_epicurve(average = )` and the

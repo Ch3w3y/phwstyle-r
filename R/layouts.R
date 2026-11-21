@@ -70,14 +70,17 @@ phw_arrange <- function(..., plots = NULL, ncol = NULL, nrow = NULL, widths = NU
     return(arrange(Map(wrap_legends, all, share = share)))
   }
   all <- lapply(all, place_legend, legend)
-  room <- collected_room(arrange(all))
+  just <- ggplot2::calc_element(paste0("legend.justification.", legend), ggplot2::theme_get() + ann_theme)
+  room <- collected_room(arrange(all), just)
   arrange(lapply(all, wrap_legends, position = legend, room = room))
 }
 
 # Where a legend collected from `figure` goes when drawn on the open device,
 # in cm: `panels`, the width of the panels, which patchwork puts it under or
-# over, `left`, the width from the figure's left edge to them, and `right`,
-# the width from them to the right edge of the image. The edges are inside
+# over, `left`, the width from the figure's left edge to them, `right`, the
+# width from them to the right edge of the image, and `just`, the figure's
+# legend justification given as `just` (0 left, 1 right): patchwork places
+# the legend by the figure's theme, not the plot's. The edges are inside
 # the figure's margins and those of its outer plots: on the left, where the
 # title and source line start. A fixed-shape panel, such as a map, can make
 # the figure narrower than the image and centre it, and a legend wrapped to
@@ -86,7 +89,8 @@ phw_arrange <- function(..., plots = NULL, ncol = NULL, nrow = NULL, widths = NU
 # function, because the widths are known only when the figure is drawn. NULL
 # when the figure has no collected legend across it. Each legend in the
 # figure asks, so the widths are kept for each kind and size of device.
-collected_room <- function(figure) {
+collected_room <- function(figure, just) {
+  just <- grid::valid.just(just)[1]
   known <- list()
   function() {
     key <- paste(names(grDevices::dev.cur()), paste(grDevices::dev.size("cm"), collapse = "x"))
@@ -108,7 +112,7 @@ collected_room <- function(figure) {
       # patchwork puts the title and source line in columns 3 to n - 2.
       start <- edges(3:(n - 2))[1]
       panels <- edges(g$layout$l[i]:g$layout$r[i])
-      c(left = panels[1] - start, panels = diff(panels), right = end - panels[2])
+      c(left = panels[1] - start, panels = diff(panels), right = end - panels[2], just = just)
     }
     known[key] <<- list(room)
     room

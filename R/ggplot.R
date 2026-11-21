@@ -241,10 +241,9 @@ phw_guide_legend <- function(share = 1, room = NULL) {
         limit <- share * cm(grid::unit(1, "npc")) -
           cm(sum(ggplot2::calc_element("plot.margin", theme)[c(2, 4)]))
       } else if (identical(ggplot2::calc_element("legend.location", theme), "plot")) {
-        just <- ggplot2::calc_element(paste0("legend.justification.", position), theme)
-        just <- grid::valid.just(just)[1]
+        just <- span[["just"]]
         shift <- (1 - just) * span[["left"]] - just * span[["right"]]
-        limit <- sum(span)
+        limit <- sum(span[c("left", "panels", "right")])
       } else {
         limit <- span[["panels"]]
       }
@@ -353,7 +352,9 @@ wrap_legends <- function(plot, position = NULL, share = 1, room = NULL) {
 #'
 #' [theme_phw()] without axes or gridlines, with the legend on the right.
 #' Use it for choropleth maps of health boards or local authorities, with
-#' [scale_fill_phw_c()] or [scale_fill_phw_b()].
+#' [scale_fill_phw_c()] or [scale_fill_phw_b()]. A legend at the bottom or
+#' top is centred under the map, which keeps its shape and so is often
+#' narrower than the image.
 #'
 #' @inheritParams theme_phw
 #' @param ... Passed to [theme_phw()], except `grid`: a map has no
@@ -387,10 +388,17 @@ theme_phw_map <- function(base_size = 11, base_family = phw_font(), legend = "ri
   args <- list(base_size = base_size, base_family = base_family, grid = "none",
                legend = legend, legend_title = TRUE)
   args[names(extra)] <- extra
-  do.call(theme_phw, args) +
+  th <- do.call(theme_phw, args) +
     ggplot2::theme(axis.text = ggplot2::element_blank(),
                    axis.title = ggplot2::element_blank(),
                    panel.grid = ggplot2::element_blank())
+  # A map keeps its shape, so it is drawn narrower than the image and
+  # centred. A legend from its left edge, wrapped to the image's width, would
+  # run off the right.
+  if (is.character(legend) && legend %in% c("bottom", "top") && !"legend.justification" %in% names(extra)) {
+    th <- th + ggplot2::theme(legend.justification = "center")
+  }
+  th
 }
 
 #' PHW colour and fill scales

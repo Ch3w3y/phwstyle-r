@@ -3,10 +3,9 @@ plot_labs <- function(p) {
   if (exists("get_labs", envir = asNamespace("ggplot2"), inherits = FALSE)) ggplot2::get_labs(p) else p$labels
 }
 
-# The lines of `caption` as phw_save() draws them, with their edges in inches
-# from the left and top of the image. Other text, such as legend labels, is
-# left out.
-saved_caption_lines <- function(plot, caption, width = 16, height = 10) {
+# Each piece of text phw_save() draws, with its edges in inches from the left
+# and top of the image.
+saved_text <- function(plot, width = 16, height = 10) {
   testthat::skip_if_not_installed("rvg")
   testthat::skip_if_not_installed("xml2")
   file <- tempfile(fileext = ".xml")
@@ -20,6 +19,14 @@ saved_caption_lines <- function(plot, caption, width = 16, height = 10) {
   out <- data.frame(text = xml2::xml_text(shapes), left = inches(".//a:off", "x"), top = inches(".//a:off", "y"))
   out$right <- out$left + inches(".//a:ext", "cx")
   out$bottom <- out$top + inches(".//a:ext", "cy")
+  out
+}
+
+# The lines of `caption` as phw_save() draws them, with their edges in inches
+# from the left and top of the image. Other text, such as legend labels, is
+# left out.
+saved_caption_lines <- function(plot, caption, width = 16, height = 10) {
+  out <- saved_text(plot, width, height)
   part <- vapply(out$text, function(t) grepl("[A-Za-z]", t) && grepl(t, caption, fixed = TRUE), logical(1))
   out[part, ]
 }
