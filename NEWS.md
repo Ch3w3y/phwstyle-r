@@ -660,6 +660,12 @@ says what to change.
   in a session prints a note on the console suggesting `phw_flextable()`,
   the table renderer for Word. The note is for the author and is not
   written into the document.
+* `phw_gt()` and `phw_gt_theme()` tables render in Quarto `phw-typst`
+  and `phw-pptx` documents and in R Markdown PowerPoint decks, as plain gt
+  tables do. Before, the web font made the render stop with "Functions
+  that produce HTML output found in document". R Markdown PowerPoint
+  can't show gt tables, so the first one knitted in a session prints a note
+  on the console suggesting `phw_flextable()`.
 * `phw_gt()` left-aligns factor and logical columns, such as a health
   board stored as a factor or the label columns of a `table()` turned into
   a data frame, as the other table functions do. Before, gt centred them.

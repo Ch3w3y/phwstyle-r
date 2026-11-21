@@ -13,7 +13,9 @@
 #'
 #' Use gt tables in HTML and PDF. In a Word document they get the PHW font
 #' and colours, but gt can't make the column labels bold or indent the levels
-#' of a summary table, so use [phw_flextable()] for Word.
+#' of a summary table, so use [phw_flextable()] for Word. Quarto shows them
+#' in Typst and PowerPoint too, but an R Markdown PowerPoint deck can't show
+#' gt tables, so use [phw_flextable()] for slides.
 #'
 #' @param x A gt table.
 #' @param font_size Body font size in pixels.
@@ -79,23 +81,27 @@ phw_gt_theme <- function(x, font_size = 14, accent = phw_colours[["navy"]], stri
   x
 }
 
+# Notes about gt in a format are for the author, so they go straight to the
+# console: knitr writes any message condition raised while printing into the
+# document.
+gt_format_note <- function(msg, id) {
+  withCallingHandlers(
+    cli::cli_inform(msg, .frequency = "once", .frequency_id = id),
+    message = function(m) {
+      cat(conditionMessage(m), "\n", sep = "", file = stderr())
+      invokeRestart("muffleMessage")
+    }
+  )
+}
+
 # gt's Word writer ignores the table font and takes a single font name, not
 # the CSS list phw_gt_theme() sets, so the PHW font goes on every cell for Word.
-# It cannot bold column labels or indent cells. The note saying so is for the
-# author, so it goes straight to the console: knitr writes any message
-# condition raised while printing into the document.
+# It cannot bold column labels or indent cells.
 #' @exportS3Method knitr::knit_print
 knit_print.phw_gt <- function(x, ...) {
   if (knitr::pandoc_to("docx")) {
-    withCallingHandlers(
-      cli::cli_inform(c("gt tables in Word lose some PHW styling: column labels are not bold and the levels of a summary table are not indented.",
-                        i = "Use {.fn phw_flextable} for tables in Word documents."),
-                      .frequency = "once", .frequency_id = "phw_gt_word"),
-      message = function(m) {
-        cat(conditionMessage(m), "\n", sep = "", file = stderr())
-        invokeRestart("muffleMessage")
-      }
-    )
+    gt_format_note(c("gt tables in Word lose some PHW styling: column labels are not bold and the levels of a summary table are not indented.",
+                     i = "Use {.fn phw_flextable} for tables in Word documents."), "phw_gt_word")
     x <- gt::tab_style(x, gt::cell_text(font = phw_font()), locations = list(
       gt::cells_title(), gt::cells_stubhead(), gt::cells_column_spanners(), gt::cells_column_labels(),
       gt::cells_row_groups(), gt::cells_stub(), gt::cells_body(), gt::cells_footnotes(),
@@ -103,7 +109,18 @@ knit_print.phw_gt <- function(x, ...) {
     ))
     return(knitr::asis_output(paste("```{=openxml}", gt_word_xml(x), "```\n\n", sep = "\n")))
   }
-  if (!knitr::is_latex_output()) return(NextMethod())
+  if (is.null(knitr::pandoc_to()) || knitr::is_html_output()) return(NextMethod())
+  if (!knitr::is_latex_output()) {
+    # gt writes HTML here, which Quarto turns into a table for Typst and
+    # PowerPoint. The web font is an HTML dependency, which pandoc formats
+    # other than HTML refuse.
+    if (knitr::pandoc_to("pptx") && is.null(knitr::opts_knit$get("quarto.version"))) {
+      gt_format_note(c("gt tables don't show on R Markdown PowerPoint slides.",
+                       i = "Use {.fn phw_flextable} for tables on slides."), "phw_gt_pptx")
+    }
+    class(x) <- setdiff(class(x), "phw_gt")
+    return(NextMethod())
+  }
   # From gt 0.11.1 a LaTeX table is a float, which can't break across pages,
   # so it is set as a longtable, as it was before. gt repeats the header on
   # each page from 1.1.0; before that, \endhead goes after the header's rule.

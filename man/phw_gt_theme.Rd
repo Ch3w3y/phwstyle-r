@@ -87,7 +87,9 @@ shrinks to fit it.
 
 Use gt tables in HTML and PDF. In a Word document they get the PHW font
 and colours, but gt can't make the column labels bold or indent the levels
-of a summary table, so use \code{\link[=phw_flextable]{phw_flextable()}} for Word.
+of a summary table, so use \code{\link[=phw_flextable]{phw_flextable()}} for Word. Quarto shows them
+in Typst and PowerPoint too, but an R Markdown PowerPoint deck can't show
+gt tables, so use \code{\link[=phw_flextable]{phw_flextable()}} for slides.
 }
 \examples{
 if (requireNamespace("gt", quietly = TRUE)) {
