@@ -66,8 +66,8 @@ test_that("phw_gt tables render in Quarto Typst and PowerPoint documents", {
   skip_if(!nzchar(quarto), "Quarto is not installed")
   dir <- withr::local_tempdir()
   suppressMessages(use_phw_quarto(dir, "none"))
-  render <- function(fmt, out, ...) {
-    writeLines(c("---", "title: T", "---", "", "## Cases", "", gt_chunk), file.path(dir, "t.qmd"))
+  render <- function(fmt, out, ..., chunk = gt_chunk) {
+    writeLines(c("---", "title: T", "---", "", "## Cases", "", chunk), file.path(dir, "t.qmd"))
     log <- withr::with_dir(dir, withr::with_envvar(
       c(QUARTO_R = R.home("bin")),
       suppressWarnings(system2(quarto, c("render", "t.qmd", "--to", fmt, "-o", out, ...),
@@ -81,6 +81,9 @@ test_that("phw_gt tables render in Quarto Typst and PowerPoint documents", {
   expect_match(typ, "Source: Example")
   xml <- slide_xml(render("phw-pptx", "t.pptx"))
   expect_match(xml, "<a:tbl>.*Cardiff.*Source: Example.*</a:tbl>")
+  labelled <- append(gt_chunk, c("#| label: tbl-cases", "#| tbl-cap: Cases by area"), after = 1)
+  xml <- slide_xml(render("phw-pptx", "t.pptx", chunk = labelled))
+  expect_match(xml, "<a:tbl>.*Cardiff.*Source: Example.*</a:tbl>.*Cases by area")
 })
 
 test_that("a phw_gt table in an R Markdown PowerPoint deck renders and suggests phw_flextable", {

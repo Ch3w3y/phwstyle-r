@@ -255,6 +255,9 @@ knit_print.phw_flextable <- function(x, ...) {
 # slides that a horizontal rule starts.
 knit_slide_table <- function(x, ...) {
   check_no_images(x)
+  # Quarto's PowerPoint writer shows no tbl-cap, so it becomes the caption row.
+  cap <- knitr::opts_current$get("tbl-cap")
+  if (is.character(cap) && length(cap) == 1) x <- flextable::set_caption(x, cap)
   left <- knitr::opts_current$get("ft.left") %||% 1
   top <- knitr::opts_current$get("ft.top") %||% 2
   size <- knit_slide_size()

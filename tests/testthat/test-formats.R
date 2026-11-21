@@ -842,6 +842,48 @@ test_that("tables knitted into a Quarto deck fit the slide size of that deck", {
   expect_tables_on_slides(deck)
 })
 
+test_that("a table chunk with a tbl- label keeps its table on a Quarto slide", {
+  skip_on_cran()
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("flextable")
+  skip_if_not_installed("xml2")
+  quarto <- Sys.which("quarto")
+  skip_if(!nzchar(quarto), "Quarto is not installed")
+  dir <- withr::local_tempdir()
+  suppressMessages(use_phw_quarto(dir, "none"))
+  chunk <- function(title, options, data = "data.frame(Area = c('Cardiff', 'Swansea'), Cases = c(105L, 63L))") {
+    c(paste("##", title), "", "```{r, echo = FALSE}", options,
+      paste0("phwstyle::phw_flextable(", data, ", source = 'Example')"), "```", "")
+  }
+  writeLines(c("---", "title: Weekly", "format: phw-pptx", "---", "",
+               chunk("Labelled", c("#| label: tbl-x", "#| tbl-cap: 'Cases by area'")),
+               chunk("Label only", "#| label: tbl-y"),
+               chunk("Unlabelled", "#| tbl-cap: 'Cases by area'"),
+               chunk("Weeks", c("#| label: tbl-weeks", "#| tbl-cap: 'Cases by week'"),
+                     "data.frame(Week = 1:30, Cases = 101:130)"),
+               "## Notes", "", "See @tbl-x."),
+             file.path(dir, "deck.qmd"))
+  withr::local_dir(dir)
+  withr::local_envvar(QUARTO_R = R.home("bin"))
+  log <- suppressWarnings(system2(quarto, c("render", "deck.qmd"), stdout = TRUE, stderr = TRUE))
+  if (!file.exists("deck.pptx")) fail(paste(c("quarto render failed:", utils::tail(log, 15)), collapse = "\n"))
+  expect_no_match(paste(log, collapse = "\n"), "FloatRefTargets")
+  slides <- sprintf("ppt/slides/slide%d.xml", 2:7)
+  tables <- lapply(slides, function(s) {
+    xml <- xml2::read_xml(unz("deck.pptx", s))
+    vapply(xml2::xml_find_all(xml, ".//a:tbl//a:tc[not(@hMerge)]"), xml2::xml_text, character(1))
+  })
+  expect_true(all(lengths(tables) > 0))
+  expect_equal(tables[[1]][1:3], c("Cases by area", "Area", "Cases"))
+  expect_equal(tables[[2]][1:2], c("Area", "Cases"))
+  expect_equal(tables[[3]][1:3], c("Cases by area", "Area", "Cases"))
+  expect_equal(vapply(tables[4:6], `[[`, "", 1), c("Cases by week", rep("Cases by week (continued)", 2)))
+  expect_true("Source: Example" %in% tables[[6]])
+  text <- xml2::xml_text(xml2::read_xml(unz("deck.pptx", "ppt/slides/slide8.xml")))
+  expect_match(text, "See Table.1")
+})
+
 test_that("a table too wide for a slide even with its text wrapped gives a warning", {
   skip_if_not_installed("knitr")
   skip_if_not_installed("flextable")

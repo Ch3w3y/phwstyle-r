@@ -866,6 +866,13 @@ says what to change.
   knitted into a PowerPoint deck, from R Markdown
   `powerpoint_presentation()` or the Quarto `phw-pptx` format. Before, the
   slide kept the table and its source line but dropped the caption.
+* In the Quarto `phw-pptx` format, a table chunk with a `tbl-` label, as in
+  the starter report from `use_phw_quarto()`, now shows its table. Before,
+  the slide kept its title and lost the table, with only a warning from
+  Quarto about images. A `phw_flextable()` shows the chunk's `tbl-cap` as
+  its caption row, with or without a label, and a long one continues on
+  further slides; a `phw_gt()` takes `tbl-cap` as its caption. A
+  cross-reference such as `@tbl-cases` still reads "Table 1".
 * In a PDF document, a `phw_flextable()` caption reads as it does in Word
   and HTML: "Table 1 Counts by board", or no number when you give none.
   Before, LaTeX added its own label, giving "Table 1. Table 1 Counts by
