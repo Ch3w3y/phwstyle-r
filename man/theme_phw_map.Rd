@@ -23,7 +23,9 @@ A ggplot2 theme.
 \description{
 \code{\link[=theme_phw]{theme_phw()}} without axes or gridlines, with the legend on the right.
 Use it for choropleth maps of health boards or local authorities, with
-\code{\link[=scale_fill_phw_c]{scale_fill_phw_c()}} or \code{\link[=scale_fill_phw_b]{scale_fill_phw_b()}}.
+\code{\link[=scale_fill_phw_c]{scale_fill_phw_c()}} or \code{\link[=scale_fill_phw_b]{scale_fill_phw_b()}}. A legend at the bottom or
+top is centred under the map, which keeps its shape and so is often
+narrower than the image.
 }
 \examples{
 library(ggplot2)

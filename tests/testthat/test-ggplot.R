@@ -516,6 +516,35 @@ test_that("phw_save wraps a bottom legend of health boards to fit the default si
   expect_lte(legend_cm(ggplotGrob(saved)), 16)
 })
 
+test_that("theme_phw_map keeps a bottom or top legend of health boards on the image", {
+  skip_if_not_installed("sf")
+  library(ggplot2)
+  local_ggplot_state()
+  # Taller than wide, as Wales is, so the map is narrower than the image.
+  square <- function(x, y) sf::st_polygon(list(rbind(c(x, y), c(x + 1, y), c(x + 1, y + 1),
+                                                     c(x, y + 1), c(x, y))))
+  boards <- c("Aneurin Bevan University Health Board", "Betsi Cadwaladr University Health Board",
+              "Cardiff and Vale University Health Board", "Cwm Taf Morgannwg University Health Board",
+              "Hywel Dda University Health Board", "Powys Teaching Health Board",
+              "Swansea Bay University Health Board")
+  areas <- sf::st_sf(board = boards, geometry = sf::st_sfc(
+    square(0, 0), square(1, 0), square(0, 1), square(1, 1), square(0, 2), square(1, 2), square(0, 3)))
+  expect_on_image <- function(p, width, height) {
+    labels <- saved_text(p, width, height)
+    labels <- labels[labels$text %in% boards, ]
+    expect_setequal(labels$text, boards)
+    expect_gte(min(labels$left), 0)
+    expect_lte(max(labels$right), width / 2.54)
+  }
+  for (legend in c("bottom", "top")) {
+    p <- ggplot(areas) + geom_sf(aes(fill = board)) + scale_fill_phw_d() + theme_phw_map(legend = legend)
+    for (size in list(c(16, 10), c(12.7, 9), c(10, 10))) expect_on_image(p, size[1], size[2])
+  }
+  # patchwork places a collected legend by the figure's theme, not the map's.
+  skip_if_not_installed("patchwork")
+  expect_on_image(phw_arrange(p, p, ncol = 1), 16, 16)
+})
+
 test_that("legends that fit and a set number of rows are left as they are", {
   skip_if_not_installed("ragg")
   library(ggplot2)
