@@ -58,6 +58,9 @@ contributes:
     pptx:
       reference-doc: phw-reference.pptx
       fig-dpi: 200
+      filters:
+        - at: pre-render
+          path: phw-slide-tables.lua
     typst:
       template-partials:
         - typst-template.typ
