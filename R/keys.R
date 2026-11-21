@@ -425,15 +425,3 @@ phw_keys_raw <- function() {
     data.frame(key = rep(k, length(v)), level = names(v), colour = unname(v))
   }))
 }
-
-check_key_name <- function(name, null_ok = FALSE, call = rlang::caller_env()) {
-  check_one_string(name, allow_null = null_ok, allow_empty = FALSE,
-                   hint = "Give one key name, such as {.val age_group}.", call = call)
-}
-
-check_named_colours <- function(x, arg, call = rlang::caller_env()) {
-  if (is.null(names(x)) || anyNA(names(x)) || any(!nzchar(names(x)))) {
-    cli::cli_abort("{.arg {arg}} must be a named vector of colours, e.g. {.code c(Wales = \"#285087\")}.", call = call)
-  }
-  check_colours(x, arg, call = call)
-}
