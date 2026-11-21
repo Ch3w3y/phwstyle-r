@@ -174,7 +174,8 @@ phw_group_table <- function(data, rows, cols = NULL, value = NULL, fun = sum,
       col_head[[length(col_head) + 1]] <- rep(total_label, length(cols))
     }
   }
-  col_header <- matrix(unlist(lapply(col_head, unname)), ncol = length(col_head))
+  col_header <- matrix(as.character(unlist(lapply(col_head, unname))),
+                       nrow = max(1, length(cols)), ncol = length(col_head))
   col_names <- make.unique(apply(col_header, 2, paste, collapse = " / "))
   # Column used as the row total for percent = "row".
   row_total_col <- if (is.null(cols)) 1L else if ("table" %in% col_totals) length(col_masks) else NA_integer_
