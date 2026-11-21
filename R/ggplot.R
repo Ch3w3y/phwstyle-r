@@ -1045,8 +1045,9 @@ wrap_captions <- function(plot, fields = "caption") {
     if (is.null(g)) break
     fit <- refit_captions(g, slots)
     if (fit$over < best$over) best <- list(plot = plot, over = fit$over)
-    if (!length(fit$labels)) break
+    if (!length(fit$labels) && !length(fit$widen)) break
     for (cell in names(fit$labels)) plot <- slots[[cell]]$set(plot, fit$labels[[cell]])
+    for (cell in names(fit$widen)) plot <- slots[[cell]]$widen(plot, fit$widen[[cell]])
   }
   best
 }
@@ -1068,28 +1069,40 @@ gather_captions <- function(plot) {
 # The captions of a chart, or of each plot in a patchwork and of the figure,
 # named by the gtable cell each is drawn in, and with `fields = all_text` the
 # titles and subtitles of the plots in a patchwork too. Each has its text as
-# given and a way to replace it.
+# given and a way to replace it. A plot's text in a patchwork can also widen
+# the plot's right margin, and says whether the plot keeps a fixed shape,
+# such as a map.
 caption_slots <- function(plot, fields = "caption") {
-  slot <- function(label, set) {
+  # A label set keeps the text as given, so a later pass wraps that again.
+  slot <- function(label, set, ...) {
     if (!is.character(label) || length(label) != 1) return(NULL)
-    list(text = strsplit(attr(label, "phw_unwrapped") %||% label, "\n", fixed = TRUE)[[1]], set = set)
+    given <- attr(label, "phw_unwrapped") %||% label
+    keep <- function(pw, label) set(pw, if (is.null(label)) NULL else structure(label, phw_unwrapped = given))
+    list(text = strsplit(given, "\n", fixed = TRUE)[[1]], set = keep, ...)
   }
   relabel <- function(p, field, label) p + do.call(ggplot2::labs, stats::setNames(list(label), field))
-  last <- function(field) function(p, label) relabel(p, field, label)
-  if (!inherits(plot, "patchwork")) return(Filter(Negate(is.null), list(caption = slot(plot$labels$caption, last("caption")))))
+  if (!inherits(plot, "patchwork")) {
+    return(Filter(Negate(is.null), list(caption = slot(plot$labels$caption, function(p, label) relabel(p, "caption", label)))))
+  }
   # The last plot of a patchwork is the patchwork itself.
-  plots <- plot$patches$plots
+  plots <- c(plot$patches$plots, list(plot))
+  last <- length(plots)
+  edit <- function(k) function(pw, f) {
+    if (k == last) return(f(pw))
+    pw$patches$plots[[k]] <- f(pw$patches$plots[[k]])
+    pw
+  }
   slots <- lapply(fields, function(field) {
     own <- lapply(seq_along(plots), function(k) {
       p <- plots[[k]]
-      if (inherits(p, "ggplot") && !inherits(p, "patchwork")) {
-        slot(p$labels[[field]], function(pw, label) {
-          pw$patches$plots[[k]] <- relabel(pw$patches$plots[[k]], field, label)
-          pw
-        })
+      if (k == last || inherits(p, "ggplot") && !inherits(p, "patchwork")) {
+        on <- edit(k)
+        slot(p$labels[[field]],
+             function(pw, label) on(pw, function(q) relabel(q, field, label)),
+             widen = function(pw, inches) on(pw, function(q) widen_right(q, inches)),
+             fixed = fixed_shape(p))
       }
     })
-    own <- c(own, list(slot(plot$labels[[field]], last(field))))
     stats::setNames(own, paste0(field, "-", seq_along(own)))
   })
   slots <- unlist(slots, recursive = FALSE)
@@ -1098,6 +1111,17 @@ caption_slots <- function(plot, fields = "caption") {
     pw
   })
   Filter(Negate(is.null), slots)
+}
+
+# Whether the ggplot `p` keeps the shape of its panel, as a map does.
+fixed_shape <- function(p) {
+  !p$coordinates$is_free() || !is.null((ggplot2::theme_get() + p$theme)$aspect.ratio)
+}
+
+# The ggplot `p` with `inches` more margin on its right.
+widen_right <- function(p, inches) {
+  m <- grid::convertWidth(ggplot2::calc_element("plot.margin", ggplot2::theme_get() + p$theme), "in", valueOnly = TRUE)
+  p + ggplot2::theme(plot.margin = ggplot2::margin(m[1], m[2] + inches, m[3], m[4], unit = "in"))
 }
 
 all_text <- c("caption", "title", "subtitle")
@@ -1110,8 +1134,15 @@ all_text <- c("caption", "title", "subtitle")
 # chart's left margin. Captions so tall that no room is left for a panel give
 # no labels and run over without end. A plot's title or subtitle in a
 # patchwork is left-aligned, so it has the room from its left edge to the
-# title drawn to its right in the same row, or else to the right of the
-# viewport, less the width of the chart's right margin.
+# title drawn to its right in the same row, less the width of an M, so the
+# two read apart, or else to the right of the viewport, less the width of the
+# chart's right margin.
+# A fixed-shape panel, such as a map, is sized by the figure's height, so
+# each line its title gains makes it smaller, and its title's room with it.
+# Its title wraps only to the room each plot in its row would have if all
+# were as wide, and the plot is widened by `widen` inches to its right where
+# the title still needs more: the plot beside it, or the space a centred
+# figure leaves, gives up that width.
 refit_captions <- function(g, slots) {
   grid::pushViewport(grid::viewport(layout = grid::grid.layout(
     nrow(g), ncol(g), widths = g$widths, heights = g$heights, respect = g$respect)))
@@ -1131,7 +1162,7 @@ refit_captions <- function(g, slots) {
   }
   panels <- g$layout[grepl("^panel", g$layout$name), ]
   if (any(vapply(seq_len(nrow(panels)), function(i) collapsed(panels[i, ]), logical(1)))) {
-    return(list(labels = list(), over = Inf))
+    return(list(labels = list(), widen = list(), over = Inf))
   }
   start <- x()[1]
   gap <- diff(edges(list(t = 1, l = 1, r = 1)))
@@ -1164,18 +1195,32 @@ refit_captions <- function(g, slots) {
   head_texts <- head_texts[keep]
   heads$left <- vapply(seq_len(nrow(heads)), function(i) edges(heads[i, ])[1], numeric(1))
   end <- x()[2] - diff(edges(list(t = 1, l = ncol(g), r = ncol(g))))
+  widen <- numeric()
   for (i in seq_len(nrow(heads))) {
     cell <- heads[i, ]
-    after <- heads$left[heads$t == cell$t & heads$left > cell$left]
-    room <- min(after, end) - cell$left
+    row <- heads$t == cell$t
     measure <- function(s) grid::convertWidth(grid::grobWidth(grid::editGrob(head_texts[[i]], label = s)), "in", valueOnly = TRUE)
+    after <- heads$left[row & heads$left > cell$left]
+    room <- min(after - measure("M"), end) - cell$left
     widest <- grid::convertWidth(grid::grobWidth(head_texts[[i]]), "in", valueOnly = TRUE)
     if (widest > room) {
       over <- over + widest - room
-      if (cell$name %in% names(slots)) labels[[cell$name]] <- wrap_lines(slots[[cell$name]]$text, room, measure)
+      slot <- slots[[cell$name]]
+      if (is.null(slot)) next
+      if (!slot$fixed) {
+        labels[[cell$name]] <- wrap_lines(slot$text, room, measure)
+        next
+      }
+      share <- (end - start) / sum(row) - gap
+      labels[[cell$name]] <- wrap_lines(slot$text, max(room, share), measure)
+      wrapped <- max(vapply(strsplit(labels[[cell$name]], "\n", fixed = TRUE)[[1]], measure, numeric(1)))
+      if (wrapped > room) widen[cell$name] <- wrapped - room
     }
   }
-  list(labels = labels, over = over)
+  # A plot's title and subtitle widen it once, by the more either needs.
+  widen <- sort(widen, decreasing = TRUE)
+  widen <- widen[!duplicated(sub(".*-", "", names(widen)))]
+  list(labels = labels, widen = as.list(widen), over = over)
 }
 
 #' @exportS3Method grid::heightDetails
