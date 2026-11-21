@@ -363,7 +363,8 @@ test_that("a phw_flextable wider than the page fits the text width in Quarto Typ
   skip_on_cran()
   skip_if_not_installed("knitr")
   skip_if_not_installed("rmarkdown")
-  skip_if_not_installed("flextable")
+  # Before 0.10.0, flextable puts a table in Typst as an image, not a #table().
+  skip_if_not_installed("flextable", "0.10.0")
   quarto <- Sys.which("quarto")
   skip_if(!nzchar(quarto), "Quarto is not installed")
   dir <- withr::local_tempdir()
