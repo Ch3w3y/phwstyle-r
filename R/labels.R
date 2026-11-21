@@ -101,8 +101,8 @@ phw_number <- function(accuracy = 1, big.mark = ",", ...) {
 year_cols <- function(data) {
   is_year <- function(v, name) {
     words <- strsplit(tolower(name), "[^[:alpha:]]+")[[1]]
-    is.numeric(v) && any(words %in% c("year", "yr", "blwyddyn")) &&
-      all(v == round(v) & v >= 1800 & v <= 2200, na.rm = TRUE)
+    is_whole(v) && any(words %in% c("year", "yr", "blwyddyn")) &&
+      all(v >= 1800 & v <= 2200, na.rm = TRUE)
   }
   vapply(seq_along(data), function(j) is_year(data[[j]], names(data)[j]), logical(1))
 }
