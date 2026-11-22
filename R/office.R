@@ -313,7 +313,7 @@ phw_write_xlsx <- function(x, file, title = NULL, source = NULL, date = NULL, ca
     }
     # Header written separately so repeated labels (Q1 under each year) stay as they are.
     wb <- openxlsx2::wb_add_data(wb, sheet, as.data.frame(t(header)), start_row = head_row, col_names = FALSE)
-    wb <- openxlsx2::wb_add_data(wb, sheet, df, start_row = head_row + 1, col_names = FALSE, na.strings = "")
+    if (nr > 0) wb <- openxlsx2::wb_add_data(wb, sheet, df, start_row = head_row + 1, col_names = FALSE, na.strings = "")
     hdims <- openxlsx2::wb_dims(rows = head_row, cols = seq_len(nc))
     wb <- openxlsx2::wb_add_fill(wb, sheet, hdims, color = colour(header_fill))
     wb <- add_font(wb, sheet, hdims, bold = TRUE, color = phw_text_on(header_fill))
