@@ -86,6 +86,64 @@ test_that("phw_gt tables render in Quarto Typst and PowerPoint documents", {
   expect_match(xml, "<a:tbl>.*Cardiff.*Source: Example.*</a:tbl>.*Cases by area")
 })
 
+no_rows_chunk <- c("```{r, echo = FALSE}",
+                   "d <- data.frame(onset = as.Date('2026-10-01') + 0:2, board = 'Powys', age = 1:3)",
+                   "phwstyle::phw_gt(d[d$onset > as.Date('2027-01-01'), ], caption = 'Cases since January',",
+                   "                 source = 'Line list')",
+                   "```")
+
+# gt writes "Table has no data" from 1.4.0; before that the body is empty.
+expect_no_rows_html <- function(html) {
+  expect_no_match(html, ">\\s*tr\\s*<")
+  expect_match(html, "Cases since January")
+  expect_match(html, "Source: Line list")
+  if (utils::packageVersion("gt") >= "1.4.0") {
+    expect_match(html, "<tr[^>]*>\\s*<td[^>]*gt_no_data[^>]*>Table has no data</td>\\s*</tr>")
+  }
+}
+
+test_that("a phw_gt table with no rows shows its row of no data in the Viewer", {
+  skip_if_not_installed("gt")
+  d <- data.frame(onset = as.Date("2026-10-01") + 0:2, board = "Powys", age = 1:3)
+  g <- phw_gt(d[0, ], caption = "Cases since January", source = "Line list")
+  expect_no_rows_html(as.character(htmltools::as.tags(g)))
+})
+
+test_that("a phw_gt table with no rows renders in Quarto HTML, Typst and PowerPoint, and R Markdown HTML", {
+  skip_on_cran()
+  skip_if_not_installed("gt")
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("bslib")
+  quarto <- Sys.which("quarto")
+  skip_if(!nzchar(quarto), "Quarto is not installed")
+  local_ggplot_state()
+  dir <- withr::local_tempdir()
+  suppressMessages(use_phw_quarto(dir, "none"))
+  writeLines(c("---", "title: T", "---", "", "## Cases", "", no_rows_chunk), file.path(dir, "t.qmd"))
+  render <- function(fmt, out, ...) {
+    log <- withr::with_dir(dir, withr::with_envvar(
+      c(QUARTO_R = R.home("bin")),
+      suppressWarnings(system2(quarto, c("render", "t.qmd", "--to", fmt, "-o", out, ...),
+                               stdout = TRUE, stderr = TRUE))))
+    if (!file.exists(file.path(dir, out))) fail(paste(c("quarto render failed:", utils::tail(log, 15)), collapse = "\n"))
+    expect_no_match(paste(log, collapse = "\n"), "Unable to parse table", fixed = TRUE)
+    file.path(dir, out)
+  }
+  expect_no_rows_html(paste(readLines(render("phw-html", "t.html"), warn = FALSE), collapse = "\n"))
+  render("phw-typst", "t.pdf", "-M", "keep-typ:true")
+  typ <- paste(readLines(file.path(dir, "t.typ"), warn = FALSE), collapse = "\n")
+  expect_match(typ, "Cases since January")
+  expect_match(typ, "Source: Line list")
+  if (utils::packageVersion("gt") >= "1.4.0") expect_match(typ, "Table has no data")
+  xml <- slide_xml(render("phw-pptx", "t.pptx"))
+  expect_match(xml, "<a:tbl>.*Cases since January.*Source: Line list.*</a:tbl>")
+  rmd <- file.path(dir, "r.Rmd")
+  writeLines(c("---", "title: T", "---", "", no_rows_chunk), rmd)
+  html <- rmarkdown::render(rmd, phw_html_document(), quiet = TRUE)
+  expect_no_rows_html(paste(readLines(html, warn = FALSE), collapse = "\n"))
+})
+
 test_that("a phw_gt chunk with tbl-cap renders in a Quarto PDF, with or without a label", {
   skip_on_cran()
   skip_if_not_installed("gt")
