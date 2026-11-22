@@ -280,7 +280,7 @@ wrap_widget <- function(widget, caption, cap, note = NULL) {
 #'   a trace yourself.
 #'
 #'   In a [plotly::subplot()] figure, a group has the same colour in every
-#'   panel. If a panel sets its own colours with `colors` or `I()`, the group
+#'   panel and one entry in the legend. If a panel sets its own colours with `colors` or `I()`, the group
 #'   colours and colour scales stay as each panel was built. To give the
 #'   other panels PHW colours, style each panel with `phw_plotly()` before
 #'   combining them. Groups of a ggplot in ggplot2's default colours take
@@ -409,6 +409,7 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
     }
   }
   p <- colour_built(p, palette, colorway)
+  p$x$data <- one_legend_entry(p$x$data)
   p <- colour_pies(p, palette, unname(colorway))
   p <- colour_mapped(p, palette)
   if (!"colorway" %in% names(extra)) {
@@ -1139,6 +1140,24 @@ colour_built <- function(p, palette, colorway) {
     }, how = "replace")
   })
   p
+}
+
+# Each panel of a subplot() lists its own groups in the legend. Show a group
+# once, by its first trace, where traces share a name and colours, and put
+# them in one legend group for its entry to show and hide every panel.
+one_legend_entry <- function(traces) {
+  entry <- vapply(traces, function(t) {
+    cols <- Filter(function(x) is.character(x) && length(x) == 1, list(t$line$color, t$marker$color, t$fillcolor))
+    if (is.null(t$name) || isFALSE(t$showlegend) || !length(cols)) return(NA_character_)
+    paste(c(t$name, sort(unique(rgb_of(unlist(cols))))), collapse = "\u001f")
+  }, "")
+  for (e in unique(entry[duplicated(entry) & !is.na(entry)])) {
+    idx <- which(entry == e)
+    group <- traces[[idx[1]]]$legendgroup %||% traces[[idx[1]]]$name
+    for (i in idx) traces[[i]]$legendgroup <- group
+    for (i in idx[-1]) traces[[i]]$showlegend <- FALSE
+  }
+  traces
 }
 
 # Whether a trace's attributes set its colours, or map colours from plotly's

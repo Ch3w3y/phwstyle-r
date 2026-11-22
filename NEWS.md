@@ -1045,6 +1045,10 @@ says what to change.
   and "(4-week average,1)". A group now also keeps one colour across the
   panels when a line maps a colour of its own next to filled bars. Before,
   the first group could be navy in one panel and pink in the next.
+* `phw_plotly()` lists each group once in the legend of a figure combined
+  with `plotly::subplot()`, as in a single chart, and clicking its entry
+  shows or hides the group in every panel. Before, a two-panel figure of
+  three health boards listed six entries, each board twice.
 * `phw_plotly()` draws the secondary axis of a ggplot, such as one from
   `phw_sec_axis()`, on the right (or the top) with its own breaks and
   title, and it stays with its own chart in a `plotly::subplot()` figure
