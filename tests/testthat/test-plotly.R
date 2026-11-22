@@ -494,6 +494,30 @@ test_that("subplot() of ggplots gives groups the PHW colours, the same in every 
                c("rgba(255,0,0,1)", "rgba(0,0,255,1)", "rgba(0,0,0,1)"))
 })
 
+test_that("subplot() lists each group once in the legend, and its entry shows and hides every panel", {
+  skip_if_not_installed("ggplot2")
+  d <- data.frame(week = rep(1:4, 3), v = 1:12, hb = rep(c("Cardiff", "Swansea", "Powys"), each = 4))
+  legend_of <- function(w) {
+    tr <- built(suppressMessages(w))$data
+    shown <- Filter(function(t) !isFALSE(t$showlegend), tr)
+    group <- vapply(tr, function(t) t$legendgroup %||% NA_character_, "")
+    list(names = vapply(shown, function(t) t$name, ""),
+         panels = vapply(shown, function(t) sum(group == t$legendgroup, na.rm = TRUE), 1))
+  }
+  g1 <- ggplot2::ggplot(d, ggplot2::aes(week, v, colour = hb)) + ggplot2::geom_line()
+  g2 <- ggplot2::ggplot(d, ggplot2::aes(week, v * 2, colour = hb)) + ggplot2::geom_line()
+  pl <- function(y) plotly::plot_ly(d, x = ~week, y = y, color = ~hb, type = "scatter", mode = "lines")
+  bars <- ggplot2::ggplot(d, ggplot2::aes(hb, v, fill = hb)) + ggplot2::geom_col()
+  for (s in list(plotly::subplot(g1, g2), plotly::subplot(plotly::ggplotly(g1), plotly::ggplotly(g2)),
+                 plotly::subplot(pl(~v), pl(~v * 2)), plotly::subplot(g1, bars))) {
+    expect_equal(legend_of(phw_plotly(s)), list(names = c("Cardiff", "Powys", "Swansea"), panels = c(2, 2, 2)))
+  }
+
+  # Lines that share a name but not a colour are told apart in the legend.
+  target <- function(y) plotly::plot_ly(d, x = ~week, y = y, name = "Target", type = "scatter", mode = "lines")
+  expect_equal(legend_of(phw_plotly(plotly::subplot(target(~v), target(~v * 2))))$names, c("Target", "Target"))
+})
+
 test_that("subplot() of ggplots with an average line keeps plain legend names and one colour per group", {
   skip_if_not_installed("ggplot2")
   names_colours <- function(w) {
