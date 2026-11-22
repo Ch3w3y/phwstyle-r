@@ -128,7 +128,7 @@ knit_print.phw_gt <- function(x, ...) {
                        i = "Use {.fn phw_flextable} for tables on slides."), "phw_gt_pptx")
     }
     class(x) <- setdiff(class(x), "phw_gt")
-    return(NextMethod())
+    return(knitr::knit_print(gt_no_data_row(htmltools::as.tags(x)), ...))
   }
   # From gt 0.11.1 a LaTeX table is a float, which can't break across pages,
   # so it is set as a longtable, as it was before. gt repeats the header on
@@ -196,7 +196,17 @@ gt_word_xml <- function(x) {
 # table, so the Ubuntu web font goes on there.
 #' @exportS3Method htmltools::as.tags
 as.tags.phw_gt <- function(x, ...) {
-  htmltools::attachDependencies(NextMethod(), phw_font_dependency(), append = TRUE)
+  htmltools::attachDependencies(gt_no_data_row(NextMethod()), phw_font_dependency(), append = TRUE)
+}
+
+# gt 1.4.0 flattens the "Table has no data" row of a table with no rows into
+# its parts: the tag name `tr` prints as text and the cell sits outside a row,
+# so Quarto can't read the table for Typst or PowerPoint and drops it.
+gt_no_data_row <- function(tags) {
+  html <- as.character(tags)
+  fixed <- sub("(<tbody[^>]*>)\\s*tr\\s*(<td class=\"gt_row gt_no_data\".*?</td>)", "\\1\n<tr>\\2</tr>",
+               html, perl = TRUE)
+  if (identical(fixed, html)) tags else htmltools::HTML(fixed)
 }
 
 #' @rdname phw_gt_theme

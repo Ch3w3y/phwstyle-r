@@ -685,6 +685,12 @@ says what to change.
   that produce HTML output found in document". R Markdown PowerPoint
   can't show gt tables, so the first one knitted in a session prints a note
   on the console suggesting `phw_flextable()`.
+* A `phw_gt()` or `phw_gt_theme()` table of data with no rows, such as a
+  weekly report where nothing matched, shows its title, column labels,
+  "Table has no data" and source in HTML, Quarto `phw-typst` and
+  `phw-pptx` documents and the Viewer. Before, with gt 1.4.0, HTML showed a
+  stray "tr" above the table, and Typst and PowerPoint dropped the table
+  with only a Quarto warning, "Unable to parse table from raw html block".
 * `phw_gt()` left-aligns factor and logical columns, such as a health
   board stored as a factor or the label columns of a `table()` turned into
   a data frame, as the other table functions do. Before, gt centred them.
