@@ -341,10 +341,13 @@ says what to change.
   by side, the map's title wrapped to one word per line and printed over
   the next title, the map shrank to a thumbnail, and the licence line of
   two maps could run off the left edge.
-* When a map makes a `phw_arrange()` figure narrower than the image, as
-  it does stacked with `ncol = 1`, the legend collected under the figure
-  wraps to the room from the figure's left edge to the right edge of the
-  image. Before, a legend of health boards ran off the right edge.
+* When maps make a `phw_arrange()` figure narrower than the image, as two
+  maps side by side or a map stacked with `ncol = 1` do, the legends
+  collected under the figure wrap to the width of the image, and start
+  left of the figure's edge when they need the room. Before, a legend of
+  health boards ran off the right edge of a stacked figure. Beside a
+  second legend, such as the colour bar of a map of rates, it took one
+  column of seven rows and shrank both maps to thumbnails.
 * A legend of groups across the bottom or top of a chart takes more rows
   when one row is wider than the chart. Before, a legend of health boards
   at the default sizes stayed on one row and its last boards were cut off.
@@ -371,9 +374,7 @@ says what to change.
   wrapped to the whole figure width, so a legend of health boards at the
   default size ran off the right edge and its last board was cut off. Two
   legends of health boards, such as a line chart beside a bar chart, also
-  took so many rows that the charts had no height left. With a theme that
-  sets `legend.location = "panel"`, the legend stays under the charts and
-  wraps to their width.
+  took so many rows that the charts had no height left.
 * A colour bar or colour steps legend across the bottom or top of a chart
   is long enough for its labels to be read. Before, it was about 2 cm
   long, so labels such as 600 to 1600 ran into each other and the first
