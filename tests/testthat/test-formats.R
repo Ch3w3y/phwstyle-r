@@ -359,6 +359,42 @@ test_that("a phw_flextable caption shows in Quarto HTML, Word and PDF", {
   }
 })
 
+test_that("a phw_flextable wider than the page fits the text width in Quarto Typst", {
+  skip_on_cran()
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("rmarkdown")
+  # Before 0.10.0, flextable puts a table in Typst as an image, not a #table().
+  skip_if_not_installed("flextable", "0.10.0")
+  quarto <- Sys.which("quarto")
+  skip_if(!nzchar(quarto), "Quarto is not installed")
+  dir <- withr::local_tempdir()
+  suppressMessages(use_phw_quarto(dir, "none"))
+  writeLines(c("---", "title: Tables", "format: phw-typst", "keep-typ: true", "---", "",
+               "```{r}", "#| echo: false", "library(phwstyle)", "set.seed(1)",
+               "boards <- c('Cardiff and Vale', 'Aneurin Bevan', 'Betsi Cadwaladr', 'Swansea Bay')",
+               "df <- data.frame(age_group = sample(c('0-14', '15-44', '45-64', '65+'), 200, TRUE),",
+               "                 sex = sample(c('Female', 'Male'), 200, TRUE),",
+               "                 hb = sample(boards, 200, TRUE))",
+               "phw_flextable(phw_summary_table(df, by = hb), caption = 'Cases by health board',",
+               "              source = 'PHW surveillance')",
+               "```"), file.path(dir, "tables.qmd"))
+  log <- withr::with_dir(dir, withr::with_envvar(
+    c(QUARTO_R = R.home("bin")),
+    suppressWarnings(system2(quarto, c("render", "tables.qmd"), stdout = TRUE, stderr = TRUE))))
+  typ <- file.path(dir, "tables.typ")
+  if (!file.exists(file.path(dir, "tables.pdf"))) fail(paste(c("quarto render failed:", utils::tail(log, 15)), collapse = "\n"))
+  typ <- paste(readLines(typ, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+  table <- regmatches(typ, regexpr("(?s)#table\\(\\s*columns: \\([^)]*\\).*?Source: PHW surveillance", typ, perl = TRUE))
+  expect_match(table, "Total (n \\= 200)", fixed = TRUE)
+  columns <- regmatches(table, regexpr("columns: \\([^)]*\\)", table))
+  widths <- as.numeric(regmatches(columns, gregexpr("[0-9.]+(?=in)", columns, perl = TRUE))[[1]])
+  expect_length(widths, 6)
+  # A4 less the 2 cm side margins of phw-typst. The table starts at the left
+  # margin, so within this width the Total column and the right-aligned source
+  # line are on the page.
+  expect_lte(sum(widths), (210 - 2 * 20) / 25.4 + 0.005)
+})
+
 test_that("a PDF document renders with XeLaTeX", {
   skip_on_cran()
   skip_if_not_installed("rmarkdown")
