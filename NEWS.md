@@ -713,6 +713,10 @@ says what to change.
   that sets `tbl-cap` without a `tbl-` label shows that caption above the
   table, as a `knitr::kable()` table does. Before, Word showed the table
   and its source line with no caption.
+* In a Quarto `phw-typst` document, a `phw_flextable()` or `phw_gt()`
+  chunk that sets `tbl-cap` without a `tbl-` label shows that caption above
+  the table, as it does in the other formats. Before, the PDF showed the
+  table and its source line with no caption.
 * `phw_gt_theme(...)` and `phw_gt(theme_args = )` can change a setting
   phwstyle already sets, such as `heading.align` or `data_row.padding`.
   Your value replaces the PHW one. Before, these stopped with "matched by

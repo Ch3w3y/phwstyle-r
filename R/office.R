@@ -789,14 +789,23 @@ caption_as_header <- function(ft) {
   flextable::hline(ft, i = 1, part = "header", border = rule)
 }
 
-# Quarto's Word writer shows a chunk's tbl-cap above a raw OpenXML table only
-# when the chunk has a tbl- label. Without one, the table shows it itself.
-word_tbl_cap <- function() {
+# Quarto's Word and Typst writers show a chunk's tbl-cap only when the chunk
+# has a tbl- label. Without one, the table shows it itself.
+unlabelled_tbl_cap <- function() {
   cap <- knitr::opts_current$get("tbl-cap")
   labelled <- startsWith(knitr::opts_current$get("label") %||% "", "tbl-")
-  if (is.null(knitr::opts_knit$get("quarto.version")) || !knitr::pandoc_to("docx") ||
+  if (is.null(knitr::opts_knit$get("quarto.version")) || !knitr::pandoc_to(c("docx", "typst")) ||
       !is.character(cap) || length(cap) != 1 || labelled) return(NULL)
   cap
+}
+
+# Quarto sets the knitr option quarto.version to 1 whatever its version, but
+# its share folder holds the real one.
+quarto_before <- function(version) {
+  share <- Sys.getenv("QUARTO_SHARE_PATH")
+  file <- file.path(share, "version")
+  if (!nzchar(share) || !file.exists(file)) return(FALSE)
+  isTRUE(numeric_version(readLines(file, n = 1, warn = FALSE), strict = FALSE) < version)
 }
 
 # Each panel of a patchwork, and its annotation, is scaled from its own theme:

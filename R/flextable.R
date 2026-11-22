@@ -239,7 +239,7 @@ knit_print.phw_flextable <- function(x, ...) {
   # one set with set_caption(), so it goes in the table's top row instead,
   # unless Quarto shows the tbl-cap.
   if (!is.null(knitr::opts_knit$get("quarto.version"))) {
-    cap <- word_tbl_cap()
+    cap <- unlabelled_tbl_cap()
     if (!is.null(cap)) x <- flextable::set_caption(x, cap)
     if (!is.null(cap) || is.null(knitr::opts_current$get("tbl-cap"))) x <- caption_as_header(x)
   }

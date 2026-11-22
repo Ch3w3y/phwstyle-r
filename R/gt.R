@@ -113,7 +113,7 @@ knit_print.phw_gt <- function(x, ...) {
       gt::cells_row_groups(), gt::cells_stub(), gt::cells_body(), gt::cells_footnotes(),
       gt::cells_source_notes()
     ))
-    cap <- word_tbl_cap()
+    cap <- unlabelled_tbl_cap()
     if (!is.null(cap)) cap <- c("::: {custom-style=\"Table Caption\"}", cap, ":::", "")
     return(knitr::asis_output(paste(c(cap, "```{=openxml}", gt_word_xml(x), "```\n\n"), collapse = "\n")))
   }
@@ -127,6 +127,9 @@ knit_print.phw_gt <- function(x, ...) {
       gt_format_note(c("gt tables don't show on R Markdown PowerPoint slides.",
                        i = "Use {.fn phw_flextable} for tables on slides."), "phw_gt_pptx")
     }
+    # Quarto before 1.6 still captions an unlabelled gt table in Typst.
+    cap <- if (!quarto_before("1.6")) unlabelled_tbl_cap()
+    if (!is.null(cap)) x <- gt::tab_header(x, title = cap, subtitle = x[["_heading"]][["subtitle"]])
     class(x) <- setdiff(class(x), "phw_gt")
     return(knitr::knit_print(gt_no_data_row(htmltools::as.tags(x)), ...))
   }
