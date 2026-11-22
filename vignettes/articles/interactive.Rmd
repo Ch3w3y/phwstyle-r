@@ -14,7 +14,7 @@ This page shows how to make a sortable table, a hover chart and a small
 Shiny app in the PHW style. All the data is made up.
 
 Interactive widgets don't follow `use_phw_ggplot()`, which only changes
-ggplot2 charts and flextables. Call `phw_reactable()`, `phw_datatable()`
+ggplot2 charts, or `use_phw_flextable()`, which only changes flextables. Call `phw_reactable()`, `phw_datatable()`
 and `phw_plotly()` each time you make one. For interactive maps, see
 [Maps and boundaries](maps.html#interactive-maps).
 
@@ -57,8 +57,9 @@ Five helpers make `colDef()` objects for the `columns` argument.
 - `phw_col_bar()` draws a bar behind the number, scaled to the column maximum.
 - `phw_col_heat()` shades each cell along a sequential palette, and picks
   black or white text to stay readable.
-- `phw_col_rag()` colours a value red, amber or green from two `breaks` and
+- `phw_col_rag()` colours a value red, amber or navy from two `breaks` and
   adds a shape (▼, ■ or ▲), so the status does not rely on colour alone.
+  `rag_palette = "rag"` uses green instead of navy for "good".
 - `phw_col_number()` shows a number with thousands separators and `digits`
   decimal places.
 - `phw_col_percent()` shows a proportion as a percentage.

@@ -277,7 +277,10 @@ argument, so a report in another language needs no change to the package.
 `phw_caption("Example data", source_prefix = "Data: ", date_prefix = "As of ")`
 is one example. The
 [Charts](`r site`articles/charts.html#source-lines-dates-and-numbers) guide
-lists the arguments for forest, funnel, SPC, epicurve and slide labels.
+lists the arguments for forest, funnel, SPC and epicurve labels, and the
+[PowerPoint](`r site`articles/exporting.html#charts-and-tables) section of
+the Exporting guide covers `continued`, the label on a table that runs
+onto further slides.
 
 ## Where next
 

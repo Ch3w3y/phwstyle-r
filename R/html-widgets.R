@@ -856,7 +856,8 @@ summary_reactable_args <- function(x) {
 #'   palette, with readable text. On a summary table, only the level rows
 #'   are coloured: headings, subtotals and totals keep their own styling and
 #'   stay out of the colour scale.
-#' * `phw_col_rag()`: red, amber or green cells with a shape, so status
+#' * `phw_col_rag()`: red, amber or navy cells (green with
+#'   `rag_palette = "rag"`) with a shape, so status
 #'   doesn't rely on colour alone. Give it the table as `data` and, on a
 #'   summary table, only the level rows are coloured, as with the heat
 #'   column.

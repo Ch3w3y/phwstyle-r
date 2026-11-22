@@ -85,9 +85,11 @@ when a slide needs it.
 - `plot_scale` enlarges the text of a chart on the slide, as a multiple of its
   size. The default `1.5` brings axis and legend text to about 14 points, and
   `1` leaves the chart as it is.
-- `table_fit` enlarges a table built here from a data frame or summary table, by up
-  to 1.6 times for the text, so it reads on a slide. `FALSE` keeps the size
-  `phw_flextable()` gives it. A flextable you pass in is never enlarged.
+- `table_fit` enlarges a table built here from a data frame or summary
+  table, or made with `phw_flextable()`, so it fills the slide's content
+  area. Its text grows from 12 points up to 18 points, as far as the area
+  has room. `FALSE` keeps the text at 12 points. A table made with
+  `flextable::flextable()` is never enlarged.
   Either way, text in a table is never smaller than 12 points on a slide.
 - A table too long for one slide continues on further slides, each with the
   same title and the table's header row. Its caption, or the title when the
