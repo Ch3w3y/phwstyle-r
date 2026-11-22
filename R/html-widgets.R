@@ -339,6 +339,7 @@ phw_plotly <- function(p, source = NULL, date = NULL, ...,
   } else {
     p <- tidy_ggplotly(p)
   }
+  if (!is.null(p$x$data)) p$x$data <- step_colourbars(p$x$data)
   p <- overlay_own_panel(p)
   col <- phw_colours
   colorway <- plotly_colorway(p, palette)
@@ -546,6 +547,25 @@ ggplotly_phw <- function(p, palette) {
     w$x$layout$legend$title <- NULL
   }
   w
+}
+
+# ggplotly() draws the bar of a binned scale (guide_coloursteps()) with each
+# class colour at the class's upper edge, spread from 0 to 1, so the bar
+# blends the classes into a gradient that doesn't line up with the ticks.
+# The ticks sit at the class edges, in the bar's own 0 to 1 positions, so
+# a bar whose stops are exactly those upper edges, rescaled, is a binned
+# one: give each class its colour from its lower to its upper edge.
+step_colourbars <- function(data) {
+  lapply(data, function(t) {
+    bar <- t$marker$colorscale
+    ticks <- t$marker$colorbar$tickvals
+    if (!is.data.frame(bar) || !is.numeric(ticks)) return(t)
+    edges <- sort(unique(c(0, ticks, 1)))
+    n <- nrow(bar)
+    if (length(edges) != n + 1 || !isTRUE(all.equal(bar[[1]], scales::rescale(edges[-1])))) return(t)
+    t$marker$colorscale <- unname(data.frame(c(rbind(edges[-(n + 1)], edges[-1])), rep(bar[[2]], each = 2)))
+    t
+  })
 }
 
 # ggplotly() drops a secondary axis, which leaves the second series read

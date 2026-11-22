@@ -558,6 +558,30 @@ test_that("subplot() of ggplots with an average line keeps plain legend names an
   expect_equal(unname(joined[5:6]), unname(joined[1:2]))
 })
 
+test_that("a binned colour scale shows its classes as steps, each between its edges", {
+  # ggplotly() in plotly 4.10 fails on any binned colour scale.
+  skip_if_not_installed("plotly", "4.11.0")
+  skip_if_not_installed("ggplot2")
+  d <- data.frame(week = 1:30, rate = seq(1, 100, length.out = 30))
+  g <- ggplot2::ggplot(d, ggplot2::aes(week, rate, colour = rate)) + ggplot2::geom_point() + theme_phw()
+  bar <- function(p) Filter(function(t) !is.null(t$marker$colorscale), built(p)$data)[[1]]$marker
+  even <- bar(phw_plotly(g + scale_colour_phw_b()))
+  expect_equal(even$colorscale[[1]], c(0, 0.25, 0.25, 0.5, 0.5, 0.75, 0.75, 1))
+  expect_equal(as.vector(even$colorbar$tickvals), c(0.25, 0.5, 0.75))
+  steps <- even$colorscale[[2]]
+  expect_equal(steps[c(TRUE, FALSE)], steps[c(FALSE, TRUE)])
+  expect_length(unique(steps), 4)
+  expect_setequal(plotly::toRGB(unique(steps)), unique(built(phw_plotly(g + scale_colour_phw_b()))$data[[1]]$marker$color))
+
+  uneven <- bar(phw_plotly(plotly::ggplotly(g + scale_colour_phw_b(breaks = c(10, 20, 80),
+    guide = ggplot2::guide_coloursteps(even.steps = FALSE)))))
+  edges <- c(0, as.vector(uneven$colorbar$tickvals), 1)
+  expect_equal(uneven$colorscale[[1]], c(rbind(edges[-length(edges)], edges[-1])))
+
+  smooth <- bar(phw_plotly(g + scale_colour_phw_c()))
+  expect_gt(nrow(smooth$colorscale), 20)
+})
+
 test_that("ggplotly() charts coloured by a number take the PHW blues, as phw_plotly(g) does", {
   skip_if_not_installed("ggplot2")
   d <- expand.grid(week = 1:4, area = c("A", "B", "C"))

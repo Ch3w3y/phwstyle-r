@@ -1057,6 +1057,11 @@ says what to change.
   read as 184 cases. Hover still shows the second measure in the units of
   the main axis; map the `text` aesthetic to show it in its own. A faceted
   chart can't show the axis and now warns.
+* `phw_plotly()` shows a binned colour scale, such as `phw_map(bins = )`
+  or `scale_colour_phw_b()`, as steps in the colour bar, one block per
+  class between its edges, as the static chart does. Before, the bar
+  blended the classes into a gradient with its colours away from the
+  class edges, so an area at 51 in the 50 to 75 class read as about 67.
 * `phw_leaflet_polygons()`, `phw_boundaries()`, `phw_plotly()` and the
   colour key functions check their input first. `phw_boundaries()` checks
   `crs` before downloading anything.

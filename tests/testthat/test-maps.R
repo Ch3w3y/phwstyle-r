@@ -420,3 +420,20 @@ test_that("phw_map stops on a table() and says what to pass", {
   p <- phw_map(as.data.frame(as.table(counts)), code, Freq, level = areas)
   expect_equal(p$data$Freq, c(2, 1, 1))
 })
+
+test_that("plotly shows the classes of a binned map as steps, each between its edges", {
+  # ggplotly() in plotly 4.10 fails on any binned colour scale.
+  skip_if_not_installed("plotly", "4.11.0")
+  areas <- tiny_areas()
+  d <- data.frame(area = areas$code, rate = c(5, 15, 35, 100))
+  w <- plotly::plotly_build(phw_plotly(phw_map(d, by = area, fill = rate, level = areas, bins = c(0, 10, 30, 100))))
+  bar <- Filter(function(t) !is.null(t$marker$colorscale), w$x$data)[[1]]$marker
+  expect_equal(as.vector(bar$colorbar$ticktext), c("0", "10", "30", "100"))
+  edges <- as.vector(bar$colorbar$tickvals)
+  expect_equal(bar$colorscale[[1]], c(rbind(edges[-length(edges)], edges[-1])))
+  steps <- bar$colorscale[[2]]
+  expect_equal(steps[c(TRUE, FALSE)], steps[c(FALSE, TRUE)])
+  expect_length(unique(steps), 3)
+  fills <- unlist(lapply(w$x$data, function(t) if (identical(t$fill, "toself")) t$fillcolor))
+  expect_in(plotly::toRGB(unique(steps)), fills)
+})
