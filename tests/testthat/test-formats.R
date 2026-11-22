@@ -359,6 +359,43 @@ test_that("a phw_flextable caption shows in Quarto HTML, Word and PDF", {
   }
 })
 
+test_that("a tbl-cap chunk without a label captions phw_flextable and phw_gt in Quarto Word", {
+  skip_on_cran()
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("flextable")
+  skip_if_not_installed("gt")
+  skip_if_not_installed("xml2")
+  quarto <- Sys.which("quarto")
+  skip_if(!nzchar(quarto), "Quarto is not installed")
+  dir <- withr::local_tempdir()
+  suppressMessages(use_phw_quarto(dir, "none"))
+  chunk <- function(opts, code) c("```{r}", "#| echo: false", opts, code, "```", "", "Text.", "")
+  writeLines(c("---", "title: Tables", "format: phw-docx", "---", "",
+               chunk("#| tbl-cap: Flextable caption",
+                     c("library(phwstyle)", "d <- data.frame(hb = c('Aneurin Bevan', 'Powys'), cases = c(120L, 30L))",
+                       "phw_flextable(d, caption = 'Own caption', source = 'PHW')")),
+               chunk("#| tbl-cap: gt caption", "phw_gt(d, source = 'PHW')"),
+               chunk(c("#| label: tbl-cases", "#| tbl-cap: Labelled caption"), "phw_flextable(d, source = 'PHW')")),
+             file.path(dir, "tables.qmd"))
+  log <- withr::with_dir(dir, withr::with_envvar(
+    c(QUARTO_R = R.home("bin")),
+    suppressWarnings(system2(quarto, c("render", "tables.qmd"), stdout = TRUE, stderr = TRUE))))
+  docx <- file.path(dir, "tables.docx")
+  if (!file.exists(docx)) fail(paste(c("quarto render failed:", utils::tail(log, 15)), collapse = "\n"))
+  utils::unzip(docx, "word/document.xml", exdir = dir)
+  doc <- xml2::read_xml(file.path(dir, "word", "document.xml"))
+  # The flextable caption is the table's top row, as for its own caption.
+  expect_equal(xml2::xml_text(xml2::xml_find_first(doc, "(//w:tbl)[1]/w:tr[1]")), "Flextable caption")
+  # The gt caption is a Table Caption paragraph right above the table.
+  caps <- xml2::xml_find_all(doc, "//w:p[w:pPr/w:pStyle/@w:val = 'TableCaption']")
+  expect_equal(xml2::xml_text(caps), "gt caption")
+  expect_equal(xml2::xml_name(xml2::xml_find_first(caps, "following-sibling::*[1]")), "tbl")
+  text <- docx_text(docx)
+  expect_no_match(text, "Own caption", fixed = TRUE)
+  expect_equal(lengths(regmatches(text, gregexpr("Labelled caption", text, fixed = TRUE))), 1)
+})
+
 test_that("a phw_flextable wider than the page fits the text width in Quarto Typst", {
   skip_on_cran()
   skip_if_not_installed("knitr")
