@@ -603,6 +603,41 @@ test_that("a tbl-cap chunk without a label captions phw_flextable and phw_gt in 
   expect_equal(lengths(regmatches(text, gregexpr("Labelled caption", text, fixed = TRUE))), 1)
 })
 
+test_that("a tbl-cap chunk without a label captions phw_flextable and phw_gt in Quarto Typst", {
+  skip_on_cran()
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("flextable")
+  skip_if_not_installed("gt")
+  quarto <- Sys.which("quarto")
+  skip_if(!nzchar(quarto), "Quarto is not installed")
+  dir <- withr::local_tempdir()
+  suppressMessages(use_phw_quarto(dir, "none"))
+  chunk <- function(opts, code) c("```{r}", "#| echo: false", opts, code, "```", "", "Text.", "")
+  writeLines(c("---", "title: Tables", "format: phw-typst", "keep-typ: true", "---", "",
+               chunk("#| tbl-cap: Flextable caption",
+                     c("library(phwstyle)", "d <- data.frame(hb = c('Aneurin Bevan', 'Powys'), cases = c(120L, 30L))",
+                       "phw_flextable(d, caption = 'Own caption', source = 'PHW')")),
+               chunk("#| tbl-cap: gt caption", "phw_gt(d, subtitle = 'Own subtitle', source = 'PHW')"),
+               chunk(c("#| label: tbl-cases", "#| tbl-cap: Labelled caption"), "phw_gt(d, source = 'PHW')")),
+             file.path(dir, "tables.qmd"))
+  log <- withr::with_dir(dir, withr::with_envvar(
+    c(QUARTO_R = R.home("bin")),
+    suppressWarnings(system2(quarto, c("render", "tables.qmd"), stdout = TRUE, stderr = TRUE))))
+  if (!file.exists(file.path(dir, "tables.pdf"))) fail(paste(c("quarto render failed:", utils::tail(log, 15)), collapse = "\n"))
+  typ <- paste(readLines(file.path(dir, "tables.typ"), warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+  count <- function(text) lengths(regmatches(typ, gregexpr(text, typ, fixed = TRUE)))
+  # Before 0.10.0, flextable puts a table in Typst as an image, so its text
+  # is not in the .typ file.
+  if (utils::packageVersion("flextable") >= "0.10.0") {
+    expect_equal(count("Flextable caption"), 1)
+    expect_equal(count("Own caption"), 0)
+  }
+  expect_equal(count("gt caption"), 1)
+  expect_equal(count("Own subtitle"), 1)
+  expect_equal(count("Labelled caption"), 1)
+})
+
 test_that("a phw_flextable wider than the page fits the text width in Quarto Typst", {
   skip_on_cran()
   skip_if_not_installed("knitr")
