@@ -413,6 +413,34 @@ test_that("a collected legend under a map stacked on a chart stays on the image"
   expect_lte(max(drawn$right), 16 / 2.54)
 })
 
+test_that("two maps with different legends side by side keep a usable size, with the legends on the image", {
+  skip_if_not_installed("patchwork")
+  local_ggplot_state()
+  square <- function(x, y) sf::st_polygon(list(rbind(c(x, y), c(x + 1, y), c(x + 1, y + 1),
+                                                     c(x, y + 1), c(x, y))))
+  names <- c("Aneurin Bevan University Health Board", "Betsi Cadwaladr University Health Board",
+             "Cardiff and Vale University Health Board", "Cwm Taf Morgannwg University Health Board",
+             "Hywel Dda University Health Board", "Powys Teaching Health Board",
+             "Swansea Bay University Health Board")
+  # Taller than wide, as Wales is.
+  areas <- sf::st_sf(code = paste0("B", 1:7), name = names, geometry = sf::st_sfc(
+    square(0, 0), square(1, 0), square(0, 1), square(1, 1), square(0, 2), square(1, 2), square(0, 3)))
+  attr(areas, "attribution") <- licence
+  rate <- phw_map(data.frame(code = areas$code, rate = c(120.5, 98.2, NA, 143.1, 88, 101.7, 110)),
+                  by = code, fill = rate, level = areas) + ggplot2::labs(title = "Rate by health board")
+  board <- phw_map(data.frame(code = areas$code, board = names), by = code, fill = board, level = areas) +
+    ggplot2::labs(title = "Health boards")
+  one <- drawn_panel_widths(board)
+  for (fig in list(phw_arrange(rate, board), phw_arrange(rate, board, title = "Figure 1"))) {
+    expect_gt(min(drawn_panel_widths(fig)), 0.35 * one)
+    drawn <- saved_caption_lines(fig, paste(names, collapse = "\n"))
+    drawn <- drawn[drawn$text %in% names, ]
+    expect_setequal(drawn$text, names)
+    expect_gte(min(drawn$left), 0)
+    expect_lte(max(drawn$right), 16 / 2.54)
+  }
+})
+
 test_that("phw_map stops on a table() and says what to pass", {
   areas <- tiny_areas()
   counts <- table(code = c("A1", "A1", "A2", "A4"))

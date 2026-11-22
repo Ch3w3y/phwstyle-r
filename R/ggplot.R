@@ -222,9 +222,7 @@ phw_continuous_auto <- phw_palettes$blues[2:6]
 # share of the device width, when it is one panel of a figure. `room`, a
 # function giving the widths in cm on the open device or NULL, is for a
 # legend that patchwork collects under or over the panels of a figure (see
-# collected_room()). With `legend.location = "plot"`, as in theme_phw(), it
-# goes across the whole figure, as ggplot2 puts a chart's legend, rather
-# than across the panels only.
+# collected_room()). It goes across the whole image, not the panels only.
 phw_guide_legend <- function(share = 1, room = NULL) {
   ggplot2::ggproto("GuidePhwLegend", ggplot2::GuideLegend,
     params = ggplot2::guide_legend()$params,
@@ -236,16 +234,10 @@ phw_guide_legend <- function(share = 1, room = NULL) {
       if (!wraps) return(grob)
       cm <- function(u) grid::convertWidth(u, "cm", valueOnly = TRUE)
       span <- if (is.function(room)) room()
-      shift <- 0
-      if (is.null(span)) {
-        limit <- share * cm(grid::unit(1, "npc")) -
-          cm(sum(ggplot2::calc_element("plot.margin", theme)[c(2, 4)]))
-      } else if (identical(ggplot2::calc_element("legend.location", theme), "plot")) {
-        just <- span[["just"]]
-        shift <- (1 - just) * span[["left"]] - just * span[["right"]]
-        limit <- sum(span[c("left", "panels", "right")])
+      limit <- if (is.null(span)) {
+        share * cm(grid::unit(1, "npc")) - cm(sum(ggplot2::calc_element("plot.margin", theme)[c(2, 4)]))
       } else {
-        limit <- span[["panels"]]
+        span[["width"]]
       }
       n <- nrow(params$key)
       rows <- ceiling(n / 5)
@@ -254,13 +246,42 @@ phw_guide_legend <- function(share = 1, room = NULL) {
         params$nrow <- rows
         grob <- draw(theme, position, direction, params)
       }
-      if (shift == 0) return(grob)
-      # ggplot2 sets each legend's viewport when it packs them, so the shift
-      # goes on a legend inside one of the same size.
-      grob$vp <- grid::viewport(x = grid::unit(0.5, "npc") - grid::unit(shift, "cm"))
-      gtable::gtable_add_grob(gtable::gtable(grob$widths, grob$heights), grob,
+      if (is.null(span)) return(grob)
+      # ggplot2 sets each legend's viewport when it packs them, so the legend
+      # goes inside one of the same size.
+      placed <- grid::gTree(children = grid::gList(grob), just = span[["just"]], cl = "phw_placed_legend")
+      gtable::gtable_add_grob(gtable::gtable(grob$widths, grob$heights, name = "phw-legend"), placed,
                               t = 1, l = 1, b = -1, r = -1, clip = "off", name = "legend")
     })
+}
+
+# Puts a legend that patchwork collects across a figure where ggplot2 puts
+# a chart's: justified between the title's left edge and the image's right
+# edge, and kept on the image. patchwork puts it under the panels, so where
+# it is and where the title starts are known only when it is drawn: the
+# figure's layout is the viewport that holds patchwork's guide-box cell.
+#' @exportS3Method grid::makeContext
+makeContext.phw_placed_legend <- function(x) {
+  path <- strsplit(as.character(grid::current.vpPath()), "::", fixed = TRUE)[[1]]
+  cell <- utils::tail(grep("^guide-box\\.", path), 1)
+  if (!length(cell)) return(x)
+  at <- function() grid::convertX(grid::deviceLoc(grid::unit(0:1, "npc"), grid::unit(0:1, "npc"))$x, "cm", valueOnly = TRUE)
+  legend <- at()
+  grid::upViewport(length(path) - cell + 1)
+  on.exit(grid::downViewport(do.call(grid::vpPath, as.list(path[cell:length(path)]))))
+  layout <- grid::current.viewport()$layout
+  n <- layout$ncol
+  margin <- function(cols) sum(vapply(cols, function(j) grid::convertWidth(layout$widths[j], "cm", valueOnly = TRUE), numeric(1)))
+  image <- at() + c(margin(1:2), -margin((n - 1):n))
+  # patchwork puts the title and source line in columns 3 to n - 2.
+  grid::pushViewport(grid::viewport(layout.pos.row = 1, layout.pos.col = 3:(n - 2)))
+  start <- at()[1]
+  grid::popViewport()
+  width <- diff(legend)
+  to <- start + x$just * (image[2] - start - width)
+  to <- max(image[1], min(to, image[2] - width))
+  x$vp <- grid::viewport(x = grid::unit(0.5, "npc") + grid::unit(to - legend[1], "cm"))
+  x
 }
 
 # A colour bar (`type = "colourbar"`) or colour steps (`"coloursteps"`)

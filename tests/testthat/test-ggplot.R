@@ -482,17 +482,18 @@ legend_cm <- function(g) {
   grid::convertWidth(gtable::gtable_width(box), "cm", valueOnly = TRUE)
 }
 
-# Where a legend collected by patchwork starts, in cm from the left of `g`:
-# patchwork puts it at the left of the first panel, and phwstyle may move it
-# left from there.
+# Where a legend collected by patchwork starts when `g` is drawn on the open
+# device, in cm from its left edge.
 collected_legend_start <- function(g) {
-  i <- which(g$layout$name == "guide-box")
-  cm <- function(u) grid::convertWidth(u, "cm", valueOnly = TRUE)
-  left <- vapply(seq_len(g$layout$l[i] - 1), function(j) cm(g$widths[j]), numeric(1))
-  box <- g$grobs[[i]]
-  vp <- box$grobs[[which(box$layout$name == "guides")[1]]]$grobs[[1]]$vp
-  shift <- if (inherits(vp, "viewport")) cm(grid::unit(0.5, "npc") - vp$x) else 0
-  sum(left) - shift
+  grid::grid.newpage()
+  grid::grid.draw(g)
+  grid::grid.force()
+  drawn <- grid::grid.ls(viewports = TRUE, print = FALSE)
+  i <- which(drawn$name == "layout" & drawn$type == "gTreeListing" & grepl("::guide-box", drawn$vpPath))[1]
+  grid::upViewport(0)
+  grid::downViewport(do.call(grid::vpPath, as.list(strsplit(drawn$vpPath[i], "::")[[1]][-1])))
+  on.exit(grid::upViewport(0))
+  grid::convertX(grid::deviceLoc(grid::unit(0, "npc"), grid::unit(0, "npc"))$x, "cm", valueOnly = TRUE)
 }
 
 # Where a legend collected by patchwork ends, in cm from the left of `g`.
