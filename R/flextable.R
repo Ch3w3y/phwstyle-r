@@ -161,9 +161,11 @@ align_by_type <- function(ft) {
 #'   continue on further slides. Each slide repeats the header row, the
 #'   caption is marked with `continued` after the first slide, and the source
 #'   goes on the last slide. A table too wide to fit even with its text
-#'   wrapped gives a warning. Tables on the slides of a Quarto
-#'   `phw-revealjs` deck are sized and split in the same way, with room
-#'   above them for two lines of text, such as a key message or two bullets.
+#'   wrapped gives a warning. A table starts below room for two lines of
+#'   text above it, such as a key message or two bullets; set the chunk
+#'   option `ft.top`, in inches from the top of the slide, to place it
+#'   yourself. Tables on the slides of a Quarto `phw-revealjs` deck are
+#'   sized and split in the same way, with the same room above them.
 #' @param continued Text added after the caption on the slides a long table
 #'   continues on, in a PowerPoint deck. Give your own wording, for example
 #'   in Welsh.
@@ -258,19 +260,23 @@ knit_print.phw_flextable <- function(x, ...) {
 }
 
 # flextable puts the table ft.left inches from the slide's left edge and
-# ft.top inches from its top. A table too long for the slide continues on
-# slides that a horizontal rule starts.
+# ft.top inches from its top. A chunk that sets no ft.top gets the top of
+# knit_slide_area() rather than flextable's 2 in, set in the XML flextable
+# writes, as knitr doesn't let a print method set a chunk option. A table
+# too long for the slide continues on slides that a horizontal rule starts.
 knit_slide_table <- function(x, ...) {
   check_no_images(x)
   # Quarto's PowerPoint writer shows no tbl-cap, so it becomes the caption row.
   cap <- knitr::opts_current$get("tbl-cap")
   if (is.character(cap) && length(cap) == 1) x <- flextable::set_caption(x, cap)
   left <- knitr::opts_current$get("ft.left") %||% 1
-  top <- knitr::opts_current$get("ft.top") %||% 2
-  size <- knit_slide_size()
-  pages <- slide_table_pages(x, size[["width"]] - left - slide_margins[["side"]],
-                             size[["height"]] - top - slide_margins[["bottom"]], grow = TRUE)
-  knit_pages(pages, ...)
+  area <- knit_slide_area()
+  top <- knitr::opts_current$get("ft.top") %||% area[["top"]]
+  pages <- slide_table_pages(x, area[["width"]] - left - slide_margins[["side"]],
+                             area[["height"]] - top - slide_margins[["bottom"]], grow = TRUE)
+  out <- knit_pages(pages, ...)
+  out[] <- gsub('(<p:xfrm[^>]*><a:off x="[0-9]+" y=")[0-9]+"', paste0("\\1", round(top * 914400), '"'), out)
+  out
 }
 
 # A revealjs slide, in CSS inches of 96 pixels, has the proportions of a
@@ -320,19 +326,39 @@ print.phw_flextable <- function(x, preview = "html", align = "center", ...) {
 # PDF and Typst formats, in inches.
 page_text_width <- (210 - 2 * 20) / 25.4
 
-# The size of a slide in the PHW reference deck, in inches, taken for a
-# knitted deck whose own size can't be read.
+# The size of a slide in the PHW reference deck, and where a table starts on
+# it (see text_room_top()), in inches, taken for a knitted deck that can't be
+# read.
 slide_width <- 13.333
 slide_height <- 7.5
+knit_slide_top <- 2.6
 
-# The slide size, in inches, of the deck being knitted: that of its reference
-# deck, or of pandoc's own reference deck when it names none.
-knit_slide_size <- function() {
-  size <- tryCatch({
-    deck <- knit_reference_deck()
-    if (!is.null(deck)) unlist(officer::slide_size(officer::read_pptx(deck)))
+# The slide size of the deck being knitted, and where a table starts on its
+# slides, in inches: those of its reference deck, or of pandoc's own
+# reference deck when it names none.
+knit_slide_area <- function() {
+  deck <- tryCatch({
+    path <- knit_reference_deck()
+    if (!is.null(path)) officer::read_pptx(path)
   }, error = function(e) NULL)
-  size %||% c(width = slide_width, height = slide_height)
+  if (is.null(deck)) return(c(width = slide_width, height = slide_height, top = knit_slide_top))
+  top <- tryCatch(text_room_top(deck), error = function(e) NA)
+  c(unlist(officer::slide_size(deck)), top = if (is.na(top)) knit_slide_top else top)
+}
+
+# Text above a table on a slide goes in the content placeholder of the
+# deck's Title and Content layout, so the table starts below room for two
+# lines of its text, such as a key message or two bullets. A line is 1.2
+# times the master's body text size, with a fifth of that size before it,
+# and 0.1 in covers the placeholder's inset and a gap above the table.
+text_room_top <- function(deck) {
+  layout <- "Title and Content"
+  props <- officer::layout_properties(deck, layout)
+  meta <- deck$slideLayouts$get_metadata()
+  master <- xml2::read_xml(file.path(deck$package_dir, "ppt", "slideMasters",
+                                     meta$master_file[meta$name == layout][1]))
+  size <- xml2::xml_attr(xml2::xml_find_first(master, "p:txStyles/p:bodyStyle/a:lvl1pPr/a:defRPr"), "sz")
+  min(props$offy[props$type == "body"]) + 0.1 + 2 * 1.4 * as.numeric(size) / 100 / 72
 }
 
 # The reference deck of the format being knitted, a copy of pandoc's own when

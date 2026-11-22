@@ -1025,6 +1025,43 @@ test_that("a table too long for a slide continues on the next slide of a knitted
   expect_match(paste(readLines(slides[3], warn = FALSE), collapse = ""), ">Next<")
 })
 
+test_that("a table on a knitted slide starts below two lines of text above it", {
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("flextable")
+  skip_if_not(rmarkdown::pandoc_available("2.4"), "pandoc 2.4 or later is not available")
+  local_ggplot_state()
+  dir <- withr::local_tempdir()
+  rmd <- file.path(dir, "bullets.Rmd")
+  table <- c("```{r, echo = FALSE}",
+             "phwstyle::phw_flextable(phwstyle::phw_crosstab(cases, board, outcome),",
+             "                        caption = 'Outcome by health board', source = 'Line list')", "```", "")
+  writeLines(c("---", "title: Respiratory update", "---", "", "```{r, include = FALSE}",
+               "cases <- data.frame(board = rep(c('Cardiff and Vale', 'Powys', 'Hywel Dda'), each = 20),",
+               "                    outcome = rep(c('Recovered', 'Admitted', 'Died', 'Recovered'), 15))",
+               "```", "", "## Outcome by health board", "",
+               "- Cardiff and Vale had the most admissions.", "- Deaths remain rare.", "", table,
+               "## Placed lower", "", sub("echo = FALSE", "echo = FALSE, ft.top = 3", table, fixed = TRUE)),
+             rmd)
+  ref <- phw_reference_pptx()
+  pptx <- rmarkdown::render(rmd, rmarkdown::powerpoint_presentation(reference_doc = ref), quiet = TRUE)
+  layout <- officer::layout_properties(officer::read_pptx(ref), "Title and Content")
+  body <- layout[layout$type == "body", ]
+  slide <- function(i) xml2::read_xml(unz(pptx, sprintf("ppt/slides/slide%d.xml", i)))
+  bullets <- xml2::xml_text(xml2::xml_find_all(slide(2), "//p:sp[.//p:ph[@idx='1']]//a:p"))
+  expect_equal(bullets, c("Cardiff and Vale had the most admissions.", "Deaths remain rare."))
+  inches <- function(x) as.numeric(x) / 914400
+  top <- function(xml) inches(xml2::xml_attr(xml2::xml_find_first(xml, "//p:graphicFrame//a:off"), "y"))
+  # Two lines of 22 pt text, each 1.2 times its size with 20% spacing before.
+  expect_gte(top(slide(2)), body$offy + 2 * 22 * 1.4 / 72)
+  heights <- inches(xml2::xml_attr(xml2::xml_find_all(slide(2), "//a:tr"), "h"))
+  expect_lte(top(slide(2)) + sum(heights), 7.5 - 0.95 + 0.001)
+  sizes <- as.numeric(xml2::xml_attr(xml2::xml_find_all(slide(2), "//p:graphicFrame//a:rPr[@sz]"), "sz")) / 100
+  expect_gte(min(sizes), 12)
+  # A chunk's own ft.top still places the table.
+  expect_equal(top(slide(3)), 3)
+})
+
 deck_table_lines <- function() {
   c("## Cases", "", "```{r, echo = FALSE}",
     "hb <- c('Betsi Cadwaladr', 'Powys', 'Hywel Dda', 'Aneurin Bevan', 'Cardiff and Vale',",

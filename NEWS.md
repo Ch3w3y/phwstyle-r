@@ -75,6 +75,13 @@ says what to change.
   and shows the same size on each. A table that fits on one slide only with
   its row spacing squeezed below the 12 pt layout now continues on a second
   slide at a larger size.
+* A `phw_flextable()` on a slide of a deck made with R Markdown or the
+  Quarto `phw-pptx` format starts below room for two lines of text, such
+  as a key message or two bullets. Before, it started 2 in from the top of
+  the slide, and its caption printed over the second line of text above
+  it. The room follows the content area and body text size of the deck's
+  Title and Content layout. Set the chunk option `ft.top` to place a table
+  yourself.
 * A `phw_flextable()` in a deck made with R Markdown or Quarto is sized and
   split for the slides of that deck: those of its reference document, or of
   pandoc's own deck when there is none. Before, tables were sized for the
