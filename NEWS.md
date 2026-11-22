@@ -118,7 +118,7 @@ says what to change.
   `phw_pal(n, reverse = TRUE)`. Reversed charts with fewer groups than the
   palette has colours change colour: with 3 groups, `"main"` gives `#FF5D0C`,
   `#24A2B5`, `#285087` instead of `#F43882`, `#FF5D0C`, `#24A2B5`.
-  `"main"` also carries on into `"extended"`, so more than four groups no
+  `"main"` also carries on into `"extended"`, so more than six groups no
   longer take colours from other palettes with a warning.
 * `palette = "highlight"` draws the first group in navy and every other
   group in light grey, however many groups there are. This applies to
@@ -1113,7 +1113,7 @@ says what to change.
 * `phw_leaflet_polygons()`, `phw_boundaries()`, `phw_plotly()` and the
   colour key functions check their input first. `phw_boundaries()` checks
   `crs` before downloading anything.
-* `phw_key_recolour()` carries `"main"` on into `"extended"` past four
+* `phw_key_recolour()` carries `"main"` on into `"extended"` past six
   groups, as `phw_colour_key()` does. It keeps the colour of neutral groups
   such as "Other", including one set with `neutral_colour`. Its new
   `neutral` argument names which groups those are.
