@@ -44,7 +44,7 @@ phw_leaflet_css <- function() {
     ".leaflet-container .legend {border-radius: 2px; box-shadow: 0 1px 4px rgba(0,0,0,.25);}",
     ".leaflet-container .legend strong, .leaflet-container .legend .legend-title {color: %s;}"),
     phw_font(), phw_colours[["text"]], phw_colours[["navy"]])
-  htmltools::htmlDependency("phw-leaflet", "0.1", src = c(href = ""), head = sprintf("<style>%s</style>", css))
+  phw_style_dependency("phw-leaflet", css)
 }
 
 #' @rdname phw_leaflet

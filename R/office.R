@@ -205,7 +205,7 @@ phw_dt_css <- function() {
     ".dataTables_wrapper .dataTables_filter input:focus {outline: 3px solid %6$s;}"),
     phw_font(), col[["text"]], col[["navy"]], col[["grey_border"]], col[["grey_bg"]], col[["focus"]],
     col[["grey_mid"]])
-  htmltools::htmlDependency("phw-dt", "0.1", src = c(href = ""), head = sprintf("<style>%s</style>", css))
+  phw_style_dependency("phw-dt", css)
 }
 
 #' Write tables to a styled Excel workbook

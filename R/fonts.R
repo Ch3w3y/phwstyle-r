@@ -146,3 +146,10 @@ phw_font_dependency <- function() {
     all_files = FALSE
   )
 }
+
+# Quarto copies every dependency's files and stops on one without a folder on
+# disk, so the inline style names the package folder even though it copies nothing.
+phw_style_dependency <- function(name, css) {
+  htmltools::htmlDependency(name, "0.1", src = c(file = system.file(package = "phwstyle"), href = ""),
+                            head = sprintf("<style>%s</style>", css), all_files = FALSE)
+}

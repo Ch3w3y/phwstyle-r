@@ -968,6 +968,10 @@ says what to change.
 
 ## Interactive outputs and colours
 
+* `phw_datatable()` and `phw_leaflet()` render in Quarto HTML documents,
+  slides (`phw-revealjs`) and dashboards (`phw-dashboard`). Before, the
+  render stopped with "Dependency phw-dt 0.1 is not disk-based" (or
+  `phw-leaflet`) and wrote nothing.
 * `phw_plotly()` spaces the legend of a ggplot correctly in Chrome, Edge
   and the RStudio and Positron Viewer. Before, on a computer without the Ubuntu font installed,
   each label ran into the next item and the last label was cut off, as in
