@@ -7,6 +7,7 @@
 - [[codebase/grid-measured-heights]]
 - [[codebase/caption-fitting]]
 - [[codebase/plotly-attrs-traps]]
+- [[codebase/quarto-widget-sizing]]
 - [[codebase/ci-check-traps]]
 - [[codebase/ggplot2-legend-hooks]]
 - [[codebase/neighbour-paths]]
