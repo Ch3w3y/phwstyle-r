@@ -686,6 +686,10 @@ says what to change.
   characters such as `&` and `%` shown as typed. Before, the PDF showed a
   literal `<br>`, an `&` stopped the PDF from building and a `%` cut the
   line short.
+* A `phw_gt()` chunk in a Quarto `phw-pdf` document that sets `tbl-cap`
+  without a `tbl-` label renders, with the chunk's caption above the
+  table, as it does with a label. Before, the PDF stopped building with
+  "Not in outer par mode" and held only the title page.
 * `phw_gt_theme(...)` and `phw_gt(theme_args = )` can change a setting
   phwstyle already sets, such as `heading.align` or `data_row.padding`.
   Your value replaces the PHW one. Before, these stopped with "matched by
