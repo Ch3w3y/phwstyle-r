@@ -199,8 +199,9 @@ nrow(phw_keys())
 ## Colour-blind safe colours
 
 About 1 in 12 men and 1 in 200 women see some colours differently, most
-often reds and greens. The `main` palette stays distinct for the three
-common types of colour blindness. The extra colours of `extended` stay
+often reds and greens. The `main` palette stays distinct for the two
+red-green types. Under tritanopia, the rarer blue-yellow type, its pink and
+orange are harder to tell apart. The extra colours of `extended` stay
 apart for the two red-green types.
 
 The `accessible` palette stays distinct for all three types with up to
