@@ -1004,6 +1004,8 @@ says what to change.
 
 ## Interactive outputs and colours
 
+* `phw_col(names = FALSE)` with no colour names returns every PHW colour
+  without names, as its help page says. Before, it kept the names.
 * Charts and maps from `phw_plotly()`, `phw_leaflet()` and other
   htmlwidgets fit on a Quarto `phw-revealjs` slide, below its title, with
   their axis, legend and source showing. They fill the slide's width and are

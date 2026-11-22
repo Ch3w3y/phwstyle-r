@@ -61,7 +61,7 @@ phw_colours <- c(
 #' @export
 phw_col <- function(..., names = TRUE) {
   cols <- c(...)
-  if (length(cols) == 0) return(phw_colours)
+  if (length(cols) == 0) return(if (names) phw_colours else unname(phw_colours))
   bad <- setdiff(cols, names(phw_colours))
   if (length(bad)) {
     cli::cli_abort(c("Unknown PHW colour{?s}: {.val {bad}}.",

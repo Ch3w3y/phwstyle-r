@@ -1,6 +1,8 @@
 test_that("brand colours are valid hex codes", {
   expect_true(all(grepl("^#[0-9A-F]{6}$", phw_colours)))
   expect_equal(phw_col("navy", names = FALSE), "#285087")
+  expect_equal(phw_col(names = FALSE), unname(phw_colours))
+  expect_equal(phw_col(), phw_colours)
   expect_error(phw_col("not_a_colour"), "Unknown PHW colour")
 })
 
