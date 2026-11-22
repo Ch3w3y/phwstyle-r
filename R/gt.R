@@ -107,7 +107,9 @@ knit_print.phw_gt <- function(x, ...) {
       gt::cells_row_groups(), gt::cells_stub(), gt::cells_body(), gt::cells_footnotes(),
       gt::cells_source_notes()
     ))
-    return(knitr::asis_output(paste("```{=openxml}", gt_word_xml(x), "```\n\n", sep = "\n")))
+    cap <- word_tbl_cap()
+    if (!is.null(cap)) cap <- c("::: {custom-style=\"Table Caption\"}", cap, ":::", "")
+    return(knitr::asis_output(paste(c(cap, "```{=openxml}", gt_word_xml(x), "```\n\n"), collapse = "\n")))
   }
   if (is.null(knitr::pandoc_to()) || knitr::is_html_output()) return(NextMethod())
   if (!knitr::is_latex_output()) {

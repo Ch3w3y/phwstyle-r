@@ -230,9 +230,12 @@ phw_flextable <- function(data, caption = NULL, number = NULL, source = NULL,
 knit_print.phw_flextable <- function(x, ...) {
   if (knitr::pandoc_to("pptx")) return(knit_slide_table(x, ...))
   # Under Quarto, flextable leaves the caption to the chunk's tbl-cap and drops
-  # one set with set_caption(), so it goes in the table's top row instead.
-  if (!is.null(knitr::opts_knit$get("quarto.version")) && is.null(knitr::opts_current$get("tbl-cap"))) {
-    x <- caption_as_header(x)
+  # one set with set_caption(), so it goes in the table's top row instead,
+  # unless Quarto shows the tbl-cap.
+  if (!is.null(knitr::opts_knit$get("quarto.version"))) {
+    cap <- word_tbl_cap()
+    if (!is.null(cap)) x <- flextable::set_caption(x, cap)
+    if (!is.null(cap) || is.null(knitr::opts_current$get("tbl-cap"))) x <- caption_as_header(x)
   }
   # A Typst column's width includes its cell padding, as a Word column's does.
   if (knitr::pandoc_to(c("docx", "typst"))) x <- fit_table_to_width(x, page_text_width)
