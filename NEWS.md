@@ -1162,6 +1162,7 @@ says what to change.
 
 ## Requirements
 
+* phwstyle now needs cli 3.6.0 or later (was any version).
 * PowerPoint slides need officer 0.6.7 or later (was 0.6.6).
   `phw_add_slide()` places content in the layout's own placeholders, which
   needs `officer::ph_location_id()`. With officer 0.6.6 it stopped with
