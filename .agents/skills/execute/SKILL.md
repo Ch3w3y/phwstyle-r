@@ -70,6 +70,7 @@ Run, in this order:
 
 1. If you changed roxygen comments (`#'`) or exports: `$RB/Rscript -e 'roxygen2::roxygenise()'`, and commit the regenerated `man/` and `NAMESPACE`.
 2. Tests: `$RB/Rscript -e 'pkgload::load_all("<W>"); testthat::test_local("<W>")'`, once with the default libraries and once with ggplot2 3.5.1 first (see the brain note). Both must show FAIL 0. Quarto and LaTeX are installed (see the brain note), so those tests run. Say which tests skipped, and why.
+   If you added or changed a test that renders a document, deck or table (`tests/testthat/test-formats.R`, or any test that renders R Markdown, Quarto, flextable, gt or officer output), also run that test file on the oldest CI setup in the brain note. It must show FAIL 0.
 3. Full check: build from a clean `git archive HEAD` into a scratch folder, then `_R_CHECK_FORCE_SUGGESTS_=false $RB/R CMD check --no-manual --as-cran phwstyle_*.tar.gz`. No WARNING or NOTE beyond the fontconfig baseline in the brain note.
 4. If you changed a vignette, article or `_pkgdown.yml`: build the site into a scratch folder, never into the repo (`pkgdown::build_site(override = list(destination = "<scratch>"))`).
 

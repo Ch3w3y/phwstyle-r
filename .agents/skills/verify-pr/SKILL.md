@@ -41,7 +41,7 @@ Pin the review to the head SHA you read now. If the head changes while you revie
    - CRAN suitability, and nothing from `.agents`, `brain`, `adapters` or `.noodle*` in the build tarball.
    - The project rules in `.agents/skills/execute/SKILL.md` (styling-only scope, replaceable Welsh text, no development material in public docs).
 3. Run it as a user would: install it into your own library (see `brain/codebase/dev-environment.md`), make real calls, and look at rendered outputs for anything visual.
-4. Run the full test suite on both ggplot2 versions, and `R CMD check --as-cran --no-manual` on a clean `git archive` tarball of the head.
+4. Run the full test suite on both ggplot2 versions, and `R CMD check --as-cran --no-manual` on a clean `git archive` tarball of the head. If the PR adds or changes a test that renders a document, deck or table, also run that test file on the oldest CI setup in `brain/codebase/dev-environment.md`. A failure there fails the `oldest` CI job, so it is a FAIL.
 
 Work in your own detached worktree under `~/.cache/phwstyle-dev/wt/` and remove it when done. Never edit, commit or push.
 
