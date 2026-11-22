@@ -106,15 +106,28 @@ check_flextable <- function(x, call = rlang::caller_env()) {
   invisible(x)
 }
 
+has_images <- function(ft) {
+  is_image <- function(z) inherits(z, "raster") || (is.character(z) && any(!is.na(z)))
+  any(vapply(flextable::information_data_chunk(ft)$img_data, is_image, logical(1)))
+}
+
 # flextable leaves pictures, such as the bars from phw_flextable_bars(), out
 # of a PowerPoint table without a word.
 check_no_images <- function(ft, call = rlang::caller_env()) {
-  is_image <- function(z) inherits(z, "raster") || (is.character(z) && any(!is.na(z)))
-  if (!any(vapply(flextable::information_data_chunk(ft)$img_data, is_image, logical(1)))) {
-    return(invisible(ft))
-  }
+  if (!has_images(ft)) return(invisible(ft))
   cli::cli_abort(c("A PowerPoint table cannot show images, so the bars or pictures in this table would be lost.",
                    i = "On a slide, leave out {.fn phw_flextable_bars}, or show the values as a bar chart."),
+                 call = call)
+}
+
+# flextable writes a picture in a Word table as a file path, for officer to
+# add to the .docx after pandoc. Only phw_word_document() (or another format
+# that sets the is_rdocx_document chunk option) does that; elsewhere, Quarto
+# included, Word calls the file corrupt.
+check_word_images <- function(ft, call = rlang::caller_env()) {
+  if (isTRUE(knitr::opts_current$get("is_rdocx_document")) || !has_images(ft)) return(invisible(ft))
+  cli::cli_abort(c("This Word format cannot hold the bars or pictures in this table: Word would call the file corrupt.",
+                   i = "Use {.fn phw_flextable_heat} to shade the values instead, or render an R Markdown report with {.fn phw_word_document}, which keeps the bars."),
                  call = call)
 }
 

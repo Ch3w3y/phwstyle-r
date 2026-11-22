@@ -11,6 +11,11 @@ says what to change.
   message for a table with bars from `phw_flextable_bars()`. PowerPoint
   tables cannot show pictures, and before, the slide showed the numbers
   without the bars and gave no warning.
+* A table with bars from `phw_flextable_bars()` stops a Quarto `phw-docx`
+  report, or any Word format other than `phw_word_document()`, with a
+  message that suggests `phw_flextable_heat()` or `phw_word_document()`.
+  These formats cannot add pictures to a Word table: before, Word called
+  the file corrupt and flextable's warning was printed in the report.
 * `phw_plotly()` stops with a message for a patchwork, such as a figure
   from `phw_arrange()` or `g1 + g2`, and shows how to combine the charts
   with `phw_plotly(plotly::subplot(g1, g2))`, which gives a group the same
