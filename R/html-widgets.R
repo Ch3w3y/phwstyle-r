@@ -75,8 +75,9 @@ phw_reactable_theme <- function(font_size = 14, header = c("booktabs", "navy", "
 #'
 #' On the slides of a Quarto `phw-revealjs` deck, the text is sized to the
 #' slide for one page of rows: never smaller than 12 pt at the slide's
-#' scale, and up to 18 pt when the table has room. The title and source
-#' line are in proportion to it. A `theme` you pass keeps its own sizes.
+#' scale, and up to 18 pt when the table has room, which leaves room above
+#' it for two lines of text. The title and source line are in proportion to
+#' it. A `theme` you pass keeps its own sizes.
 #'
 #' @param data A data frame, or a summary table from [phw_summary_table()],
 #'   [phw_crosstab()], [phw_rate_table()] or [phw_risk_table()] (shown with

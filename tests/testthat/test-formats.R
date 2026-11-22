@@ -407,26 +407,101 @@ test_that("tables on phw-revealjs slides are sized to the slide", {
   # slide's own text.
   expect_match(rt, sprintf("font-size:%gpx", body[1]), fixed = TRUE)
   expect_match(rt, "text-align:right;font-size:1em", fixed = TRUE)
+  # A slide and the slides its table continues on, which have no id.
+  run <- function(id) {
+    i <- which(startsWith(slides, sprintf(' id="%s"', id)))
+    j <- i
+    while (j < length(slides) && !startsWith(slides[j + 1], " id=")) j <- j + 1
+    slides[i:j]
+  }
   # A table too long for one slide continues on the next, at the same size.
-  i <- which(startsWith(slides, ' id="long"'))
-  expect_match(slides[i + 1], "Long table (continued)", fixed = TRUE)
-  expect_match(slides[i + 1], "Area 30", fixed = TRUE)
-  expect_no_match(slides[i], "Area 30", fixed = TRUE)
-  long <- sizes(slides[i:(i + 1)], "(?<=font-size:)[0-9.]+(?=pt)")
+  long <- run("long")
+  last <- length(long)
+  expect_gt(last, 1)
+  expect_match(long[-1], "Long table (continued)", fixed = TRUE)
+  expect_match(long[last], "Area 30<", fixed = TRUE)
+  expect_no_match(long[-last], "Area 30<", fixed = TRUE)
+  long <- sizes(long, "(?<=font-size:)[0-9.]+(?=pt)")
   expect_true(min(long) >= 12)
   expect_length(unique(long), 1)
   # A labelled table keeps its numbered caption, above its first part, and
   # its cross-reference.
-  i <- which(startsWith(slides, ' id="labelled"'))
-  expect_match(slides[i], 'id="tbl-long"', fixed = TRUE)
-  at <- vapply(c("Labelled table", "Area 1<"), regexpr, 1, slides[i], fixed = TRUE)
+  labelled <- run("labelled")
+  last <- length(labelled)
+  expect_match(labelled[1], 'id="tbl-long"', fixed = TRUE)
+  at <- vapply(c("Labelled table", "Area 1<"), regexpr, 1, labelled[1], fixed = TRUE)
   expect_true(all(at > 0) && at[[1]] < at[[2]])
-  expect_no_match(slides[i], "Area 30<", fixed = TRUE)
-  expect_match(slides[i + 1], "Area 30<", fixed = TRUE)
-  expect_match(slides[i + 1], "Source: PHW", fixed = TRUE)
-  expect_no_match(slides[i + 1], "Labelled table", fixed = TRUE)
+  expect_gt(last, 1)
+  expect_no_match(labelled[-last], "Area 30<", fixed = TRUE)
+  expect_match(labelled[last], "Area 30<", fixed = TRUE)
+  expect_match(labelled[last], "Source: PHW", fixed = TRUE)
+  expect_no_match(labelled[-1], "Labelled table", fixed = TRUE)
   expect_match(slide("reference"), 'class="quarto-xref">Table&nbsp;1<', fixed = TRUE)
   expect_no_match(slide("reference"), "?@tbl-long", fixed = TRUE)
+})
+
+test_that("a table under text on a phw-revealjs slide ends above the footer", {
+  skip_on_cran()
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("flextable")
+  skip_if_not_installed("gt")
+  skip_if_not_installed("reactable")
+  quarto <- Sys.which("quarto")
+  skip_if(!nzchar(quarto), "Quarto is not installed")
+  chrome <- Sys.which(c("google-chrome", "google-chrome-stable", "chromium", "chromium-browser"))
+  chrome <- chrome[nzchar(chrome)]
+  skip_if(!length(chrome), "Chrome is not installed")
+  dir <- withr::local_tempdir()
+  suppressMessages(use_phw_quarto(dir, "none"))
+  chunk <- function(title, text, code) c(paste("##", title), "", text, "", "```{r}", code, "```", "")
+  bullets <- c("- Cases rose this week", "- Highest in the south east")
+  writeLines(c("---", "title: Tables", "format: phw-revealjs", "execute:", "  echo: false", "---", "",
+               "```{r}", "library(phwstyle)",
+               "la <- data.frame(area = paste('Local authority', 1:22), cases = 101:122, rate = seq(10, 52, 2))",
+               "```", "",
+               chunk("Bullets", bullets, "phw_flextable(la[1:12, ], caption = 'Rates', source = 'PHW')"),
+               chunk("Sentence", "Cases rose this week.", "phw_flextable(la[1:14, ], caption = 'Rates', source = 'PHW')"),
+               chunk("Long", bullets, "phw_flextable(la, caption = 'Rates', source = 'PHW')"),
+               chunk("gt", "Cases rose this week.", "phw_gt(la[1:14, ], caption = 'Rates', source = 'PHW')"),
+               chunk("reactable", bullets, "phw_reactable(la, caption = 'Rates', source = 'PHW')")),
+             file.path(dir, "deck.qmd"))
+  log <- withr::with_dir(dir, withr::with_envvar(
+    c(QUARTO_R = R.home("bin")),
+    suppressWarnings(system2(quarto, c("render", "deck.qmd"), stdout = TRUE, stderr = TRUE))))
+  out <- file.path(dir, "deck.html")
+  if (!file.exists(out)) fail(paste(c("quarto render failed:", utils::tail(log, 15)), collapse = "\n"))
+  # The lowest point on each slide and the top of the footer, in the slide's
+  # own pixels.
+  measure <- "<script>
+    window.addEventListener('load', function () { setTimeout(function () {
+      var out = [];
+      for (var i = 1; i < Reveal.getTotalSlides(); i++) {
+        Reveal.slide(i);
+        var k = Reveal.getScale(), top = document.querySelector('.reveal .slides').getBoundingClientRect().top;
+        var low = 0;
+        Reveal.getCurrentSlide().querySelectorAll('*').forEach(function (e) {
+          var r = e.getBoundingClientRect();
+          if (r.height > 0) low = Math.max(low, (r.bottom - top) / k);
+        });
+        var footer = (document.querySelector('.reveal .footer').getBoundingClientRect().top - top) / k;
+        out.push(i + ' ' + Math.round(low) + ' ' + Math.round(footer));
+      }
+      var p = document.createElement('pre'); p.id = 'measured'; p.textContent = out.join(';');
+      document.body.appendChild(p);
+    }, 2000); });
+    </script>"
+  write(measure, out, append = TRUE)
+  dom <- suppressWarnings(system2(chrome[[1]], c("--headless", "--disable-gpu", "--no-sandbox", "--window-size=1280,720",
+                                                 "--virtual-time-budget=10000", "--dump-dom",
+                                                 paste0("file://", normalizePath(out, "/"))),
+                                  stdout = TRUE, stderr = FALSE))
+  found <- regmatches(paste(dom, collapse = " "), regexpr('(?<=<pre id="measured">)[^<]+', paste(dom, collapse = " "), perl = TRUE))
+  skip_if(!length(found), "Chrome did not lay out the deck")
+  rows <- do.call(rbind, lapply(strsplit(strsplit(found, ";")[[1]], " "), as.numeric))
+  # Each table slide, the continued one too, has a table that ends above the footer.
+  expect_equal(nrow(rows), 6)
+  expect_true(all(rows[, 2] < rows[, 3]), info = paste(found))
 })
 
 test_that("a tbl-cap chunk without a label captions phw_flextable and phw_gt in Quarto Word", {

@@ -821,6 +821,8 @@ says what to change.
   from `use_phw_quarto(template = "slides")`, are sized to the slide as
   PowerPoint slide tables are. Their text is never smaller than 12 pt at
   the slide's scale, and a table with room to spare grows up to 18 pt.
+  Each table leaves room above it for two lines of text, such as a key
+  message or two bullets, so it ends above the slide's footer.
   A `phw_flextable()` too long for the slide continues on further slides,
   with its header row repeated and its caption marked "(continued)". A
   `phw_gt()` table cannot be split over slides, so a long one stays at

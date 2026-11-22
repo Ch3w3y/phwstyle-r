@@ -162,7 +162,8 @@ align_by_type <- function(ft) {
 #'   caption is marked with `continued` after the first slide, and the source
 #'   goes on the last slide. A table too wide to fit even with its text
 #'   wrapped gives a warning. Tables on the slides of a Quarto
-#'   `phw-revealjs` deck are sized and split in the same way.
+#'   `phw-revealjs` deck are sized and split in the same way, with room
+#'   above them for two lines of text, such as a key message or two bullets.
 #' @param continued Text added after the caption on the slides a long table
 #'   continues on, in a PowerPoint deck. Give your own wording, for example
 #'   in Welsh.
