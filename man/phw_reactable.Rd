@@ -62,6 +62,12 @@ number formatting with thousands separators. Rows are not striped, as in
 the other PHW tables; pass \code{striped = TRUE} to stripe them. It also attaches the
 Ubuntu web font. You can add a title above and a source line below.
 }
+\details{
+On the slides of a Quarto \code{phw-revealjs} deck, the text is sized to the
+slide for one page of rows: never smaller than 12 pt at the slide's
+scale, and up to 18 pt when the table has room. The title and source
+line are in proportion to it. A \code{theme} you pass keeps its own sizes.
+}
 \examples{
 if (requireNamespace("reactable", quietly = TRUE)) {
   df <- data.frame(area = paste("Area", LETTERS[1:5]),

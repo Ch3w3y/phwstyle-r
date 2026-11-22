@@ -359,6 +359,61 @@ test_that("a phw_flextable caption shows in Quarto HTML, Word and PDF", {
   }
 })
 
+test_that("tables on phw-revealjs slides are sized to the slide", {
+  skip_on_cran()
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("flextable")
+  skip_if_not_installed("gt")
+  skip_if_not_installed("reactable")
+  quarto <- Sys.which("quarto")
+  skip_if(!nzchar(quarto), "Quarto is not installed")
+  dir <- withr::local_tempdir()
+  suppressMessages(use_phw_quarto(dir, "none"))
+  chunk <- function(title, code) c(paste("##", title), "", "```{r}", code, "```", "")
+  writeLines(c("---", "title: Tables", "format: phw-revealjs", "execute:", "  echo: false", "---", "",
+               "```{r}", "library(phwstyle)",
+               "d <- data.frame(hb = c('Aneurin Bevan', 'Betsi Cadwaladr', 'Cardiff and Vale', 'Powys'),",
+               "                cases = c(120L, 85L, 240L, 30L), rate = c(20.5, 12.1, 48.9, 22.0))",
+               "long <- data.frame(area = paste('Area', 1:30), cases = 1:30)",
+               "```", "",
+               chunk("Flextable", "phw_flextable(d, caption = 'Cases', source = 'PHW')"),
+               chunk("gt", "phw_gt(d, caption = 'Cases', source = 'PHW')"),
+               chunk("reactable", "phw_reactable(d, caption = 'Cases', source = 'PHW')"),
+               chunk("Long", "phw_flextable(long, caption = 'Long table', source = 'PHW')")),
+             file.path(dir, "deck.qmd"))
+  log <- withr::with_dir(dir, withr::with_envvar(
+    c(QUARTO_R = R.home("bin")),
+    suppressWarnings(system2(quarto, c("render", "deck.qmd"), stdout = TRUE, stderr = TRUE))))
+  out <- file.path(dir, "deck.html")
+  if (!file.exists(out)) fail(paste(c("quarto render failed:", utils::tail(log, 15)), collapse = "\n"))
+  html <- paste(readLines(out, warn = FALSE, encoding = "UTF-8"), collapse = " ")
+  slides <- strsplit(html, "<section", fixed = TRUE)[[1]][-1]
+  slide <- function(id) slides[startsWith(slides, sprintf(' id="%s"', id))]
+  sizes <- function(text, pattern) as.numeric(unlist(regmatches(text, gregexpr(pattern, text, perl = TRUE))))
+  # 12 pt is the smallest text on a PowerPoint slide, and a slide of 1280 by
+  # 720 pixels is a PowerPoint slide at 96 pixels to the inch, so 16 px.
+  ft <- sizes(slide("flextable"), "(?<=font-size:)[0-9.]+(?=pt)")
+  expect_true(length(ft) > 0 && min(ft) > 12)
+  gt <- sizes(slide("gt"), "(?<=font-size: )[0-9.]+(?=px)")
+  expect_true(length(gt) > 0 && min(gt) > 16)
+  rt <- slide("reactable")
+  body <- sizes(rt, '(?<=fontSize":")[0-9.]+(?=px)')
+  expect_true(length(body) > 0 && min(body) > 16)
+  # The caption and source line are in proportion to the table, not to the
+  # slide's own text.
+  expect_match(rt, sprintf("font-size:%gpx", body[1]), fixed = TRUE)
+  expect_match(rt, "text-align:right;font-size:1em", fixed = TRUE)
+  # A table too long for one slide continues on the next, at the same size.
+  i <- which(startsWith(slides, ' id="long"'))
+  expect_match(slides[i + 1], "Long table (continued)", fixed = TRUE)
+  expect_match(slides[i + 1], "Area 30", fixed = TRUE)
+  expect_no_match(slides[i], "Area 30", fixed = TRUE)
+  long <- sizes(slides[i:(i + 1)], "(?<=font-size:)[0-9.]+(?=pt)")
+  expect_true(min(long) >= 12)
+  expect_length(unique(long), 1)
+})
+
 test_that("a tbl-cap chunk without a label captions phw_flextable and phw_gt in Quarto Word", {
   skip_on_cran()
   skip_if_not_installed("knitr")

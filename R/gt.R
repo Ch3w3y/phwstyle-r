@@ -11,6 +11,11 @@
 #' its title and column labels repeated, and a table wider than the text
 #' shrinks to fit it.
 #'
+#' On the slides of a Quarto `phw-revealjs` deck, the text is sized to the
+#' slide: never smaller than 12 pt at the slide's scale, and up to 18 pt
+#' when the table has room. gt can't split a table over slides, so use
+#' [phw_flextable()] for a table too long for one slide.
+#'
 #' Use gt tables in HTML and PDF. In a Word document they get the PHW font
 #' and colours, but gt can't make the column labels bold or indent the levels
 #' of a summary table, so use [phw_flextable()] for Word. Quarto shows them
@@ -111,6 +116,7 @@ knit_print.phw_gt <- function(x, ...) {
     if (!is.null(cap)) cap <- c("::: {custom-style=\"Table Caption\"}", cap, ":::", "")
     return(knitr::asis_output(paste(c(cap, "```{=openxml}", gt_word_xml(x), "```\n\n"), collapse = "\n")))
   }
+  if (knitr::pandoc_to("revealjs")) x <- reveal_gt(x)
   if (is.null(knitr::pandoc_to()) || knitr::is_html_output()) return(NextMethod())
   if (!knitr::is_latex_output()) {
     # gt writes HTML here, which Quarto turns into a table for Typst and
@@ -132,6 +138,21 @@ knit_print.phw_gt <- function(x, ...) {
   if (!"latex.header_repeat" %in% opts) out[] <- sub("\\midrule", "\\midrule\\endhead", out, fixed = TRUE)
   out[] <- fit_gt_latex(out)
   out
+}
+
+# On a revealjs slide the text is sized to the slide, the title and source
+# line with it. gt can't share a table's rows out over slides.
+reveal_gt <- function(x) {
+  box <- x[["_boxhead"]]
+  shown <- box$type %in% c("default", "stub")
+  labels <- vapply(box$column_label[shown], function(l) paste(as.character(l), collapse = ""), character(1))
+  groups <- x[["_stub_df"]]$group_id
+  lines <- 1 + length(unique(x[["_spanners"]]$spanner_level)) + length(x[["_heading"]]$title) +
+    length(x[["_source_notes"]]) + length(unique(stats::na.omit(groups)))
+  size <- reveal_text_size(x[["_data"]][box$var[shown]], labels, lines, pad = c(x = 7.5, y = 7.5)) * 4 / 3
+  gt::tab_options(x, table.font.size = gt::px(size), heading.title.font.size = gt::px(size * 1.2),
+                  heading.subtitle.font.size = gt::px(size), source_notes.font.size = gt::px(size),
+                  footnotes.font.size = gt::px(size))
 }
 
 # A longtable can't be shrunk as a whole, so LaTeX measures the table at its
