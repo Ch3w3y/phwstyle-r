@@ -1,4 +1,4 @@
-# phwstyle (development version)
+# phwstyle 0.4.0
 
 This release makes every function check what it is given. Where a call
 used to draw a wrong chart, drop content without a word or fail inside
