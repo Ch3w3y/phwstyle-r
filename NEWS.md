@@ -618,6 +618,9 @@ says what to change.
   one per sheet. Before, a missing folder gave an error from openxlsx2, a
   `.xls` name gave a file Excel complained about, and a short `title` was
   repeated, so a sheet could get another sheet's title.
+* `phw_write_xlsx()` writes a table with no rows, such as one a filter left
+  empty, as its header row with older versions of openxlsx2, such as 1.15.
+  Before, R crashed.
 * `phw_flextable_heat(symbols = TRUE)` keeps the table's number format, so
   `phw_flextable(digits = 1)` shows "▼ 92.3", not "▼ 92.34568".
 * In a PDF report, the ▲ ■ ▼ shapes that `phw_flextable_heat()` adds to red,
