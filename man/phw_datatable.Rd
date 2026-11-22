@@ -39,7 +39,10 @@ or \code{Blwyddyn}. These show as 2021, not 2,021.}
 \item{...}{Passed to \code{\link[DT:datatable]{DT::datatable()}}, e.g. \code{filter = "top"}.}
 }
 \value{
-A DT htmlwidget (wrapped with the title and source when given).
+A DT htmlwidget. When a caption, a source line or a summary
+table's note is shown, the widget is wrapped in an htmltools tag list
+with them. In Shiny, show a tag list with \code{renderUI()} and \code{uiOutput()},
+not \code{DT::renderDT()}.
 }
 \description{
 Builds a \code{\link[DT:datatable]{DT::datatable()}} in the PHW style: PHW font, navy header, light

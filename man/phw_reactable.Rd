@@ -54,7 +54,10 @@ are coloured: headings, subtotals and totals are left as they are and
 are not added to the key.}
 }
 \value{
-An htmlwidget (or a tag list when a caption or source is given).
+An htmlwidget. When a caption, a source line or a summary
+table's note is shown, the widget is wrapped in an htmltools tag list
+with them. In Shiny, show a tag list with \code{renderUI()} and \code{uiOutput()},
+not \code{reactable::renderReactable()}.
 }
 \description{
 Calls \code{\link[reactable:reactable]{reactable::reactable()}} with the PHW theme, compact rows and

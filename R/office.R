@@ -22,7 +22,10 @@
 #' @param page_length Rows per page.
 #' @param options List of DataTables options, merged with the defaults.
 #' @param ... Passed to [DT::datatable()], e.g. `filter = "top"`.
-#' @return A DT htmlwidget (wrapped with the title and source when given).
+#' @return A DT htmlwidget. When a caption, a source line or a summary
+#'   table's note is shown, the widget is wrapped in an htmltools tag list
+#'   with them. In Shiny, show a tag list with `renderUI()` and `uiOutput()`,
+#'   not `DT::renderDT()`.
 #' @examples
 #' if (requireNamespace("DT", quietly = TRUE)) {
 #'   tbl <- phw_datatable(mtcars, caption = "Example table", source = "mtcars")

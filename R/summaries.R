@@ -527,7 +527,8 @@ phw_poisson_ci <- function(x, conf_level = 0.95) {
 #'   or "Yes").
 #' @param labels Named list of display names for exposures.
 #' @param conf_level Confidence level.
-#' @param digits Decimal places.
+#' @param digits Decimal places for the attack rates. Relative risks and
+#'   their intervals show 2.
 #' @param p_value Add a p-value column?
 #' @return A `phw_summary` data frame.
 #' @examples

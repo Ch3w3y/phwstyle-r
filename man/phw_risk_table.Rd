@@ -28,7 +28,8 @@ or "Yes").}
 
 \item{conf_level}{Confidence level.}
 
-\item{digits}{Decimal places.}
+\item{digits}{Decimal places for the attack rates. Relative risks and
+their intervals show 2.}
 
 \item{p_value}{Add a p-value column?}
 }

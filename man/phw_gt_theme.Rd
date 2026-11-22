@@ -74,10 +74,10 @@ A gt table.
 }
 \description{
 \code{phw_gt_theme()} restyles an existing \code{\link[gt:gt]{gt::gt()}} table: PHW font, navy
-title and column labels with a navy rule, light row lines and a bold
+title and column labels with a navy rule, light row lines and a smaller
 source note. \code{phw_gt()} builds the table from a data frame (or a
 \code{\link[=phw_summary_table]{phw_summary_table()}} and friends) and adds the title, number formats
-and source line in one call.
+and a bold, right-aligned source line in one call.
 }
 \details{
 In a PDF document from R Markdown, the table stays where it is in the

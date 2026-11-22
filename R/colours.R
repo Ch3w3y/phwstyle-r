@@ -209,7 +209,9 @@ palette_type <- function(name) {
 #'   colours, or a function that takes `n` and returns colours.
 #' @param reverse Reverse the order?
 #' @param type For a vector of colours: `"qualitative"` (use in order) or
-#'   `"sequential"` (interpolate). Names are always qualitative.
+#'   `"sequential"` (interpolate). A palette name ignores `type`:
+#'   qualitative palettes are used in order, sequential and diverging ones
+#'   are interpolated.
 #' @return A character vector of hex colours.
 #' @examples
 #' phw_pal(3)

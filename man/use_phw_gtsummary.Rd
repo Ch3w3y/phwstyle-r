@@ -9,7 +9,8 @@ use_phw_gtsummary(style = "booktabs", font_size = 10, ...)
 \arguments{
 \item{style}{Passed to \code{\link[=phw_flextable_theme]{phw_flextable_theme()}} for flextable output.}
 
-\item{font_size}{Body font size (points for flextable, pixels for gt).}
+\item{font_size}{Body font size in points for flextable. gt tables use
+\code{font_size + 4} pixels, so both look about the same size.}
 
 \item{...}{Other gtsummary theme elements, e.g.
 \code{"tbl_summary-str:default_con_type" = "continuous2"}.}

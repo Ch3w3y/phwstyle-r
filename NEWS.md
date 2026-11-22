@@ -1149,6 +1149,16 @@ says what to change.
   years, 22 areas, 5-year age bands and maps of every local authority or
   MSOA. The charts now look as they do on real outputs. Help-page examples
   and the package vignette stay small.
+* The help pages of `phw_datatable()`, `phw_reactable()`, `phw_pal()`,
+  `phw_key_set()`, `use_phw_gtsummary()`, `phw_header()`, `phw_gt_theme()`
+  and `phw_risk_table()` now say what these functions do. A table with a
+  caption, source or summary-table note is a tag list, which Shiny shows
+  with `renderUI()`. A palette name ignores `type`. `phw_key_set()` and
+  `phw_key_recolour()` return the updated key. gtsummary's gt tables use
+  `font_size + 4` pixels. `org` in `phw_header()` is only the text shown
+  without the logo. The bold source line comes from `phw_gt()`, not
+  `phw_gt_theme()`. `digits` in `phw_risk_table()` sets the attack rates
+  only.
 
 ## Requirements
 

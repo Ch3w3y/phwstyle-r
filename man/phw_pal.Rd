@@ -20,7 +20,9 @@ colours, or a function that takes \code{n} and returns colours.}
 \item{reverse}{Reverse the order?}
 
 \item{type}{For a vector of colours: \code{"qualitative"} (use in order) or
-\code{"sequential"} (interpolate). Names are always qualitative.}
+\code{"sequential"} (interpolate). A palette name ignores \code{type}:
+qualitative palettes are used in order, sequential and diverging ones
+are interpolated.}
 }
 \value{
 A character vector of hex colours.

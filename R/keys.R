@@ -275,7 +275,9 @@ next_colour <- function(used, palette, neutral_colour, ramp = NULL) {
 #'   [phw_colour_key()]. Groups in mid grey keep it too.
 #' @param path Path to the CSV file. `NULL` stops using a file.
 #' @return `phw_key()`: a named vector (empty if the key doesn't exist).
-#'   `phw_keys()`: a data frame. The others return their input invisibly.
+#'   `phw_keys()`: a data frame. `phw_key_set()` and `phw_key_recolour()`:
+#'   the updated key, invisibly. `phw_key_reset()` and `phw_key_file()`:
+#'   their input, invisibly.
 #' @examples
 #' phw_key_set("sex_example", c(Female = "#FF5D0C", Male = "#285087"))
 #' phw_key("sex_example")
