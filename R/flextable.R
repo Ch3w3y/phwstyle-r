@@ -279,9 +279,18 @@ knit_slide_table <- function(x, ...) {
 knit_reveal_table <- function(x, ...) {
   area <- reveal_table_area()
   pages <- slide_table_pages(x, area[["width"]], area[["height"]], grow = TRUE)
-  # The row heights allow for PowerPoint's line spacing.
-  pages <- lapply(pages, flextable::line_spacing, space = 1.25, part = "all")
+  # The row heights allow for lines 1.25 times the text size.
+  pages <- lapply(pages, flextable::line_spacing, space = html_line_spacing(1.25), part = "all")
   knit_pages(pages, ..., meta = list(phw_font_dependency()))
+}
+
+# The flextable line spacing that gives HTML lines `line_height` times the
+# text size. From flextable 0.10.5, HTML lines are the line spacing times the
+# font's own line height (1.15 times the text size for Ubuntu), as in Word.
+html_line_spacing <- function(line_height) {
+  if (utils::packageVersion("flextable") < "0.10.5") return(line_height)
+  own <- systemfonts::font_info(phw_font(), size = 72, res = 72)$lineheight / 72
+  line_height / own
 }
 
 knit_pages <- function(pages, ..., meta = NULL) {

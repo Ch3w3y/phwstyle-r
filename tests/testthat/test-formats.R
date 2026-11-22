@@ -398,6 +398,10 @@ test_that("tables on phw-revealjs slides are sized to the slide", {
   # 720 pixels is a PowerPoint slide at 96 pixels to the inch, so 16 px.
   ft <- sizes(slide("flextable"), "(?<=font-size:)[0-9.]+(?=pt)")
   expect_true(length(ft) > 0 && min(ft) > 12)
+  # Lines are 1.25 times the text size, as the slide's row heights allow for.
+  lines <- sizes(slide("flextable"), "(?<=line-height: )[0-9.]+")
+  expect_true(length(lines) > 0)
+  expect_equal(unique(round(lines, 2)), 1.25)
   gt <- sizes(slide("gt"), "(?<=font-size: )[0-9.]+(?=px)")
   expect_true(length(gt) > 0 && min(gt) > 16)
   rt <- slide("reactable")
@@ -499,9 +503,13 @@ test_that("a table under text on a phw-revealjs slide ends above the footer", {
   found <- regmatches(paste(dom, collapse = " "), regexpr('(?<=<pre id="measured">)[^<]+', paste(dom, collapse = " "), perl = TRUE))
   skip_if(!length(found), "Chrome did not lay out the deck")
   rows <- do.call(rbind, lapply(strsplit(strsplit(found, ";")[[1]], " "), as.numeric))
-  # Each table slide, the continued one too, has a table that ends above the footer.
-  expect_equal(nrow(rows), 6)
-  expect_true(all(rows[, 2] < rows[, 3]), info = paste(found))
+  # Each table slide, and each slide a table continues on, has a table that
+  # ends above the footer.
+  expect_gte(nrow(rows), 6)
+  for (i in seq_len(nrow(rows))) {
+    expect_lt(rows[i, 2], rows[i, 3], label = sprintf("the lowest point on slide %d", rows[i, 1]),
+              expected.label = "the top of the footer")
+  }
 })
 
 test_that("a tbl-cap chunk without a label captions phw_flextable and phw_gt in Quarto Word", {

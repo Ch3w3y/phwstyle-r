@@ -243,8 +243,9 @@ text_widths <- function(x, family, bold, size) {
 # Room around a table on a revealjs slide, in inches: the slide title above,
 # the footer below and a margin at each side. Text above a table pushes it
 # down the slide, so the top also leaves room for two lines of text, such
-# as a key message or two bullets.
-reveal_margins <- c(side = 0.4, top = 0.8 + 1.5, bottom = 0.5)
+# as a key message or two bullets. The bottom keeps 0.3 in to spare, for a
+# browser that lays the text out taller.
+reveal_margins <- c(side = 0.4, top = 0.8 + 1.5, bottom = 0.5 + 0.3)
 
 # The width and height, in inches, a table can take on a revealjs slide. CSS
 # has 96 pixels to the inch, so the 1280 by 720 pixel slides of phw-revealjs
