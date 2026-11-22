@@ -386,7 +386,10 @@ test_that("a tbl-cap chunk without a label captions phw_flextable and phw_gt in 
   utils::unzip(docx, "word/document.xml", exdir = dir)
   doc <- xml2::read_xml(file.path(dir, "word", "document.xml"))
   # The flextable caption is the table's top row, as for its own caption.
-  expect_equal(xml2::xml_text(xml2::xml_find_first(doc, "(//w:tbl)[1]/w:tr[1]")), "Flextable caption")
+  # Only the row's runs count: flextable 0.9.6 also writes a bare "header1"
+  # into the row, outside any run.
+  first_row <- xml2::xml_find_all(doc, "(//w:tbl)[1]/w:tr[1]//w:t")
+  expect_equal(paste(xml2::xml_text(first_row), collapse = ""), "Flextable caption")
   # The gt caption is a Table Caption paragraph right above the table.
   caps <- xml2::xml_find_all(doc, "//w:p[w:pPr/w:pStyle/@w:val = 'TableCaption']")
   expect_equal(xml2::xml_text(caps), "gt caption")
