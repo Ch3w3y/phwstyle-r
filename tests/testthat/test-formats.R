@@ -259,6 +259,37 @@ test_that("every Quarto format renders its starter document", {
   }
 })
 
+test_that("phw_datatable and phw_leaflet render in Quarto HTML and revealjs", {
+  skip_on_cran()
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("DT")
+  skip_if_not_installed("leaflet")
+  quarto <- Sys.which("quarto")
+  skip_if(!nzchar(quarto), "Quarto is not installed")
+  dir <- withr::local_tempdir()
+  suppressMessages(use_phw_quarto(dir, "none"))
+  writeLines(c("---", "title: Widgets", "---", "",
+               "```{r}", "#| echo: false", "library(phwstyle)",
+               "phw_datatable(data.frame(hb = c('Aneurin Bevan', 'Powys'), cases = c(120L, 30L)),",
+               "              caption = 'Cases', source = 'PHW')",
+               "```", "",
+               "```{r}", "#| echo: false", "phw_leaflet(tiles = NULL)", "```"), file.path(dir, "w.qmd"))
+  for (fmt in c("phw-html", "phw-revealjs")) {
+    out <- paste0(fmt, ".html")
+    log <- withr::with_dir(dir, withr::with_envvar(
+      c(QUARTO_R = R.home("bin")),
+      suppressWarnings(system2(quarto, c("render", "w.qmd", "--to", fmt, "-o", out), stdout = TRUE, stderr = TRUE))))
+    if (!file.exists(file.path(dir, out))) {
+      fail(paste(c(fmt, "quarto render failed:", utils::tail(log, 12)), collapse = "\n"))
+      next
+    }
+    html <- paste(readLines(file.path(dir, out), warn = FALSE, encoding = "UTF-8"), collapse = " ")
+    expect_match(html, "table.phw-dt.dataTable thead th", fixed = TRUE, info = fmt)
+    expect_match(html, ".leaflet-container .legend", fixed = TRUE, info = fmt)
+  }
+})
+
 test_that("captioned figures in a Quarto Word document fit their cells without rules", {
   skip_on_cran()
   skip_if_not_installed("knitr")
