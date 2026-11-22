@@ -817,6 +817,19 @@ says what to change.
 
 ## Slides and documents
 
+* Tables in a Quarto `phw-revealjs` deck, the format of the slides starter
+  from `use_phw_quarto(template = "slides")`, are sized to the slide as
+  PowerPoint slide tables are. Their text is never smaller than 12 pt at
+  the slide's scale, and a table with room to spare grows up to 18 pt.
+  Each table leaves room above it for two lines of text, such as a key
+  message or two bullets, so it ends above the slide's footer.
+  A `phw_flextable()` too long for the slide continues on further slides,
+  with its header row repeated and its caption marked "(continued)". A
+  `phw_gt()` table cannot be split over slides, so a long one stays at
+  12 pt. `phw_reactable()` sizes its text for one page of rows, and its
+  caption and source line are in proportion to the table. Before, these
+  tables were drawn at report size, about a third the size of the slide's
+  body text.
 * The PowerPoint template from `phw_reference_pptx()`, used by `phw_pptx()`
   and the Quarto `phw-pptx` format, now has Comparison and Content with
   Caption layouts. pandoc uses these for a slide with text followed by a

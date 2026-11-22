@@ -239,3 +239,46 @@ text_widths <- function(x, family, bold, size) {
   }
   do.call(systemfonts::string_width, c(list(x, family = family, size = size, res = 72), style))
 }
+
+# Room around a table on a revealjs slide, in inches: the slide title above,
+# the footer below and a margin at each side. Text above a table pushes it
+# down the slide, so the top also leaves room for two lines of text, such
+# as a key message or two bullets. The bottom keeps 0.3 in to spare, for a
+# browser that lays the text out taller.
+reveal_margins <- c(side = 0.4, top = 0.8 + 1.5, bottom = 0.5 + 0.3)
+
+# The width and height, in inches, a table can take on a revealjs slide. CSS
+# has 96 pixels to the inch, so the 1280 by 720 pixel slides of phw-revealjs
+# are the 13.33 by 7.5 inches of a PHW PowerPoint slide, and text has the
+# same size on both. A deck that sets no size has Quarto's 1050 by 700.
+reveal_table_area <- function() {
+  meta <- quarto_format()$metadata
+  px <- function(x, default) if (is.numeric(x) && length(x) == 1) x else default
+  m <- reveal_margins
+  c(width = px(meta$width, 1050) / 96 - 2 * m[["side"]],
+    height = px(meta$height, 700) / 96 - m[["top"]] - m[["bottom"]])
+}
+
+# The text size, in points, for an HTML table (gt or reactable) on a
+# revealjs slide, which can't share its rows out over slides. As
+# grow_to_area() does for a flextable, it picks the largest size up to
+# slide_max_size at which the table fits: its rows in the height, and the
+# widest text of each column, or its label in bold, in the width. A table
+# that doesn't fit at slide_min_size stays at that size. `lines` counts the
+# rows that are not in `data`: column labels, caption, source. `pad` is a
+# cell's padding across and down, in points.
+reveal_text_size <- function(data, labels, lines, pad, line_height = 1.3) {
+  area <- reveal_table_area() * 72
+  family <- phw_font()
+  base <- slide_min_size
+  wide <- sum(mapply(function(v, label) {
+    text <- if (is.numeric(v)) format(v, big.mark = ",", trim = TRUE) else as.character(v)
+    text[is.na(v)] <- ""
+    max(text_widths(c(text, ""), family, FALSE, base), text_widths(label, family, TRUE, base))
+  }, data, labels)) / base
+  rows <- nrow(data) + lines
+  sizes <- seq(slide_min_size, slide_max_size, by = 0.5)
+  fits <- rows * (sizes * line_height + pad[["y"]]) <= area[["height"]] &
+    sizes * wide + length(data) * pad[["x"]] <= area[["width"]]
+  max(sizes[fits], slide_min_size)
+}

@@ -85,6 +85,12 @@ text, a table longer than the page carries on over the next pages with
 its title and column labels repeated, and a table wider than the text
 shrinks to fit it.
 
+On the slides of a Quarto \code{phw-revealjs} deck, the text is sized to the
+slide: never smaller than 12 pt at the slide's scale, and up to 18 pt
+when the table has room, which leaves room above it for two lines of
+text. gt can't split a table over slides, so use \code{\link[=phw_flextable]{phw_flextable()}} for a
+table too long for one slide.
+
 Use gt tables in HTML and PDF. In a Word document they get the PHW font
 and colours, but gt can't make the column labels bold or indent the levels
 of a summary table, so use \code{\link[=phw_flextable]{phw_flextable()}} for Word. Quarto shows them

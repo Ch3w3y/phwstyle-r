@@ -161,7 +161,9 @@ align_by_type <- function(ft) {
 #'   continue on further slides. Each slide repeats the header row, the
 #'   caption is marked with `continued` after the first slide, and the source
 #'   goes on the last slide. A table too wide to fit even with its text
-#'   wrapped gives a warning.
+#'   wrapped gives a warning. Tables on the slides of a Quarto
+#'   `phw-revealjs` deck are sized and split in the same way, with room
+#'   above them for two lines of text, such as a key message or two bullets.
 #' @param continued Text added after the caption on the slides a long table
 #'   continues on, in a PowerPoint deck. Give your own wording, for example
 #'   in Welsh.
@@ -229,6 +231,7 @@ phw_flextable <- function(data, caption = NULL, number = NULL, source = NULL,
 #' @exportS3Method knitr::knit_print
 knit_print.phw_flextable <- function(x, ...) {
   if (knitr::pandoc_to("pptx")) return(knit_slide_table(x, ...))
+  if (knitr::pandoc_to("revealjs")) return(knit_reveal_table(x, ...))
   # Under Quarto, flextable leaves the caption to the chunk's tbl-cap and drops
   # one set with set_caption(), so it goes in the table's top row instead,
   # unless Quarto shows the tbl-cap.
@@ -267,11 +270,38 @@ knit_slide_table <- function(x, ...) {
   size <- knit_slide_size()
   pages <- slide_table_pages(x, size[["width"]] - left - slide_margins[["side"]],
                              size[["height"]] - top - slide_margins[["bottom"]], grow = TRUE)
+  knit_pages(pages, ...)
+}
+
+# A revealjs slide, in CSS inches of 96 pixels, has the proportions of a
+# PowerPoint slide, so a table on it is sized as on a PowerPoint slide. The
+# phw-revealjs format starts a new slide at the rule between pages.
+knit_reveal_table <- function(x, ...) {
+  area <- reveal_table_area()
+  pages <- slide_table_pages(x, area[["width"]], area[["height"]], grow = TRUE)
+  # The row heights allow for lines 1.25 times the text size.
+  pages <- lapply(pages, flextable::line_spacing, space = html_line_spacing(1.25), part = "all")
+  knit_pages(pages, ..., meta = list(phw_font_dependency()))
+}
+
+# The flextable line spacing that gives HTML lines `line_height` times the
+# text size. From flextable 0.10.5, HTML lines are the line spacing times the
+# font's own line height (1.15 times the text size for Ubuntu), as in Word.
+html_line_spacing <- function(line_height) {
+  if (utils::packageVersion("flextable") < "0.10.5") return(line_height)
+  own <- systemfonts::font_info(phw_font(), size = 72, res = 72)$lineheight / 72
+  line_height / own
+}
+
+knit_pages <- function(pages, ..., meta = NULL) {
   out <- lapply(pages, function(page) {
     class(page) <- setdiff(class(page), "phw_flextable")
     knitr::knit_print(page, ...)
   })
-  knitr::asis_output(paste(unlist(out), collapse = "\n\n---\n\n"))
+  # flextable's HTML needs its own dependencies, which keep the deck's table
+  # styles off it.
+  meta <- c(meta, unlist(lapply(out, attr, "knit_meta"), recursive = FALSE))
+  knitr::asis_output(paste(unlist(out), collapse = "\n\n---\n\n"), meta = meta)
 }
 
 #' @exportS3Method htmltools::as.tags

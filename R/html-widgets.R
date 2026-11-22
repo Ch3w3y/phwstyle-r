@@ -73,6 +73,12 @@ phw_reactable_theme <- function(font_size = 14, header = c("booktabs", "navy", "
 #' the other PHW tables; pass `striped = TRUE` to stripe them. It also attaches the
 #' Ubuntu web font. You can add a title above and a source line below.
 #'
+#' On the slides of a Quarto `phw-revealjs` deck, the text is sized to the
+#' slide for one page of rows: never smaller than 12 pt at the slide's
+#' scale, and up to 18 pt when the table has room, which leaves room above
+#' it for two lines of text. The title and source line are in proportion to
+#' it. A `theme` you pass keeps its own sizes.
+#'
 #' @param data A data frame, or a summary table from [phw_summary_table()],
 #'   [phw_crosstab()], [phw_rate_table()] or [phw_risk_table()] (shown with
 #'   bold headings, indented levels and no sorting or paging).
@@ -162,11 +168,22 @@ phw_reactable <- function(data, ..., caption = NULL, source = NULL, date = NULL,
   args$columns <- merge_col_defs(base_cols, args$columns)
   if (inherits(data, "phw_summary")) data <- as.data.frame(unclass(data)[names(data)], check.names = FALSE)
   data <- local_times(data)
+  cap <- caption_from(source, date, caption_args)
+  size <- NULL
+  if (isTRUE(getOption("knitr.in.progress")) && knitr::pandoc_to("revealjs")) {
+    # The text is sized to the slide for the rows of one page.
+    paged <- !isFALSE(args$pagination)
+    page <- args$defaultPageSize %||% 10
+    shown <- if (paged) utils::head(data, page) else data
+    lines <- 1 + length(caption) + length(cap) + length(note) + (paged && nrow(data) > page)
+    size <- reveal_text_size(shown, names(shown), lines, pad = c(x = 15, y = 9)) * 4 / 3
+    if (is.null(args$theme)) args$theme <- phw_reactable_theme(size, header = header, accent = accent)
+  }
   for (nm in names(defaults)) if (is.null(args[[nm]])) args[[nm]] <- defaults[[nm]]
   if (!own_format) args$columns <- with_number_formats(args$columns, data, digits)
   tbl <- do.call(reactable::reactable, c(list(data), args))
   tbl$dependencies <- c(tbl$dependencies, list(phw_font_dependency()))
-  wrap_widget(tbl, caption, caption_from(source, date, caption_args), note)
+  wrap_widget(tbl, caption, cap, note, size)
 }
 
 # The user's settings for a column replace only the same settings in `base`.
@@ -210,23 +227,27 @@ col_digits <- function(v, digits) {
 
 # The title above, then the table, a summary table's note on the statistics
 # and the bold source line, as phw_flextable() and phw_gt() lay them out.
-wrap_widget <- function(widget, caption, cap, note = NULL) {
+# With a text `size` in pixels, as on a slide, they are in proportion to it,
+# the note and source line the same size as the table's text.
+wrap_widget <- function(widget, caption, cap, note = NULL, size = NULL) {
   if (is.null(caption) && is.null(cap) && is.null(note)) return(widget)
+  small <- if (is.null(size)) "0.8em" else "1em"
   htmltools::browsable(htmltools::tagList(
     phw_font_dependency(),
     htmltools::div(
       class = "phw-widget",
-      style = sprintf("font-family:%s, Arial, sans-serif;", phw_font()),
+      style = paste0(sprintf("font-family:%s, Arial, sans-serif;", phw_font()),
+                     if (!is.null(size)) sprintf("font-size:%gpx;", size)),
       if (!is.null(caption)) htmltools::div(
         caption, style = sprintf("font-weight:700;color:%s;font-size:1.05em;margin:0 0 6px 0;",
                                  phw_colours[["navy"]])),
       widget,
       if (!is.null(note)) htmltools::div(
-        note, style = sprintf("font-size:0.8em;color:%s;margin-top:6px;", phw_colours[["text_secondary"]])),
+        note, style = sprintf("font-size:%s;color:%s;margin-top:6px;", small, phw_colours[["text_secondary"]])),
       if (!is.null(cap)) htmltools::div(
         htmltools::HTML(gsub("\n", "<br>", htmltools::htmlEscape(cap))),
-        style = sprintf("font-weight:700;text-align:right;font-size:0.8em;color:%s;margin-top:6px;",
-                        phw_colours[["text"]]))
+        style = sprintf("font-weight:700;text-align:right;font-size:%s;color:%s;margin-top:6px;",
+                        small, phw_colours[["text"]]))
     )
   ))
 }

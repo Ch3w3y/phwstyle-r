@@ -41,6 +41,8 @@ contributes:
       title-slide-attributes:
         data-background-image: cover-wide.jpg
         data-background-size: cover
+      filters:
+        - phw-reveal-tables.lua
       format-resources:
         - phw-logo-blue.svg
         - phw-logo-white.svg
