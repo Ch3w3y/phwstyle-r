@@ -36,6 +36,8 @@ contributes:
       footer: "Iechyd Cyhoeddus Cymru | Public Health Wales"
       slide-number: c/t
       transition: none
+      # Without it, knitr sizes htmlwidgets at fig-width x dpi (1500 px), past the slide's edges.
+      fig-responsive: true
       width: 1280
       height: 720
       title-slide-attributes:
