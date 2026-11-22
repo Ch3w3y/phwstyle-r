@@ -380,7 +380,10 @@ test_that("tables on phw-revealjs slides are sized to the slide", {
                chunk("Flextable", "phw_flextable(d, caption = 'Cases', source = 'PHW')"),
                chunk("gt", "phw_gt(d, caption = 'Cases', source = 'PHW')"),
                chunk("reactable", "phw_reactable(d, caption = 'Cases', source = 'PHW')"),
-               chunk("Long", "phw_flextable(long, caption = 'Long table', source = 'PHW')")),
+               chunk("Long", "phw_flextable(long, caption = 'Long table', source = 'PHW')"),
+               chunk("Labelled", c("#| label: tbl-long", "#| tbl-cap: Labelled table",
+                                   "phw_flextable(long, source = 'PHW')")),
+               "## Reference", "", "See @tbl-long."),
              file.path(dir, "deck.qmd"))
   log <- withr::with_dir(dir, withr::with_envvar(
     c(QUARTO_R = R.home("bin")),
@@ -412,6 +415,18 @@ test_that("tables on phw-revealjs slides are sized to the slide", {
   long <- sizes(slides[i:(i + 1)], "(?<=font-size:)[0-9.]+(?=pt)")
   expect_true(min(long) >= 12)
   expect_length(unique(long), 1)
+  # A labelled table keeps its numbered caption, above its first part, and
+  # its cross-reference.
+  i <- which(startsWith(slides, ' id="labelled"'))
+  expect_match(slides[i], 'id="tbl-long"', fixed = TRUE)
+  at <- vapply(c("Labelled table", "Area 1<"), regexpr, 1, slides[i], fixed = TRUE)
+  expect_true(all(at > 0) && at[[1]] < at[[2]])
+  expect_no_match(slides[i], "Area 30<", fixed = TRUE)
+  expect_match(slides[i + 1], "Area 30<", fixed = TRUE)
+  expect_match(slides[i + 1], "Source: PHW", fixed = TRUE)
+  expect_no_match(slides[i + 1], "Labelled table", fixed = TRUE)
+  expect_match(slide("reference"), 'class="quarto-xref">Table&nbsp;1<', fixed = TRUE)
+  expect_no_match(slide("reference"), "?@tbl-long", fixed = TRUE)
 })
 
 test_that("a tbl-cap chunk without a label captions phw_flextable and phw_gt in Quarto Word", {
