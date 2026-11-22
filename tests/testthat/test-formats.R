@@ -275,6 +275,11 @@ test_that("phw_datatable and phw_leaflet render in Quarto HTML and revealjs", {
                "              caption = 'Cases', source = 'PHW')",
                "```", "",
                "```{r}", "#| echo: false", "phw_leaflet(tiles = NULL)", "```"), file.path(dir, "w.qmd"))
+  if (requireNamespace("plotly", quietly = TRUE)) {
+    write(c("", "```{r}", "#| echo: false",
+            "phw_plotly(ggplot2::ggplot(mtcars, ggplot2::aes(wt, mpg)) + ggplot2::geom_point(), source = 'PHW')",
+            "```"), file.path(dir, "w.qmd"), append = TRUE)
+  }
   for (fmt in c("phw-html", "phw-revealjs")) {
     out <- paste0(fmt, ".html")
     log <- withr::with_dir(dir, withr::with_envvar(
@@ -287,6 +292,15 @@ test_that("phw_datatable and phw_leaflet render in Quarto HTML and revealjs", {
     html <- paste(readLines(file.path(dir, out), warn = FALSE, encoding = "UTF-8"), collapse = " ")
     expect_match(html, "table.phw-dt.dataTable thead th", fixed = TRUE, info = fmt)
     expect_match(html, ".leaflet-container .legend", fixed = TRUE, info = fmt)
+    # Charts and maps fit on a 1280 x 720 slide below its title, rather than at
+    # knitr's figure size in pixels, which ran off the slide.
+    sizes <- regmatches(html, gregexpr('class="(plotly|leaflet) html-widget[^>]*style="[^"]*"', html))[[1]]
+    expect_length(sizes, 1 + requireNamespace("plotly", quietly = TRUE))
+    for (size in sizes) {
+      expect_match(size, "width:100%;", fixed = TRUE, info = fmt)
+      height <- as.numeric(sub(".*height:([0-9.]+)px.*", "\\1", size))
+      expect_lte(height, 560, label = paste(fmt, size))
+    }
   }
 })
 

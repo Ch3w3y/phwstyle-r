@@ -999,6 +999,12 @@ says what to change.
 
 ## Interactive outputs and colours
 
+* Charts and maps from `phw_plotly()`, `phw_leaflet()` and other
+  htmlwidgets fit on a Quarto `phw-revealjs` slide, below its title, with
+  their axis, legend and source showing. They fill the slide's width and are
+  390 px high, as in `phw-html`; set `fig-height` in the chunk for a taller
+  one, such as `#| fig-height: 6` for 520 px. Before, they were 1500 by 900
+  px and ran off the bottom and right of the slide.
 * `phw_datatable()` and `phw_leaflet()` render in Quarto HTML documents,
   slides (`phw-revealjs`) and dashboards (`phw-dashboard`). Before, the
   render stopped with "Dependency phw-dt 0.1 is not disk-based" (or
