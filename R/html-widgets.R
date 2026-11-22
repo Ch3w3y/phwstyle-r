@@ -104,7 +104,10 @@ phw_reactable_theme <- function(font_size = 14, header = c("booktabs", "navy", "
 #'   passed to [phw_colour_key()]. On a summary table, only the level rows
 #'   are coloured: headings, subtotals and totals are left as they are and
 #'   are not added to the key.
-#' @return An htmlwidget (or a tag list when a caption or source is given).
+#' @return An htmlwidget. When a caption, a source line or a summary
+#'   table's note is shown, the widget is wrapped in an htmltools tag list
+#'   with them. In Shiny, show a tag list with `renderUI()` and `uiOutput()`,
+#'   not `reactable::renderReactable()`.
 #' @examples
 #' if (requireNamespace("reactable", quietly = TRUE)) {
 #'   df <- data.frame(area = paste("Area", LETTERS[1:5]),

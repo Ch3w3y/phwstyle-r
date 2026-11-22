@@ -35,7 +35,9 @@ phw_key_file(path)
 }
 \value{
 \code{phw_key()}: a named vector (empty if the key doesn't exist).
-\code{phw_keys()}: a data frame. The others return their input invisibly.
+\code{phw_keys()}: a data frame. \code{phw_key_set()} and \code{phw_key_recolour()}:
+the updated key, invisibly. \code{phw_key_reset()} and \code{phw_key_file()}:
+their input, invisibly.
 }
 \description{
 \itemize{

@@ -82,7 +82,7 @@ phw_scss_rules <- function() {
 #' @param href Where the logo links to.
 #' @param logo Show the logo? With `FALSE`, or when no logo is available,
 #'   `org` is shown as text instead.
-#' @param org Organisation name used as the text fallback and alt text.
+#' @param org Organisation name shown as text when the logo is not shown.
 #' @return An HTML tag.
 #' @examples
 #' phw_header("Weekly surveillance", subtitle = "Team name")

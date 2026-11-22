@@ -61,7 +61,7 @@ phw_colours <- c(
 #' @export
 phw_col <- function(..., names = TRUE) {
   cols <- c(...)
-  if (length(cols) == 0) return(phw_colours)
+  if (length(cols) == 0) return(if (names) phw_colours else unname(phw_colours))
   bad <- setdiff(cols, names(phw_colours))
   if (length(bad)) {
     cli::cli_abort(c("Unknown PHW colour{?s}: {.val {bad}}.",
@@ -209,7 +209,9 @@ palette_type <- function(name) {
 #'   colours, or a function that takes `n` and returns colours.
 #' @param reverse Reverse the order?
 #' @param type For a vector of colours: `"qualitative"` (use in order) or
-#'   `"sequential"` (interpolate). Names are always qualitative.
+#'   `"sequential"` (interpolate). A palette name ignores `type`:
+#'   qualitative palettes are used in order, sequential and diverging ones
+#'   are interpolated.
 #' @return A character vector of hex colours.
 #' @examples
 #' phw_pal(3)

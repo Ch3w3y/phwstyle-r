@@ -1,10 +1,10 @@
 #' PHW style for gt tables
 #'
 #' `phw_gt_theme()` restyles an existing [gt::gt()] table: PHW font, navy
-#' title and column labels with a navy rule, light row lines and a bold
+#' title and column labels with a navy rule, light row lines and a smaller
 #' source note. `phw_gt()` builds the table from a data frame (or a
 #' [phw_summary_table()] and friends) and adds the title, number formats
-#' and source line in one call.
+#' and a bold, right-aligned source line in one call.
 #'
 #' In a PDF document from R Markdown, the table stays where it is in the
 #' text, a table longer than the page carries on over the next pages with
@@ -355,7 +355,8 @@ style_summary_gt <- function(x, s, ids, labels, stub = NULL) {
 #' setup chunk.
 #'
 #' @param style Passed to [phw_flextable_theme()] for flextable output.
-#' @param font_size Body font size (points for flextable, pixels for gt).
+#' @param font_size Body font size in points for flextable. gt tables use
+#'   `font_size + 4` pixels, so both look about the same size.
 #' @param ... Other gtsummary theme elements, e.g.
 #'   `"tbl_summary-str:default_con_type" = "continuous2"`.
 #' @return The theme list, invisibly (it is also applied).

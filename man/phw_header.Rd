@@ -22,7 +22,7 @@ phw_header(
 \item{logo}{Show the logo? With \code{FALSE}, or when no logo is available,
 \code{org} is shown as text instead.}
 
-\item{org}{Organisation name used as the text fallback and alt text.}
+\item{org}{Organisation name shown as text when the logo is not shown.}
 }
 \value{
 An HTML tag.
