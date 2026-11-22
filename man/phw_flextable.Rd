@@ -63,9 +63,11 @@ tightens its row spacing, and if it still does not fit, its rows
 continue on further slides. Each slide repeats the header row, the
 caption is marked with \code{continued} after the first slide, and the source
 goes on the last slide. A table too wide to fit even with its text
-wrapped gives a warning. Tables on the slides of a Quarto
-\code{phw-revealjs} deck are sized and split in the same way, with room
-above them for two lines of text, such as a key message or two bullets.}
+wrapped gives a warning. A table starts below room for two lines of
+text above it, such as a key message or two bullets; set the chunk
+option \code{ft.top}, in inches from the top of the slide, to place it
+yourself. Tables on the slides of a Quarto \code{phw-revealjs} deck are
+sized and split in the same way, with the same room above them.}
 
 \item{number_prefix}{Word before the number.}
 
