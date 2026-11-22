@@ -86,6 +86,31 @@ test_that("phw_gt tables render in Quarto Typst and PowerPoint documents", {
   expect_match(xml, "<a:tbl>.*Cardiff.*Source: Example.*</a:tbl>.*Cases by area")
 })
 
+test_that("a phw_gt chunk with tbl-cap renders in a Quarto PDF, with or without a label", {
+  skip_on_cran()
+  skip_if_not_installed("gt")
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("rmarkdown")
+  quarto <- Sys.which("quarto")
+  skip_if(!nzchar(quarto), "Quarto is not installed")
+  skip_if(!nzchar(Sys.which("xelatex")), "XeLaTeX is not installed")
+  dir <- withr::local_tempdir()
+  suppressMessages(use_phw_quarto(dir, "none"))
+  for (label in list(NULL, "#| label: tbl-cases")) {
+    chunk <- append(gt_chunk, c(label, "#| tbl-cap: Cases by area"), after = 1)
+    writeLines(c("---", "title: T", "keep-tex: true", "---", "", chunk, "", "Text after."), file.path(dir, "t.qmd"))
+    unlink(file.path(dir, c("t.pdf", "t.tex")))
+    log <- withr::with_dir(dir, withr::with_envvar(
+      c(QUARTO_R = R.home("bin")),
+      suppressWarnings(system2(quarto, c("render", "t.qmd", "--to", "phw-pdf"), stdout = TRUE, stderr = TRUE))))
+    info <- paste(c(label, utils::tail(log, 15)), collapse = "\n")
+    expect_true(file.exists(file.path(dir, "t.pdf")), info = info)
+    tex <- paste(readLines(file.path(dir, "t.tex"), warn = FALSE), collapse = "\n")
+    expect_match(tex, "\\\\begin\\{longtable\\}[^\n]*\n+\\\\caption\\{(\\\\label\\{tbl-cases\\})?Cases by area\\}",
+                 info = info)
+  }
+})
+
 test_that("a phw_gt table in an R Markdown PowerPoint deck renders and suggests phw_flextable", {
   skip_if_not_installed("gt")
   skip_if_not_installed("rmarkdown")

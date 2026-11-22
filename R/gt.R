@@ -134,7 +134,9 @@ knit_print.phw_gt <- function(x, ...) {
 
 # A longtable can't be shrunk as a whole, so LaTeX measures the table at its
 # natural width and, when that is wider than the text, sets it in a smaller
-# font with narrower column gaps.
+# font with narrower column gaps. The measuring tabular is written as
+# \tabular ... \endtabular: Quarto's `tbl-cap` filter wraps any
+# \begin{tabular} in a table float, which can't go in a box.
 fit_gt_latex <- function(tex) {
   re <- paste0("(?s)\\\\begin\\{longtable\\}\\{([^\n]*)\\}\n(\\\\caption\\*\\{\n.*?\n\\} \\\\\\\\ \n)?",
                "(.*?)\\\\end\\{longtable\\}\n")
@@ -142,7 +144,7 @@ fit_gt_latex <- function(tex) {
   if (!length(m)) return(tex)
   body <- sub("\\endhead", "", m[4], fixed = TRUE)
   scale <- "*\\linewidth/\\wd0\\relax"
-  fit <- paste0("\\sbox0{\\begin{tabular}{", m[2], "}\n", body, "\\end{tabular}}\n",
+  fit <- paste0("\\sbox0{\\tabular{", m[2], "}\n", body, "\\endtabular}\n",
                 "\\ifdim\\wd0>\\linewidth\n",
                 "\\fontsize{\\dimexpr\\csname f@size\\endcsname pt", scale, "}",
                 "{\\dimexpr\\baselineskip", scale, "}\\selectfont\n",
