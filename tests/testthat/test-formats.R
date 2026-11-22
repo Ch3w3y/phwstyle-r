@@ -527,10 +527,16 @@ test_that("a table under text on a phw-revealjs slide ends above the footer", {
     }, 2000); });
     </script>"
   write(measure, out, append = TRUE)
-  dom <- suppressWarnings(system2(chrome[[1]], c("--headless", "--disable-gpu", "--no-sandbox", "--window-size=1280,720",
-                                                 "--virtual-time-budget=10000", "--dump-dom",
-                                                 paste0("file://", normalizePath(out, "/"))),
-                                  stdout = TRUE, stderr = FALSE))
+  # Chrome writes its temporary folders to TMPDIR and can leave them behind,
+  # which R CMD check reports as detritus. A fresh --user-data-dir instead
+  # stops headless Chrome exiting after --dump-dom.
+  chrome_tmp <- file.path(dir, "chrome-tmp")
+  dir.create(chrome_tmp)
+  dom <- withr::with_envvar(c(TMPDIR = chrome_tmp), suppressWarnings(
+    system2(chrome[[1]], c("--headless", "--disable-gpu", "--no-sandbox", "--window-size=1280,720",
+                           "--virtual-time-budget=10000", "--dump-dom",
+                           paste0("file://", normalizePath(out, "/"))),
+            stdout = TRUE, stderr = FALSE)))
   found <- regmatches(paste(dom, collapse = " "), regexpr('(?<=<pre id="measured">)[^<]+', paste(dom, collapse = " "), perl = TRUE))
   skip_if(!length(found), "Chrome did not lay out the deck")
   rows <- do.call(rbind, lapply(strsplit(strsplit(found, ";")[[1]], " "), as.numeric))
