@@ -842,6 +842,37 @@ test_that("a table with bars stops a PowerPoint deck rather than losing them", {
                "cannot show images")
 })
 
+test_that("a table with bars stops a Word format that cannot embed them", {
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("flextable")
+  skip_if_not(rmarkdown::pandoc_available(), "pandoc is not available")
+  dir <- withr::local_tempdir()
+  expect_error(rmarkdown::render(bars_rmd(dir), rmarkdown::word_document(), quiet = TRUE),
+               "cannot hold the bars")
+})
+
+test_that("a table with bars stops a Quarto Word report rather than corrupting it", {
+  skip_on_cran()
+  skip_if_not_installed("knitr")
+  skip_if_not_installed("rmarkdown")
+  skip_if_not_installed("flextable")
+  quarto <- Sys.which("quarto")
+  skip_if(!nzchar(quarto), "Quarto is not installed")
+  dir <- withr::local_tempdir()
+  suppressMessages(use_phw_quarto(dir, "none"))
+  writeLines(c("---", "title: Bars", "format: phw-docx", "---", "",
+               "```{r}", "#| echo: false",
+               "df <- data.frame(Area = paste('Area', LETTERS[1:4]), Cases = c(120, 85, 64, 19))",
+               "phwstyle::phw_flextable(df, caption = 'Cases by area') |> phwstyle::phw_flextable_bars(Cases)",
+               "```"), file.path(dir, "bars.qmd"))
+  withr::local_dir(dir)
+  withr::local_envvar(QUARTO_R = R.home("bin"))
+  log <- suppressWarnings(system2(quarto, c("render", "bars.qmd"), stdout = TRUE, stderr = TRUE))
+  expect_false(file.exists("bars.docx"))
+  expect_match(paste(log, collapse = "\n"), "cannot hold the bars", fixed = TRUE)
+})
+
 board_table_rmd <- function(dir) {
   rmd <- file.path(dir, "boards.Rmd")
   writeLines(c("---", "title: Tables", "---", "",

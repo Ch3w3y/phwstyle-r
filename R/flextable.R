@@ -234,6 +234,7 @@ phw_flextable <- function(data, caption = NULL, number = NULL, source = NULL,
 knit_print.phw_flextable <- function(x, ...) {
   if (knitr::pandoc_to("pptx")) return(knit_slide_table(x, ...))
   if (knitr::pandoc_to("revealjs")) return(knit_reveal_table(x, ...))
+  if (knitr::pandoc_to("docx")) check_word_images(x)
   # Under Quarto, flextable leaves the caption to the chunk's tbl-cap and drops
   # one set with set_caption(), so it goes in the table's top row instead,
   # unless Quarto shows the tbl-cap.
@@ -745,10 +746,12 @@ check_summary_keys <- function(x, keys, call = rlang::caller_env()) {
 #' Headings, subtotals and totals show the number only and do not count
 #' towards the scale, so a total does not shrink every other bar.
 #'
-#' The bars are small pictures. They show in HTML, PDF and Word reports
-#' (in Word, use [phw_word_document()]). PowerPoint tables cannot show
-#' pictures, so [phw_add_slide()] and a slide deck made with R Markdown stop
-#' with a message for a table with bars.
+#' The bars are small pictures. They show in HTML and PDF reports, and in
+#' Word reports made with [phw_word_document()]. Other Word formats, the
+#' Quarto `phw-docx` format included, cannot hold pictures in a table, so a
+#' table with bars stops there with a message. PowerPoint tables cannot show
+#' pictures either, so [phw_add_slide()] and a slide deck stop with a message
+#' for a table with bars.
 #'
 #' @param x A flextable.
 #' @param j Columns, chosen from the columns the table shows as in

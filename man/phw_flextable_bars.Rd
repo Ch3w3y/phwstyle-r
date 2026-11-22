@@ -38,10 +38,12 @@ On a summary table from \code{\link[=phw_flextable]{phw_flextable()}}, only the 
 Headings, subtotals and totals show the number only and do not count
 towards the scale, so a total does not shrink every other bar.
 
-The bars are small pictures. They show in HTML, PDF and Word reports
-(in Word, use \code{\link[=phw_word_document]{phw_word_document()}}). PowerPoint tables cannot show
-pictures, so \code{\link[=phw_add_slide]{phw_add_slide()}} and a slide deck made with R Markdown stop
-with a message for a table with bars.
+The bars are small pictures. They show in HTML and PDF reports, and in
+Word reports made with \code{\link[=phw_word_document]{phw_word_document()}}. Other Word formats, the
+Quarto \code{phw-docx} format included, cannot hold pictures in a table, so a
+table with bars stops there with a message. PowerPoint tables cannot show
+pictures either, so \code{\link[=phw_add_slide]{phw_add_slide()}} and a slide deck stop with a message
+for a table with bars.
 }
 \examples{
 if (requireNamespace("flextable", quietly = TRUE)) {
